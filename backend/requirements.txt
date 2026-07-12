@@ -1,0 +1,9 @@
+fastapi
+uvicorn
+pydantic
+openai
+langchain
+langchain-community
+chromadb
+python-multipart
+pydub

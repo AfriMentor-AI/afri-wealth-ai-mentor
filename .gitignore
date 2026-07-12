@@ -1,0 +1,14 @@
+# Node dependencies
+node_modules/
+.next/
+dist/
+
+# Python environment & cache
+venv/
+__pycache__/
+*.pyc
+.env
+
+# Audio data and uploads
+*.mp3
+*.wav
