@@ -14,7 +14,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  # Discover which services changed so PRs only build what they touch.
+  # Discover which services changed so PRs only build what they touch, for now.
   changes:
     runs-on: ubuntu-latest
     outputs:
