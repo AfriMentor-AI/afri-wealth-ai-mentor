@@ -57,7 +57,10 @@ def _client_identity(request: Request, user_id: str | None) -> str:
     if user_id:
         return f"user:{user_id}"
     fwd = request.headers.get("x-forwarded-for")
-    ip = fwd.split(",")[0].strip() if fwd else (request.client.host if request.client else "unknown")
+    if fwd:
+        ip = fwd.split(",")[0].strip()
+    else:
+        ip = request.client.host if request.client else "unknown"
     return f"ip:{ip}"
 
 

@@ -88,11 +88,9 @@ def test_client_cannot_spoof_identity_header(client, token_factory, monkeypatch)
     assert capture["headers"]["X-User-Id"] == "real-user"
 
 
-def test_rate_limit_returns_429(client, token_factory, monkeypatch):
+def test_rate_limit_returns_429(client, monkeypatch):
     _patch_upstream(monkeypatch)
-    tok = token_factory(sub="rl-user")
-    headers = {"Authorization": f"Bearer {tok}"}
-    # auth route limit is 20/min; hammer past it
+    # public auth route limit is 20/min; hammer past it from one IP
     last = None
     for _ in range(25):
         last = client.post("/api/v1/auth/login", json={})

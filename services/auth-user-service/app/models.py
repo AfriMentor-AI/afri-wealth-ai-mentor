@@ -31,14 +31,15 @@ class User(Base):
     roles: Mapped[str] = mapped_column(String(255), default="user")  # comma-separated
 
     # --- profile (matches G1.3 TypeScript UserProfile contract) ---
+    # enum-backed string fields; see app/schemas.py for the allowed values
     name: Mapped[str | None] = mapped_column(String(120), nullable=True)
     age: Mapped[int | None] = mapped_column(Integer, nullable=True)
-    country: Mapped[str | None] = mapped_column(String(2), nullable=True)  # ISO 3166-1 alpha-2
-    device_type: Mapped[str | None] = mapped_column(String(20), nullable=True)  # low_end|mid|high|desktop
-    sector_interest: Mapped[str | None] = mapped_column(String(40), nullable=True)  # trader|tech|...
+    country: Mapped[str | None] = mapped_column(String(2), nullable=True)  # ISO 3166-1
+    device_type: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    sector_interest: Mapped[str | None] = mapped_column(String(40), nullable=True)
     education_level: Mapped[str | None] = mapped_column(String(30), nullable=True)
     language: Mapped[str | None] = mapped_column(String(10), nullable=True)  # BCP-47
-    income_bracket: Mapped[str | None] = mapped_column(String(20), nullable=True)  # low|lower_mid|...
+    income_bracket: Mapped[str | None] = mapped_column(String(20), nullable=True)
 
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     created_at: Mapped[dt.datetime] = mapped_column(DateTime(timezone=True), default=_now)
