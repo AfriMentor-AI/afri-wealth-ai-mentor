@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>AfriMentor AI | Persona Consistency Dashboard</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&amp;family=Be+Vietnam+Pro:wght@600;700;800&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            display: inline-block;
+            line-height: 1;
+            text-transform: none;
+            letter-spacing: normal;
+            word-wrap: normal;
+            white-space: nowrap;
+            direction: ltr;
+        }
+        .mono-metrics {
+            font-family: 'JetBrains Mono', monospace;
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #4a453e;
+            border-radius: 10px;
+        }
+        .drift-glow {
+            animation: pulse-red 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        @keyframes pulse-red {
+            0%, 100% { opacity: 1; }
+            50% { opacity: .8; }
+        }
+    </style>
+<!-- Shared Tailwind Config - Dark Theme Applied -->
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "primary": "#f8bc51",
+                    "on-primary": "#422d00",
+                    "primary-container": "#5f4100",
+                    "on-primary-container": "#ffdeab",
+                    "secondary": "#88d982",
+                    "on-secondary": "#00390a",
+                    "secondary-container": "#005312",
+                    "on-secondary-container": "#a3f69c",
+                    "tertiary": "#c8c6c5",
+                    "on-tertiary": "#303131",
+                    "tertiary-container": "#474646",
+                    "on-tertiary-container": "#e5e2e1",
+                    "error": "#ffb4ab",
+                    "on-error": "#690005",
+                    "error-container": "#93000a",
+                    "on-error-container": "#ffdad6",
+                    "background": "#1c1c18",
+                    "on-background": "#e5e2dc",
+                    "surface": "#141310",
+                    "on-surface": "#e5e2dc",
+                    "surface-variant": "#504536",
+                    "on-surface-variant": "#d4c4b0",
+                    "outline": "#9d8e7c",
+                    "outline-variant": "#504536",
+                    "surface-container-lowest": "#0f0e0b",
+                    "surface-container-low": "#1c1c18",
+                    "surface-container": "#21201c",
+                    "surface-container-high": "#2b2a26",
+                    "surface-container-highest": "#363531",
+                    "console-accent": "#a3c8ff",
+                    "console-bg": "#0d0f0f"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.5rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "lg": "24px",
+                    "xl": "48px",
+                    "xs": "4px",
+                    "sm": "8px",
+                    "md": "16px",
+                    "gutter": "16px",
+                    "margin-mobile": "20px",
+                    "unit": "4px"
+            },
+            "fontFamily": {
+                    "body-lg": ["Inter"],
+                    "headline-lg": ["Be Vietnam Pro"],
+                    "body-md": ["Inter"],
+                    "headline-xl": ["Be Vietnam Pro"],
+                    "headline-lg-mobile": ["Be Vietnam Pro"],
+                    "title-md": ["Be Vietnam Pro"],
+                    "label-sm": ["Inter"]
+            },
+            "fontSize": {
+                    "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}],
+                    "headline-lg": ["32px", {"lineHeight": "40px", "fontWeight": "700"}],
+                    "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                    "headline-xl": ["40px", {"lineHeight": "48px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "headline-lg-mobile": ["28px", {"lineHeight": "34px", "fontWeight": "700"}],
+                    "title-md": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                    "label-sm": ["13px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600"}]
+            }
+          },
+        },
+      }
+    </script>
+</head>
+<body class="bg-console-bg text-on-surface flex h-screen overflow-hidden font-body-md text-body-md">
+<!-- Sidebar Navigation Shell -->
+<aside class="w-64 bg-surface flex flex-col border-r border-outline-variant z-40">
+<!-- Logo Area -->
+<div class="px-lg py-xl">
+<h1 class="font-headline-lg text-primary tracking-tighter">AfriMentor</h1>
+<p class="text-label-sm text-on-surface-variant font-medium uppercase tracking-widest mt-xs">Console</p>
+</div>
+<!-- Main Nav -->
+<nav class="flex-1 px-md space-y-xs">
+<a class="flex items-center gap-md px-md py-sm bg-secondary-container text-on-secondary-container rounded-full group transition-all" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">person</span>
+<span class="font-semibold">Personas</span>
+</a>
+<a class="flex items-center gap-md px-md py-sm text-on-surface-variant hover:bg-surface-variant rounded-full transition-all" href="#">
+<span class="material-symbols-outlined">folder_shared</span>
+<span class="font-semibold">RAG Corpus</span>
+</a>
+<a class="flex items-center gap-md px-md py-sm text-on-surface-variant hover:bg-surface-variant rounded-full transition-all" href="#">
+<span class="material-symbols-outlined">analytics</span>
+<span class="font-semibold">Analytics</span>
+</a>
+<a class="flex items-center gap-md px-md py-sm text-on-surface-variant hover:bg-surface-variant rounded-full transition-all" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-semibold">Settings</span>
+</a>
+</nav>
+<!-- Profile / Status Section -->
+<div class="p-lg mt-auto border-t border-outline-variant">
+<div class="flex items-center gap-md">
+<div class="w-10 h-10 rounded-full border-2 border-primary overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="A professional studio headshot of a modern African software engineer" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDskdZkwxQlwamTegYhx6HBNk4bfYNXlgv9N3ZcDnJI9TpJ-UbQi7emtRhr4RmcUwtWJG9-yH0qg1YCkf4-ks3Wn8OX0hhUj4jJowJv2-3OqQbWBtpxyVnjUSr4g8oTo7SgenXgQZE7u6Fcyskbzrl5k6rg7EvAiRrPLUXgwbI-mLhT_WjDtcTsrBouT8QmXIh4Jl8ryl2VxCHx0g_CzZrsp5awLfvE60cNHnMJSgQ8P519g89t9OIMLQ"/>
+</div>
+<div>
+<p class="font-bold text-on-surface leading-tight">Kofi Mensah</p>
+<p class="text-xs text-on-surface-variant">Lead Architect</p>
+</div>
+</div>
+</div>
+</aside>
+<!-- Main Content Area -->
+<main class="flex-1 flex flex-col overflow-hidden">
+<!-- Header Console Bar -->
+<header class="h-20 bg-surface flex items-center justify-between px-xl border-b border-outline-variant shrink-0">
+<div>
+<h2 class="font-title-md text-on-surface">Persona Consistency Dashboard</h2>
+<p class="text-sm text-on-surface-variant flex items-center gap-xs">
+<span class="w-2 h-2 rounded-full bg-secondary"></span> 
+                Production Environment: <span class="font-mono text-xs text-secondary">afri-mentor-v2-prod</span>
+</p>
+</div>
+<div class="flex items-center gap-lg">
+<div class="flex items-center gap-sm bg-surface-container rounded-lg px-md py-xs border border-outline-variant">
+<span class="material-symbols-outlined text-on-surface-variant text-xl">search</span>
+<input class="bg-transparent border-none focus:ring-0 text-sm w-48 text-on-surface placeholder:text-on-surface-variant/50" placeholder="Search sessions..." type="text"/>
+</div>
+<button class="material-symbols-outlined text-on-surface-variant hover:text-primary transition-colors">notifications</button>
+<button class="material-symbols-outlined text-on-surface-variant hover:text-primary transition-colors">download</button>
+</div>
+</header>
+<!-- Scrollable Dashboard Content -->
+<div class="flex-1 overflow-y-auto p-xl custom-scrollbar space-y-lg">
+<!-- Alert Banner: Drift Threshold -->
+<div class="bg-error-container text-on-error-container p-md rounded-xl flex items-center justify-between shadow-sm border border-error/30 drift-glow">
+<div class="flex items-center gap-md">
+<span class="material-symbols-outlined text-error" style="font-variation-settings: 'FILL' 1;">warning</span>
+<div>
+<p class="font-bold">Drift Threshold Alert: CHIOMA Persona</p>
+<p class="text-sm opacity-90">Consonantal frequency in Twi-English code-switching has deviated by 14.2% from baseline model. Potential hallucination risk.</p>
+</div>
+</div>
+<div class="flex gap-sm">
+<button class="bg-on-error-container text-on-error px-md py-xs rounded-full text-sm font-bold hover:opacity-90 transition-opacity">Deploy Hotfix</button>
+<button class="border border-on-error-container/30 px-md py-xs rounded-full text-sm font-bold text-on-error-container">Acknowledge</button>
+</div>
+</div>
+<!-- Bento Grid Section -->
+<div class="grid grid-cols-12 gap-lg h-[400px]">
+<!-- Prompt-to-Line Chart Card -->
+<div class="col-span-8 bg-surface rounded-xl p-lg border border-outline-variant flex flex-col">
+<div class="flex justify-between items-start mb-lg">
+<div>
+<h3 class="font-bold text-on-surface">Prompt-to-Line Latency &amp; Accuracy</h3>
+<p class="text-xs text-on-surface-variant">Rolling 24h consistency vs baseline tokenization</p>
+</div>
+<div class="flex gap-xs">
+<span class="text-xs font-mono bg-surface-container-high text-on-surface-variant px-xs py-0.5 rounded border border-outline-variant/30">ACC: 0.982</span>
+<span class="text-xs font-mono bg-surface-container-high text-on-surface-variant px-xs py-0.5 rounded border border-outline-variant/30">LAT: 142ms</span>
+</div>
+</div>
+<!-- Chart Placeholder -->
+<div class="flex-1 w-full relative overflow-hidden rounded-lg bg-surface-container-lowest border border-outline-variant/30">
+<div class="absolute inset-0 p-md flex flex-col justify-between pointer-events-none">
+<div class="w-full h-px bg-outline-variant/20 border-dashed"></div>
+<div class="w-full h-px bg-outline-variant/20 border-dashed"></div>
+<div class="w-full h-px bg-outline-variant/20 border-dashed"></div>
+</div>
+<!-- Simulated SVG Path for Chart -->
+<svg class="w-full h-full" preserveaspectratio="none">
+<path class="opacity-80" d="M0 80 Q 50 70, 100 120 T 200 90 T 300 140 T 400 60 T 500 100 T 600 110 T 700 85 T 800 130" fill="none" stroke="#f8bc51" stroke-width="3"></path>
+<path d="M0 100 Q 50 110, 100 130 T 200 110 T 300 120 T 400 100 T 500 140 T 600 120 T 700 110 T 800 120" fill="none" stroke="#a3c8ff" stroke-dasharray="4,4" stroke-width="2"></path>
+</svg>
+<div class="absolute bottom-4 left-4 flex gap-lg text-[10px] uppercase font-bold tracking-widest text-on-surface-variant">
+<div class="flex items-center gap-xs"><span class="w-3 h-0.5 bg-primary"></span> Persona CHIOMA</div>
+<div class="flex items-center gap-xs"><span class="w-3 h-0.5 bg-console-accent"></span> System Baseline</div>
+</div>
+</div>
+</div>
+<!-- Q&A Consistency Mono Metrics Card -->
+<div class="col-span-4 bg-surface rounded-xl p-lg border border-outline-variant flex flex-col justify-between">
+<div>
+<h3 class="font-bold text-on-surface">Consistency Score</h3>
+<p class="text-xs text-on-surface-variant mb-md">Aggregate CHIOMA Alignment</p>
+<div class="space-y-md">
+<div class="p-md bg-surface-container rounded-lg border border-outline-variant/20">
+<span class="text-[10px] font-bold text-on-surface-variant uppercase">Tone Match</span>
+<div class="flex items-end justify-between">
+<span class="text-4xl mono-metrics font-medium text-primary">94.2</span>
+<span class="text-xs text-secondary mb-1 flex items-center">
+<span class="material-symbols-outlined text-sm">arrow_upward</span> 1.2%
+                                </span>
+</div>
+</div>
+<div class="p-md bg-surface-container rounded-lg border border-outline-variant/20">
+<span class="text-[10px] font-bold text-on-surface-variant uppercase">Fact Retrieval</span>
+<div class="flex items-end justify-between">
+<span class="text-4xl mono-metrics font-medium text-console-accent">89.8</span>
+<span class="text-xs text-error mb-1 flex items-center">
+<span class="material-symbols-outlined text-sm">arrow_downward</span> 3.4%
+                                </span>
+</div>
+</div>
+</div>
+</div>
+<div class="flex items-center justify-between text-xs font-mono text-on-surface-variant border-t border-outline-variant pt-md">
+<span>Last Evaluated</span>
+<span>14:02 UTC</span>
+</div>
+</div>
+</div>
+<!-- Detailed Table: Sampling Table -->
+<div class="bg-surface rounded-xl border border-outline-variant overflow-hidden shadow-sm">
+<div class="px-lg py-md border-b border-outline-variant flex justify-between items-center bg-surface-container-low">
+<h3 class="font-bold text-on-surface">Recent CHIOMA Conversations (Persona Audit)</h3>
+<div class="flex gap-sm">
+<button class="px-md py-1 border border-outline text-xs font-bold rounded-full text-on-surface hover:bg-surface-variant">Filter by Drift</button>
+<button class="px-md py-1 bg-primary text-on-primary text-xs font-bold rounded-full">New Manual Audit</button>
+</div>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead class="bg-surface-container text-on-surface-variant text-xs uppercase tracking-wider font-bold">
+<tr>
+<th class="px-lg py-sm">Session ID</th>
+<th class="px-lg py-sm">Primary Intent</th>
+<th class="px-lg py-sm">Prompt Context</th>
+<th class="px-lg py-sm">Consistency Δ</th>
+<th class="px-lg py-sm">Action</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-outline-variant/30 text-sm">
+<tr class="hover:bg-surface-container-high transition-colors cursor-pointer group">
+<td class="px-lg py-md mono-metrics text-xs text-on-surface-variant">#S-7729-AX</td>
+<td class="px-lg py-md font-semibold text-on-surface">Financial Education</td>
+<td class="px-lg py-md max-w-xs truncate text-on-surface-variant italic">"Explain compound interest using cocoa farming metaphor..."</td>
+<td class="px-lg py-md">
+<div class="flex items-center gap-sm">
+<div class="w-16 h-1 bg-surface-container-highest rounded-full overflow-hidden">
+<div class="bg-secondary h-full" style="width: 98%;"></div>
+</div>
+<span class="text-xs font-mono font-bold text-secondary">0.98</span>
+</div>
+</td>
+<td class="px-lg py-md">
+<span class="material-symbols-outlined text-primary group-hover:scale-110 transition-transform">open_in_new</span>
+</td>
+</tr>
+<tr class="hover:bg-surface-container-high transition-colors cursor-pointer group bg-error-container/10">
+<td class="px-lg py-md mono-metrics text-xs text-on-surface-variant">#S-7801-BQ</td>
+<td class="px-lg py-md font-semibold text-on-surface">Micro-Loan Guidance</td>
+<td class="px-lg py-md max-w-xs truncate text-on-surface-variant italic">"Why can't I pay back in Susu if I don't have a digital wallet?"</td>
+<td class="px-lg py-md">
+<div class="flex items-center gap-sm">
+<div class="w-16 h-1 bg-surface-container-highest rounded-full overflow-hidden">
+<div class="bg-error h-full" style="width: 62%;"></div>
+</div>
+<span class="text-xs font-mono font-bold text-error">0.62</span>
+</div>
+</td>
+<td class="px-lg py-md">
+<span class="material-symbols-outlined text-primary group-hover:scale-110 transition-transform">open_in_new</span>
+</td>
+</tr>
+<tr class="hover:bg-surface-container-high transition-colors cursor-pointer group">
+<td class="px-lg py-md mono-metrics text-xs text-on-surface-variant">#S-7844-CZ</td>
+<td class="px-lg py-md font-semibold text-on-surface">Community Support</td>
+<td class="px-lg py-md max-w-xs truncate text-on-surface-variant italic">"Kofi says he reached level 4, how do I find him?"</td>
+<td class="px-lg py-md">
+<div class="flex items-center gap-sm">
+<div class="w-16 h-1 bg-surface-container-highest rounded-full overflow-hidden">
+<div class="bg-primary h-full" style="width: 85%;"></div>
+</div>
+<span class="text-xs font-mono font-bold text-primary">0.85</span>
+</div>
+</td>
+<td class="px-lg py-md">
+<span class="material-symbols-outlined text-primary group-hover:scale-110 transition-transform">open_in_new</span>
+</td>
+</tr>
+<tr class="hover:bg-surface-container-high transition-colors cursor-pointer group">
+<td class="px-lg py-md mono-metrics text-xs text-on-surface-variant">#S-7859-DL</td>
+<td class="px-lg py-md font-semibold text-on-surface">Goal Tracking</td>
+<td class="px-lg py-md max-w-xs truncate text-on-surface-variant italic">"Update my goal for building the kiosk by December."</td>
+<td class="px-lg py-md">
+<div class="flex items-center gap-sm">
+<div class="w-16 h-1 bg-surface-container-highest rounded-full overflow-hidden">
+<div class="bg-secondary h-full" style="width: 92%;"></div>
+</div>
+<span class="text-xs font-mono font-bold text-secondary">0.92</span>
+</div>
+</td>
+<td class="px-lg py-md">
+<span class="material-symbols-outlined text-primary group-hover:scale-110 transition-transform">open_in_new</span>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="p-md bg-surface-container-low border-t border-outline-variant flex justify-between items-center text-xs text-on-surface-variant font-medium">
+<span>Showing 1-4 of 1,244 sessions</span>
+<div class="flex gap-sm">
+<button class="material-symbols-outlined p-1 hover:bg-surface-variant rounded">chevron_left</button>
+<button class="material-symbols-outlined p-1 hover:bg-surface-variant rounded">chevron_right</button>
+</div>
+</div>
+</div>
+<!-- Persona Snapshot Grid -->
+<div class="grid grid-cols-4 gap-lg pb-xl">
+<div class="bg-surface p-lg rounded-xl border border-outline-variant relative overflow-hidden group">
+<div class="absolute top-0 right-0 w-16 h-16 bg-primary/10 -mr-8 -mt-8 rounded-full transition-all group-hover:scale-150"></div>
+<div class="flex items-center gap-md mb-md">
+<div class="w-12 h-12 rounded-full border-2 border-primary bg-primary-container p-0.5">
+<img class="w-full h-full rounded-full object-cover grayscale-[20%]" data-alt="CHIOMA Persona" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCmgFLmkk21WxdrAby3SunMoLfMb4Qrs3hXAlKlBNTGQBldSML5XCjdSEeVxafihlqlzADNXEdPLfjEdOfcLL3tkChOCuKO3HzRBHycLOfuLLc5bzulFJguehQgAF3-d3NhE0la0x6ooQvBA0z4Ti0TeyFBXMKKchfKsALwxx1_3j2KC7pxpbpUDDME28VjJwETCmCfho2Y0l6J6xJNej0yFjBj-MTkhOd7ZZlj3lVbLOkVyGN5IL2MPw"/>
+</div>
+<div>
+<h4 class="font-bold text-on-surface">CHIOMA</h4>
+<span class="text-[10px] bg-secondary-container text-on-secondary-container px-2 py-0.5 rounded-full uppercase font-bold">Stable</span>
+</div>
+</div>
+<p class="text-xs text-on-surface-variant leading-relaxed">System Default. Wisdom-focused, communal tone. Optimized for rural financial literacy.</p>
+</div>
+<div class="bg-surface p-lg rounded-xl border border-outline-variant relative overflow-hidden group">
+<div class="absolute top-0 right-0 w-16 h-16 bg-console-accent/10 -mr-8 -mt-8 rounded-full transition-all group-hover:scale-150"></div>
+<div class="flex items-center gap-md mb-md">
+<div class="w-12 h-12 rounded-full border-2 border-console-accent bg-surface-container p-0.5">
+<img class="w-full h-full rounded-full object-cover grayscale-[20%]" data-alt="KWAME Persona" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAYt5n115HpLLIGjBwBNbiGb4a8CSU50BzgoZ-1UbsVZwHpaNzxEvq1I97l2ChIqILOL3DcobSkdPxwoxuOKUc3yXYMRNUF7iHG4tMpTtdO2pnv3jQekdjJv8aLg7nvdMaZCmZX0M791B7mTMLQZFV66RzZVO9SMm5Thpb5c69DwjwJJovxzg2ORbVbsdLwADpTtuijEev8H4bcxsF6vQ_jWj7B8wbfn-0OVRcUz9ZN64_Cbkq9aHYFeQ"/>
+</div>
+<div>
+<h4 class="font-bold text-on-surface">KWAME</h4>
+<span class="text-[10px] bg-outline-variant text-on-surface-variant px-2 py-0.5 rounded-full uppercase font-bold">Beta</span>
+</div>
+</div>
+<p class="text-xs text-on-surface-variant leading-relaxed">Direct, goal-oriented, high-energy. Optimized for urban youth entrepreneurs.</p>
+</div>
+<div class="bg-surface p-lg rounded-xl border border-outline-variant relative overflow-hidden group hover:border-primary transition-colors cursor-pointer">
+<div class="absolute top-0 right-0 w-16 h-16 bg-primary/10 -mr-8 -mt-8 rounded-full transition-all group-hover:scale-150"></div>
+<div class="flex items-center gap-md mb-md">
+<div class="w-12 h-12 rounded-full border-2 border-outline-variant bg-surface-container flex items-center justify-center group-hover:border-primary">
+<span class="material-symbols-outlined text-on-surface-variant group-hover:text-primary">add</span>
+</div>
+<div>
+<h4 class="font-bold text-on-surface">Create New</h4>
+<span class="text-[10px] text-on-surface-variant">Draft Session</span>
+</div>
+</div>
+<p class="text-xs text-on-surface-variant leading-relaxed">Initialize a new persona branch using RAG-integrated seed prompts.</p>
+</div>
+<div class="bg-surface p-lg rounded-xl border border-outline-variant flex flex-col justify-center items-center text-center space-y-md">
+<div class="flex -space-x-3">
+<div class="w-8 h-8 rounded-full bg-primary border-2 border-surface"></div>
+<div class="w-8 h-8 rounded-full bg-secondary border-2 border-surface"></div>
+<div class="w-8 h-8 rounded-full bg-console-accent border-2 border-surface"></div>
+<div class="w-8 h-8 rounded-full bg-outline-variant border-2 border-surface flex items-center justify-center text-[8px] font-bold text-on-surface">+12</div>
+</div>
+<p class="text-xs font-bold text-on-surface-variant">Manage Collective Persona Weights</p>
+<button class="w-full py-2 bg-primary text-on-primary rounded-full text-xs font-bold hover:brightness-110 transition-all">Open Matrix</button>
+</div>
+</div>
+</div>
+<!-- System Footer (Status Bar) -->
+<footer class="h-8 bg-surface-container border-t border-outline-variant px-lg flex items-center justify-between text-[10px] font-mono text-on-surface-variant uppercase tracking-widest shrink-0">
+<div class="flex items-center gap-lg">
+<span class="flex items-center gap-xs"><span class="w-2 h-2 rounded-full bg-secondary animate-pulse"></span> Node Status: Active</span>
+<span>Latency: 12ms</span>
+<span>Version: 2.0.4-LTS</span>
+</div>
+<div>
+            © 2024 AfriMentor Research AI Labs
+        </div>
+</footer>
+</main>
+<!-- Contextual FAB -->
+<button class="fixed bottom-12 right-12 w-14 h-14 bg-primary text-on-primary rounded-full shadow-2xl flex items-center justify-center hover:scale-110 active:scale-95 transition-all z-50">
+<span class="material-symbols-outlined text-2xl">terminal</span>
+</button>
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const rows = document.querySelectorAll('tbody tr');
+        rows.forEach(row => {
+            row.addEventListener('click', () => {
+                const sessionId = row.querySelector('.mono-metrics').textContent;
+                console.log(`Opening audit detail for: ${sessionId}`);
+            });
+        });
+    });
+</script>
+</body></html>

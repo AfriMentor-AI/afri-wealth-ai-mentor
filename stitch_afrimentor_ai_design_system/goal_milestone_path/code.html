@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>AfriMentor AI - Goal Details</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Be+Vietnam+Pro:wght@600;700;800&family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@100..900&family=Inter:wght@100..900&display=swap" rel="stylesheet"/>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .path-dash-animation {
+            stroke-dasharray: 8;
+            animation: dashmove 20s linear infinite;
+        }
+        @keyframes dashmove {
+            to { stroke-dashoffset: -200; }
+        }
+        .waypoint-pulse {
+            animation: pulse-gold 2s infinite;
+        }
+        @keyframes pulse-gold {
+            0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(126, 87, 0, 0.4); }
+            70% { transform: scale(1.1); box-shadow: 0 0 0 10px rgba(126, 87, 0, 0); }
+            100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(126, 87, 0, 0); }
+        }
+        body {
+            -webkit-tap-highlight-color: transparent;
+            scroll-behavior: smooth;
+        }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "primary": "#7e5700",
+                        "on-secondary": "#ffffff",
+                        "on-error-container": "#93000a",
+                        "surface-container": "#f0eee8",
+                        "surface-bright": "#fcf9f3",
+                        "surface": "#fcf9f3",
+                        "outline-variant": "#d4c4b0",
+                        "on-primary": "#ffffff",
+                        "inverse-on-surface": "#f3f0ea",
+                        "surface-variant": "#e5e2dc",
+                        "secondary": "#1b6d24",
+                        "on-tertiary-container": "#343333",
+                        "surface-container-low": "#f6f3ed",
+                        "on-tertiary-fixed-variant": "#474646",
+                        "secondary-fixed": "#a3f69c",
+                        "inverse-surface": "#31312d",
+                        "on-secondary-fixed-variant": "#005312",
+                        "error": "#ba1a1a",
+                        "on-tertiary": "#ffffff",
+                        "on-tertiary-fixed": "#1c1b1b",
+                        "on-background": "#1c1c18",
+                        "on-surface-variant": "#504536",
+                        "surface-container-lowest": "#ffffff",
+                        "on-primary-fixed": "#281900",
+                        "on-primary-container": "#462f00",
+                        "inverse-primary": "#f8bc51",
+                        "primary-container": "#c8922a",
+                        "on-primary-fixed-variant": "#5f4100",
+                        "tertiary": "#5f5e5e",
+                        "secondary-fixed-dim": "#88d982",
+                        "surface-container-highest": "#e5e2dc",
+                        "secondary-container": "#a0f399",
+                        "primary-fixed-dim": "#f8bc51",
+                        "tertiary-fixed": "#e5e2e1",
+                        "tertiary-container": "#9d9b9b",
+                        "surface-dim": "#dcdad4",
+                        "error-container": "#ffdad6",
+                        "tertiary-fixed-dim": "#c8c6c5",
+                        "surface-tint": "#7e5700",
+                        "on-surface": "#1c1c18",
+                        "outline": "#827564",
+                        "background": "#fcf9f3",
+                        "on-secondary-container": "#217128",
+                        "on-error": "#ffffff",
+                        "on-secondary-fixed": "#002204",
+                        "surface-container-high": "#ebe8e2",
+                        "primary-fixed": "#ffdeab"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "lg": "24px",
+                        "xl": "48px",
+                        "xs": "4px",
+                        "sm": "8px",
+                        "md": "16px",
+                        "gutter": "16px",
+                        "margin-mobile": "20px",
+                        "unit": "4px"
+                    },
+                    "fontFamily": {
+                        "body-lg": ["Inter"],
+                        "headline-lg": ["Be Vietnam Pro"],
+                        "body-md": ["Inter"],
+                        "headline-xl": ["Be Vietnam Pro"],
+                        "headline-lg-mobile": ["Be Vietnam Pro"],
+                        "title-md": ["Be Vietnam Pro"],
+                        "label-sm": ["Inter"]
+                    },
+                    "fontSize": {
+                        "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}],
+                        "headline-lg": ["32px", {"lineHeight": "40px", "fontWeight": "700"}],
+                        "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                        "headline-xl": ["40px", {"lineHeight": "48px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                        "headline-lg-mobile": ["28px", {"lineHeight": "34px", "fontWeight": "700"}],
+                        "title-md": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                        "label-sm": ["13px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600"}]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-surface font-body-md selection:bg-primary-fixed selection:text-on-primary-fixed">
+<!-- Top App Bar -->
+<header class="w-full sticky top-0 z-50 bg-surface flex justify-between items-center px-margin-mobile py-sm border-b border-transparent">
+<div class="flex items-center gap-sm">
+<button class="material-symbols-outlined text-primary active:scale-95 transition-transform p-xs">arrow_back</button>
+<h1 class="font-headline-lg-mobile text-headline-lg-mobile text-primary tracking-tight">AfriMentor AI</h1>
+</div>
+<div class="flex items-center gap-md">
+<span class="material-symbols-outlined text-on-surface-variant hover:opacity-80 transition-opacity">settings</span>
+<div class="w-8 h-8 rounded-full border-2 border-primary overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="A portrait of a young West African mentor, smiling warmly with professional attire against a soft sun-drenched backdrop. The style is a minimalist-tactile aesthetic with warm lighting, echoing the brand's 'Dignified Optimism' and colors like Confident Gold and Warm Sand." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDWjERl8D1ljrtTOQ9bzBECmMhQ0Zben5L60sWMp9cDmEj86x1CClOQN8pAADNsWMaoem1kIIGBuyz374hGT_a8kFPRe7SG4wdnXijRVrYYuSfUCydxBUT099vp_ZE0CJNg3FkGHb6Oen4oU-5Xs1HAbuyGsXEKnEzTF6NYI7NS2szWndfvjQJoy_onq7PX5eRGTysgOdK0y87vktdTMFW85hlYhrk6n7glZHTLn7Unm9zK-mjqj24NmA"/>
+</div>
+</div>
+</header>
+<main class="pb-32">
+<!-- Goal Overview Section -->
+<section class="px-margin-mobile pt-lg pb-md">
+<div class="flex flex-col gap-xs">
+<span class="font-label-sm text-label-sm text-primary uppercase tracking-widest">Active Goal</span>
+<h2 class="font-headline-lg-mobile text-headline-lg-mobile text-on-surface">Start a Poultry Business</h2>
+<p class="font-body-md text-body-md text-on-surface-variant">Your journey to financial independence in Kumasi.</p>
+</div>
+</section>
+<!-- Visual Winding Path Canvas -->
+<section class="relative w-full overflow-hidden py-xl bg-surface-container-low/30">
+<!-- Winding Path Background -->
+<div class="absolute inset-0 z-0 opacity-10 pointer-events-none">
+<!-- Simple decorative Sankofa Pattern hint -->
+<svg height="100%" preserveaspectratio="none" viewbox="0 0 100 100" width="100%">
+<path class="text-primary" d="M0,50 Q25,20 50,50 T100,50" fill="none" stroke="currentColor" stroke-width="0.5"></path>
+</svg>
+</div>
+<!-- The Milestone Map -->
+<div class="relative px-margin-mobile flex flex-col items-center gap-12">
+<!-- Milestone 1: Done -->
+<div class="flex items-center w-full justify-start relative">
+<div class="flex flex-col items-center">
+<div class="w-10 h-10 rounded-full bg-secondary text-on-secondary flex items-center justify-center z-10 shadow-sm border-2 border-secondary">
+<span class="material-symbols-outlined text-[20px]">check</span>
+</div>
+<span class="font-label-sm text-label-sm mt-xs text-secondary">Step 1</span>
+</div>
+<div class="absolute left-12 top-2 flex flex-col gap-0.5 max-w-[200px]">
+<h4 class="font-title-md text-title-md text-on-surface leading-tight">Vision Foundation</h4>
+<p class="text-xs text-on-surface-variant">Defining your business niche.</p>
+</div>
+<!-- Path Segment 1 -->
+<div class="absolute left-5 top-10 w-0.5 h-16 bg-secondary"></div>
+</div>
+<!-- Reflection Accent (Sankofa Bird) -->
+<div class="w-full flex justify-end pr-8 -my-4 z-0">
+<div class="bg-surface-variant/40 p-md rounded-xl flex items-center gap-md border border-outline-variant/30">
+<span class="material-symbols-outlined text-primary scale-150">history_edu</span>
+<div class="flex flex-col">
+<span class="font-label-sm text-label-sm text-primary font-bold">Sankofa reflection</span>
+<span class="text-[12px] text-on-surface-variant">"It is not taboo to go back and fetch what you forgot."</span>
+</div>
+</div>
+</div>
+<!-- Milestone 2: Current -->
+<div class="flex items-center w-full justify-end relative">
+<div class="absolute right-12 top-2 flex flex-col items-end gap-0.5 max-w-[200px]">
+<h4 class="font-title-md text-title-md text-primary leading-tight">Legal Readiness</h4>
+<p class="text-xs text-on-surface-variant text-right italic">You are here: Registering details.</p>
+</div>
+<div class="flex flex-col items-center">
+<div class="w-12 h-12 rounded-full bg-primary text-on-primary flex items-center justify-center z-10 waypoint-pulse border-4 border-primary-fixed shadow-md">
+<span class="font-headline-lg-mobile text-[20px]">2</span>
+</div>
+<span class="font-label-sm text-label-sm mt-xs text-primary font-bold">Active</span>
+</div>
+<!-- Path Segment 2 (Dashed for current to future) -->
+<div class="absolute right-6 top-12 w-0.5 h-20 border-l-2 border-dashed border-outline-variant"></div>
+</div>
+<!-- Milestone 3: Future -->
+<div class="flex items-center w-full justify-start relative pt-4">
+<div class="flex flex-col items-center">
+<div class="w-10 h-10 rounded-full bg-surface-container-high text-on-surface-variant flex items-center justify-center z-10 border-2 border-outline-variant">
+<span class="font-title-md text-[18px]">3</span>
+</div>
+<span class="font-label-sm text-label-sm mt-xs text-on-surface-variant">Step 3</span>
+</div>
+<div class="absolute left-12 top-6 flex flex-col gap-0.5 max-w-[200px]">
+<h4 class="font-title-md text-title-md text-on-surface-variant opacity-60">Operations</h4>
+<p class="text-xs text-on-surface-variant opacity-50">Sourcing equipment & birds.</p>
+</div>
+<!-- Path Segment 3 -->
+<div class="absolute left-5 top-14 w-0.5 h-16 border-l-2 border-dashed border-outline-variant"></div>
+</div>
+<!-- Milestone 4: Destination -->
+<div class="flex items-center w-full justify-end relative pt-4">
+<div class="absolute right-12 top-6 flex flex-col items-end gap-0.5 max-w-[200px]">
+<h4 class="font-title-md text-title-md text-on-surface-variant opacity-60">Launch</h4>
+<p class="text-xs text-on-surface-variant opacity-50">First batch of sales.</p>
+</div>
+<div class="flex flex-col items-center">
+<div class="w-10 h-10 rounded-full bg-surface-container-high text-on-surface-variant flex items-center justify-center z-10 border-2 border-outline-variant">
+<span class="material-symbols-outlined text-[20px]">workspace_premium</span>
+</div>
+<span class="font-label-sm text-label-sm mt-xs text-on-surface-variant">Goal</span>
+</div>
+</div>
+</div>
+</section>
+<!-- Commitments List -->
+<section class="px-margin-mobile mt-lg flex flex-col gap-md">
+<h3 class="font-title-md text-title-md text-on-surface px-xs">Tagged Commitments</h3>
+<!-- Commitment 1: Done -->
+<div class="bg-surface-container-low p-md rounded-xl flex items-center gap-md border border-outline-variant/20">
+<div class="w-8 h-8 rounded-full bg-secondary/10 text-secondary flex items-center justify-center">
+<span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+</div>
+<div class="flex-1">
+<p class="font-body-md text-on-surface line-through decoration-on-surface-variant/40">Register business</p>
+</div>
+<span class="bg-secondary/10 text-secondary text-[11px] px-sm py-xs rounded-full font-bold uppercase">Done</span>
+</div>
+<!-- Commitment 2: In Progress -->
+<div class="bg-surface-container-low p-md rounded-xl flex items-center gap-md border border-primary/20 shadow-sm">
+<div class="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center">
+<span class="material-symbols-outlined text-[20px]">pending</span>
+</div>
+<div class="flex-1">
+<p class="font-body-md text-on-surface font-semibold">Open savings account</p>
+</div>
+<span class="bg-primary/10 text-primary text-[11px] px-sm py-xs rounded-full font-bold uppercase">In Progress</span>
+</div>
+<!-- Commitment 3: Blocked -->
+<div class="bg-error-container/20 p-md rounded-xl flex flex-col gap-md border border-error/20">
+<div class="flex items-center gap-md">
+<div class="w-8 h-8 rounded-full bg-error/10 text-error flex items-center justify-center">
+<span class="material-symbols-outlined text-[20px]">block</span>
+</div>
+<div class="flex-1">
+<p class="font-body-md text-on-surface">Find supplier</p>
+</div>
+<span class="bg-error/10 text-error text-[11px] px-sm py-xs rounded-full font-bold uppercase">Blocked</span>
+</div>
+<!-- Helper Action Button -->
+<button class="w-full bg-on-primary-container text-on-primary rounded-full py-sm px-md flex items-center justify-center gap-sm active:scale-[0.98] transition-transform font-bold">
+<span class="material-symbols-outlined text-[20px]">smart_toy</span>
+<span>CHIOMA CAN HELP</span>
+</button>
+<p class="text-[12px] text-on-surface-variant text-center italic">"I can search local vet-approved suppliers for you."</p>
+</div>
+</section>
+</main>
+<!-- Bottom Navigation Bar -->
+<nav class="fixed bottom-0 w-full z-50 bg-surface border-t border-outline-variant flex justify-around items-center h-16 px-sm pb-safe">
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-container-low transition-colors w-full h-full" href="#">
+<span class="material-symbols-outlined">chat_bubble</span>
+<span class="font-label-sm text-label-sm mt-xs">Chat</span>
+</a>
+<a class="flex flex-col items-center justify-center text-primary font-bold hover:bg-surface-container-low transition-colors w-full h-full" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">target</span>
+<span class="font-label-sm text-label-sm mt-xs">Goals</span>
+<div class="w-1 h-1 bg-primary rounded-full mt-0.5"></div>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-container-low transition-colors w-full h-full" href="#">
+<span class="material-symbols-outlined">auto_stories</span>
+<span class="font-label-sm text-label-sm mt-xs">Library</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-container-low transition-colors w-full h-full" href="#">
+<span class="material-symbols-outlined">query_stats</span>
+<span class="font-label-sm text-label-sm mt-xs">Progress</span>
+</a>
+</nav>
+<script>
+        // Simple touch interaction for commitments
+        document.querySelectorAll('.commit-card').forEach(card => {
+            card.addEventListener('touchstart', () => {
+                card.classList.add('opacity-80');
+            });
+            card.addEventListener('touchend', () => {
+                card.classList.remove('opacity-80');
+            });
+        });
+    </script>
+</body></html>

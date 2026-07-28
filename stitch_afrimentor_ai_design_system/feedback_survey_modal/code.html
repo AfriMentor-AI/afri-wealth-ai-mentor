@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>AfriMentor AI - Feedback Survey</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Be+Vietnam+Pro:wght@600;700;800&family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@100..900&family=Inter:wght@100..900&display=swap" rel="stylesheet"/>
+<!-- Design System Configuration -->
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "primary": "#7e5700",
+                    "on-secondary": "#ffffff",
+                    "on-error-container": "#93000a",
+                    "surface-container": "#f0eee8",
+                    "surface-bright": "#fcf9f3",
+                    "surface": "#fcf9f3",
+                    "outline-variant": "#d4c4b0",
+                    "on-primary": "#ffffff",
+                    "inverse-on-surface": "#f3f0ea",
+                    "surface-variant": "#e5e2dc",
+                    "secondary": "#1b6d24",
+                    "on-tertiary-container": "#343333",
+                    "surface-container-low": "#f6f3ed",
+                    "on-tertiary-fixed-variant": "#474646",
+                    "secondary-fixed": "#a3f69c",
+                    "inverse-surface": "#31312d",
+                    "on-secondary-fixed-variant": "#005312",
+                    "error": "#ba1a1a",
+                    "on-tertiary": "#ffffff",
+                    "on-tertiary-fixed": "#1c1b1b",
+                    "on-background": "#1c1c18",
+                    "on-surface-variant": "#504536",
+                    "surface-container-lowest": "#ffffff",
+                    "on-primary-fixed": "#281900",
+                    "on-primary-container": "#462f00",
+                    "inverse-primary": "#f8bc51",
+                    "primary-container": "#c8922a",
+                    "on-primary-fixed-variant": "#5f4100",
+                    "tertiary": "#5f5e5e",
+                    "secondary-fixed-dim": "#88d982",
+                    "surface-container-highest": "#e5e2dc",
+                    "secondary-container": "#a0f399",
+                    "primary-fixed-dim": "#f8bc51",
+                    "tertiary-fixed": "#e5e2e1",
+                    "tertiary-container": "#9d9b9b",
+                    "surface-dim": "#dcdad4",
+                    "error-container": "#ffdad6",
+                    "tertiary-fixed-dim": "#c8c6c5",
+                    "surface-tint": "#7e5700",
+                    "on-surface": "#1c1c18",
+                    "outline": "#827564",
+                    "background": "#fcf9f3",
+                    "on-secondary-container": "#217128",
+                    "on-error": "#ffffff",
+                    "on-secondary-fixed": "#002204",
+                    "surface-container-high": "#ebe8e2",
+                    "primary-fixed": "#ffdeab"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "lg": "24px",
+                    "xl": "48px",
+                    "xs": "4px",
+                    "sm": "8px",
+                    "md": "16px",
+                    "gutter": "16px",
+                    "margin-mobile": "20px",
+                    "unit": "4px"
+            },
+            "fontFamily": {
+                    "body-lg": ["Inter"],
+                    "headline-lg": ["Be Vietnam Pro"],
+                    "body-md": ["Inter"],
+                    "headline-xl": ["Be Vietnam Pro"],
+                    "headline-lg-mobile": ["Be Vietnam Pro"],
+                    "title-md": ["Be Vietnam Pro"],
+                    "label-sm": ["Inter"]
+            },
+            "fontSize": {
+                    "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}],
+                    "headline-lg": ["32px", {"lineHeight": "40px", "fontWeight": "700"}],
+                    "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                    "headline-xl": ["40px", {"lineHeight": "48px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "headline-lg-mobile": ["28px", {"lineHeight": "34px", "fontWeight": "700"}],
+                    "title-md": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                    "label-sm": ["13px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            display: inline-block;
+            line-height: 1;
+            text-transform: none;
+            letter-spacing: normal;
+            word-wrap: normal;
+            white-space: nowrap;
+            direction: ltr;
+        }
+
+        /* Bottom Sheet Animation */
+        .bottom-sheet-enter {
+            transform: translateY(100%);
+        }
+        .bottom-sheet-enter-active {
+            transform: translateY(0%);
+            transition: transform 400ms cubic-bezier(0.33, 1, 0.68, 1);
+        }
+        
+        /* Sankofa Pattern */
+        .sankofa-bg {
+            background-image: radial-gradient(circle at 2px 2px, #d4c4b0 1px, transparent 0);
+            background-size: 24px 24px;
+            opacity: 0.15;
+        }
+
+        .likert-scale button:active {
+            transform: scale(0.9);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-background font-body-md overflow-hidden h-screen w-full flex items-center justify-center">
+<!-- Mock App Background (Simulating Goal Completion Screen) -->
+<div class="absolute inset-0 z-0 flex flex-col items-center justify-center p-margin-mobile text-center">
+<div class="w-32 h-32 mb-lg relative">
+<div class="absolute inset-0 rounded-full border-8 border-surface-container-highest"></div>
+<div class="absolute inset-0 rounded-full border-8 border-secondary border-r-transparent animate-spin-slow"></div>
+<div class="absolute inset-0 flex items-center justify-center">
+<span class="material-symbols-outlined text-secondary text-5xl" style="font-variation-settings: 'FILL' 1;">workspace_premium</span>
+</div>
+</div>
+<h1 class="font-headline-lg-mobile text-headline-lg-mobile text-on-surface mb-sm">Milestone Achieved!</h1>
+<p class="font-body-md text-on-surface-variant max-w-xs">You've successfully completed the 'Cultural Intelligence' learning module.</p>
+</div>
+<!-- Backdrop Overlay -->
+<div class="fixed inset-0 bg-black/40 backdrop-blur-sm z-40 transition-opacity duration-300" id="backdrop"></div>
+<!-- Bottom Sheet Container (Mobile 390x844 Frame Emulation) -->
+<div class="fixed bottom-0 left-0 right-0 z-50 bg-surface rounded-t-xl shadow-2xl max-w-[400px] mx-auto bottom-sheet-enter-active" id="bottomSheet">
+<!-- Drag Handle / Visual Anchor -->
+<div class="flex justify-center pt-sm pb-xs">
+<div class="w-10 h-1 bg-outline-variant rounded-full opacity-50"></div>
+</div>
+<!-- Sheet Content -->
+<div class="px-margin-mobile pb-xl pt-sm relative overflow-hidden">
+<!-- Decorative Sankofa Element -->
+<div class="absolute top-0 right-0 w-24 h-24 sankofa-bg pointer-events-none -mr-4 -mt-4 opacity-10"></div>
+<header class="mb-lg">
+<div class="flex items-start justify-between mb-xs">
+<div class="w-12 h-12 rounded-full overflow-hidden border-2 border-primary bg-surface-container">
+<img class="w-full h-full object-cover" data-alt="A warm and friendly professional portrait of a West African woman with a kind smile, representing the CHIOMA AI mentor persona. She wears a modern professional outfit with subtle traditional textile accents. The lighting is soft and golden, evoking the design's 'Dignified Optimism' and 'Warm Cream' color palette." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDBChylWorNHDJ7GfXap5L1CXo0megr_y5pLLLd0M77gHDTaNHP5zsDQRclunw7OIPBn1SyZ4sncxy_H9mJaGQaW-LSTGvYN_ZL6uqv2aDhl8hJijHfiNFn4h92ghXS_VGczNSqv9QZgiSxmrGme5rloqYC-kAfZtQZ6RMPnVufLWx1o9gtiaI9VYT4p1-A1BdPT_iwQJACGLV9yrTPWMEzHXArSL-xxOosv08w0iXOQzzAx5eM55xE5A"/>
+</div>
+<button class="p-xs text-on-surface-variant hover:bg-surface-variant rounded-full transition-colors" onclick="dismissSheet()">
+<span class="material-symbols-outlined">close</span>
+</button>
+</div>
+<h2 class="font-headline-lg-mobile text-headline-lg-mobile text-primary">How was your journey?</h2>
+<p class="font-body-md text-on-surface-variant mt-sm">Your feedback helps CHIOMA tailor your mentorship experience.</p>
+</header>
+<!-- Likert Scale Survey -->
+<div class="mb-xl">
+<p class="font-label-sm text-label-sm text-on-surface mb-md">Likelihood to recommend AfriMentor AI</p>
+<div class="flex flex-wrap gap-2 likert-scale justify-between">
+<!-- Scale 1-10 -->
+<button class="scale-btn w-9 h-12 rounded-lg border border-outline-variant flex items-center justify-center font-title-md text-on-surface-variant hover:border-primary hover:bg-primary-container/20 transition-all">1</button>
+<button class="scale-btn w-9 h-12 rounded-lg border border-outline-variant flex items-center justify-center font-title-md text-on-surface-variant hover:border-primary hover:bg-primary-container/20 transition-all">2</button>
+<button class="scale-btn w-9 h-12 rounded-lg border border-outline-variant flex items-center justify-center font-title-md text-on-surface-variant hover:border-primary hover:bg-primary-container/20 transition-all">3</button>
+<button class="scale-btn w-9 h-12 rounded-lg border border-outline-variant flex items-center justify-center font-title-md text-on-surface-variant hover:border-primary hover:bg-primary-container/20 transition-all">4</button>
+<button class="scale-btn w-9 h-12 rounded-lg border border-outline-variant flex items-center justify-center font-title-md text-on-surface-variant hover:border-primary hover:bg-primary-container/20 transition-all">5</button>
+<button class="scale-btn w-9 h-12 rounded-lg border border-outline-variant flex items-center justify-center font-title-md text-on-surface-variant hover:border-primary hover:bg-primary-container/20 transition-all">6</button>
+<button class="scale-btn w-9 h-12 rounded-lg border border-outline-variant flex items-center justify-center font-title-md text-on-surface-variant hover:border-primary hover:bg-primary-container/20 transition-all">7</button>
+<button class="scale-btn w-9 h-12 rounded-lg border border-outline-variant flex items-center justify-center font-title-md text-on-surface-variant hover:border-primary hover:bg-primary-container/20 transition-all">8</button>
+<button class="scale-btn w-9 h-12 rounded-lg border border-outline-variant flex items-center justify-center font-title-md text-on-surface-variant hover:border-primary hover:bg-primary-container/20 transition-all">9</button>
+<button class="scale-btn w-9 h-12 rounded-lg border-2 border-primary bg-primary-container/10 flex items-center justify-center font-title-md text-primary transition-all">10</button>
+</div>
+<div class="flex justify-between mt-xs px-xs">
+<span class="font-label-sm text-label-sm text-on-surface-variant">Not likely</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Very likely</span>
+</div>
+</div>
+<!-- Text/Voice Field -->
+<div class="mb-xl">
+<label class="block font-label-sm text-label-sm text-on-surface mb-sm" for="feedback-text">Tell CHIOMA more...</label>
+<div class="relative group">
+<textarea class="w-full bg-surface-container-low border border-outline-variant rounded-xl p-md font-body-md text-on-surface placeholder:text-on-surface-variant focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all resize-none" id="feedback-text" placeholder="What did you value most about this goal?" rows="3"></textarea>
+<button class="absolute bottom-3 right-3 w-10 h-10 rounded-full bg-surface-container-high border border-outline-variant flex items-center justify-center hover:bg-surface-variant active:scale-90 transition-all" title="Voice Input">
+<span class="material-symbols-outlined text-primary">mic</span>
+</button>
+</div>
+</div>
+<!-- Action Buttons -->
+<div class="flex flex-col gap-sm">
+<button class="w-full h-[48px] bg-primary text-on-primary rounded-full font-title-md flex items-center justify-center hover:opacity-90 active:scale-[0.98] transition-all">
+                    Submit Feedback
+                </button>
+<button class="w-full h-[44px] bg-transparent text-primary rounded-full font-title-md flex items-center justify-center hover:bg-surface-variant active:scale-[0.98] transition-all" onclick="dismissSheet()">
+                    Dismiss
+                </button>
+</div>
+</div>
+</div>
+<script>
+        // Handle Interactions
+        const scaleButtons = document.querySelectorAll('.scale-btn');
+        scaleButtons.forEach(btn => {
+            btn.addEventListener('click', () => {
+                scaleButtons.forEach(b => {
+                    b.classList.remove('border-primary', 'bg-primary-container/10', 'text-primary', 'border-2');
+                    b.classList.add('border-outline-variant', 'text-on-surface-variant', 'border');
+                });
+                btn.classList.add('border-primary', 'bg-primary-container/10', 'text-primary', 'border-2');
+                btn.classList.remove('border-outline-variant', 'text-on-surface-variant', 'border');
+            });
+        });
+
+        function dismissSheet() {
+            const sheet = document.getElementById('bottomSheet');
+            const backdrop = document.getElementById('backdrop');
+            
+            sheet.style.transform = 'translateY(100%)';
+            sheet.style.transition = 'transform 300ms ease-in';
+            backdrop.style.opacity = '0';
+            
+            setTimeout(() => {
+                sheet.style.display = 'none';
+                backdrop.style.display = 'none';
+            }, 300);
+        }
+
+        // Voice button ripple effect
+        const micBtn = document.querySelector('button[title="Voice Input"]');
+        micBtn.addEventListener('click', function() {
+            this.classList.toggle('bg-error-container');
+            this.querySelector('span').classList.toggle('text-error');
+            this.querySelector('span').textContent = this.querySelector('span').textContent === 'mic' ? 'graphic_eq' : 'mic';
+        });
+
+        // Intro animation
+        window.onload = () => {
+            const sheet = document.getElementById('bottomSheet');
+            sheet.style.transform = 'translateY(100%)';
+            setTimeout(() => {
+                sheet.style.transform = 'translateY(0%)';
+                sheet.style.transition = 'transform 600ms cubic-bezier(0.22, 1, 0.36, 1)';
+            }, 100);
+        };
+    </script>
+</body></html>

@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Be+Vietnam+Pro:wght@600;700;800&family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@100..900&family=Inter:wght@100..900&display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "primary": "#7e5700",
+                        "on-secondary": "#ffffff",
+                        "on-error-container": "#93000a",
+                        "surface-container": "#f0eee8",
+                        "surface-bright": "#fcf9f3",
+                        "surface": "#fcf9f3",
+                        "outline-variant": "#d4c4b0",
+                        "on-primary": "#ffffff",
+                        "inverse-on-surface": "#f3f0ea",
+                        "surface-variant": "#e5e2dc",
+                        "secondary": "#1b6d24",
+                        "on-tertiary-container": "#343333",
+                        "surface-container-low": "#f6f3ed",
+                        "on-tertiary-fixed-variant": "#474646",
+                        "secondary-fixed": "#a3f69c",
+                        "inverse-surface": "#31312d",
+                        "on-secondary-fixed-variant": "#005312",
+                        "error": "#ba1a1a",
+                        "on-tertiary": "#ffffff",
+                        "on-tertiary-fixed": "#1c1b1b",
+                        "on-background": "#1c1c18",
+                        "on-surface-variant": "#504536",
+                        "surface-container-lowest": "#ffffff",
+                        "on-primary-fixed": "#281900",
+                        "on-primary-container": "#462f00",
+                        "inverse-primary": "#f8bc51",
+                        "primary-container": "#c8922a",
+                        "on-primary-fixed-variant": "#5f4100",
+                        "tertiary": "#5f5e5e",
+                        "secondary-fixed-dim": "#88d982",
+                        "surface-container-highest": "#e5e2dc",
+                        "secondary-container": "#a0f399",
+                        "primary-fixed-dim": "#f8bc51",
+                        "tertiary-fixed": "#e5e2e1",
+                        "tertiary-container": "#9d9b9b",
+                        "surface-dim": "#dcdad4",
+                        "error-container": "#ffdad6",
+                        "tertiary-fixed-dim": "#c8c6c5",
+                        "surface-tint": "#7e5700",
+                        "on-surface": "#1c1c18",
+                        "outline": "#827564",
+                        "background": "#fcf9f3",
+                        "on-secondary-container": "#217128",
+                        "on-error": "#ffffff",
+                        "on-secondary-fixed": "#002204",
+                        "surface-container-high": "#ebe8e2",
+                        "primary-fixed": "#ffdeab"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "lg": "24px",
+                        "xl": "48px",
+                        "xs": "4px",
+                        "sm": "8px",
+                        "md": "16px",
+                        "gutter": "16px",
+                        "margin-mobile": "20px",
+                        "unit": "4px"
+                    },
+                    "fontFamily": {
+                        "body-lg": ["Inter"],
+                        "headline-lg": ["Be Vietnam Pro"],
+                        "body-md": ["Inter"],
+                        "headline-xl": ["Be Vietnam Pro"],
+                        "headline-lg-mobile": ["Be Vietnam Pro"],
+                        "title-md": ["Be Vietnam Pro"],
+                        "label-sm": ["Inter"]
+                    },
+                    "fontSize": {
+                        "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}],
+                        "headline-lg": ["32px", {"lineHeight": "40px", "fontWeight": "700"}],
+                        "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                        "headline-xl": ["40px", {"lineHeight": "48px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                        "headline-lg-mobile": ["28px", {"lineHeight": "34px", "fontWeight": "700"}],
+                        "title-md": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                        "label-sm": ["13px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600"}]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        body {
+            background-color: #fcf9f3;
+            color: #1c1c18;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .sankofa-pattern {
+            background-image: url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M20 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 4c-2.2 0-4 1.8-4 4s1.8 4 4 4 4-1.8 4-4-1.8-4-4-4zm0 2c1.1 0 2 .9 2 2s-.9 2-2 2-2-.9-2-2 .9-2 2-2z' fill='%23d4c4b0' fill-opacity='0.1'/%3E%3C/svg%3E");
+        }
+        .chat-bubble-tail::after {
+            content: '';
+            position: absolute;
+            left: 0;
+            bottom: 0;
+            width: 12px;
+            height: 12px;
+            background-color: inherit;
+            clip-path: polygon(0% 100%, 100% 100%, 100% 0%);
+            transform: translateX(-50%);
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in {
+            animation: fadeIn 0.4s ease-out forwards;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="font-body-md text-body-md overflow-hidden">
+<!-- Sticky Header (TopAppBar) -->
+<header class="w-full sticky top-0 z-50 bg-surface flex justify-between items-center px-margin-mobile py-sm">
+<div class="flex items-center gap-sm">
+<div class="w-10 h-10 rounded-full border-2 border-primary overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="A warm, professional portrait of a West African woman named Chioma, acting as a mentor. She wears modern Ghanaian textiles and a gentle, encouraging smile. The lighting is soft and golden, suggesting a sun-drenched study room with wooden accents. The overall aesthetic is dignified and minimalist, reflecting growth and communal wisdom." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAkiPqUOibeYPYoGWscZYRlj2buXbewZ-OPm5aagdUF_qcep5aoXaVUwjfsoxq_W9B0MMeAx_PUS2c1Rv8lagMCy6_CildIBr_oDL47df6SCzKDPbXn5WPH-N6fJe5K9nf5OouzYDfqVadMKAHV3i9BRXMrCC7SaQl1rKWDWOLQTmLiI-cW9jGYbDY4tY2aRol_OyramUS0wu2E7R2upZxPz7yjtN_jVv2rNOjo95cVdQW2SAg6z-M9JA"/>
+</div>
+<div>
+<h1 class="font-headline-lg-mobile text-headline-lg-mobile text-primary leading-none">CHIOMA</h1>
+<p class="font-label-sm text-label-sm text-on-surface-variant opacity-70">AfriMentor AI</p>
+</div>
+</div>
+<button class="material-symbols-outlined text-on-surface-variant p-sm hover:opacity-80 active:scale-95 transition-all">
+            settings
+        </button>
+</header>
+<main class="h-[calc(100vh-144px)] overflow-y-auto px-margin-mobile pt-lg pb-xl flex flex-col gap-lg sankofa-pattern">
+<!-- Progress Indicator -->
+<div class="flex flex-col gap-xs mb-md">
+<div class="flex justify-between items-end">
+<span class="font-label-sm text-label-sm text-primary uppercase tracking-widest">Step 1 of 4</span>
+<span class="font-label-sm text-label-sm text-outline">Intake</span>
+</div>
+<div class="w-full h-1 bg-surface-container-highest rounded-full overflow-hidden">
+<div class="w-1/4 h-full bg-primary transition-all duration-700 ease-in-out"></div>
+</div>
+</div>
+<!-- Chat Area -->
+<div class="flex flex-col gap-lg flex-grow">
+<!-- chioma Message -->
+<div class="flex flex-col items-start gap-sm animate-fade-in" style="animation-delay: 0.1s;">
+<div class="bg-surface-container-low text-on-surface p-md rounded-xl rounded-bl-none relative max-w-[85%] border border-outline-variant">
+<h2 class="font-headline-lg-mobile text-headline-lg-mobile mb-xs text-on-surface">To start, what sector do you work in?</h2>
+<p class="text-body-md opacity-80">This helps me tailor my financial advice to your specific business reality.</p>
+</div>
+</div>
+<!-- Quick Reply Chips -->
+<div class="flex flex-wrap gap-sm mt-md animate-fade-in" style="animation-delay: 0.3s;">
+<button class="px-md py-sm bg-surface-container-lowest border border-outline-variant rounded-full text-body-md text-on-surface-variant hover:bg-primary-container hover:text-on-primary-container active:scale-95 transition-all" onclick="selectSector(this)">Trader</button>
+<button class="px-md py-sm bg-surface-container-lowest border border-outline-variant rounded-full text-body-md text-on-surface-variant hover:bg-primary-container hover:text-on-primary-container active:scale-95 transition-all" onclick="selectSector(this)">Tech</button>
+<button class="px-md py-sm bg-surface-container-lowest border border-outline-variant rounded-full text-body-md text-on-surface-variant hover:bg-primary-container hover:text-on-primary-container active:scale-95 transition-all" onclick="selectSector(this)">Fashion/Retail</button>
+<button class="px-md py-sm bg-surface-container-lowest border border-outline-variant rounded-full text-body-md text-on-surface-variant hover:bg-primary-container hover:text-on-primary-container active:scale-95 transition-all" onclick="selectSector(this)">Agriculture</button>
+<button class="px-md py-sm bg-surface-container-lowest border border-outline-variant rounded-full text-body-md text-on-surface-variant hover:bg-primary-container hover:text-on-primary-container active:scale-95 transition-all" onclick="selectSector(this)">Creative</button>
+</div>
+</div>
+</main>
+<!-- Bottom Input Bar -->
+<div class="fixed bottom-0 w-full bg-surface px-margin-mobile pb-xl pt-sm border-t border-outline-variant flex flex-col gap-sm">
+<div class="flex items-center gap-sm">
+<div class="flex-grow bg-surface-container-low rounded-full px-md py-sm border border-outline-variant flex items-center gap-sm">
+<input class="flex-grow bg-transparent border-none focus:ring-0 text-body-md p-0 placeholder:text-outline" placeholder="Type your answer..." type="text"/>
+<button class="material-symbols-outlined text-primary p-xs active:scale-90 transition-transform">
+                    send
+                </button>
+</div>
+<button class="w-12 h-12 bg-primary text-on-primary rounded-full flex items-center justify-center shadow-md active:scale-90 transition-transform duration-150" id="voiceBtn">
+<span class="material-symbols-outlined">mic</span>
+</button>
+</div>
+<!-- Helpful Hint -->
+<p class="text-center font-label-sm text-label-sm text-on-surface-variant opacity-60">
+            Tap a chip or use your voice to respond.
+        </p>
+</div>
+<!-- Hidden Navigation Shell (Suppressed as per rules for Transactional screen) -->
+<script>
+        function selectSector(element) {
+            // Clear previous selections
+            document.querySelectorAll('button').forEach(btn => {
+                btn.classList.remove('bg-primary-container', 'text-on-primary-container', 'border-primary');
+            });
+            // Highlight current
+            element.classList.add('bg-primary-container', 'text-on-primary-container', 'border-primary');
+            
+            // Interaction logic simulation
+            const input = document.querySelector('input');
+            input.value = element.innerText;
+            
+            // Visual feedback
+            element.classList.add('scale-95');
+            setTimeout(() => element.classList.remove('scale-95'), 150);
+        }
+
+        // Voice Interaction Mockup
+        const voiceBtn = document.getElementById('voiceBtn');
+        let isRecording = false;
+
+        voiceBtn.addEventListener('click', () => {
+            isRecording = !isRecording;
+            if (isRecording) {
+                voiceBtn.classList.remove('bg-primary');
+                voiceBtn.classList.add('bg-error', 'animate-pulse');
+                voiceBtn.querySelector('span').innerText = 'graphic_eq';
+            } else {
+                voiceBtn.classList.remove('bg-error', 'animate-pulse');
+                voiceBtn.classList.add('bg-primary');
+                voiceBtn.querySelector('span').innerText = 'mic';
+            }
+        });
+
+        // Prevent layout shift on focus (simple fix for mobile)
+        window.addEventListener('resize', () => {
+            if (document.activeElement.tagName === 'INPUT') {
+                window.scrollTo(0, 0);
+            }
+        });
+    </script>
+</body></html>

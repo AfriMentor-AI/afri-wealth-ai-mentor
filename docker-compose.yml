@@ -1,0 +1,238 @@
+# AfriMentor AI — local dev stack (card O1.2)
+# `docker compose up` boots all 13 service stubs + datastores with health checks.
+# Service boundaries & datastore ownership: docs/adr/0001-microservices-architecture.md
+name: afrimentor
+
+x-svc-defaults: &svc-defaults
+  restart: unless-stopped
+  networks: [afrimentor]
+  environment: &svc-env
+    APP_ENV: dev
+
+services:
+  # ---------------------------------------------------------------- datastores
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: afrimentor
+      POSTGRES_PASSWORD: afrimentor
+      POSTGRES_DB: afrimentor
+    ports: ["5432:5432"]
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./infra/postgres/init-databases.sh:/docker-entrypoint-initdb.d/init-databases.sh:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U afrimentor"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks: [afrimentor]
+
+  redis:
+    image: redis:7-alpine
+    ports: ["6379:6379"]
+    command: ["redis-server", "--appendonly", "yes"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    networks: [afrimentor]
+
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    environment:
+      RABBITMQ_DEFAULT_USER: afrimentor
+      RABBITMQ_DEFAULT_PASS: afrimentor
+    ports: ["5672:5672", "15672:15672"]
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+    networks: [afrimentor]
+
+  chromadb:
+    image: chromadb/chroma:0.5.23
+    ports: ["8100:8000"]
+    volumes:
+      - chromadata:/chroma/chroma
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8000/api/v2/heartbeat').status==200 else 1)\""]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+    networks: [afrimentor]
+
+  # ------------------------------------------------------------- edge: gateway
+  api-gateway:
+    <<: *svc-defaults
+    build: ./services/api-gateway
+    ports: ["8000:8000"]
+    environment:
+      <<: *svc-env
+      REDIS_URL: redis://redis:6379/0
+      AUTH_SERVICE_URL: http://auth-user-service:8001
+      INTAKE_SERVICE_URL: http://intake-profiling-service:8002
+      CHAT_SERVICE_URL: http://chat-orchestration-service:8003
+      PERSONA_SERVICE_URL: http://persona-prompt-service:8004
+      RAG_SERVICE_URL: http://rag-corpus-service:8005
+      GOALS_SERVICE_URL: http://goals-milestones-service:8006
+      PROGRESS_SERVICE_URL: http://progress-gamification-service:8007
+      INSIGHT_SERVICE_URL: http://insight-library-service:8008
+      FEEDBACK_SERVICE_URL: http://feedback-service:8009
+      RESEARCH_SERVICE_URL: http://research-evaluation-service:8010
+      VOICE_SERVICE_URL: http://voice-service:8011
+      NOTIFICATION_SERVICE_URL: http://notification-service:8012
+    depends_on:
+      redis: {condition: service_healthy}
+      auth-user-service: {condition: service_healthy}
+
+  # ------------------------------------------------------- capability services
+  auth-user-service:
+    <<: *svc-defaults
+    build: ./services/auth-user-service
+    ports: ["8001:8001"]
+    environment:
+      <<: *svc-env
+      DATABASE_URL: postgresql+psycopg://afrimentor:afrimentor@postgres:5432/svc_auth
+      REDIS_URL: redis://redis:6379/1
+    depends_on:
+      postgres: {condition: service_healthy}
+      redis: {condition: service_healthy}
+
+  intake-profiling-service:
+    <<: *svc-defaults
+    build: ./services/intake-profiling-service
+    ports: ["8002:8002"]
+    environment:
+      <<: *svc-env
+      DATABASE_URL: postgresql+psycopg://afrimentor:afrimentor@postgres:5432/svc_intake
+      RABBITMQ_URL: amqp://afrimentor:afrimentor@rabbitmq:5672/
+    depends_on:
+      postgres: {condition: service_healthy}
+
+  chat-orchestration-service:
+    <<: *svc-defaults
+    build: ./services/chat-orchestration-service
+    ports: ["8003:8003"]
+    environment:
+      <<: *svc-env
+      DATABASE_URL: postgresql+psycopg://afrimentor:afrimentor@postgres:5432/svc_chat
+      PERSONA_SERVICE_URL: http://persona-prompt-service:8004
+      RAG_SERVICE_URL: http://rag-corpus-service:8005
+      RABBITMQ_URL: amqp://afrimentor:afrimentor@rabbitmq:5672/
+    depends_on:
+      postgres: {condition: service_healthy}
+
+  persona-prompt-service:
+    <<: *svc-defaults
+    build: ./services/persona-prompt-service
+    ports: ["8004:8004"]
+    environment:
+      <<: *svc-env
+      DATABASE_URL: postgresql+psycopg://afrimentor:afrimentor@postgres:5432/svc_persona
+    depends_on:
+      postgres: {condition: service_healthy}
+
+  rag-corpus-service:
+    <<: *svc-defaults
+    build: ./services/rag-corpus-service
+    ports: ["8005:8005"]
+    environment:
+      <<: *svc-env
+      DATABASE_URL: postgresql+psycopg://afrimentor:afrimentor@postgres:5432/svc_rag
+      CHROMA_URL: http://chromadb:8000
+    depends_on:
+      postgres: {condition: service_healthy}
+      chromadb: {condition: service_healthy}
+
+  goals-milestones-service:
+    <<: *svc-defaults
+    build: ./services/goals-milestones-service
+    ports: ["8006:8006"]
+    environment:
+      <<: *svc-env
+      DATABASE_URL: postgresql+psycopg://afrimentor:afrimentor@postgres:5432/svc_goals
+      RABBITMQ_URL: amqp://afrimentor:afrimentor@rabbitmq:5672/
+    depends_on:
+      postgres: {condition: service_healthy}
+      rabbitmq: {condition: service_healthy}
+
+  progress-gamification-service:
+    <<: *svc-defaults
+    build: ./services/progress-gamification-service
+    ports: ["8007:8007"]
+    environment:
+      <<: *svc-env
+      DATABASE_URL: postgresql+psycopg://afrimentor:afrimentor@postgres:5432/svc_progress
+      RABBITMQ_URL: amqp://afrimentor:afrimentor@rabbitmq:5672/
+    depends_on:
+      postgres: {condition: service_healthy}
+      rabbitmq: {condition: service_healthy}
+
+  insight-library-service:
+    <<: *svc-defaults
+    build: ./services/insight-library-service
+    ports: ["8008:8008"]
+    environment:
+      <<: *svc-env
+      DATABASE_URL: postgresql+psycopg://afrimentor:afrimentor@postgres:5432/svc_insight
+    depends_on:
+      postgres: {condition: service_healthy}
+
+  feedback-service:
+    <<: *svc-defaults
+    build: ./services/feedback-service
+    ports: ["8009:8009"]
+    environment:
+      <<: *svc-env
+      DATABASE_URL: postgresql+psycopg://afrimentor:afrimentor@postgres:5432/svc_feedback
+      RABBITMQ_URL: amqp://afrimentor:afrimentor@rabbitmq:5672/
+    depends_on:
+      postgres: {condition: service_healthy}
+
+  research-evaluation-service:
+    <<: *svc-defaults
+    build: ./services/research-evaluation-service
+    ports: ["8010:8010"]
+    environment:
+      <<: *svc-env
+      DATABASE_URL: postgresql+psycopg://afrimentor:afrimentor@postgres:5432/svc_research
+      RABBITMQ_URL: amqp://afrimentor:afrimentor@rabbitmq:5672/
+    depends_on:
+      postgres: {condition: service_healthy}
+      rabbitmq: {condition: service_healthy}
+
+  voice-service:
+    <<: *svc-defaults
+    build: ./services/voice-service
+    ports: ["8011:8011"]
+    environment:
+      <<: *svc-env
+      DATABASE_URL: postgresql+psycopg://afrimentor:afrimentor@postgres:5432/svc_voice
+    volumes:
+      - voicedata:/data/audio
+    depends_on:
+      postgres: {condition: service_healthy}
+
+  notification-service:
+    <<: *svc-defaults
+    build: ./services/notification-service
+    ports: ["8012:8012"]
+    environment:
+      <<: *svc-env
+      DATABASE_URL: postgresql+psycopg://afrimentor:afrimentor@postgres:5432/svc_notify
+      RABBITMQ_URL: amqp://afrimentor:afrimentor@rabbitmq:5672/
+    depends_on:
+      postgres: {condition: service_healthy}
+      rabbitmq: {condition: service_healthy}
+
+networks:
+  afrimentor:
+    driver: bridge
+
+volumes:
+  pgdata:
+  chromadata:
+  voicedata:

@@ -1,0 +1,12 @@
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
+pydantic==2.10.4
+httpx==0.28.1
+sqlalchemy==2.0.36
+alembic==1.14.0
+psycopg[binary]==3.2.3
+pytest==8.3.4
+starlette==0.41.3
+chromadb==0.5.23
+langchain==0.3.13
+langchain-community==0.3.13

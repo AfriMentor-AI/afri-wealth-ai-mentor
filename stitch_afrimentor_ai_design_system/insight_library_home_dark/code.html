@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport"/>
+<title>AfriMentor AI - Library</title>
+<!-- Fonts -->
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&amp;family=Be+Vietnam+Pro:wght@600;700;800&amp;display=swap" rel="stylesheet"/>
+<!-- Icons -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "primary": "#f8bc51",
+                    "on-primary": "#462f00",
+                    "primary-container": "#c8922a",
+                    "on-primary-container": "#ffffff",
+                    "secondary": "#88d982",
+                    "on-secondary": "#00390a",
+                    "secondary-container": "#1b6d24",
+                    "on-secondary-container": "#a3f69c",
+                    "tertiary": "#c8c6c5",
+                    "on-tertiary": "#31312d",
+                    "surface": "#121414",
+                    "on-surface": "#f3f0ea",
+                    "surface-variant": "#504536",
+                    "on-surface-variant": "#d4c4b0",
+                    "surface-container-lowest": "#0d0f0f",
+                    "surface-container-low": "#1a1c1c",
+                    "surface-container": "#1e2020",
+                    "surface-container-high": "#282a2a",
+                    "surface-container-highest": "#333535",
+                    "surface-bright": "#38393a",
+                    "surface-dim": "#121414",
+                    "outline": "#9c8f80",
+                    "outline-variant": "#504536",
+                    "background": "#121414",
+                    "on-background": "#f3f0ea",
+                    "error": "#ffb4ab",
+                    "on-error": "#690005",
+                    "error-container": "#93000a",
+                    "on-error-container": "#ffdad6"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.5rem",
+                    "lg": "0.5rem",
+                    "xl": "1rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "lg": "24px",
+                    "xl": "48px",
+                    "xs": "4px",
+                    "sm": "8px",
+                    "md": "16px",
+                    "gutter": "16px",
+                    "margin-mobile": "20px",
+                    "unit": "4px"
+            },
+            "fontFamily": {
+                    "body-lg": ["Inter"],
+                    "headline-lg": ["Be Vietnam Pro"],
+                    "body-md": ["Inter"],
+                    "headline-xl": ["Be Vietnam Pro"],
+                    "headline-lg-mobile": ["Be Vietnam Pro"],
+                    "title-md": ["Be Vietnam Pro"],
+                    "label-sm": ["Inter"]
+            },
+            "fontSize": {
+                    "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}],
+                    "headline-lg": ["32px", {"lineHeight": "40px", "fontWeight": "700"}],
+                    "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                    "headline-xl": ["40px", {"lineHeight": "48px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "headline-lg-mobile": ["28px", {"lineHeight": "34px", "fontWeight": "700"}],
+                    "title-md": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                    "label-sm": ["13px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        body {
+            background-color: #121414;
+            color: #f3f0ea;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .sankofa-bg {
+            mask-image: url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M50 10c-20 0-35 15-35 35 0 20 15 35 35 35s35-15 35-35c0-20-15-35-35-35zm0 60c-13.8 0-25-11.2-25-25s11.2-25 25-25 25 11.2 25 25-11.2 25-25 25z' fill='%23000'/%3E%3C/svg%3E");
+            mask-size: 40px;
+            opacity: 0.1;
+        }
+        body {
+          min-height: max(884px, 100dvh);
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col font-body-md text-body-md bg-background text-on-background">
+<!-- TopAppBar -->
+<header class="w-full sticky top-0 z-50 bg-surface/90 backdrop-blur-md flex justify-between items-center px-margin-mobile py-sm border-b border-outline-variant/20">
+<div class="flex items-center gap-md">
+<div class="w-10 h-10 rounded-full border-2 border-primary overflow-hidden shadow-lg shadow-primary/10">
+<img class="w-full h-full object-cover" data-alt="A warm and professional portrait of an African business mentor" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAAJjcUR_GAURYaKeU-HIGmBTy05bVSuk9dUAvPTuSbTFXYUjBIMnTfhFnTwWxr42iJUl9QE0wPfbM-47oz8W_K07Rv12lphPHaZI8ExPoneVRBL5SqJeEFtXNA6P2VRWeF3ngAO20sXGGV_r-kWj5-A9G8viZcrdZ3WIi8B0AVXvG3ZONKQUws9lmyClEiyqVbbI2344UZJmDapUaJluyH4RMTA6WVhiqsv2mFk1zQG2Y-gUjyQJqVKA"/>
+</div>
+<h1 class="font-headline-lg-mobile text-headline-lg-mobile text-primary">AfriMentor AI</h1>
+</div>
+<button class="material-symbols-outlined text-primary hover:opacity-80 transition-opacity active:scale-95 duration-200">settings</button>
+</header>
+<main class="flex-1 pb-24 overflow-y-auto px-margin-mobile pt-md space-y-lg">
+<!-- Search Bar -->
+<section class="relative group">
+<div class="absolute inset-y-0 left-md flex items-center pointer-events-none">
+<span class="material-symbols-outlined text-on-surface-variant">search</span>
+</div>
+<input class="w-full h-12 pl-12 pr-md bg-surface-container border border-outline-variant/30 rounded-xl focus:ring-2 focus:ring-primary text-on-surface placeholder:text-on-surface-variant/60" placeholder="Search insights, sectors, or tools..." type="text"/>
+</section>
+<!-- Filter Chips -->
+<section class="flex gap-sm overflow-x-auto custom-scrollbar -mx-margin-mobile px-margin-mobile py-xs">
+<button class="whitespace-nowrap px-md py-sm bg-primary-container text-on-primary-container font-label-sm text-label-sm rounded-full flex items-center gap-xs shadow-sm active:scale-95 transition-transform">
+                Sector <span class="material-symbols-outlined text-[16px]">expand_more</span>
+</button>
+<button class="whitespace-nowrap px-md py-sm bg-surface-container text-on-surface-variant font-label-sm text-label-sm rounded-full flex items-center gap-xs hover:bg-surface-container-high transition-colors active:scale-95">
+                Topic <span class="material-symbols-outlined text-[16px]">expand_more</span>
+</button>
+<button class="whitespace-nowrap px-md py-sm bg-surface-container text-on-surface-variant font-label-sm text-label-sm rounded-full flex items-center gap-xs hover:bg-surface-container-high transition-colors active:scale-95">
+                Audio <span class="material-symbols-outlined text-[16px]">headphones</span>
+</button>
+<button class="whitespace-nowrap px-md py-sm bg-surface-container text-on-surface-variant font-label-sm text-label-sm rounded-full flex items-center gap-xs hover:bg-surface-container-high transition-colors active:scale-95">
+                Text <span class="material-symbols-outlined text-[16px]">description</span>
+</button>
+</section>
+<!-- Content Section -->
+<section class="space-y-md">
+<h2 class="font-title-md text-title-md text-on-surface">Curated Insights</h2>
+<!-- Card 1: Audio -->
+<div class="group relative bg-surface-container-low rounded-xl p-md flex flex-col gap-sm border border-outline-variant/30 hover:border-primary/30 transition-all duration-300">
+<div class="flex justify-between items-start">
+<div class="flex flex-col gap-xs">
+<span class="inline-flex items-center gap-xs bg-secondary-container text-on-secondary-container px-sm py-1 rounded-full text-[10px] font-bold uppercase tracking-wider">
+<span class="material-symbols-outlined text-[14px]">auto_stories</span>
+                            Based on TEF curriculum
+                        </span>
+<h3 class="font-title-md text-title-md leading-tight text-on-surface pt-xs">How to price your trade</h3>
+</div>
+<div class="bg-primary/20 p-sm rounded-full text-primary">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">play_circle</span>
+</div>
+</div>
+<div class="flex items-center gap-md text-on-surface-variant text-label-sm">
+<div class="flex items-center gap-xs">
+<span class="material-symbols-outlined text-[18px]">headphones</span>
+<span>Audio Insight</span>
+</div>
+<div class="flex items-center gap-xs">
+<span class="material-symbols-outlined text-[18px]">schedule</span>
+<span>5 min</span>
+</div>
+</div>
+<div class="absolute bottom-0 right-0 p-md opacity-20 pointer-events-none overflow-hidden h-16 w-16">
+<div class="sankofa-bg w-full h-full"></div>
+</div>
+</div>
+<!-- Card 2: Text -->
+<div class="group relative bg-surface-container-low rounded-xl p-md flex flex-col gap-sm border border-outline-variant/30 hover:border-primary/30 transition-all duration-300">
+<div class="flex justify-between items-start">
+<div class="flex flex-col gap-xs">
+<span class="inline-flex items-center gap-xs bg-secondary-container text-on-secondary-container px-sm py-1 rounded-full text-[10px] font-bold uppercase tracking-wider">
+<span class="material-symbols-outlined text-[14px]">auto_stories</span>
+                            Based on TEF curriculum
+                        </span>
+<h3 class="font-title-md text-title-md leading-tight text-on-surface pt-xs">Saving during lean seasons</h3>
+</div>
+<div class="bg-primary/20 p-sm rounded-full text-primary">
+<span class="material-symbols-outlined">menu_book</span>
+</div>
+</div>
+<div class="flex items-center gap-md text-on-surface-variant text-label-sm">
+<div class="flex items-center gap-xs">
+<span class="material-symbols-outlined text-[18px]">description</span>
+<span>Article</span>
+</div>
+<div class="flex items-center gap-xs">
+<span class="material-symbols-outlined text-[18px]">schedule</span>
+<span>3 min</span>
+</div>
+</div>
+</div>
+</section>
+<!-- Recommended Section -->
+<section class="space-y-md">
+<div class="flex justify-between items-center">
+<h2 class="font-title-md text-title-md text-on-surface">Recommended for you</h2>
+<button class="text-primary font-label-sm text-label-sm hover:underline">View all</button>
+</div>
+<div class="flex gap-md overflow-x-auto custom-scrollbar -mx-margin-mobile px-margin-mobile pb-sm">
+<!-- Rec Card 1 -->
+<div class="flex-none w-64 bg-surface-container rounded-xl overflow-hidden border border-outline-variant/20 shadow-lg">
+<div class="h-32 w-full relative">
+<img class="w-full h-full object-cover" data-alt="West African marketplace illustration" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAcJkpV73Pxj7lmWnIgPIdr2N12xZ62Fzmj3Shy45NkvxULBZuoz8IFyWW1Y5dZV_HfyypMIRf2vT_hK8HDsM3k_20f_WeCGMfJdLJSD4zKUzZ8U9xxuZtUqUd6upK9S1iwcC1CS29beQ0ymRXAvLbFLV2EeO5VM2Ew95ng06N-YmuKvUWGeu2yAdWBtN9Pm15We_kF0tdVuWQezf1xdUcO5D0hjsn-Nz2zIh4WuOpSrUT0muDfNboPzw"/>
+<div class="absolute top-sm left-sm">
+<span class="bg-surface-container-highest/80 backdrop-blur-md text-primary text-[10px] px-sm py-0.5 rounded-full font-bold uppercase">New</span>
+</div>
+</div>
+<div class="p-md space-y-xs">
+<p class="text-primary font-label-sm text-label-sm uppercase tracking-tighter">Finance 101</p>
+<h4 class="font-body-lg text-body-lg font-semibold text-on-surface truncate">Bookkeeping with Mobile Money</h4>
+</div>
+</div>
+<!-- Rec Card 2 -->
+<div class="flex-none w-64 bg-surface-container rounded-xl overflow-hidden border border-outline-variant/20 shadow-lg">
+<div class="h-32 w-full relative">
+<img class="w-full h-full object-cover" data-alt="Modern agricultural scene with farmer and smartphone" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBtiFdfyji_25MS6WKK01urHv4wY_xaSmRDVPxZ6CrdEI0UtlnWjkc4qxMX644u8adMguPwjx0yiy4amsl23jGxc9jcInmeNjoqwRaKovWJTshgNJ7jnxYxalOrNuFySF2hy3uESP1BQHOeBDlfDJHnj__SwCGRV_1Ql1Tgw4Isv9uJpBgVpWQdJ4TEFFqw3npNHRCPATfCmOFb3ZxP6YOyHWQmUSINM6BotIgKuRhJUUWazfdtBJdmTw"/>
+<div class="absolute top-sm left-sm">
+<span class="bg-surface-container-highest/80 backdrop-blur-md text-primary text-[10px] px-sm py-0.5 rounded-full font-bold uppercase">Popular</span>
+</div>
+</div>
+<div class="p-md space-y-xs">
+<p class="text-primary font-label-sm text-label-sm uppercase tracking-tighter">Agri-Business</p>
+<h4 class="font-body-lg text-body-lg font-semibold text-on-surface truncate">Supply Chain Mastery</h4>
+</div>
+</div>
+</div>
+</section>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 w-full z-50 bg-surface/90 backdrop-blur-md border-t border-outline-variant/30 flex justify-around items-center h-16 px-sm pb-safe shadow-2xl">
+<button class="flex flex-col items-center justify-center text-on-surface-variant hover:text-primary transition-colors active:scale-90 duration-150 p-2 rounded-xl">
+<span class="material-symbols-outlined">chat_bubble</span>
+<span class="font-label-sm text-label-sm">Chat</span>
+</button>
+<button class="flex flex-col items-center justify-center text-on-surface-variant hover:text-primary transition-colors active:scale-90 duration-150 p-2 rounded-xl">
+<span class="material-symbols-outlined">target</span>
+<span class="font-label-sm text-label-sm">Goals</span>
+</button>
+<button class="flex flex-col items-center justify-center text-primary font-bold transition-colors active:scale-90 duration-150 p-2 rounded-xl">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">auto_stories</span>
+<span class="font-label-sm text-label-sm">Library</span>
+<div class="w-1 h-1 bg-primary rounded-full mt-0.5 shadow-sm shadow-primary"></div>
+</button>
+<button class="flex flex-col items-center justify-center text-on-surface-variant hover:text-primary transition-colors active:scale-90 duration-150 p-2 rounded-xl">
+<span class="material-symbols-outlined">query_stats</span>
+<span class="font-label-sm text-label-sm">Progress</span>
+</button>
+</nav>
+<script>
+        // Micro-interactions for interactive elements
+        document.querySelectorAll('.group').forEach(card => {
+            card.addEventListener('touchstart', () => {
+                card.classList.add('scale-[0.98]');
+                card.classList.add('bg-surface-container-high');
+            });
+            card.addEventListener('touchend', () => {
+                card.classList.remove('scale-[0.98]');
+                card.classList.remove('bg-surface-container-high');
+            });
+        });
+
+        // Filter chip toggle logic
+        const filterChips = document.querySelectorAll('section:nth-of-type(2) button');
+        filterChips.forEach(chip => {
+            chip.addEventListener('click', () => {
+                filterChips.forEach(c => {
+                    c.classList.remove('bg-primary-container', 'text-on-primary-container');
+                    c.classList.add('bg-surface-container', 'text-on-surface-variant');
+                });
+                chip.classList.add('bg-primary-container', 'text-on-primary-container');
+                chip.classList.remove('bg-surface-container', 'text-on-surface-variant');
+            });
+        });
+    </script>
+</body></html>

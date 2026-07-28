@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>AfriMentor AI | RAG Corpus Admin</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;600;700;800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@100..900&family=Inter:wght@100..900&display=swap" rel="stylesheet"/>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            vertical-align: middle;
+        }
+        .mono-metrics { font-family: 'JetBrains Mono', monospace; }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #d4c4b0; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #827564; }
+        .glass-panel {
+            background: rgba(252, 249, 243, 0.8);
+            backdrop-filter: blur(8px);
+        }
+        .asymmetric-grid {
+            display: grid;
+            grid-template-columns: 1fr 380px;
+            gap: 24px;
+        }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#7e5700",
+                        "on-secondary": "#ffffff",
+                        "on-error-container": "#93000a",
+                        "surface-container": "#f0eee8",
+                        "surface-bright": "#fcf9f3",
+                        "surface": "#fcf9f3",
+                        "outline-variant": "#d4c4b0",
+                        "on-primary": "#ffffff",
+                        "inverse-on-surface": "#f3f0ea",
+                        "surface-variant": "#e5e2dc",
+                        "secondary": "#1b6d24",
+                        "on-tertiary-container": "#343333",
+                        "surface-container-low": "#f6f3ed",
+                        "on-tertiary-fixed-variant": "#474646",
+                        "secondary-fixed": "#a3f69c",
+                        "inverse-surface": "#31312d",
+                        "on-secondary-fixed-variant": "#005312",
+                        "error": "#ba1a1a",
+                        "on-tertiary": "#ffffff",
+                        "on-tertiary-fixed": "#1c1b1b",
+                        "on-background": "#1c1c18",
+                        "on-surface-variant": "#504536",
+                        "surface-container-lowest": "#ffffff",
+                        "on-primary-fixed": "#281900",
+                        "on-primary-container": "#462f00",
+                        "inverse-primary": "#f8bc51",
+                        "primary-container": "#c8922a",
+                        "on-primary-fixed-variant": "#5f4100",
+                        "tertiary": "#5f5e5e",
+                        "secondary-fixed-dim": "#88d982",
+                        "surface-container-highest": "#e5e2dc",
+                        "secondary-container": "#a0f399",
+                        "primary-fixed-dim": "#f8bc51",
+                        "tertiary-fixed": "#e5e2e1",
+                        "tertiary-container": "#9d9b9b",
+                        "surface-dim": "#dcdad4",
+                        "error-container": "#ffdad6",
+                        "tertiary-fixed-dim": "#c8c6c5",
+                        "surface-tint": "#7e5700",
+                        "on-surface": "#1c1c18",
+                        "outline": "#827564",
+                        "background": "#fcf9f3",
+                        "on-secondary-container": "#217128",
+                        "on-error": "#ffffff",
+                        "on-secondary-fixed": "#002204",
+                        "surface-container-high": "#ebe8e2",
+                        "primary-fixed": "#ffdeab"
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    spacing: {
+                        "lg": "24px",
+                        "xl": "48px",
+                        "xs": "4px",
+                        "sm": "8px",
+                        "md": "16px",
+                        "gutter": "16px",
+                        "margin-mobile": "20px",
+                        "unit": "4px"
+                    },
+                    fontFamily: {
+                        "body-lg": ["Inter"],
+                        "headline-lg": ["Be Vietnam Pro"],
+                        "body-md": ["Inter"],
+                        "headline-xl": ["Be Vietnam Pro"],
+                        "title-md": ["Be Vietnam Pro"],
+                        "label-sm": ["Inter"]
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-background text-on-surface font-body-md min-h-screen flex">
+<!-- Sidebar Navigation -->
+<aside class="hidden md:flex flex-col w-72 bg-surface-container border-r border-outline-variant h-screen sticky top-0">
+<div class="p-lg flex items-center gap-md">
+<div class="w-10 h-10 bg-primary rounded-lg flex items-center justify-center text-on-primary">
+<span class="material-symbols-outlined text-2xl" style="font-variation-settings: 'FILL' 1;">account_tree</span>
+</div>
+<h1 class="font-headline-lg text-title-md text-primary tracking-tight">AfriMentor AI</h1>
+</div>
+<nav class="flex-1 px-md py-md space-y-xs">
+<div class="px-md py-sm text-label-sm text-on-surface-variant uppercase tracking-widest opacity-60">Management</div>
+<a class="flex items-center gap-md px-md py-md rounded-xl bg-secondary-container text-on-secondary-container transition-all" href="#">
+<span class="material-symbols-outlined">database</span>
+<span class="font-body-md font-semibold">RAG Corpus</span>
+</a>
+<a class="flex items-center gap-md px-md py-md rounded-xl text-on-surface-variant hover:bg-surface-variant transition-all" href="#">
+<span class="material-symbols-outlined">insights</span>
+<span class="font-body-md">Insights</span>
+</a>
+<a class="flex items-center gap-md px-md py-md rounded-xl text-on-surface-variant hover:bg-surface-variant transition-all" href="#">
+<span class="material-symbols-outlined">groups</span>
+<span class="font-body-md">Community</span>
+</a>
+<div class="pt-lg px-md py-sm text-label-sm text-on-surface-variant uppercase tracking-widest opacity-60">System</div>
+<a class="flex items-center gap-md px-md py-md rounded-xl text-on-surface-variant hover:bg-surface-variant transition-all" href="#">
+<span class="material-symbols-outlined">workspace_premium</span>
+<span class="font-body-md">Achievements</span>
+</a>
+<a class="flex items-center gap-md px-md py-md rounded-xl text-on-surface-variant hover:bg-surface-variant transition-all" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-body-md">Settings</span>
+</a>
+</nav>
+<div class="p-md mt-auto">
+<div class="bg-surface-container-highest rounded-2xl p-md flex items-center gap-md border border-outline-variant">
+<div class="w-10 h-10 rounded-full bg-primary-container border-2 border-primary overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="A professional headshot of an African researcher in a bright, modern office. He is smiling warmly, wearing a clean white shirt. The background features a soft-focus laboratory setting with warm golden sunlight filtering through high windows, creating a dignified and optimistic professional atmosphere." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDFl7_xVbV4Psc5QHjMNgs_5Zo59aNfQfnBzEnLoYASL3MpT67cEe4rQaXuQQ9EHn1OwQo98gkd3709kTVYeTsRKcKLF8sdbE8cEUCQrAKkQMPpIZ_wP-NqjhhiIFI07wf8KchsiPjkCdM_pRoINRqlrvsJzRSbsl2qa-w1rTlcs8oT4ib8amJ0O0UozbTx5gkOpjZG1udSotMg7-LdnuYetmsn0pMexggV6QbR2f5PodJXZsz1HZbmhQ"/>
+</div>
+<div class="flex-1 min-w-0">
+<p class="font-body-md font-bold text-on-surface truncate">Kofi Mensah</p>
+<p class="text-xs text-on-surface-variant truncate">Sankofa Level 4</p>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant">logout</span>
+</div>
+</div>
+</aside>
+<!-- Main Content Area -->
+<main class="flex-1 flex flex-col min-w-0 bg-background">
+<!-- Header -->
+<header class="h-20 bg-surface flex items-center justify-between px-xl sticky top-0 z-40">
+<div class="flex flex-col">
+<h2 class="font-headline-lg text-headline-lg-mobile text-primary">RAG Corpus Admin</h2>
+<p class="text-sm text-on-surface-variant mono-metrics">Environment: production-af-west-1</p>
+</div>
+<div class="flex items-center gap-md">
+<div class="relative group">
+<input class="bg-surface-container-low border border-outline-variant rounded-full px-xl py-sm w-80 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all" placeholder="Search corpus..." type="text"/>
+<span class="material-symbols-outlined absolute left-md top-1/2 -translate-y-1/2 text-on-surface-variant">search</span>
+</div>
+<button class="bg-primary text-on-primary px-lg py-md rounded-full font-semibold flex items-center gap-sm hover:opacity-90 active:scale-95 transition-all shadow-sm">
+<span class="material-symbols-outlined">upload_file</span>
+                    Upload New Document
+                </button>
+</div>
+</header>
+<!-- Dynamic Grid Content -->
+<div class="p-xl overflow-y-auto asymmetric-grid">
+<!-- Corpus Table Section -->
+<section class="space-y-lg">
+<div class="flex items-center justify-between">
+<h3 class="font-title-md text-on-surface flex items-center gap-sm">
+<span class="material-symbols-outlined text-primary">description</span>
+                        Document Index
+                    </h3>
+<div class="flex gap-xs">
+<button class="px-md py-xs rounded-lg border border-outline-variant text-sm font-medium hover:bg-surface-variant transition-colors">Filter</button>
+<button class="px-md py-xs rounded-lg border border-outline-variant text-sm font-medium hover:bg-surface-variant transition-colors">Export CSV</button>
+</div>
+</div>
+<div class="bg-surface-container-lowest border border-outline-variant rounded-2xl overflow-hidden shadow-sm">
+<table class="w-full text-left border-collapse">
+<thead class="bg-surface-container-low border-b border-outline-variant">
+<tr>
+<th class="px-lg py-md text-label-sm uppercase tracking-wider text-on-surface-variant">Title</th>
+<th class="px-lg py-md text-label-sm uppercase tracking-wider text-on-surface-variant">Sector</th>
+<th class="px-lg py-md text-label-sm uppercase tracking-wider text-on-surface-variant">Country</th>
+<th class="px-lg py-md text-label-sm uppercase tracking-wider text-on-surface-variant">Author</th>
+<th class="px-lg py-md text-label-sm uppercase tracking-wider text-on-surface-variant">Date</th>
+<th class="px-lg py-md text-label-sm uppercase tracking-wider text-on-surface-variant">Status</th>
+<th class="px-lg py-md text-label-sm uppercase tracking-wider text-on-surface-variant"></th>
+</tr>
+</thead>
+<tbody class="divide-y divide-outline-variant">
+<!-- Row 1 -->
+<tr class="hover:bg-surface-container-low transition-colors group">
+<td class="px-lg py-md">
+<div class="flex flex-col">
+<span class="font-body-md font-semibold text-on-surface">Cassava Yield Optimization v2</span>
+<span class="text-xs text-on-surface-variant mono-metrics">ID: DOC-4920-GH</span>
+</div>
+</td>
+<td class="px-lg py-md">
+<span class="px-md py-xs bg-secondary-container text-on-secondary-container rounded-full text-xs font-bold">Agriculture</span>
+</td>
+<td class="px-lg py-md text-on-surface font-medium">Ghana</td>
+<td class="px-lg py-md text-on-surface-variant">Dr. Amma Boateng</td>
+<td class="px-lg py-md text-on-surface-variant mono-metrics">2023-11-12</td>
+<td class="px-lg py-md">
+<span class="flex items-center gap-xs text-secondary font-bold text-xs uppercase">
+<span class="w-2 h-2 rounded-full bg-secondary"></span> Live
+                                    </span>
+</td>
+<td class="px-lg py-md text-right">
+<button class="material-symbols-outlined text-on-surface-variant opacity-0 group-hover:opacity-100 transition-opacity">more_vert</button>
+</td>
+</tr>
+<!-- Row 2 -->
+<tr class="hover:bg-surface-container-low transition-colors group">
+<td class="px-lg py-md">
+<div class="flex flex-col">
+<span class="font-body-md font-semibold text-on-surface">Microfinance Literacy Framework</span>
+<span class="text-xs text-on-surface-variant mono-metrics">ID: DOC-8812-NG</span>
+</div>
+</td>
+<td class="px-lg py-md">
+<span class="px-md py-xs bg-primary-container text-on-primary-container rounded-full text-xs font-bold">Finance</span>
+</td>
+<td class="px-lg py-md text-on-surface font-medium">Nigeria</td>
+<td class="px-lg py-md text-on-surface-variant">Folake Adeleke</td>
+<td class="px-lg py-md text-on-surface-variant mono-metrics">2023-12-05</td>
+<td class="px-lg py-md">
+<span class="flex items-center gap-xs text-tertiary font-bold text-xs uppercase">
+<span class="w-2 h-2 rounded-full bg-tertiary"></span> Draft
+                                    </span>
+</td>
+<td class="px-lg py-md text-right">
+<button class="material-symbols-outlined text-on-surface-variant opacity-0 group-hover:opacity-100 transition-opacity">more_vert</button>
+</td>
+</tr>
+<!-- Row 3 -->
+<tr class="hover:bg-surface-container-low transition-colors group">
+<td class="px-lg py-md">
+<div class="flex flex-col">
+<span class="font-body-md font-semibold text-on-surface">Solar Grid Decentralization Tech</span>
+<span class="text-xs text-on-surface-variant mono-metrics">ID: DOC-1103-KE</span>
+</div>
+</td>
+<td class="px-lg py-md">
+<span class="px-md py-xs bg-blue-100 text-blue-800 rounded-full text-xs font-bold uppercase">Energy</span>
+</td>
+<td class="px-lg py-md text-on-surface font-medium">Kenya</td>
+<td class="px-lg py-md text-on-surface-variant">John Kariuki</td>
+<td class="px-lg py-md text-on-surface-variant mono-metrics">2024-01-14</td>
+<td class="px-lg py-md">
+<span class="flex items-center gap-xs text-secondary font-bold text-xs uppercase">
+<span class="w-2 h-2 rounded-full bg-secondary"></span> Live
+                                    </span>
+</td>
+<td class="px-lg py-md text-right">
+<button class="material-symbols-outlined text-on-surface-variant opacity-0 group-hover:opacity-100 transition-opacity">more_vert</button>
+</td>
+</tr>
+<!-- Row 4 -->
+<tr class="hover:bg-surface-container-low transition-colors group">
+<td class="px-lg py-md">
+<div class="flex flex-col">
+<span class="font-body-md font-semibold text-on-surface">Urban Water Management Policy</span>
+<span class="text-xs text-on-surface-variant mono-metrics">ID: DOC-5542-ZA</span>
+</div>
+</td>
+<td class="px-lg py-md">
+<span class="px-md py-xs bg-cyan-100 text-cyan-800 rounded-full text-xs font-bold uppercase">Public Policy</span>
+</td>
+<td class="px-lg py-md text-on-surface font-medium">South Africa</td>
+<td class="px-lg py-md text-on-surface-variant">Lindiwe Dube</td>
+<td class="px-lg py-md text-on-surface-variant mono-metrics">2024-02-01</td>
+<td class="px-lg py-md">
+<span class="flex items-center gap-xs text-secondary font-bold text-xs uppercase">
+<span class="w-2 h-2 rounded-full bg-secondary"></span> Live
+                                    </span>
+</td>
+<td class="px-lg py-md text-right">
+<button class="material-symbols-outlined text-on-surface-variant opacity-0 group-hover:opacity-100 transition-opacity">more_vert</button>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<!-- Stats Dashboard (Bento Style) -->
+<div class="grid grid-cols-3 gap-lg">
+<div class="bg-surface-container-low p-lg rounded-2xl border border-outline-variant">
+<p class="text-label-sm text-on-surface-variant uppercase tracking-widest font-bold">Total Index Size</p>
+<h4 class="text-headline-xl font-headline-xl text-primary mt-sm">1.42 GB</h4>
+<div class="mt-md flex items-center gap-xs text-secondary font-bold text-xs">
+<span class="material-symbols-outlined text-sm">trending_up</span> +12% from last week
+                        </div>
+</div>
+<div class="bg-surface-container-low p-lg rounded-2xl border border-outline-variant">
+<p class="text-label-sm text-on-surface-variant uppercase tracking-widest font-bold">Active Vectors</p>
+<h4 class="text-headline-xl font-headline-xl text-primary mt-sm">14.2M</h4>
+<div class="mt-md flex items-center gap-xs text-on-surface-variant font-medium text-xs">
+                            HNSW Indexing Active
+                        </div>
+</div>
+<div class="bg-surface-container-low p-lg rounded-2xl border border-outline-variant">
+<p class="text-label-sm text-on-surface-variant uppercase tracking-widest font-bold">Inference Latency</p>
+<h4 class="text-headline-xl font-headline-xl text-primary mt-sm">42ms</h4>
+<div class="mt-md flex items-center gap-xs text-secondary font-bold text-xs">
+<span class="material-symbols-outlined text-sm">check_circle</span> Optimized
+                        </div>
+</div>
+</div>
+</section>
+<!-- Test Query Side Panel -->
+<aside class="space-y-lg">
+<div class="bg-surface-container p-lg rounded-2xl border border-outline-variant h-full flex flex-col sticky top-24">
+<div class="flex items-center gap-sm mb-lg">
+<span class="material-symbols-outlined text-primary" style="font-variation-settings: 'FILL' 1;">terminal</span>
+<h3 class="font-title-md text-on-surface">Test Query Bench</h3>
+</div>
+<div class="flex-1 space-y-lg overflow-y-auto pr-sm">
+<div class="space-y-sm">
+<label class="text-label-sm text-on-surface-variant font-bold">RESEARCHER PROMPT</label>
+<textarea class="w-full bg-surface-bright border border-outline-variant rounded-xl p-md text-sm font-body-md focus:ring-1 focus:ring-primary outline-none h-24" placeholder="e.g., What are the best practices for irrigation in Northern Ghana?"></textarea>
+<button class="w-full bg-primary text-on-primary py-sm rounded-lg font-bold hover:opacity-90 active:scale-95 transition-all text-sm">Run Simulation</button>
+</div>
+<div class="border-t border-outline-variant pt-lg space-y-md">
+<div class="flex items-center justify-between">
+<label class="text-label-sm text-on-surface-variant font-bold uppercase">Top Retrieved Passages (3)</label>
+<span class="text-xs px-md py-xs bg-surface-container-highest rounded-full mono-metrics">Score: 0.942</span>
+</div>
+<!-- Result Item 1 -->
+<div class="bg-surface-bright border-l-4 border-primary rounded-r-lg p-md space-y-xs shadow-sm">
+<div class="flex justify-between items-center text-xs text-on-surface-variant font-bold">
+<span>DOC-4920-GH · Page 14</span>
+<span class="mono-metrics text-secondary">0.98 Match</span>
+</div>
+<p class="text-sm leading-relaxed italic text-on-surface">"...The adoption of drip irrigation in the Upper East region has shown a 40% increase in cassava tuber size when combined with organic mulching techniques during the harmattan season..."</p>
+</div>
+<!-- Result Item 2 -->
+<div class="bg-surface-bright border-l-4 border-outline-variant rounded-r-lg p-md space-y-xs">
+<div class="flex justify-between items-center text-xs text-on-surface-variant font-bold">
+<span>DOC-3211-GH · Page 02</span>
+<span class="mono-metrics text-secondary">0.89 Match</span>
+</div>
+<p class="text-sm leading-relaxed text-on-surface opacity-80">"...Soil salinity levels must be monitored weekly in the Bawku district to ensure that ground water extraction remains sustainable for long-term agricultural development..."</p>
+</div>
+<!-- Result Item 3 -->
+<div class="bg-surface-bright border-l-4 border-outline-variant rounded-r-lg p-md space-y-xs">
+<div class="flex justify-between items-center text-xs text-on-surface-variant font-bold">
+<span>GLOBAL-AGRI-04 · Page 45</span>
+<span class="mono-metrics text-secondary">0.81 Match</span>
+</div>
+<p class="text-sm leading-relaxed text-on-surface opacity-80">"...Community-led irrigation schemes are significantly more successful than state-managed projects in semi-arid zones of West Africa..."</p>
+</div>
+</div>
+</div>
+<div class="pt-lg mt-md border-t border-outline-variant flex items-center justify-between text-xs text-on-surface-variant mono-metrics">
+<span>Model: GPT-4-Afri-V2</span>
+<span class="flex items-center gap-xs">
+<span class="w-2 h-2 rounded-full bg-secondary animate-pulse"></span>
+                            System Ready
+                        </span>
+</div>
+</div>
+</aside>
+</div>
+</main>
+<!-- Modal Placeholder (Hidden) -->
+<div class="fixed inset-0 z-50 flex items-center justify-center bg-inverse-surface/40 backdrop-blur-sm hidden" id="upload-modal">
+<div class="bg-surface p-xl rounded-2xl w-full max-w-lg shadow-2xl border border-outline-variant">
+<h2 class="font-headline-lg text-primary mb-md">Upload Document</h2>
+<div class="border-2 border-dashed border-outline-variant rounded-2xl p-xl flex flex-col items-center justify-center gap-md hover:border-primary transition-colors cursor-pointer">
+<span class="material-symbols-outlined text-5xl text-on-surface-variant">cloud_upload</span>
+<p class="text-on-surface font-medium">Drag and drop PDF or DOCX files here</p>
+<p class="text-xs text-on-surface-variant uppercase tracking-widest font-bold">Maximum file size: 50MB</p>
+</div>
+<div class="flex justify-end gap-md mt-xl">
+<button class="px-lg py-md rounded-full font-bold text-on-surface-variant hover:bg-surface-variant transition-all" onclick="document.getElementById('upload-modal').classList.add('hidden')">Cancel</button>
+<button class="bg-primary text-on-primary px-lg py-md rounded-full font-bold shadow-sm">Confirm Upload</button>
+</div>
+</div>
+</div>
+<script>
+        // Simple Interaction Logic
+        document.querySelector('button.bg-primary').addEventListener('click', () => {
+            document.getElementById('upload-modal').classList.remove('hidden');
+        });
+
+        // Search bar hover effect
+        const searchInput = document.querySelector('input[type="text"]');
+        searchInput.addEventListener('focus', () => {
+            searchInput.parentElement.classList.add('scale-[1.02]');
+        });
+        searchInput.addEventListener('blur', () => {
+            searchInput.parentElement.classList.remove('scale-[1.02]');
+        });
+
+        // Add some micro-animations to rows
+        document.querySelectorAll('tbody tr').forEach((row, idx) => {
+            row.style.opacity = '0';
+            row.style.transform = 'translateY(10px)';
+            setTimeout(() => {
+                row.style.transition = 'all 0.4s ease';
+                row.style.opacity = '1';
+                row.style.transform = 'translateY(0)';
+            }, idx * 100);
+        });
+    </script>
+</body></html>

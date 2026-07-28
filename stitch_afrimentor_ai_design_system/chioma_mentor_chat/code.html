@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport"/>
+<title>AfriMentor AI - Chat</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&amp;family=Be+Vietnam+Pro:wght@600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Integration of Theme Configuration -->
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "primary": "#7e5700",
+                    "on-secondary": "#ffffff",
+                    "on-error-container": "#93000a",
+                    "surface-container": "#f0eee8",
+                    "surface-bright": "#fcf9f3",
+                    "surface": "#fcf9f3",
+                    "outline-variant": "#d4c4b0",
+                    "on-primary": "#ffffff",
+                    "inverse-on-surface": "#f3f0ea",
+                    "surface-variant": "#e5e2dc",
+                    "secondary": "#1b6d24",
+                    "on-tertiary-container": "#343333",
+                    "surface-container-low": "#f6f3ed",
+                    "on-tertiary-fixed-variant": "#474646",
+                    "secondary-fixed": "#a3f69c",
+                    "inverse-surface": "#31312d",
+                    "on-secondary-fixed-variant": "#005312",
+                    "error": "#ba1a1a",
+                    "on-tertiary": "#ffffff",
+                    "on-tertiary-fixed": "#1c1b1b",
+                    "on-background": "#1c1c18",
+                    "on-surface-variant": "#504536",
+                    "surface-container-lowest": "#ffffff",
+                    "on-primary-fixed": "#281900",
+                    "on-primary-container": "#462f00",
+                    "inverse-primary": "#f8bc51",
+                    "primary-container": "#c8922a",
+                    "on-primary-fixed-variant": "#5f4100",
+                    "tertiary": "#5f5e5e",
+                    "secondary-fixed-dim": "#88d982",
+                    "surface-container-highest": "#e5e2dc",
+                    "secondary-container": "#a0f399",
+                    "primary-fixed-dim": "#f8bc51",
+                    "tertiary-fixed": "#e5e2e1",
+                    "tertiary-container": "#9d9b9b",
+                    "surface-dim": "#dcdad4",
+                    "error-container": "#ffdad6",
+                    "tertiary-fixed-dim": "#c8c6c5",
+                    "surface-tint": "#7e5700",
+                    "on-surface": "#1c1c18",
+                    "outline": "#827564",
+                    "background": "#fcf9f3",
+                    "on-secondary-container": "#217128",
+                    "on-error": "#ffffff",
+                    "on-secondary-fixed": "#002204",
+                    "surface-container-high": "#ebe8e2",
+                    "primary-fixed": "#ffdeab"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "lg": "24px",
+                    "xl": "48px",
+                    "xs": "4px",
+                    "sm": "8px",
+                    "md": "16px",
+                    "gutter": "16px",
+                    "margin-mobile": "20px",
+                    "unit": "4px"
+            },
+            "fontFamily": {
+                    "body-lg": ["Inter"],
+                    "headline-lg": ["Be Vietnam Pro"],
+                    "body-md": ["Inter"],
+                    "headline-xl": ["Be Vietnam Pro"],
+                    "headline-lg-mobile": ["Be Vietnam Pro"],
+                    "title-md": ["Be Vietnam Pro"],
+                    "label-sm": ["Inter"]
+            },
+            "fontSize": {
+                    "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}],
+                    "headline-lg": ["32px", {"lineHeight": "40px", "fontWeight": "700"}],
+                    "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                    "headline-xl": ["40px", {"lineHeight": "48px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "headline-lg-mobile": ["28px", {"lineHeight": "34px", "fontWeight": "700"}],
+                    "title-md": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                    "label-sm": ["13px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        body {
+            background-color: #fcf9f3;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .active-icon {
+            font-variation-settings: 'FILL' 1;
+        }
+        .message-bubble {
+            transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        .message-bubble:active {
+            transform: scale(0.98);
+        }
+        /* Hide scrollbar */
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        
+        .commitment-overlay {
+            animation: fadeIn 0.2s ease-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="flex flex-col h-screen max-w-[390px] mx-auto overflow-hidden text-on-surface">
+<!-- TopAppBar -->
+<header class="bg-surface sticky top-0 z-50 w-full flex justify-between items-center px-margin-mobile py-sm">
+<div class="flex items-center gap-md">
+<div class="relative">
+<img class="w-10 h-10 rounded-full border-2 border-primary object-cover" data-alt="A portrait of Chioma, a dignified West African market queen with a vibrant headwrap, radiating warmth and wisdom. The lighting is soft and golden, reflecting a bright, optimistic morning. The style is professional digital photography with a clean, high-key minimalist background that emphasizes her welcoming presence as a financial mentor." src="https://lh3.googleusercontent.com/aida-public/AB6AXuB5-fvQ2Imi4T8eoD7UiGxtAsWCSCw76KxWH9PVVs3AXEPMiPB27dkYCTVKwcYSyw96RMVfIDfSvgfetcx9yNysdgC_BwugGPWw-VIZM637I0nwSgEXyIt2xFeJQRNBF4YDN8vSBiky7bEahVSjF0PJven8U9K9k8rEuzY7XlMqNtUnN0pUe9VUtAjX8IS4Tz3x2lGTcy65beereJYLtvt4bCtkkDwP-9Kupn72AowVnpLcwzHn9oKktQ"/>
+<div class="absolute bottom-0 right-0 w-3 h-3 bg-secondary rounded-full border-2 border-surface"></div>
+</div>
+<div class="flex flex-col">
+<h1 class="font-headline-lg-mobile text-headline-lg-mobile text-primary leading-tight">CHIOMA</h1>
+<span class="font-label-sm text-label-sm text-secondary flex items-center gap-xs">
+<span class="w-1.5 h-1.5 rounded-full bg-secondary"></span>
+                    online
+                </span>
+</div>
+</div>
+<button class="text-on-surface-variant hover:opacity-80 transition-opacity active:scale-95 duration-200">
+<span class="material-symbols-outlined">settings</span>
+</button>
+</header>
+<!-- Main Chat Canvas -->
+<main class="flex-1 overflow-y-auto px-margin-mobile py-lg no-scrollbar flex flex-col gap-lg">
+<!-- Chioma Message -->
+<div class="flex flex-col items-start max-w-[85%] group relative" id="chioma-msg-1">
+<div class="bg-surface-container-low p-md rounded-xl rounded-tl-none border border-outline-variant shadow-sm message-bubble">
+<p class="font-body-md text-body-md text-on-surface">
+                    To grow your plantain business, consistency in your savings is just as important as your daily turnover. Have you thought about setting aside 10% of every sale before restocking?
+                </p>
+<div class="mt-sm inline-flex items-center gap-xs bg-surface-container-highest px-sm py-xs rounded-full border border-outline-variant">
+<span class="material-symbols-outlined text-[16px]">auto_stories</span>
+<span class="font-label-sm text-[11px] text-on-surface-variant">Based on TEF curriculum</span>
+</div>
+</div>
+<span class="mt-xs font-label-sm text-[10px] text-on-surface-variant">09:15 AM</span>
+<!-- Hidden Long Press Action (Context Menu Simulation) -->
+<button class="absolute -right-4 top-0 opacity-0 group-hover:opacity-100 transition-opacity bg-primary text-on-primary rounded-full p-xs shadow-lg commitment-btn" onclick="toggleCommitment(event)">
+<span class="material-symbols-outlined text-[18px]">push_pin</span>
+</button>
+</div>
+<!-- User Message -->
+<div class="flex flex-col items-end self-end max-w-[85%]">
+<div class="bg-primary-container p-md rounded-xl rounded-tr-none shadow-sm">
+<p class="font-body-md text-body-md text-on-primary-container">
+                    That makes sense, Chioma. I've been reinvesting everything, but I see now how a reserve fund could help when prices fluctuate in the market.
+                </p>
+</div>
+<span class="mt-xs font-label-sm text-[10px] text-on-surface-variant">09:18 AM</span>
+</div>
+<!-- Chioma Guidance -->
+<div class="flex flex-col items-start max-w-[85%] group relative" id="chioma-msg-2">
+<div class="bg-surface-container-low p-md rounded-xl rounded-tl-none border border-outline-variant shadow-sm message-bubble">
+<p class="font-body-md text-body-md text-on-surface">
+                    Exactly! It is the "Sankofa" principle—reaching back to secure what we have built so we can move forward. Shall we tag this as a commitment for your monthly goal?
+                </p>
+</div>
+<span class="mt-xs font-label-sm text-[10px] text-on-surface-variant">09:19 AM</span>
+</div>
+<!-- Commitment Action Prompt -->
+<div class="hidden commitment-overlay bg-secondary-container border border-secondary p-md rounded-xl flex items-center justify-between gap-md" id="commitment-ui">
+<div class="flex items-center gap-sm">
+<span class="material-symbols-outlined text-secondary" style="font-variation-settings: 'FILL' 1;">workspace_premium</span>
+<span class="font-body-md text-body-md text-on-secondary-container font-semibold">Tag 10% daily reserve as a commitment?</span>
+</div>
+<button class="bg-secondary text-on-secondary px-md py-sm rounded-full font-label-sm active:scale-95 transition-transform" onclick="confirmCommitment()">
+                Yes, Tag It
+            </button>
+</div>
+</main>
+<!-- Bottom Action Bar / Input Area -->
+<section class="bg-surface px-margin-mobile py-md border-t border-outline-variant">
+<div class="flex items-center gap-md">
+<div class="flex-1 bg-surface-container-high rounded-full px-md py-sm flex items-center gap-sm border border-outline-variant focus-within:border-primary transition-colors">
+<input class="bg-transparent border-none focus:ring-0 w-full font-body-md text-body-md text-on-surface placeholder:text-on-surface-variant" placeholder="Type your message..." type="text"/>
+<span class="material-symbols-outlined text-on-surface-variant">attach_file</span>
+</div>
+<!-- Prominent Voice Note Record -->
+<button class="bg-primary text-on-primary w-12 h-12 rounded-full flex items-center justify-center shadow-md active:scale-90 transition-transform duration-150">
+<span class="material-symbols-outlined text-[28px]" style="font-variation-settings: 'FILL' 1;">mic</span>
+</button>
+</div>
+</section>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 w-full z-50 bg-surface border-t border-outline-variant flex justify-around items-center h-16 px-sm pb-safe">
+<!-- Chat (Active) -->
+<a class="flex flex-col items-center justify-center text-primary font-bold hover:bg-surface-container-low transition-colors active:scale-90 duration-150" href="#">
+<span class="material-symbols-outlined active-icon">chat_bubble</span>
+<span class="font-label-sm text-label-sm">Chat</span>
+<div class="w-1 h-1 bg-primary rounded-full mt-0.5"></div>
+</a>
+<!-- Goals -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-container-low transition-colors active:scale-90 duration-150" href="#">
+<span class="material-symbols-outlined">target</span>
+<span class="font-label-sm text-label-sm">Goals</span>
+</a>
+<!-- Library -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-container-low transition-colors active:scale-90 duration-150" href="#">
+<span class="material-symbols-outlined">auto_stories</span>
+<span class="font-label-sm text-label-sm">Library</span>
+</a>
+<!-- Progress -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-container-low transition-colors active:scale-90 duration-150" href="#">
+<span class="material-symbols-outlined">query_stats</span>
+<span class="font-label-sm text-label-sm">Progress</span>
+</a>
+</nav>
+<!-- Spacer for Bottom Nav -->
+<div class="h-16 shrink-0"></div>
+<script>
+        // Micro-interaction: Toggle Commitment UI on "long press" simulation
+        let longPressTimer;
+        const msg = document.getElementById('chioma-msg-1');
+        const commitmentUi = document.getElementById('commitment-ui');
+
+        function toggleCommitment(e) {
+            e.stopPropagation();
+            commitmentUi.classList.toggle('hidden');
+            commitmentUi.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+
+        function confirmCommitment() {
+            commitmentUi.innerHTML = `
+                <div class="flex items-center gap-sm w-full">
+                    <span class="material-symbols-outlined text-secondary">check_circle</span>
+                    <span class="font-body-md text-body-md text-on-secondary-container">Commitment saved to Goals!</span>
+                </div>
+            `;
+            setTimeout(() => {
+                commitmentUi.style.opacity = '0';
+                setTimeout(() => commitmentUi.classList.add('hidden'), 300);
+            }, 2000);
+        }
+
+        // Handle text input focus effect
+        const textInput = document.querySelector('input');
+        const micBtn = document.querySelector('.bg-primary.w-12.h-12');
+        
+        textInput.addEventListener('input', (e) => {
+            if(e.target.value.length > 0) {
+                micBtn.innerHTML = '<span class="material-symbols-outlined text-[28px]">send</span>';
+            } else {
+                micBtn.innerHTML = '<span class="material-symbols-outlined text-[28px]" style="font-variation-settings: \'FILL\' 1;">mic</span>';
+            }
+        });
+    </script>
+</body></html>

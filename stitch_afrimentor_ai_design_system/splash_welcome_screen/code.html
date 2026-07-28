@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport"/>
+<title>AfriMentor AI - Welcome</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;600;700;800&family=Inter:wght@400;600&family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@100..900&family=Inter:wght@100..900&display=swap" rel="stylesheet"/>
+<!-- Design System Configuration -->
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "primary": "#7e5700",
+                    "on-secondary": "#ffffff",
+                    "on-error-container": "#93000a",
+                    "surface-container": "#f0eee8",
+                    "surface-bright": "#fcf9f3",
+                    "surface": "#fcf9f3",
+                    "outline-variant": "#d4c4b0",
+                    "on-primary": "#ffffff",
+                    "inverse-on-surface": "#f3f0ea",
+                    "surface-variant": "#e5e2dc",
+                    "secondary": "#1b6d24",
+                    "on-tertiary-container": "#343333",
+                    "surface-container-low": "#f6f3ed",
+                    "on-tertiary-fixed-variant": "#474646",
+                    "secondary-fixed": "#a3f69c",
+                    "inverse-surface": "#31312d",
+                    "on-secondary-fixed-variant": "#005312",
+                    "error": "#ba1a1a",
+                    "on-tertiary": "#ffffff",
+                    "on-tertiary-fixed": "#1c1b1b",
+                    "on-background": "#1c1c18",
+                    "on-surface-variant": "#504536",
+                    "surface-container-lowest": "#ffffff",
+                    "on-primary-fixed": "#281900",
+                    "on-primary-container": "#462f00",
+                    "inverse-primary": "#f8bc51",
+                    "primary-container": "#c8922a",
+                    "on-primary-fixed-variant": "#5f4100",
+                    "tertiary": "#5f5e5e",
+                    "secondary-fixed-dim": "#88d982",
+                    "surface-container-highest": "#e5e2dc",
+                    "secondary-container": "#a0f399",
+                    "primary-fixed-dim": "#f8bc51",
+                    "tertiary-fixed": "#e5e2e1",
+                    "tertiary-container": "#9d9b9b",
+                    "surface-dim": "#dcdad4",
+                    "error-container": "#ffdad6",
+                    "tertiary-fixed-dim": "#c8c6c5",
+                    "surface-tint": "#7e5700",
+                    "on-surface": "#1c1c18",
+                    "outline": "#827564",
+                    "background": "#fcf9f3",
+                    "on-secondary-container": "#217128",
+                    "on-error": "#ffffff",
+                    "on-secondary-fixed": "#002204",
+                    "surface-container-high": "#ebe8e2",
+                    "primary-fixed": "#ffdeab"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "lg": "24px",
+                    "xl": "48px",
+                    "xs": "4px",
+                    "sm": "8px",
+                    "md": "16px",
+                    "gutter": "16px",
+                    "margin-mobile": "20px",
+                    "unit": "4px"
+            },
+            "fontFamily": {
+                    "body-lg": ["Inter"],
+                    "headline-lg": ["Be Vietnam Pro"],
+                    "body-md": ["Inter"],
+                    "headline-xl": ["Be Vietnam Pro"],
+                    "headline-lg-mobile": ["Be Vietnam Pro"],
+                    "title-md": ["Be Vietnam Pro"],
+                    "label-sm": ["Inter"]
+            },
+            "fontSize": {
+                    "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}],
+                    "headline-lg": ["32px", {"lineHeight": "40px", "fontWeight": "700"}],
+                    "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                    "headline-xl": ["40px", {"lineHeight": "48px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "headline-lg-mobile": ["28px", {"lineHeight": "34px", "fontWeight": "700"}],
+                    "title-md": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                    "label-sm": ["13px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        body {
+            background-color: #fcf9f3;
+            color: #1c1c18;
+            -webkit-font-smoothing: antialiased;
+            overflow: hidden;
+        }
+
+        .sankofa-bg {
+            position: absolute;
+            top: 10%;
+            right: -10%;
+            width: 120%;
+            opacity: 0.04;
+            pointer-events: none;
+            z-index: 0;
+            transform: rotate(-15deg);
+        }
+
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+
+        @keyframes float {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+            100% { transform: translateY(0px); }
+        }
+
+        .animate-float {
+            animation: float 4s ease-in-out infinite;
+        }
+
+        .button-shadow {
+            box-shadow: 0 4px 0 0 #5f4100;
+        }
+        
+        .button-shadow:active {
+            box-shadow: 0 0 0 0 #5f4100;
+            transform: translateY(4px);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-surface font-body-md text-on-surface h-screen flex flex-col justify-between overflow-hidden">
+<!-- Background Motif (Sankofa Bird Representation) -->
+<div class="sankofa-bg">
+<svg viewbox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+<path class="text-primary" d="M100 20c-40 0-70 30-70 70 0 50 70 90 70 90s70-40 70-90c0-40-30-70-70-70zm0 130s-40-30-40-60c0-25 20-40 40-40s40 15 40 40c0 30-40 60-40 60z" fill="currentColor"></path>
+<path class="text-primary" d="M100 50c-15 0-25 10-25 25 0 20 25 35 25 35s25-15 25-35c0-15-10-25-25-25z" fill="currentColor"></path>
+</svg>
+</div>
+<!-- Main Content Container -->
+<main class="relative z-10 flex flex-col flex-grow px-margin-mobile pt-xl pb-lg justify-center max-w-lg mx-auto">
+<!-- Brand Intro -->
+<div class="mb-xl text-center">
+<div class="inline-flex items-center justify-center p-sm bg-primary-container rounded-full mb-md animate-float">
+<span class="material-symbols-outlined text-on-primary-container text-[48px]" style="font-variation-settings: 'FILL' 1;">
+                    psychology
+                </span>
+</div>
+<h1 class="font-headline-xl text-headline-xl text-primary tracking-tight mb-xs">
+                CHIOMA
+            </h1>
+<p class="font-title-md text-title-md text-primary font-bold opacity-80 uppercase tracking-widest">
+                AfriMentor AI
+            </p>
+</div>
+<!-- Hero Image Card -->
+<div class="relative w-full aspect-[4/5] rounded-xl overflow-hidden mb-xl shadow-sm border border-outline-variant/30">
+<div class="absolute inset-0 bg-gradient-to-t from-primary/40 to-transparent z-10"></div>
+<img class="w-full h-full object-cover" data-alt="A warm, dignified portrait of an elderly African woman with a serene, wise expression, wearing a stylish golden and earthy-toned headwrap. She is situated in a sun-drenched modern room with minimalist wooden furniture and a hint of Sankofa bird motifs on the walls. The lighting is soft and golden, emphasizing a light-mode aesthetic with warm cream backgrounds and rich ochre accents, evoking a feeling of trusted mentorship and communal wisdom." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAw6AN-IYPXmd1re3nxPyfObZ7W7tVNLEG_ozSFt30DFjczqrzT8H7imUNIdE1ueOA7KE_jX9lDVkCOP3t8ji8az7Ll8Uu0VxYwWJuV1HdTbo_5BhWi1JC-HkgzVj7wCTctbRxrO5Q0Q93tLDMO_LwYZiIB9JE82WW9iWMSIad3Gpq4qmt-B5w6VPSnJyzYOI4MK7lhiOUTxcSMxlp-D_9xtYSh4v0Ax5G06nAEADM3KEHCud75hDzTZw"/>
+<div class="absolute bottom-md left-md right-md z-20">
+<div class="bg-surface-bright/95 backdrop-blur-sm p-md rounded-lg border-l-4 border-primary shadow-lg">
+<p class="font-body-lg text-body-lg text-on-surface-variant leading-tight">
+                        "Welcome, child. Let us build your legacy together."
+                    </p>
+</div>
+</div>
+</div>
+<!-- Value Proposition -->
+<div class="space-y-md">
+<h2 class="font-headline-lg-mobile text-headline-lg-mobile text-on-background text-center px-sm">
+                Your journey to financial independence, guided by those who have walked the path.
+            </h2>
+<div class="flex justify-center gap-xs">
+<span class="w-1.5 h-1.5 rounded-full bg-primary"></span>
+<span class="w-1.5 h-1.5 rounded-full bg-primary/30"></span>
+<span class="w-1.5 h-1.5 rounded-full bg-primary/30"></span>
+</div>
+</div>
+</main>
+<!-- Fixed Action Area -->
+<footer class="relative z-10 px-margin-mobile pb-xl pt-md bg-gradient-to-t from-surface via-surface to-transparent">
+<button class="w-full h-14 bg-primary-container text-on-primary-container font-headline-lg-mobile text-[20px] rounded-full flex items-center justify-center gap-sm active:scale-95 transition-all duration-200 button-shadow" onclick="handleGetStarted()">
+            Get Started
+            <span class="material-symbols-outlined">
+                arrow_forward
+            </span>
+</button>
+<p class="text-center mt-md font-label-sm text-label-sm text-on-surface-variant/70">
+            Secure • Communal • Tailored for You
+        </p>
+</footer>
+<!-- Interactive Micro-interaction Script -->
+<script>
+        function handleGetStarted() {
+            // Subtle haptic feedback simulation
+            if (window.navigator && window.navigator.vibrate) {
+                window.navigator.vibrate(20);
+            }
+            
+            const btn = event.currentTarget;
+            btn.innerHTML = `
+                <div class="flex items-center gap-md">
+                    <svg class="animate-spin h-5 w-5 text-on-primary-container" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Preparing your path...
+                </div>
+            `;
+            
+            setTimeout(() => {
+                btn.style.backgroundColor = '#1b6d24'; // secondary (green) for success
+                btn.classList.remove('text-on-primary-container');
+                btn.classList.add('text-on-secondary');
+                btn.innerHTML = `
+                    Ready to grow
+                    <span class="material-symbols-outlined">check_circle</span>
+                `;
+            }, 1500);
+        }
+
+        // Parallax effect for the background motif
+        window.addEventListener('mousemove', (e) => {
+            const motif = document.querySelector('.sankofa-bg');
+            const x = (window.innerWidth / 2 - e.pageX) / 50;
+            const y = (window.innerHeight / 2 - e.pageY) / 50;
+            motif.style.transform = `translate(${x}px, ${y}px) rotate(-15deg)`;
+        });
+    </script>
+</body></html>

@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Goals Overview | AfriMentor AI</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&amp;family=Be+Vietnam+Pro:wght@600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "primary": "#7e5700",
+                    "on-secondary": "#ffffff",
+                    "on-error-container": "#93000a",
+                    "surface-container": "#f0eee8",
+                    "surface-bright": "#fcf9f3",
+                    "surface": "#fcf9f3",
+                    "outline-variant": "#d4c4b0",
+                    "on-primary": "#ffffff",
+                    "inverse-on-surface": "#f3f0ea",
+                    "surface-variant": "#e5e2dc",
+                    "secondary": "#1b6d24",
+                    "on-tertiary-container": "#343333",
+                    "surface-container-low": "#f6f3ed",
+                    "on-tertiary-fixed-variant": "#474646",
+                    "secondary-fixed": "#a3f69c",
+                    "inverse-surface": "#31312d",
+                    "on-secondary-fixed-variant": "#005312",
+                    "error": "#ba1a1a",
+                    "on-tertiary": "#ffffff",
+                    "on-tertiary-fixed": "#1c1b1b",
+                    "on-background": "#1c1c18",
+                    "on-surface-variant": "#504536",
+                    "surface-container-lowest": "#ffffff",
+                    "on-primary-fixed": "#281900",
+                    "on-primary-container": "#462f00",
+                    "inverse-primary": "#f8bc51",
+                    "primary-container": "#c8922a",
+                    "on-primary-fixed-variant": "#5f4100",
+                    "tertiary": "#5f5e5e",
+                    "secondary-fixed-dim": "#88d982",
+                    "surface-container-highest": "#e5e2dc",
+                    "secondary-container": "#a0f399",
+                    "primary-fixed-dim": "#f8bc51",
+                    "tertiary-fixed": "#e5e2e1",
+                    "tertiary-container": "#9d9b9b",
+                    "surface-dim": "#dcdad4",
+                    "error-container": "#ffdad6",
+                    "tertiary-fixed-dim": "#c8c6c5",
+                    "surface-tint": "#7e5700",
+                    "on-surface": "#1c1c18",
+                    "outline": "#827564",
+                    "background": "#fcf9f3",
+                    "on-secondary-container": "#217128",
+                    "on-error": "#ffffff",
+                    "on-secondary-fixed": "#002204",
+                    "surface-container-high": "#ebe8e2",
+                    "primary-fixed": "#ffdeab"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "lg": "24px",
+                    "xl": "48px",
+                    "xs": "4px",
+                    "sm": "8px",
+                    "md": "16px",
+                    "gutter": "16px",
+                    "margin-mobile": "20px",
+                    "unit": "4px"
+            },
+            "fontFamily": {
+                    "body-lg": ["Inter"],
+                    "headline-lg": ["Be Vietnam Pro"],
+                    "body-md": ["Inter"],
+                    "headline-xl": ["Be Vietnam Pro"],
+                    "headline-lg-mobile": ["Be Vietnam Pro"],
+                    "title-md": ["Be Vietnam Pro"],
+                    "label-sm": ["Inter"]
+            },
+            "fontSize": {
+                    "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}],
+                    "headline-lg": ["32px", {"lineHeight": "40px", "fontWeight": "700"}],
+                    "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                    "headline-xl": ["40px", {"lineHeight": "48px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "headline-lg-mobile": ["28px", {"lineHeight": "34px", "fontWeight": "700"}],
+                    "title-md": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                    "label-sm": ["13px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        body {
+            background-color: #fcf9f3;
+            color: #1c1c18;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .progress-ring__circle {
+            transition: stroke-dashoffset 0.35s;
+            transform: rotate(-90deg);
+            transform-origin: 50% 50%;
+        }
+        .sankofa-pattern {
+            opacity: 0.05;
+            background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M30 5c-13.8 0-25 11.2-25 25s11.2 25 25 25 25-11.2 25-25-11.2-25-25-25zm0 45c-11 0-20-9-20-20s9-20 20-20 20 9 20 20-9 20-20 20z' fill='%237e5700' fill-rule='evenodd'/%3E%3C/svg%3E");
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="font-body-md text-body-md min-h-screen flex flex-col">
+<!-- Top App Bar -->
+<header class="bg-surface dark:bg-surface w-full sticky top-0 z-50 flex justify-between items-center px-margin-mobile py-sm w-full">
+<div class="flex items-center gap-md">
+<div class="w-10 h-10 rounded-full border-2 border-primary overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="A warm, professional portrait of a senior West African mentor with grey hair and a friendly smile, wearing traditional Kente cloth accents over a modern linen shirt. The lighting is soft and natural, evoking a sun-drenched library setting with a palette of warm creams and deep golds." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBP3qREZL_T6Z195Oo17uD5NF65Rii-_u9cRTCGJXEBg2NFbat1rY2jbOodZFkMBwyr70YAlstUlEoz5aVzU5wdLKyuZMVmYEHPs3LShY0WM3bcVulciqH-Gsc24elxAqUZbU-gqu3TcJ9prvF3BKBdcWIk_zBVrj7ebLTFiy0EHqB0W57QxvfuJdKn9b8bxRAVsj-Ne_zEGnA48JTIBMe2fCoOimhzLFrEjlRdy_VskuYP_xfSzmWdRA"/>
+</div>
+<h1 class="font-headline-lg-mobile text-headline-lg-mobile text-primary">AfriMentor AI</h1>
+</div>
+<button class="material-symbols-outlined text-primary hover:opacity-80 transition-opacity active:scale-95 transition-transform duration-200">
+            settings
+        </button>
+</header>
+<!-- Main Content Canvas -->
+<main class="flex-1 px-margin-mobile pt-lg pb-xl relative overflow-hidden">
+<!-- Subtle Pattern Background -->
+<div class="absolute inset-0 sankofa-pattern pointer-events-none"></div>
+<!-- Greeting Section -->
+<section class="mb-xl relative z-10">
+<h2 class="font-headline-lg-mobile text-headline-lg-mobile mb-xs">Your Journey</h2>
+<p class="text-on-surface-variant font-body-md">Honoring the past while building your future wealth.</p>
+</section>
+<!-- Goals Grid (Bento Style) -->
+<div class="grid grid-cols-1 gap-md relative z-10 mb-xl">
+<!-- Business Launch Card -->
+<div class="bg-surface-container-low rounded-xl p-md border border-outline-variant flex flex-col gap-md">
+<div class="flex justify-between items-start">
+<div>
+<h3 class="font-title-md text-title-md text-primary mb-xs">Business Launch</h3>
+<p class="text-label-sm font-label-sm text-on-surface-variant">Deadline: Oct 24, 2024</p>
+</div>
+<div class="relative w-16 h-16 flex items-center justify-center">
+<svg class="w-full h-full">
+<circle class="text-surface-variant" cx="32" cy="32" fill="transparent" r="28" stroke="currentColor" stroke-width="6"></circle>
+<circle class="text-secondary progress-ring__circle" cx="32" cy="32" fill="transparent" r="28" stroke="currentColor" stroke-dasharray="175.9" stroke-dashoffset="96.7" stroke-linecap="round" stroke-width="6"></circle>
+</svg>
+<span class="absolute font-label-sm text-label-sm font-bold">45%</span>
+</div>
+</div>
+<div class="bg-surface-bright rounded-lg p-sm border-l-4 border-primary">
+<p class="text-label-sm font-label-sm uppercase text-on-surface-variant mb-xs">Next Milestone</p>
+<p class="text-body-md font-body-md font-semibold">Register Entity Name</p>
+</div>
+</div>
+<!-- Debt Reduction Card -->
+<div class="bg-secondary-container rounded-xl p-md border border-secondary/20 flex items-center gap-md">
+<div class="flex-1">
+<h3 class="font-title-md text-title-md text-on-secondary-container mb-xs">Debt Reduction</h3>
+<p class="text-label-sm font-label-sm text-on-secondary-container opacity-80 mb-md">Deadline: Dec 12, 2024</p>
+<div class="flex items-center gap-sm">
+<span class="material-symbols-outlined text-on-secondary-container" style="font-variation-settings: 'FILL' 1;">workspace_premium</span>
+<p class="text-body-md font-body-md font-semibold text-on-secondary-container">Final Payment Plan</p>
+</div>
+</div>
+<div class="relative w-20 h-20 flex items-center justify-center bg-surface-container-lowest rounded-full shadow-sm">
+<svg class="w-16 h-16">
+<circle class="text-surface-variant" cx="32" cy="32" fill="transparent" r="24" stroke="currentColor" stroke-width="8"></circle>
+<circle class="text-secondary progress-ring__circle" cx="32" cy="32" fill="transparent" r="24" stroke="currentColor" stroke-dasharray="150.7" stroke-dashoffset="30.1" stroke-linecap="round" stroke-width="8"></circle>
+</svg>
+<span class="absolute font-label-sm text-label-sm font-bold text-secondary">80%</span>
+</div>
+</div>
+<!-- Skill Acquisition Card -->
+<div class="bg-surface-container-low rounded-xl p-md border border-outline-variant flex flex-col gap-md">
+<div class="flex justify-between items-center">
+<h3 class="font-title-md text-title-md text-primary">Skill Acquisition</h3>
+<span class="text-label-sm font-label-sm px-sm py-xs bg-primary-container text-on-primary-container rounded-full">10% Complete</span>
+</div>
+<div class="w-full bg-surface-variant h-2 rounded-full overflow-hidden">
+<div class="bg-primary h-full w-[10%]"></div>
+</div>
+<div class="flex justify-between items-center text-on-surface-variant">
+<div class="flex items-center gap-xs">
+<span class="material-symbols-outlined text-body-md">flag</span>
+<span class="text-label-sm font-label-sm">Finish Python Basics</span>
+</div>
+<span class="text-label-sm font-label-sm italic">Jan 2025</span>
+</div>
+</div>
+</div>
+<!-- Call to Action -->
+<button class="w-full bg-primary py-md px-lg rounded-full flex items-center justify-center gap-md text-on-primary hover:opacity-90 active:scale-95 transition-all shadow-md">
+<span class="material-symbols-outlined">add</span>
+<span class="font-title-md text-title-md">Create New Goal</span>
+</button>
+</main>
+<!-- Bottom Navigation Bar -->
+<nav class="fixed bottom-0 w-full z-50 bg-surface dark:bg-surface border-t border-outline-variant dark:border-outline flex justify-around items-center h-16 w-full px-sm pb-safe">
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-on-surface-variant hover:bg-surface-container-low transition-colors active:scale-90 duration-150" href="#">
+<span class="material-symbols-outlined">chat_bubble</span>
+<span class="font-label-sm text-label-sm">Chat</span>
+</a>
+<a class="flex flex-col items-center justify-center text-primary dark:text-primary-fixed-dim font-bold hover:bg-surface-container-low transition-colors active:scale-90 duration-150 relative" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">target</span>
+<span class="font-label-sm text-label-sm">Goals</span>
+<div class="absolute -bottom-1 w-1 h-1 bg-primary rounded-full"></div>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-on-surface-variant hover:bg-surface-container-low transition-colors active:scale-90 duration-150" href="#">
+<span class="material-symbols-outlined">auto_stories</span>
+<span class="font-label-sm text-label-sm">Library</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-on-surface-variant hover:bg-surface-container-low transition-colors active:scale-90 duration-150" href="#">
+<span class="material-symbols-outlined">query_stats</span>
+<span class="font-label-sm text-label-sm">Progress</span>
+</a>
+</nav>
+<!-- Visual Polish: Floating Micro-interaction Background -->
+<div class="fixed inset-0 pointer-events-none z-[-1] opacity-30">
+<div class="absolute top-1/4 left-1/4 w-64 h-64 bg-primary/10 rounded-full blur-3xl animate-pulse"></div>
+<div class="absolute bottom-1/4 right-1/4 w-80 h-80 bg-secondary/10 rounded-full blur-3xl animate-pulse" style="animation-delay: 2s;"></div>
+</div>
+<script>
+        // Simple interactive feedback for cards
+        document.querySelectorAll('.rounded-xl').forEach(card => {
+            card.addEventListener('touchstart', () => {
+                card.style.transform = 'scale(0.98)';
+                card.style.transition = 'transform 0.2s cubic-bezier(0.4, 0, 0.2, 1)';
+            });
+            card.addEventListener('touchend', () => {
+                card.style.transform = 'scale(1)';
+            });
+        });
+    </script>
+</body></html>
