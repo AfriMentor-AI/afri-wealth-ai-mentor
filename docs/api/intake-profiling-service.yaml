@@ -1,0 +1,152 @@
+openapi: 3.1.0
+info:
+  title: "AfriMentor AI \u2014 Intake & Profiling Service"
+  version: 1.0.0
+  description: Guided intake flow that builds the initial user profile and financial context.
+servers:
+- url: http://localhost:8000
+  description: via API gateway
+- url: http://localhost:8002
+  description: intake-profiling-service direct (dev)
+security:
+- bearerAuth: []
+tags:
+- name: intake
+- name: meta
+paths:
+  /health:
+    get:
+      tags:
+      - meta
+      summary: Liveness/readiness probe
+      security: []
+      responses:
+        '200':
+          description: healthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Health'
+  /api/v1/intake/sessions:
+    post:
+      tags:
+      - intake
+      summary: Start an intake session
+      responses:
+        '201':
+          description: success
+          content:
+            application/json:
+              schema:
+                type: object
+        '401':
+          description: unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      description: 'TODO: request/response bodies finalised in later sprint.'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+  /api/v1/intake/sessions/{id}:
+    get:
+      tags:
+      - intake
+      summary: Get an intake session
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                type: object
+        '401':
+          description: unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      description: 'TODO: request/response bodies finalised in later sprint.'
+      parameters: &id001
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+  /api/v1/intake/sessions/{id}/answers:
+    post:
+      tags:
+      - intake
+      summary: Submit an answer
+      responses:
+        '201':
+          description: success
+          content:
+            application/json:
+              schema:
+                type: object
+        '401':
+          description: unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      description: 'TODO: request/response bodies finalised in later sprint.'
+      parameters: *id001
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+  /api/v1/intake/sessions/{id}/complete:
+    post:
+      tags:
+      - intake
+      summary: Complete intake
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                type: object
+        '401':
+          description: unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      description: 'TODO: request/response bodies finalised in later sprint.'
+      parameters: *id001
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    Health:
+      type: object
+      properties:
+        status:
+          type: string
+          example: healthy
+        service:
+          type: string
+        version:
+          type: string
+      required:
+      - status
+      - service
+    Error:
+      type: object
+      properties:
+        detail:
+          type: string
+      required:
+      - detail

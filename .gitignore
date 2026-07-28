@@ -3,6 +3,9 @@ node_modules/
 .next/
 dist/
 
+# Generated API docs site
+docs/api/_site/
+
 # Python environment & cache
 venv/
 .venv/

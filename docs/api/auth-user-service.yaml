@@ -1,0 +1,311 @@
+openapi: 3.1.0
+info:
+  title: "AfriMentor AI \u2014 Auth & User Service"
+  version: 1.0.0
+  description: Authentication, JWT issuance/refresh, and user profiles. Reflects the implemented v1 API
+    (card O1.3).
+servers:
+- url: http://localhost:8000
+  description: via API gateway
+- url: http://localhost:8001
+  description: auth-user-service direct (dev)
+security:
+- bearerAuth: []
+tags:
+- name: auth
+- name: meta
+paths:
+  /health:
+    get:
+      tags:
+      - meta
+      summary: Liveness/readiness probe
+      security: []
+      responses:
+        '200':
+          description: healthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Health'
+  /auth/signup:
+    post:
+      tags:
+      - auth
+      summary: Register a new user
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SignupRequest'
+      responses:
+        '201':
+          description: tokens issued
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenResponse'
+        '401':
+          description: unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /auth/login:
+    post:
+      tags:
+      - auth
+      summary: Authenticate and receive tokens
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: tokens issued
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenResponse'
+        '401':
+          description: unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /auth/refresh:
+    post:
+      tags:
+      - auth
+      summary: Rotate refresh token, issue new pair
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefreshRequest'
+      responses:
+        '200':
+          description: tokens issued
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenResponse'
+        '401':
+          description: unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /auth/logout:
+    post:
+      tags:
+      - auth
+      summary: Revoke a refresh token
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefreshRequest'
+      responses:
+        '204':
+          description: revoked (idempotent)
+  /auth/me:
+    get:
+      tags:
+      - auth
+      summary: Get the authenticated user's profile
+      responses:
+        '200':
+          description: profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+        '401':
+          description: unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /auth/.well-known/jwks:
+    get:
+      tags:
+      - meta
+      summary: Public key for JWT verification
+      security: []
+      responses:
+        '200':
+          description: public key (PEM)
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    Health:
+      type: object
+      properties:
+        status:
+          type: string
+          example: healthy
+        service:
+          type: string
+        version:
+          type: string
+      required:
+      - status
+      - service
+    Error:
+      type: object
+      properties:
+        detail:
+          type: string
+      required:
+      - detail
+    ProfileFields:
+      type: object
+      properties:
+        name:
+          type:
+          - string
+          - 'null'
+        age:
+          type:
+          - integer
+          - 'null'
+          minimum: 13
+          maximum: 120
+        country:
+          type:
+          - string
+          - 'null'
+          minLength: 2
+          maxLength: 2
+        device_type:
+          type:
+          - string
+          - 'null'
+          enum:
+          - low_end
+          - mid
+          - high
+          - desktop
+          - null
+        sector_interest:
+          type:
+          - string
+          - 'null'
+          enum:
+          - trader
+          - tech
+          - fashion_retail
+          - agriculture
+          - creative
+          - other
+          - null
+        education_level:
+          type:
+          - string
+          - 'null'
+          enum:
+          - none
+          - primary
+          - secondary
+          - vocational
+          - tertiary
+          - null
+        language:
+          type:
+          - string
+          - 'null'
+        income_bracket:
+          type:
+          - string
+          - 'null'
+          enum:
+          - low
+          - lower_mid
+          - mid
+          - upper_mid
+          - high
+          - null
+    SignupRequest:
+      allOf:
+      - $ref: '#/components/schemas/ProfileFields'
+      - type: object
+        required:
+        - email
+        - password
+        properties:
+          email:
+            type: string
+            format: email
+          password:
+            type: string
+            minLength: 8
+            maxLength: 128
+    LoginRequest:
+      type: object
+      required:
+      - email
+      - password
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+    RefreshRequest:
+      type: object
+      required:
+      - refresh_token
+      properties:
+        refresh_token:
+          type: string
+    TokenResponse:
+      type: object
+      properties:
+        access_token:
+          type: string
+        refresh_token:
+          type: string
+        token_type:
+          type: string
+          example: bearer
+        expires_in:
+          type: integer
+          example: 900
+      required:
+      - access_token
+      - refresh_token
+      - token_type
+      - expires_in
+    UserResponse:
+      allOf:
+      - $ref: '#/components/schemas/ProfileFields'
+      - type: object
+        properties:
+          id:
+            type: string
+          email:
+            type: string
+            format: email
+          roles:
+            type: array
+            items:
+              type: string
+          is_active:
+            type: boolean
+          created_at:
+            type: string
+            format: date-time

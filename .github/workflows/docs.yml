@@ -1,0 +1,45 @@
+name: API Docs
+
+# Lints all OpenAPI contracts and builds the docs site (card O1.4).
+on:
+  push:
+    branches: [main]
+    paths: ["docs/api/**", "redocly.yaml", "docs/package.json", "scripts/gen_openapi.py"]
+  pull_request:
+    branches: [main]
+    paths: ["docs/api/**", "redocly.yaml", "docs/package.json", "scripts/gen_openapi.py"]
+
+jobs:
+  docs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Verify contracts are regenerated (no drift)
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install pyyaml
+      - run: |
+          python scripts/gen_openapi.py
+          if ! git diff --quiet -- docs/api; then
+            echo "OpenAPI contracts are out of date. Run: python scripts/gen_openapi.py"
+            git --no-pager diff --stat -- docs/api
+            exit 1
+          fi
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Lint contracts
+        run: npx --yes @redocly/cli@latest lint --config redocly.yaml
+
+      - name: Build docs site
+        run: npm --prefix docs run build:all
+
+      - name: Upload docs artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: api-docs
+          path: docs/api/_site
