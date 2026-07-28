@@ -5,9 +5,19 @@ dist/
 
 # Python environment & cache
 venv/
+.venv/
 __pycache__/
 *.pyc
+.pytest_cache/
+.ruff_cache/
 .env
+.env.*
+!.env.example
+
+# Secrets / crypto keys (dev keys are generated at runtime, never committed)
+infra/keys/
+*.pem
+*.key
 
 # Audio data and uploads
 *.mp3
