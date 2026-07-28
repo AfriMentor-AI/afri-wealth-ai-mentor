@@ -70,20 +70,47 @@ pytest -q
 
 ## 4. Branching strategy — trunk-based
 
-We practise **trunk-based development**:
+We practise **trunk-based development** with a protected integration branch:
 
 - `main` is always releasable and protected. No direct pushes.
-- Create **short-lived feature branches** off the latest `main`. Keep them under ~2 days
-  of work; rebase on `main` frequently.
+- `develop` is the shared integration branch and is **also protected**. Feature work is
+  integrated here first; `develop` is promoted to `main` for a release.
+- Create **short-lived feature branches** off the latest `develop`. Keep them under ~2
+  days of work; rebase frequently.
 - Naming: `<type>/<card>-<slug>`, e.g. `feat/O1.3-auth-service`, `fix/O1.2-compose-health`.
   Types: `feat`, `fix`, `chore`, `docs`, `refactor`, `test`.
 - Open a PR early (draft is fine). Small PRs merge faster.
-- Squash-merge into `main`. Delete the branch after merge.
+- Squash-merge. Delete the branch after merge.
 
-### Branch protection (configured on `main`)
+### Branch protection (configured on `main` **and** `develop`)
 - Require the `ci-ok` status check to pass.
 - Require at least one approving review from the owning area (see below).
-- Require branches to be up to date before merging.
+- Require branches to be up to date (strict) and a linear history before merging.
+- Require conversation resolution; dismiss stale approvals on new commits.
+- Block force-pushes and deletions; rules apply to admins too.
+
+Protection is applied as code — run once per repo (needs `gh` with admin scope):
+
+```bash
+gh auth login
+OWNER=<org-or-user> REPO=afri-wealth-ai-mentor bash scripts/setup-branch-protection.sh
+```
+
+The script applies the identical ruleset to both `main` and `develop`. Create and push
+`develop` before running it (`git switch -c develop && git push -u origin develop`).
+
+## 4a. Repository secrets
+
+Set these in **Settings → Secrets and variables → Actions** (or via `gh secret set`):
+
+| Secret | Used by | Purpose |
+|--------|---------|---------|
+| `ANTHROPIC_API_KEY` | `claude-review.yml`, `claude.yml` | Automated Claude PR review & `@claude` mentions |
+| `DOCKER_USERNAME` | `ci.yml` | Registry login for image push on merge to `main` |
+| `DOCKER_PASSWORD` | `ci.yml` | Registry access token/password (never a raw account password) |
+
+The Docker push step is skipped automatically when `DOCKER_USERNAME` is absent (e.g. on
+forks), so PRs from contributors without secrets still pass CI.
 
 ## 5. Code ownership & reviewers
 
@@ -115,3 +142,13 @@ Conventional-commit style: `type(scope): summary`, e.g.
 `.github/workflows/ci.yml` runs on every PR: for each changed service it runs
 `ruff check` → `pytest` → `docker build` (and pushes on merge to `main`). The aggregate
 `ci-ok` job is the required check that blocks merge on failure.
+
+In addition:
+- **`claude-review.yml`** posts an automated Claude code review on each non-draft PR
+  (correctness, security, service boundaries, contracts, tests, image size). It comments
+  but does not block merge.
+- **`claude.yml`** responds to `@claude` mentions in issues and PR comments.
+- **`docs.yml`** lints the OpenAPI contracts and builds the docs site.
+- **`frontend.yml`** lints and builds the Next.js app.
+
+Both Claude workflows need the `ANTHROPIC_API_KEY` secret (see §4a).

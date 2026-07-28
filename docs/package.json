@@ -5,8 +5,8 @@
   "description": "Redocly build/lint for AfriMentor AI OpenAPI contracts (card O1.4)",
   "scripts": {
     "lint": "redocly lint --config ../redocly.yaml",
-    "build": "redocly build-docs api-gateway --config ../redocly.yaml -o api/_site/api-gateway.html && redocly build-docs auth-user-service --config ../redocly.yaml -o api/_site/auth-user-service.html",
-    "build:all": "for s in api-gateway auth-user-service intake-profiling-service chat-orchestration-service persona-prompt-service rag-corpus-service goals-milestones-service progress-gamification-service insight-library-service feedback-service research-evaluation-service voice-service notification-service; do redocly build-docs $s --config ../redocly.yaml -o api/_site/$s.html; done",
+    "build": "node build-all.mjs api-gateway && node build-all.mjs auth-user-service",
+    "build:all": "node build-all.mjs",
     "preview": "redocly preview-docs api/api-gateway.yaml"
   },
   "devDependencies": {

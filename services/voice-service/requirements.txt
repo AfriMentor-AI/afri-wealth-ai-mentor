@@ -5,7 +5,6 @@ httpx==0.28.1
 sqlalchemy==2.0.36
 alembic==1.14.0
 psycopg[binary]==3.2.3
-pytest==8.3.4
 starlette==0.41.3
 python-multipart==0.0.20
 pydub==0.25.1

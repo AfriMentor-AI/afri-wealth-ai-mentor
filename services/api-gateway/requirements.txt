@@ -5,5 +5,4 @@ httpx==0.28.1
 pyjwt==2.10.1
 cryptography==44.0.0
 redis==5.2.1
-pytest==8.3.4
 starlette==0.41.3

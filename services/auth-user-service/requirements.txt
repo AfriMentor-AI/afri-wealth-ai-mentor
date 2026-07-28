@@ -10,5 +10,4 @@ pyjwt==2.10.1
 cryptography==44.0.0
 passlib[bcrypt]==1.7.4
 bcrypt==4.2.1
-pytest==8.3.4
 starlette==0.41.3
