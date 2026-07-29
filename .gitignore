@@ -9,6 +9,8 @@ docs/api/_site/
 # Python environment & cache
 venv/
 .venv/
+.venv-lint/
+**/.venv-ci/
 __pycache__/
 *.pyc
 .pytest_cache/

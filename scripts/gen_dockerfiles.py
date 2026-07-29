@@ -35,8 +35,14 @@ PORTS = {
     "notification-service": 8012,
 }
 
-# Deps that are test-only and must be stripped from the runtime image.
-DEV_ONLY = {"pytest"}
+# Test-only deps: stripped from the runtime image, always pinned into
+# requirements-dev.txt. Keyed by package name (lowercased) -> pinned line.
+# Defined explicitly so the split is idempotent — re-running never depends on
+# whether the package still happens to sit in requirements.txt.
+DEV_DEPS = {
+    "pytest": "pytest==8.3.4",
+}
+DEV_ONLY = set(DEV_DEPS)
 
 
 def dockerfile(service: str, port: int) -> str:
@@ -93,17 +99,27 @@ requirements-dev.txt
 
 
 def split_requirements(req_path: pathlib.Path) -> None:
-    """Move DEV_ONLY packages from requirements.txt into requirements-dev.txt."""
+    """Keep DEV_DEPS out of the runtime requirements and pinned in the dev file.
+
+    Idempotent: requirements-dev.txt always ends up with every DEV_DEPS line
+    regardless of whether the package is still present in requirements.txt, so
+    re-running the generator can never wipe the test dependencies.
+    """
     lines = req_path.read_text(encoding="utf-8").splitlines()
-    runtime, dev = [], []
-    for line in lines:
-        pkg = line.strip().split("==")[0].split("[")[0].lower()
-        (dev if pkg in DEV_ONLY else runtime).append(line)
+    runtime = [
+        line
+        for line in lines
+        if line.strip().split("==")[0].split("[")[0].lower() not in DEV_ONLY
+    ]
     req_path.write_text("\n".join(runtime).rstrip() + "\n", encoding="utf-8")
+
     dev_path = req_path.parent / "requirements-dev.txt"
-    header = "# Test-only deps (not installed in the runtime image). Install: pip install -r requirements-dev.txt\n-r requirements.txt\n"
-    body = "\n".join(dev).rstrip()
-    dev_path.write_text(header + (body + "\n" if body else ""), encoding="utf-8")
+    header = (
+        "# Test-only deps (not installed in the runtime image). "
+        "Install: pip install -r requirements-dev.txt\n-r requirements.txt\n"
+    )
+    body = "\n".join(DEV_DEPS[pkg] for pkg in sorted(DEV_DEPS))
+    dev_path.write_text(header + body + "\n", encoding="utf-8")
 
 
 def main() -> None:
