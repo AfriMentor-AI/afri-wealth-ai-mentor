@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>AfriMentor | CHIOMA Mentor Chat</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;600;700&amp;family=Inter:wght@400;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            vertical-align: middle;
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #4a453e;
+            border-radius: 10px;
+        }
+        .message-bubble-shadow {
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.1);
+        }
+        @keyframes pulse-soft {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        .typing-dot {
+            animation: pulse-soft 1.5s infinite ease-in-out;
+        }
+        .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+        .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-container-high": "#282a2a",
+                        "surface": "#121414",
+                        "on-primary": "#462f00",
+                        "on-secondary": "#00390a",
+                        "inverse-on-surface": "#1a1c1c",
+                        "surface-container-lowest": "#0d0f0f",
+                        "on-tertiary-fixed": "#1c1b1b",
+                        "surface-variant": "#504536",
+                        "surface-container-highest": "#333535",
+                        "on-background": "#e2e2de",
+                        "error-container": "#93000a",
+                        "on-error": "#690005",
+                        "error": "#ffb4ab",
+                        "background": "#121414",
+                        "surface-container-low": "#1a1c1c",
+                        "on-primary-fixed-variant": "#ffdeab",
+                        "on-tertiary-container": "#e5e2e1",
+                        "on-surface": "#e2e2de",
+                        "on-error-container": "#ffdad6",
+                        "surface-dim": "#121414",
+                        "outline": "#9c8f80",
+                        "on-primary-container": "#ffdeab",
+                        "surface-container": "#1e2020",
+                        "on-tertiary": "#313131",
+                        "tertiary-fixed-dim": "#c8c6c5",
+                        "tertiary-fixed": "#e5e2e1",
+                        "secondary": "#88d982",
+                        "on-tertiary-fixed-variant": "#474646",
+                        "tertiary": "#c8c6c5",
+                        "on-primary-fixed": "#281900",
+                        "inverse-surface": "#e2e2de",
+                        "secondary-fixed": "#a3f69c",
+                        "secondary-container": "#005312",
+                        "secondary-fixed-dim": "#88d982",
+                        "on-surface-variant": "#d4c4b0",
+                        "primary-container": "#7e5700",
+                        "surface-tint": "#f8bc51",
+                        "on-secondary-container": "#a3f69c",
+                        "inverse-primary": "#7e5700",
+                        "primary-fixed-dim": "#f8bc51",
+                        "on-secondary-fixed-variant": "#005312",
+                        "on-secondary-fixed": "#002204",
+                        "surface-bright": "#38393a",
+                        "tertiary-container": "#474646",
+                        "primary-fixed": "#ffdeab",
+                        "outline-variant": "#504536",
+                        "primary": "#f8bc51"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.5rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "xl": "48px",
+                        "unit": "4px",
+                        "md": "16px",
+                        "sm": "8px",
+                        "lg": "24px",
+                        "gutter": "16px",
+                        "xs": "4px",
+                        "margin-mobile": "20px"
+                    },
+                    "fontFamily": {
+                        "headline-lg-mobile": ["Be Vietnam Pro"],
+                        "body-md": ["Inter"],
+                        "title-md": ["Be Vietnam Pro"],
+                        "label-sm": ["Inter"],
+                        "headline-xl": ["Be Vietnam Pro"],
+                        "headline-lg": ["Be Vietnam Pro"],
+                        "body-lg": ["Inter"]
+                    },
+                    "fontSize": {
+                        "headline-lg-mobile": ["28px", {"lineHeight": "34px", "fontWeight": "700"}],
+                        "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                        "title-md": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                        "label-sm": ["13px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                        "headline-xl": ["40px", {"lineHeight": "48px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                        "headline-lg": ["32px", {"lineHeight": "40px", "fontWeight": "700"}],
+                        "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}]
+                    }
+                },
+            },
+        }
+    </script>
+</head>
+<body class="bg-background text-on-surface font-body-md min-h-screen overflow-hidden">
+<!-- Sidebar Navigation Shell -->
+<aside class="h-screen w-64 fixed left-0 top-0 bg-surface-container-lowest border-r border-outline-variant flex flex-col p-md gap-lg z-50">
+<div class="mb-md">
+<h1 class="font-headline-lg text-headline-lg text-primary">AfriMentor</h1>
+<p class="text-on-surface-variant font-label-sm text-label-sm tracking-widest opacity-70 uppercase">Dignified Growth</p>
+</div>
+<nav class="flex flex-col gap-sm flex-1">
+<a class="flex items-center gap-md px-md py-sm bg-primary-container text-on-primary-container rounded-lg active:scale-95 transition-all" href="#">
+<span class="material-symbols-outlined">forum</span>
+<span class="font-title-md text-title-md">Chat</span>
+</a>
+<a class="flex items-center gap-md px-md py-sm text-on-surface-variant hover:bg-surface-variant/30 rounded-lg active:scale-95 transition-all" href="#">
+<span class="material-symbols-outlined">ads_click</span>
+<span class="font-title-md text-title-md">Goals</span>
+</a>
+<a class="flex items-center gap-md px-md py-sm text-on-surface-variant hover:bg-surface-variant/30 rounded-lg active:scale-95 transition-all" href="#">
+<span class="material-symbols-outlined">menu_book</span>
+<span class="font-title-md text-title-md">Library</span>
+</a>
+<a class="flex items-center gap-md px-md py-sm text-on-surface-variant hover:bg-surface-variant/30 rounded-lg active:scale-95 transition-all" href="#">
+<span class="material-symbols-outlined">query_stats</span>
+<span class="font-title-md text-title-md">Progress</span>
+</a>
+<a class="flex items-center gap-md px-md py-sm text-on-surface-variant hover:bg-surface-variant/30 rounded-lg active:scale-95 transition-all" href="#">
+<span class="material-symbols-outlined">analytics</span>
+<span class="font-title-md text-title-md">Research Console</span>
+</a>
+</nav>
+<div class="mt-auto pt-md flex flex-col gap-md">
+<button class="w-full bg-primary text-on-primary font-title-md text-title-md py-md rounded-full shadow-md flex items-center justify-center gap-sm active:scale-95 transition-all">
+<span class="material-symbols-outlined">add</span>
+            New Goal
+        </button>
+<div class="flex items-center gap-md p-sm rounded-lg border border-outline-variant bg-surface-container-low">
+<img class="w-10 h-10 rounded-full border-2 border-primary object-cover" data-alt="A professional close-up portrait of a young West African entrepreneur." src="https://lh3.googleusercontent.com/aida-public/AB6AXuD9XMnVBray3p4kAZNboojdgghXONlfBdxwPEZRYvj_mjSemdRysRRqJfbk2f4OzoFSZHV00sUIBZvmsH9kyo6z6ssxtoDzJDoYcxJytgqlK8Y0yEotNVgYP471gSk0q4KzrDjUX73yeAImMnYGeXsEejF33irVOSmVbPECglUPXVDzMGNPIDLe7dqTOD5H-nmjB0letaAAVK-cgjFlFd78X6eW2ATliFwyL4Th-YRjuYrejH4zyA4j6w"/>
+<div class="flex flex-col">
+<span class="font-label-sm text-label-sm text-on-surface">Kojo Mensah</span>
+<span class="text-[10px] text-on-surface-variant uppercase tracking-tighter">Premium Member</span>
+</div>
+</div>
+</div>
+</aside>
+<!-- Main Content Area -->
+<main class="ml-64 flex h-screen overflow-hidden">
+<!-- Left Pane: Conversation List -->
+<section class="w-80 flex flex-col bg-surface-container-low border-r border-outline-variant">
+<header class="p-md h-16 flex items-center justify-between border-b border-outline-variant bg-surface-container-lowest">
+<h2 class="font-title-md text-title-md text-on-surface">Messages</h2>
+<button class="p-sm text-on-surface-variant hover:bg-surface-variant/30 rounded-full transition-colors">
+<span class="material-symbols-outlined">edit_note</span>
+</button>
+</header>
+<div class="flex-1 overflow-y-auto custom-scrollbar">
+<!-- Search Bar -->
+<div class="px-md py-sm">
+<div class="flex items-center gap-sm bg-surface-container border border-outline-variant px-md py-sm rounded-full">
+<span class="material-symbols-outlined text-on-surface-variant text-sm">search</span>
+<input class="bg-transparent border-none focus:ring-0 text-sm w-full placeholder:text-on-surface-variant/50 text-on-surface" placeholder="Search threads..." type="text"/>
+</div>
+</div>
+<!-- Chat Threads -->
+<div class="flex flex-col mt-sm">
+<!-- Active Thread -->
+<div class="flex gap-md p-md bg-surface-container-highest border-l-4 border-primary cursor-pointer transition-colors">
+<div class="relative flex-shrink-0">
+<div class="w-12 h-12 rounded-full flex items-center justify-center bg-primary-container text-on-primary-container font-bold text-lg">C</div>
+<div class="absolute bottom-0 right-0 w-3 h-3 bg-secondary rounded-full border-2 border-surface-container-highest"></div>
+</div>
+<div class="flex flex-col flex-1 overflow-hidden">
+<div class="flex justify-between items-center">
+<span class="font-title-md text-sm text-on-surface">CHIOMA AI</span>
+<span class="text-[10px] text-on-surface-variant">2m ago</span>
+</div>
+<p class="text-sm text-on-surface font-semibold truncate italic">"Reflect on your savings..."</p>
+</div>
+</div>
+<!-- Other Threads -->
+<div class="flex gap-md p-md hover:bg-surface-variant/20 cursor-pointer transition-colors border-b border-outline-variant/30">
+<div class="w-12 h-12 rounded-full overflow-hidden flex-shrink-0">
+<img class="w-full h-full object-cover grayscale opacity-80" data-alt="Close-up headshot of an elder woman." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDS3WdhB7_oIrcttCjrKsnMsykBz9CCB8_-fwqeIVX_Zgw9nLHW8vg7UtS763NTZjfdSWHeZZFyAJ-DDZwwr16ElN32Jz6ppxSHOma7qXYM6_1n7PzOK1VuxqEmEY8Bc3OMnnlGPze6IId_osPbovcGwxo5TJhZUH80OOEs2TXshRA3Dc4kiK_vE5UYoRHsGykcjQEAJ6DuDEIOUBHxRHLENb6TTHXpo1uiPEpY7_K1Rh_XpR_Kv4RPBQ"/>
+</div>
+<div class="flex flex-col flex-1 overflow-hidden">
+<div class="flex justify-between items-center">
+<span class="font-title-md text-sm text-on-surface">Mama Beatrice</span>
+<span class="text-[10px] text-on-surface-variant">1h ago</span>
+</div>
+<p class="text-sm text-on-surface-variant truncate">The expansion plan looks solid, Kojo. Just remember the village...</p>
+</div>
+</div>
+<div class="flex gap-md p-md hover:bg-surface-variant/20 cursor-pointer transition-colors border-b border-outline-variant/30 opacity-60">
+<div class="w-12 h-12 rounded-full bg-tertiary-container flex items-center justify-center text-on-tertiary-container flex-shrink-0">
+<span class="material-symbols-outlined">groups</span>
+</div>
+<div class="flex flex-col flex-1 overflow-hidden">
+<div class="flex justify-between items-center">
+<span class="font-title-md text-sm text-on-surface">Agro-Trade Group</span>
+<span class="text-[10px] text-on-surface-variant">Yesterday</span>
+</div>
+<p class="text-sm text-on-surface-variant truncate">Zainab: Markets are closing early today...</p>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Right Pane: Main Chat Window -->
+<section class="flex-1 flex flex-col relative bg-surface">
+<!-- Header -->
+<header class="h-16 flex items-center justify-between px-lg border-b border-outline-variant bg-surface-container-lowest z-10">
+<div class="flex items-center gap-md">
+<div class="relative">
+<div class="w-10 h-10 rounded-full flex items-center justify-center bg-primary-container text-on-primary-container font-bold border border-primary/50">C</div>
+<div class="absolute -bottom-1 -right-1 p-0.5 bg-background rounded-full">
+<div class="w-3 h-3 bg-secondary rounded-full"></div>
+</div>
+</div>
+<div class="flex flex-col">
+<div class="flex items-center gap-sm">
+<h3 class="font-title-md text-on-surface leading-none">CHIOMA AI</h3>
+<span class="bg-secondary-container text-on-secondary-container text-[10px] px-1.5 py-0.5 rounded uppercase font-bold tracking-tighter">Mentor</span>
+</div>
+<div class="flex items-center gap-sm text-[10px] text-secondary">
+<span class="flex gap-0.5">
+<div class="w-1 h-1 bg-secondary rounded-full typing-dot"></div>
+<div class="w-1 h-1 bg-secondary rounded-full typing-dot"></div>
+<div class="w-1 h-1 bg-secondary rounded-full typing-dot"></div>
+</span>
+                        Thinking about your business plan...
+                    </div>
+</div>
+</div>
+<div class="flex items-center gap-md text-on-surface-variant">
+<button class="p-sm hover:bg-surface-variant/30 rounded-full transition-colors" title="Notifications">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<button class="p-sm hover:bg-surface-variant/30 rounded-full transition-colors" title="Settings">
+<span class="material-symbols-outlined">settings</span>
+</button>
+<div class="w-px h-6 bg-outline-variant"></div>
+<button class="p-sm hover:bg-surface-variant/30 rounded-full transition-colors" title="Archive Chat">
+<span class="material-symbols-outlined">archive</span>
+</button>
+</div>
+</header>
+<!-- Messages Area -->
+<div class="flex-1 overflow-y-auto p-lg flex flex-col gap-lg custom-scrollbar bg-surface relative">
+<!-- Background Decoration (Sankofa Bird style) -->
+<div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-[0.05] pointer-events-none w-96 h-96">
+<span class="material-symbols-outlined text-[384px] text-primary">cycle</span>
+</div>
+<!-- Chat History Timestamp -->
+<div class="flex justify-center my-md">
+<span class="bg-surface-container-high text-on-surface-variant font-label-sm text-[10px] px-4 py-1 rounded-full uppercase tracking-widest">Tuesday, Oct 24</span>
+</div>
+<!-- Mentor Message -->
+<div class="flex gap-md max-w-[80%] animate-in fade-in slide-in-from-left-4 duration-500">
+<div class="w-8 h-8 rounded-full bg-primary-container flex items-center justify-center text-on-primary-container text-xs font-bold flex-shrink-0">C</div>
+<div class="flex flex-col gap-sm">
+<div class="bg-surface-container-low border border-outline-variant p-md rounded-tr-xl rounded-br-xl rounded-bl-xl message-bubble-shadow">
+<p class="text-on-surface leading-relaxed">
+                            Kojo, I've analyzed your progress on the 'Market Stall Expansion' goal. You've hit 80% of your savings target—that's dignified progress. 
+                            <br/><br/>
+                            Based on current trade winds in the Kumasi market, should we consider looking for a stall near the East Gate?
+                        </p>
+</div>
+<div class="flex gap-xs">
+<span class="bg-secondary-container/20 text-on-secondary-container text-[10px] px-2 py-0.5 rounded border border-secondary/30 flex items-center gap-1">
+<span class="material-symbols-outlined text-[12px]">menu_book</span> Local Market Trends 2024
+                        </span>
+<span class="bg-primary/20 text-primary text-[10px] px-2 py-0.5 rounded border border-primary/30 flex items-center gap-1">
+<span class="material-symbols-outlined text-[12px]">analytics</span> Your Savings Log
+                        </span>
+</div>
+</div>
+</div>
+<!-- User Message -->
+<div class="flex gap-md self-end max-w-[80%] flex-row-reverse animate-in fade-in slide-in-from-right-4 duration-500">
+<div class="w-8 h-8 rounded-full overflow-hidden flex-shrink-0 border-2 border-primary">
+<img class="w-full h-full object-cover" data-alt="Portrait of a young West African entrepreneur." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBoS__PKWQGwO1BRY8I2Xy5PQ0Sww_gplBFCKLzFVU28SBZIN8dwEuS532XXAnfdZWAH2OihvSGwRaTEYk-ygds_YwxWkhUdNBVU42UHWrsU3oiWN0fpp9TF5rUBVWLy3e5P0voiWaGZ31k9OdL9SjkPE_lJYLBBtij_j3KoP4oQqfVUifLBOqhQJiqpXFKZtA3Xc8y_t7Ff8l9rMEH0YDiSm97XHPSj0lyUsvYQjjdSqG2M2MuLJAn1A"/>
+</div>
+<div class="flex flex-col gap-sm items-end">
+<div class="bg-primary-container text-on-primary-container p-md rounded-tl-xl rounded-bl-xl rounded-br-xl message-bubble-shadow">
+<p class="leading-relaxed">
+                            That sounds like a wise move, CHIOMA. The East Gate has more foot traffic from the transit hub. How does that affect my daily capital requirement?
+                        </p>
+</div>
+<span class="text-[10px] text-on-surface-variant/60">Read 14:22</span>
+</div>
+</div>
+<!-- Mentor Thinking State -->
+<div class="flex gap-md max-w-[80%]">
+<div class="w-8 h-8 rounded-full bg-primary-container flex items-center justify-center text-on-primary-container text-xs font-bold flex-shrink-0">C</div>
+<div class="bg-surface-container border border-outline-variant px-md py-sm rounded-xl flex items-center gap-md">
+<div class="flex gap-1">
+<div class="w-1.5 h-1.5 bg-primary rounded-full typing-dot"></div>
+<div class="w-1.5 h-1.5 bg-primary rounded-full typing-dot"></div>
+<div class="w-1.5 h-1.5 bg-primary rounded-full typing-dot"></div>
+</div>
+<span class="text-xs italic text-on-surface-variant font-medium">Calculating cash flow projections...</span>
+</div>
+</div>
+</div>
+<!-- Footer: Voice Note & Text Interface -->
+<footer class="p-lg bg-surface-container-lowest border-t border-outline-variant">
+<div class="max-w-4xl mx-auto flex items-end gap-md">
+<!-- Expanded Voice UI -->
+<div class="flex-1 bg-surface-container border border-outline-variant rounded-2xl p-sm flex flex-col gap-sm">
+<div class="flex items-center gap-md px-md">
+<textarea class="flex-1 bg-transparent border-none focus:ring-0 text-on-surface placeholder:text-on-surface-variant/50 resize-none py-sm leading-relaxed" placeholder="Type a message or use the mic..." rows="1"></textarea>
+<div class="flex items-center gap-xs">
+<button class="p-sm text-on-surface-variant hover:text-primary transition-colors">
+<span class="material-symbols-outlined">attach_file</span>
+</button>
+<button class="p-sm text-on-surface-variant hover:text-primary transition-colors">
+<span class="material-symbols-outlined">add_reaction</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Prominent Voice Action -->
+<div class="flex flex-col gap-sm items-center">
+<button class="w-14 h-14 bg-primary text-on-primary rounded-full flex items-center justify-center shadow-lg hover:shadow-xl active:scale-90 transition-all duration-300 relative group" id="voiceBtn">
+<div class="absolute inset-0 rounded-full bg-primary animate-ping opacity-20 hidden group-active:block"></div>
+<span class="material-symbols-outlined text-2xl" id="micIcon" style="font-variation-settings: 'FILL' 1;">mic</span>
+</button>
+<span class="text-[10px] uppercase tracking-tighter text-on-surface-variant font-bold">Hold to speak</span>
+</div>
+<!-- Send Button -->
+<button class="w-14 h-14 bg-surface-container-highest text-on-surface rounded-full flex items-center justify-center hover:bg-primary hover:text-on-primary transition-all active:scale-90">
+<span class="material-symbols-outlined text-2xl">send</span>
+</button>
+</div>
+<!-- Suggested Quick Replies -->
+<div class="max-w-4xl mx-auto mt-md flex gap-sm overflow-x-auto pb-sm custom-scrollbar">
+<button class="flex-shrink-0 px-md py-1.5 bg-surface-variant/30 border border-outline-variant rounded-full text-[12px] font-semibold text-on-surface-variant hover:bg-primary-container hover:text-on-primary-container transition-colors">
+                    "Show me the projection"
+                </button>
+<button class="flex-shrink-0 px-md py-1.5 bg-surface-variant/30 border border-outline-variant rounded-full text-[12px] font-semibold text-on-surface-variant hover:bg-primary-container hover:text-on-primary-container transition-colors">
+                    "What are the risks?"
+                </button>
+<button class="flex-shrink-0 px-md py-1.5 bg-surface-variant/30 border border-outline-variant rounded-full text-[12px] font-semibold text-on-surface-variant hover:bg-primary-container hover:text-on-primary-container transition-colors">
+                    "Add to my goal list"
+                </button>
+<button class="flex-shrink-0 px-md py-1.5 bg-surface-variant/30 border border-outline-variant rounded-full text-[12px] font-semibold text-on-surface-variant hover:bg-primary-container hover:text-on-primary-container transition-colors">
+                    "Ask Mama Beatrice"
+                </button>
+</div>
+</footer>
+</section>
+</main>
+<script>
+    const voiceBtn = document.getElementById('voiceBtn');
+    const micIcon = document.getElementById('micIcon');
+    let isRecording = false;
+
+    voiceBtn.addEventListener('mousedown', () => {
+        isRecording = true;
+        voiceBtn.classList.add('bg-secondary');
+        voiceBtn.classList.remove('bg-primary');
+        micIcon.textContent = 'graphic_eq';
+    });
+
+    const stopRecording = () => {
+        if (isRecording) {
+            isRecording = false;
+            voiceBtn.classList.add('bg-primary');
+            voiceBtn.classList.remove('bg-secondary');
+            micIcon.textContent = 'mic';
+        }
+    };
+
+    voiceBtn.addEventListener('mouseup', stopRecording);
+    voiceBtn.addEventListener('mouseleave', stopRecording);
+
+    const textarea = document.querySelector('textarea');
+    textarea.addEventListener('input', function() {
+        this.style.height = 'auto';
+        this.style.height = (this.scrollHeight) + 'px';
+    });
+</script>
+</body></html>

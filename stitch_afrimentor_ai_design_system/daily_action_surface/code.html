@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Daily Action Card - AfriMentor AI</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Be+Vietnam+Pro:wght@600;700;800&family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@100..900&family=Inter:wght@100..900&display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "primary": "#7e5700",
+                        "on-secondary": "#ffffff",
+                        "on-error-container": "#93000a",
+                        "surface-container": "#f0eee8",
+                        "surface-bright": "#fcf9f3",
+                        "surface": "#fcf9f3",
+                        "outline-variant": "#d4c4b0",
+                        "on-primary": "#ffffff",
+                        "inverse-on-surface": "#f3f0ea",
+                        "surface-variant": "#e5e2dc",
+                        "secondary": "#1b6d24",
+                        "on-tertiary-container": "#343333",
+                        "surface-container-low": "#f6f3ed",
+                        "on-tertiary-fixed-variant": "#474646",
+                        "secondary-fixed": "#a3f69c",
+                        "inverse-surface": "#31312d",
+                        "on-secondary-fixed-variant": "#005312",
+                        "error": "#ba1a1a",
+                        "on-tertiary": "#ffffff",
+                        "on-tertiary-fixed": "#1c1b1b",
+                        "on-background": "#1c1c18",
+                        "on-surface-variant": "#504536",
+                        "surface-container-lowest": "#ffffff",
+                        "on-primary-fixed": "#281900",
+                        "on-primary-container": "#462f00",
+                        "inverse-primary": "#f8bc51",
+                        "primary-container": "#c8922a",
+                        "on-primary-fixed-variant": "#5f4100",
+                        "tertiary": "#5f5e5e",
+                        "secondary-fixed-dim": "#88d982",
+                        "surface-container-highest": "#e5e2dc",
+                        "secondary-container": "#a0f399",
+                        "primary-fixed-dim": "#f8bc51",
+                        "tertiary-fixed": "#e5e2e1",
+                        "tertiary-container": "#9d9b9b",
+                        "surface-dim": "#dcdad4",
+                        "error-container": "#ffdad6",
+                        "tertiary-fixed-dim": "#c8c6c5",
+                        "surface-tint": "#7e5700",
+                        "on-surface": "#1c1c18",
+                        "outline": "#827564",
+                        "background": "#fcf9f3",
+                        "on-secondary-container": "#217128",
+                        "on-error": "#ffffff",
+                        "on-secondary-fixed": "#002204",
+                        "surface-container-high": "#ebe8e2",
+                        "primary-fixed": "#ffdeab"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "lg": "24px",
+                        "xl": "48px",
+                        "xs": "4px",
+                        "sm": "8px",
+                        "md": "16px",
+                        "gutter": "16px",
+                        "margin-mobile": "20px",
+                        "unit": "4px"
+                    },
+                    "fontFamily": {
+                        "body-lg": ["Inter"],
+                        "headline-lg": ["Be Vietnam Pro"],
+                        "body-md": ["Inter"],
+                        "headline-xl": ["Be Vietnam Pro"],
+                        "headline-lg-mobile": ["Be Vietnam Pro"],
+                        "title-md": ["Be Vietnam Pro"],
+                        "label-sm": ["Inter"]
+                    },
+                    "fontSize": {
+                        "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}],
+                        "headline-lg": ["32px", {"lineHeight": "40px", "fontWeight": "700"}],
+                        "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                        "headline-xl": ["40px", {"lineHeight": "48px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                        "headline-lg-mobile": ["28px", {"lineHeight": "34px", "fontWeight": "700"}],
+                        "title-md": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                        "label-sm": ["13px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600"}]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        body {
+            background-color: #fcf9f3;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .action-card {
+            background: linear-gradient(135deg, #fcf9f3 0%, #f5e6c8 100%);
+        }
+        .sankofa-bg {
+            mask-image: url('https://www.transparenttextures.com/patterns/cubes.png');
+            opacity: 0.05;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="font-body-md text-on-surface">
+<!-- TopAppBar -->
+<header class="w-full sticky top-0 z-50 bg-surface flex justify-between items-center px-margin-mobile py-sm w-full">
+<div class="flex items-center gap-sm">
+<div class="w-10 h-10 rounded-full border-2 border-primary overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="A warm, professional headshot of a friendly West African male mentor wearing a traditional patterned shirt, smiling with eyes that convey wisdom and kindness. The lighting is soft and golden, suggesting a sun-drenched study room with books and plants in the blurred background. Minimalist, high-quality digital photography style with a focus on human connection." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDDnq63SaghFExTj5dHeJvC-eIXMtkkHGslGvIPczc0Ce6B23q8efFFNUY1jpHVswQCqiNkcNPhVWdrjBzGWqwmtYcEmyAGF469uMXx9osd4pNNcElBvn02Raa-lvhYiaN4WeAIXXScx6mDAv_fbDdyStuHa1fPBBWOmbkSi3yp7z7f6XzpTmMs3knLWx6p1IcC3Sb5oMFv4X9RvXiwLl_1GYra4Voaw2eE-FRwfqF2fRsZRtReaTyuTw"/>
+</div>
+<h1 class="font-headline-lg-mobile text-headline-lg-mobile text-primary">AfriMentor AI</h1>
+</div>
+<button class="material-symbols-outlined text-primary hover:opacity-80 transition-opacity active:scale-95 duration-200">settings</button>
+</header>
+<main class="px-margin-mobile py-lg flex flex-col gap-lg pb-32">
+<!-- Welcome Section -->
+<section class="flex flex-col gap-xs">
+<p class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-widest">Good Morning, Kofi</p>
+<h2 class="font-headline-lg-mobile text-headline-lg-mobile text-on-surface">Ready to grow?</h2>
+</section>
+<!-- Daily Action Card -->
+<div class="action-card rounded-xl p-lg relative overflow-hidden border border-outline-variant transition-all duration-300">
+<!-- Decorative Adinkra Texture -->
+<div class="absolute inset-0 sankofa-bg pointer-events-none"></div>
+<div class="relative z-10 flex flex-col gap-md">
+<!-- Card Header -->
+<div class="flex justify-between items-center">
+<span class="px-md py-xs bg-secondary-container text-on-secondary-container font-label-sm text-label-sm rounded-full">Savings</span>
+<div class="flex items-center gap-xs bg-primary-container/10 px-md py-xs rounded-full border border-primary/20">
+<span class="text-primary font-bold">🔥 5 day streak</span>
+</div>
+</div>
+<!-- Main Content -->
+<div class="flex flex-col gap-sm">
+<h3 class="font-headline-lg-mobile text-headline-lg-mobile text-on-surface leading-tight">Save 10% of today's profit</h3>
+<p class="font-body-md text-body-md text-on-surface-variant">Building a reserve fund helps you survive market price fluctuations.</p>
+</div>
+<!-- Three-way Control -->
+<div class="grid grid-cols-1 gap-sm pt-md">
+<button class="flex items-center justify-between px-lg py-md rounded-xl border-2 border-outline-variant bg-surface hover:bg-surface-container-low transition-all active:scale-[0.98]" id="btn-done" onclick="setActive(this)">
+<span class="font-title-md text-title-md">Mark done</span>
+<span class="material-symbols-outlined text-secondary">check_circle</span>
+</button>
+<button class="flex items-center justify-between px-lg py-md rounded-xl border-2 border-outline-variant bg-surface hover:bg-surface-container-low transition-all active:scale-[0.98]" id="btn-progress" onclick="setActive(this)">
+<span class="font-title-md text-title-md">In progress</span>
+<span class="material-symbols-outlined text-primary">schedule</span>
+</button>
+<button class="flex items-center justify-between px-lg py-md rounded-xl border-2 border-outline-variant bg-surface hover:bg-surface-container-low transition-all active:scale-[0.98]" id="btn-help" onclick="setActive(this)">
+<span class="font-title-md text-title-md">Need help</span>
+<span class="material-symbols-outlined text-error">help_outline</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Mentorship Chat Preview (Minimalist Bento Card) -->
+<div class="bg-surface-container-low rounded-xl p-md border border-outline-variant">
+<div class="flex gap-md items-start">
+<div class="w-10 h-10 rounded-full bg-primary flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-on-primary">smart_toy</span>
+</div>
+<div class="flex flex-col gap-xs">
+<p class="font-label-sm text-label-sm text-primary">MENTOR ADVICE</p>
+<p class="font-body-md text-body-md text-on-surface italic">"Consistency is the key to resilience, Kofi. How can I assist with your savings today?"</p>
+</div>
+</div>
+</div>
+<!-- Progress Visualization -->
+<section class="flex flex-col gap-md">
+<h4 class="font-title-md text-title-md px-xs">This Month's Growth</h4>
+<div class="bg-surface rounded-xl p-lg border border-outline-variant flex items-center gap-lg">
+<!-- Simplified Progress Ring -->
+<div class="relative w-20 h-20 shrink-0">
+<svg class="w-full h-full" viewbox="0 0 36 36">
+<path class="text-surface-container-highest" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" stroke-dasharray="100, 100" stroke-width="3"></path>
+<path class="text-secondary" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" stroke-dasharray="70, 100" stroke-linecap="round" stroke-width="3"></path>
+</svg>
+<div class="absolute inset-0 flex items-center justify-center font-bold text-secondary">70%</div>
+</div>
+<div class="flex flex-col gap-xs">
+<p class="font-title-md text-title-md">GHC 450.00</p>
+<p class="font-label-sm text-label-sm text-on-surface-variant">Saved towards Emergency Fund</p>
+</div>
+</div>
+</section>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 w-full z-50 bg-surface border-t border-outline-variant flex justify-around items-center h-16 w-full px-sm pb-safe">
+<!-- Chat Active -->
+<a class="flex flex-col items-center justify-center text-primary font-bold group" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">chat_bubble</span>
+<span class="font-label-sm text-label-sm">Chat</span>
+<div class="w-1 h-1 bg-primary rounded-full mt-1"></div>
+</a>
+<!-- Goals -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-container-low transition-colors px-md rounded-lg" href="#">
+<span class="material-symbols-outlined">target</span>
+<span class="font-label-sm text-label-sm">Goals</span>
+</a>
+<!-- Library -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-container-low transition-colors px-md rounded-lg" href="#">
+<span class="material-symbols-outlined">auto_stories</span>
+<span class="font-label-sm text-label-sm">Library</span>
+</a>
+<!-- Progress -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-container-low transition-colors px-md rounded-lg" href="#">
+<span class="material-symbols-outlined">query_stats</span>
+<span class="font-label-sm text-label-sm">Progress</span>
+</a>
+</nav>
+<script>
+        function setActive(element) {
+            // Remove active styles from all buttons
+            const buttons = document.querySelectorAll('#btn-done, #btn-progress, #btn-help');
+            buttons.forEach(btn => {
+                btn.classList.remove('border-primary', 'bg-primary-container/10', 'scale-[0.98]');
+                btn.classList.add('border-outline-variant', 'bg-surface');
+            });
+            
+            // Add active styles to clicked button
+            element.classList.remove('border-outline-variant', 'bg-surface');
+            element.classList.add('border-primary', 'bg-primary-container/10', 'scale-[0.98]');
+
+            // Micro-interaction: visual feedback
+            if (element.id === 'btn-done') {
+                confettiEffect();
+            }
+        }
+
+        function confettiEffect() {
+            // Simple visual cue for completion
+            const card = document.querySelector('.action-card');
+            card.style.transition = 'background 0.5s ease';
+            card.style.background = 'linear-gradient(135deg, #a0f399 0%, #fcf9f3 100%)';
+            setTimeout(() => {
+                card.style.background = 'linear-gradient(135deg, #fcf9f3 0%, #f5e6c8 100%)';
+            }, 1000);
+        }
+    </script>
+</body></html>

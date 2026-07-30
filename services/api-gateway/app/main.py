@@ -1,0 +1,139 @@
+"""API Gateway — AfriMentor AI (card O1.3).
+
+Single ingress: routing table → JWT verification → per-route rate limit → proxy to
+upstream with a trusted identity header. See docs/adr/0001-microservices-architecture.md.
+"""
+from __future__ import annotations
+
+import httpx
+from fastapi import FastAPI, Request, Response
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+
+from .auth import TokenError, verify_access_token
+from .config import get_settings
+from .ratelimit import check_rate_limit
+from .routes import ROUTES, match_route
+
+SERVICE_NAME = "api-gateway"
+SERVICE_VERSION = "1.0.0"
+settings = get_settings()
+
+app = FastAPI(
+    title="AfriMentor AI — API Gateway",
+    version=SERVICE_VERSION,
+    description="Edge routing, JWT verification, and rate limiting.",
+)
+
+# Mobile app + admin console origins (tighten in prod).
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000", "http://localhost:3001"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Headers that must never be forwarded from the client (identity is set by us only).
+_STRIP_REQUEST_HEADERS = {"host", "content-length", "x-user-id", "x-user-roles"}
+_STRIP_RESPONSE_HEADERS = {"content-length", "transfer-encoding", "connection"}
+
+
+@app.get("/health", tags=["meta"])
+def health() -> dict:
+    return {"status": "healthy", "service": SERVICE_NAME, "version": SERVICE_VERSION}
+
+
+@app.get("/", tags=["meta"])
+def root() -> dict:
+    return {
+        "service": SERVICE_NAME,
+        "message": "API Gateway online",
+        "routes": [r.prefix for r in ROUTES],
+    }
+
+
+def _client_identity(request: Request, user_id: str | None) -> str:
+    if user_id:
+        return f"user:{user_id}"
+    fwd = request.headers.get("x-forwarded-for")
+    if fwd:
+        ip = fwd.split(",")[0].strip()
+    else:
+        ip = request.client.host if request.client else "unknown"
+    return f"ip:{ip}"
+
+
+@app.api_route(
+    "/api/v1/{path:path}",
+    methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    tags=["proxy"],
+)
+async def gateway(path: str, request: Request) -> Response:
+    full_path = "/api/v1/" + path
+    route = match_route(full_path)
+    if route is None:
+        return JSONResponse({"detail": "no matching route"}, status_code=404)
+
+    # --- authentication (protected routes only) ---
+    user_id: str | None = None
+    roles: list[str] = []
+    if route.protected:
+        authz = request.headers.get("authorization", "")
+        if not authz.lower().startswith("bearer "):
+            return JSONResponse({"detail": "missing bearer token"}, status_code=401)
+        try:
+            claims = await verify_access_token(authz.split(" ", 1)[1])
+        except TokenError as exc:
+            return JSONResponse({"detail": f"unauthorized: {exc}"}, status_code=401)
+        user_id = claims.get("sub")
+        roles = claims.get("roles", [])
+
+    # --- rate limiting ---
+    limit = route.rate_limit or settings.rate_limit_requests
+    identity = _client_identity(request, user_id)
+    allowed = await check_rate_limit(
+        identity, route.prefix, limit, settings.rate_limit_window_seconds
+    )
+    if not allowed:
+        return JSONResponse(
+            {"detail": "rate limit exceeded"},
+            status_code=429,
+            headers={"Retry-After": str(settings.rate_limit_window_seconds)},
+        )
+
+    # --- proxy to upstream ---
+    upstream_url = route.upstream + full_path
+    fwd_headers = {
+        k: v for k, v in request.headers.items() if k.lower() not in _STRIP_REQUEST_HEADERS
+    }
+    if user_id:
+        fwd_headers["X-User-Id"] = user_id
+        fwd_headers["X-User-Roles"] = ",".join(roles)
+
+    body = await request.body()
+    try:
+        async with httpx.AsyncClient(timeout=settings.upstream_timeout_seconds) as client:
+            upstream_resp = await client.request(
+                request.method,
+                upstream_url,
+                params=dict(request.query_params),
+                headers=fwd_headers,
+                content=body,
+            )
+    except httpx.RequestError as exc:
+        return JSONResponse(
+            {"detail": f"upstream unavailable: {exc.__class__.__name__}"}, status_code=502
+        )
+
+    resp_headers = {
+        k: v
+        for k, v in upstream_resp.headers.items()
+        if k.lower() not in _STRIP_RESPONSE_HEADERS
+    }
+    return Response(
+        content=upstream_resp.content,
+        status_code=upstream_resp.status_code,
+        headers=resp_headers,
+        media_type=upstream_resp.headers.get("content-type"),
+    )

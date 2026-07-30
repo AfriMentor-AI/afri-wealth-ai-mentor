@@ -1,0 +1,49 @@
+# Redocly configuration for the AfriMentor AI API docs site (card O1.4).
+# Build:   npx @redocly/cli build-docs <service> -o docs/api/_site/<service>.html
+# Preview: npx @redocly/cli preview-docs docs/api/auth-user-service.yaml
+# Lint:    npx @redocly/cli lint docs/api/*.yaml
+
+apis:
+  api-gateway:
+    root: docs/api/api-gateway.yaml
+  auth-user-service:
+    root: docs/api/auth-user-service.yaml
+  intake-profiling-service:
+    root: docs/api/intake-profiling-service.yaml
+  chat-orchestration-service:
+    root: docs/api/chat-orchestration-service.yaml
+  persona-prompt-service:
+    root: docs/api/persona-prompt-service.yaml
+  rag-corpus-service:
+    root: docs/api/rag-corpus-service.yaml
+  goals-milestones-service:
+    root: docs/api/goals-milestones-service.yaml
+  progress-gamification-service:
+    root: docs/api/progress-gamification-service.yaml
+  insight-library-service:
+    root: docs/api/insight-library-service.yaml
+  feedback-service:
+    root: docs/api/feedback-service.yaml
+  research-evaluation-service:
+    root: docs/api/research-evaluation-service.yaml
+  voice-service:
+    root: docs/api/voice-service.yaml
+  notification-service:
+    root: docs/api/notification-service.yaml
+
+extends:
+  - recommended
+
+rules:
+  # v1 contracts may still carry TODO bodies — keep these advisory, not blocking.
+  operation-4xx-response: warn
+  no-empty-servers: error
+  operation-operationId: off
+  operation-summary: error
+
+theme:
+  openapi:
+    theme:
+      colors:
+        primary:
+          main: "#c8922a"  # Confident Gold (design system)

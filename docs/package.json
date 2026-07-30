@@ -1,0 +1,15 @@
+{
+  "name": "afrimentor-api-docs",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Redocly build/lint for AfriMentor AI OpenAPI contracts (card O1.4)",
+  "scripts": {
+    "lint": "redocly lint --config ../redocly.yaml",
+    "build": "node build-all.mjs api-gateway && node build-all.mjs auth-user-service",
+    "build:all": "node build-all.mjs",
+    "preview": "redocly preview-docs api/api-gateway.yaml"
+  },
+  "devDependencies": {
+    "@redocly/cli": "^1.34.0"
+  }
+}

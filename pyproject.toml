@@ -1,0 +1,14 @@
+# Shared lint/format config for all Python services (card O1.2).
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+ignore = [
+    "B008",   # FastAPI uses `Depends()` as a default argument
+    "UP042",  # allow (str, Enum) mixins for broad Python compatibility
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["B"]

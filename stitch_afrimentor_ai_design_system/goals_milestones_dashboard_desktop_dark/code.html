@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>AfriMentor AI - Goals Dashboard</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;600;700&amp;family=Inter:wght@400;600&amp;family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            display: inline-block;
+            line-height: 1;
+            vertical-align: middle;
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #4a453e;
+            border-radius: 10px;
+        }
+        .goal-card-active {
+            border: 2px solid #f8bc51;
+            background-color: #2a2824;
+        }
+        .milestone-line {
+            background-image: linear-gradient(to bottom, #f8bc51 50%, rgba(255,255,255,0) 0%);
+            background-position: right;
+            background-size: 2px 10px;
+            background-repeat: repeat-y;
+        }
+        @keyframes pulse-subtle {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+        .animate-pulse-subtle {
+            animation: pulse-subtle 3s ease-in-out infinite;
+        }
+    </style>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                "on-primary": "#281900",
+                "inverse-on-surface": "#1c1c18",
+                "surface-variant": "#504536",
+                "secondary": "#88d982",
+                "outline-variant": "#504536",
+                "surface-container": "#211f1c",
+                "surface-bright": "#3d3932",
+                "surface": "#141311",
+                "primary": "#f8bc51",
+                "on-secondary": "#00390a",
+                "on-error-container": "#ffdad6",
+                "on-tertiary-fixed": "#1c1b1b",
+                "on-background": "#ece1d0",
+                "on-surface-variant": "#d4c4b0",
+                "on-secondary-fixed-variant": "#a3f69c",
+                "error": "#ffb4ab",
+                "on-tertiary": "#ffffff",
+                "secondary-fixed": "#a3f69c",
+                "inverse-surface": "#ece1d0",
+                "on-tertiary-container": "#e5e2e1",
+                "surface-container-low": "#1c1b18",
+                "on-tertiary-fixed-variant": "#c8c6c5",
+                "tertiary": "#c8c6c5",
+                "secondary-fixed-dim": "#88d982",
+                "surface-container-highest": "#363430",
+                "secondary-container": "#005312",
+                "primary-fixed-dim": "#f8bc51",
+                "on-primary-fixed-variant": "#ffdeab",
+                "primary-container": "#5f4100",
+                "surface-container-lowest": "#0f0e0c",
+                "on-primary-fixed": "#281900",
+                "on-primary-container": "#ffdeab",
+                "inverse-primary": "#7e5700",
+                "on-secondary-fixed": "#002204",
+                "surface-container-high": "#2b2925",
+                "primary-fixed": "#ffdeab",
+                "outline": "#9c8f80",
+                "background": "#141311",
+                "on-secondary-container": "#a3f69c",
+                "on-error": "#690005",
+                "tertiary-fixed-dim": "#c8c6c5",
+                "surface-tint": "#f8bc51",
+                "on-surface": "#ece1d0",
+                "tertiary-fixed": "#e5e2e1",
+                "tertiary-container": "#474646",
+                "surface-dim": "#141311",
+                "error-container": "#93000a"
+            },
+            "borderRadius": {
+                "DEFAULT": "0.25rem",
+                "lg": "0.5rem",
+                "xl": "0.75rem",
+                "full": "9999px"
+            },
+            "spacing": {
+                "xs": "4px",
+                "sm": "8px",
+                "md": "16px",
+                "gutter": "16px",
+                "margin-mobile": "20px",
+                "unit": "4px",
+                "lg": "24px",
+                "xl": "48px"
+            },
+            "fontFamily": {
+                "title-md": ["Be Vietnam Pro"],
+                "label-sm": ["Inter"],
+                "headline-lg": ["Be Vietnam Pro"],
+                "body-md": ["Inter"],
+                "body-lg": ["Inter"],
+                "headline-xl": ["Be Vietnam Pro"],
+                "headline-lg-mobile": ["Be Vietnam Pro"]
+            },
+            "fontSize": {
+                "title-md": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                "label-sm": ["13px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                "headline-lg": ["32px", {"lineHeight": "40px", "fontWeight": "700"}],
+                "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}],
+                "headline-xl": ["40px", {"lineHeight": "48px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                "headline-lg-mobile": ["28px", {"lineHeight": "34px", "fontWeight": "700"}]
+            }
+          },
+        },
+      }
+    </script>
+</head>
+<body class="bg-surface text-on-surface font-body-md text-body-md overflow-hidden">
+<!-- Sidebar Navigation -->
+<aside class="h-screen w-64 fixed left-0 top-0 bg-surface-container-low border-r border-outline-variant flex flex-col p-md gap-lg z-20">
+<div class="flex flex-col gap-xs px-sm">
+<h1 class="font-headline-lg text-headline-lg text-primary">AfriMentor</h1>
+<p class="text-label-sm font-label-sm text-on-surface-variant">Dignified Growth</p>
+</div>
+<nav class="flex flex-col gap-sm flex-grow">
+<a class="flex items-center gap-md px-md py-sm text-on-surface-variant hover:bg-surface-variant rounded-lg transition-colors active:scale-95 duration-150" href="#">
+<span class="material-symbols-outlined">forum</span>
+<span class="font-title-md text-title-md">Chat</span>
+</a>
+<a class="flex items-center gap-md px-md py-sm bg-primary-container text-on-primary-container rounded-lg transition-colors active:scale-95 duration-150" href="#">
+<span class="material-symbols-outlined">ads_click</span>
+<span class="font-title-md text-title-md">Goals</span>
+</a>
+<a class="flex items-center gap-md px-md py-sm text-on-surface-variant hover:bg-surface-variant rounded-lg transition-colors active:scale-95 duration-150" href="#">
+<span class="material-symbols-outlined">menu_book</span>
+<span class="font-title-md text-title-md">Library</span>
+</a>
+<a class="flex items-center gap-md px-md py-sm text-on-surface-variant hover:bg-surface-variant rounded-lg transition-colors active:scale-95 duration-150" href="#">
+<span class="material-symbols-outlined">query_stats</span>
+<span class="font-title-md text-title-md">Progress</span>
+</a>
+<a class="flex items-center gap-md px-md py-sm text-on-surface-variant hover:bg-surface-variant rounded-lg transition-colors active:scale-95 duration-150" href="#">
+<span class="material-symbols-outlined">analytics</span>
+<span class="font-title-md text-title-md">Research Console</span>
+</a>
+</nav>
+<div class="mt-auto pt-lg border-t border-outline-variant">
+<button class="w-full flex items-center justify-center gap-sm bg-primary text-on-primary py-md rounded-full font-title-md text-title-md hover:opacity-90 active:scale-95 transition-all">
+<span class="material-symbols-outlined">add</span>
+            New Goal
+        </button>
+</div>
+</aside>
+<!-- Top Navigation Bar -->
+<header class="h-16 fixed top-0 right-0 left-64 bg-surface border-b border-outline-variant flex justify-between items-center px-lg z-10">
+<div class="flex items-center gap-md">
+<span class="font-headline-lg text-headline-lg text-primary">AfriMentor AI</span>
+</div>
+<div class="flex items-center gap-lg">
+<div class="flex items-center gap-md">
+<span class="material-symbols-outlined text-on-surface-variant cursor-pointer hover:text-primary transition-colors">notifications</span>
+<span class="material-symbols-outlined text-on-surface-variant cursor-pointer hover:text-primary transition-colors">settings</span>
+</div>
+<div class="w-10 h-10 rounded-full border-2 border-primary overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="A professional portrait of a West African business mentor." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCZczXhiHNKkPjjXMLLehR7qrrC7b2TFQu5tnvOeGU1xfpc_azhSmf95OQZVzD0iBm40IDWD29qo4LqPj6R_yaaNSHHVVga0PgL72p4odw_NGL_6PwHPrctRm8CMtFrH9ZAjjsc8lU_pDbJqtPIcywlea7_WbQ0ARf9YcUci1_YisBMxlmAS4dLe5vPyEVnSpcmopbGNefsJxrS-kqNaFE54Um6T3UA9Cv1rQfbHxfyzHixDUK0i_O4DA"/>
+</div>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="ml-64 mt-16 h-[calc(100vh-64px)] flex overflow-hidden">
+<!-- Goals Overview Section -->
+<section class="flex-grow p-xl overflow-y-auto custom-scrollbar bg-surface">
+<div class="max-w-4xl mx-auto">
+<header class="mb-xl flex justify-between items-end">
+<div>
+<h2 class="font-headline-xl text-headline-xl text-on-background mb-sm">Your Aspirations</h2>
+<p class="text-body-lg font-body-lg text-on-surface-variant">Guided steps towards communal and personal prosperity.</p>
+</div>
+<div class="flex items-center gap-sm bg-surface-container px-md py-sm rounded-lg border border-outline-variant">
+<span class="material-symbols-outlined text-primary">emoji_events</span>
+<span class="font-label-sm text-label-sm text-on-surface">3 Active Goals</span>
+</div>
+</header>
+<!-- Bento Grid of Goals -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-lg">
+<!-- Goal Card 1 (Active/Selected) -->
+<div class="goal-card-active p-lg rounded-xl flex flex-col gap-md cursor-pointer transition-all hover:shadow-lg shadow-black/40">
+<div class="flex justify-between items-start">
+<div class="p-sm bg-primary-container rounded-lg">
+<span class="material-symbols-outlined text-primary">agriculture</span>
+</div>
+<div class="relative w-16 h-16">
+<svg class="w-full h-full -rotate-90" viewbox="0 0 36 36">
+<path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="#504536" stroke-width="3"></path>
+<path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="#88d982" stroke-dasharray="65, 100" stroke-width="3"></path>
+</svg>
+<div class="absolute inset-0 flex items-center justify-center font-label-sm text-label-sm text-on-surface">65%</div>
+</div>
+</div>
+<div>
+<h3 class="font-headline-lg text-headline-lg text-on-surface">Agro-Export Expansion</h3>
+<p class="text-body-md font-body-md text-on-surface-variant mt-sm">Establishing sustainable shea butter trade routes to EU markets.</p>
+</div>
+<div class="flex flex-wrap gap-xs mt-auto">
+<span class="px-sm py-xs bg-secondary-container text-on-secondary-container text-label-sm font-label-sm rounded-full">High Priority</span>
+<span class="px-sm py-xs bg-surface-variant text-on-surface-variant text-label-sm font-label-sm rounded-full">Communal</span>
+</div>
+</div>
+<!-- Goal Card 2 -->
+<div class="bg-surface-container-low p-lg rounded-xl border border-outline-variant flex flex-col gap-md cursor-pointer transition-all hover:bg-surface-container-high">
+<div class="flex justify-between items-start">
+<div class="p-sm bg-surface-variant rounded-lg">
+<span class="material-symbols-outlined text-on-surface-variant">school</span>
+</div>
+<div class="relative w-16 h-16">
+<svg class="w-full h-full -rotate-90" viewbox="0 0 36 36">
+<path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="#363430" stroke-width="3"></path>
+<path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="#88d982" stroke-dasharray="30, 100" stroke-width="3"></path>
+</svg>
+<div class="absolute inset-0 flex items-center justify-center font-label-sm text-label-sm text-on-surface">30%</div>
+</div>
+</div>
+<div>
+<h3 class="font-headline-lg text-headline-lg text-on-surface">Digital Literacy Hub</h3>
+<p class="text-body-md font-body-md text-on-surface-variant mt-sm">Training 50 local youth in basic software development by Q4.</p>
+</div>
+<div class="flex flex-wrap gap-xs mt-auto">
+<span class="px-sm py-xs bg-surface-variant text-on-surface-variant text-label-sm font-label-sm rounded-full">Community</span>
+</div>
+</div>
+<!-- Goal Card 3 -->
+<div class="bg-surface-container-low p-lg rounded-xl border border-outline-variant flex flex-col gap-md cursor-pointer transition-all hover:bg-surface-container-high">
+<div class="flex justify-between items-start">
+<div class="p-sm bg-surface-variant rounded-lg">
+<span class="material-symbols-outlined text-on-surface-variant">home_health</span>
+</div>
+<div class="relative w-16 h-16">
+<svg class="w-full h-full -rotate-90" viewbox="0 0 36 36">
+<path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="#363430" stroke-width="3"></path>
+<path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="#88d982" stroke-dasharray="15, 100" stroke-width="3"></path>
+</svg>
+<div class="absolute inset-0 flex items-center justify-center font-label-sm text-label-sm text-on-surface">15%</div>
+</div>
+</div>
+<div>
+<h3 class="font-headline-lg text-headline-lg text-on-surface">Micro-Clinic Build</h3>
+<p class="text-body-md font-body-md text-on-surface-variant mt-sm">Securing permits and foundational funding for community health.</p>
+</div>
+<div class="flex flex-wrap gap-xs mt-auto">
+<span class="px-sm py-xs bg-error-container text-on-error-container text-label-sm font-label-sm rounded-full">Permits Blocked</span>
+</div>
+</div>
+<!-- Empty State / Add New -->
+<div class="border-2 border-dashed border-outline-variant rounded-xl flex flex-col items-center justify-center p-xl gap-md group cursor-pointer hover:border-primary transition-all">
+<div class="w-12 h-12 rounded-full bg-surface-container flex items-center justify-center group-hover:bg-primary-container transition-colors">
+<span class="material-symbols-outlined text-on-surface-variant group-hover:text-primary">add_circle</span>
+</div>
+<span class="font-title-md text-title-md text-on-surface-variant">Define New Purpose</span>
+</div>
+</div>
+<!-- Guidance Note -->
+<div class="mt-xl p-lg bg-surface-container rounded-xl border border-outline-variant flex gap-lg relative overflow-hidden">
+<div class="flex-grow relative z-10">
+<h4 class="font-title-md text-title-md text-primary flex items-center gap-sm">
+<span class="material-symbols-outlined">menu_book</span>
+                        Mentor Insight: Sankofa
+                    </h4>
+<p class="text-body-md font-body-md text-on-surface-variant mt-sm max-w-2xl">
+                        "Remember that to move forward, we must look to the wisdom of our past. Your export expansion goal draws from a heritage of trade excellence."
+                    </p>
+</div>
+<div class="absolute right-[-20px] bottom-[-20px] opacity-10 pointer-events-none">
+<span class="material-symbols-outlined !text-[120px]">psychology</span>
+</div>
+</div>
+</div>
+</section>
+<!-- Goal Milestone Path (Side Panel) -->
+<aside class="w-[450px] bg-surface-container-lowest border-l border-outline-variant flex flex-col overflow-hidden">
+<header class="p-lg bg-surface-container-low border-b border-outline-variant">
+<div class="flex items-center justify-between mb-sm">
+<span class="text-label-sm font-label-sm text-primary uppercase tracking-widest">Active Roadmap</span>
+<span class="material-symbols-outlined text-on-surface-variant cursor-pointer">close</span>
+</div>
+<h3 class="font-headline-lg text-headline-lg text-on-surface">Agro-Export Path</h3>
+</header>
+<div class="flex-grow overflow-y-auto custom-scrollbar p-lg">
+<div class="relative pl-8">
+<div class="absolute left-[15px] top-4 bottom-4 w-[2px] milestone-line"></div>
+<div class="flex flex-col gap-xl">
+<!-- Node 1: Done -->
+<div class="relative">
+<div class="absolute left-[-26px] top-0 w-6 h-6 rounded-full bg-secondary flex items-center justify-center z-10">
+<span class="material-symbols-outlined text-on-secondary !text-[16px]">check</span>
+</div>
+<div class="bg-surface-container-high p-md rounded-lg border border-outline-variant shadow-md">
+<div class="flex justify-between items-start mb-xs">
+<h5 class="font-title-md text-title-md text-on-surface">Quality Certification</h5>
+<span class="text-label-sm font-label-sm text-secondary">Done</span>
+</div>
+<p class="text-label-sm font-label-sm text-on-surface-variant">Finalized organic certification for cooperatives.</p>
+<div class="mt-md flex gap-sm">
+<div class="w-8 h-8 rounded-full border border-outline-variant overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="Close-up of organic shea nuts." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCY2SEFfsQu0bdcnF0gfobPJVNcZ3OsGcHxtue8is_lXPxIjnbk-omvexs1UbBsFZBFafqCcxmOQf95slfSUudqrjd8MTzF70W8c3BlbVKH-baETSALKm3CR3S3zZx3Vg1VPvXj5yqKsVELgO1t0tJMN94GMkWAhRem5R4vExLJz7bwMfYdGlggtjGXxcK0RTtu_hx8gMykqJxYqmuzG1JVC1C7gq-S1rW-GSAL1o_rdCRdhWdMYiMD4g"/>
+</div>
+<span class="text-label-sm font-label-sm text-on-surface self-center">+2 artifacts</span>
+</div>
+</div>
+</div>
+<!-- Node 2: In Progress -->
+<div class="relative">
+<div class="absolute left-[-26px] top-0 w-6 h-6 rounded-full bg-primary flex items-center justify-center z-10 animate-pulse-subtle">
+<div class="w-2 h-2 rounded-full bg-on-primary"></div>
+</div>
+<div class="bg-surface-container-highest p-md rounded-lg border-2 border-primary shadow-lg">
+<div class="flex justify-between items-start mb-xs">
+<h5 class="font-title-md text-title-md text-primary">EU Distributor Pitch</h5>
+<span class="text-label-sm font-label-sm text-primary">Active</span>
+</div>
+<p class="text-label-sm font-label-sm text-on-surface-variant">Negotiating with three wholesalers in Amsterdam.</p>
+<div class="mt-md space-y-sm">
+<div class="flex items-center gap-sm p-sm bg-surface-container rounded border border-outline-variant">
+<span class="material-symbols-outlined text-secondary !text-[18px]">radio_button_checked</span>
+<span class="text-label-sm font-label-sm text-on-surface">Draft pitch deck</span>
+</div>
+<div class="flex items-center gap-sm p-sm bg-surface-container rounded border border-outline-variant">
+<span class="material-symbols-outlined text-on-surface-variant !text-[18px]">radio_button_unchecked</span>
+<span class="text-label-sm font-label-sm text-on-surface-variant">Schedule Zoom calls</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Node 3: Blocked -->
+<div class="relative">
+<div class="absolute left-[-26px] top-0 w-6 h-6 rounded-full bg-error flex items-center justify-center z-10">
+<span class="material-symbols-outlined text-on-error !text-[16px]">priority_high</span>
+</div>
+<div class="bg-error-container p-md rounded-lg border border-error">
+<div class="flex justify-between items-start mb-xs">
+<h5 class="font-title-md text-title-md text-on-error-container">Logistics Setup</h5>
+<span class="text-label-sm font-label-sm text-error">Blocked</span>
+</div>
+<p class="text-label-sm font-label-sm text-on-error-container">Customs clearance delay at Tema Port.</p>
+<button class="mt-md text-label-sm font-label-sm text-on-error-container underline flex items-center gap-xs">
+<span class="material-symbols-outlined !text-[14px]">auto_fix</span>
+                                Ask AI for solution
+                            </button>
+</div>
+</div>
+<!-- Node 4: Upcoming -->
+<div class="relative opacity-40">
+<div class="absolute left-[-26px] top-0 w-6 h-6 rounded-full border-2 border-outline-variant bg-surface-container z-10"></div>
+<div class="bg-surface-container-low p-md rounded-lg border border-outline-variant">
+<h5 class="font-title-md text-title-md text-on-surface-variant">First Batch Shipment</h5>
+<p class="text-label-sm font-label-sm text-on-surface-variant">Target date: Oct 15th</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Panel Footer Actions -->
+<footer class="p-lg bg-surface-container-high border-t border-outline-variant flex flex-col gap-md">
+<div class="flex items-center justify-between">
+<span class="text-label-sm font-label-sm text-on-surface-variant">Next suggested step</span>
+<span class="material-symbols-outlined text-primary">lightbulb</span>
+</div>
+<div class="p-md bg-primary-container rounded-lg border border-primary-container">
+<p class="text-label-sm font-label-sm text-on-primary-container">"Re-check Port Authority documentation for the missing clearing permit."</p>
+</div>
+<button class="w-full py-md bg-secondary-container text-on-secondary-container rounded-full font-title-md text-title-md hover:opacity-90 active:scale-95 transition-all">
+                Update Goal Progress
+            </button>
+</footer>
+</aside>
+</main>
+<!-- Contextual FAB -->
+<div class="fixed bottom-lg right-[474px] z-30">
+<button class="w-14 h-14 bg-primary text-on-primary rounded-full shadow-xl flex items-center justify-center hover:scale-105 active:scale-95 transition-all">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">add</span>
+</button>
+</div>
+<script>
+    document.querySelectorAll('.goal-card-active, .bg-surface-container-low').forEach(card => {
+        card.addEventListener('click', function() {
+            document.querySelectorAll('.goal-card-active').forEach(c => {
+                c.classList.remove('goal-card-active');
+                c.classList.add('bg-surface-container-low', 'border-outline-variant');
+            });
+            this.classList.add('goal-card-active');
+            this.classList.remove('bg-surface-container-low', 'border-outline-variant');
+            
+            const aside = document.querySelector('aside:last-of-type');
+            aside.classList.add('animate-pulse-subtle');
+            setTimeout(() => aside.classList.remove('animate-pulse-subtle'), 1000);
+        });
+    });
+</script>
+</body></html>

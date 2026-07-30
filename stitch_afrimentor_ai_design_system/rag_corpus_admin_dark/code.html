@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>AfriMentor AI | RAG Corpus Admin</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;600;700;800&amp;family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400;500&amp;family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            vertical-align: middle;
+        }
+        .mono-metrics { font-family: 'JetBrains Mono', monospace; }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #504536; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #827564; }
+        .glass-panel {
+            background: rgba(18, 20, 20, 0.8);
+            backdrop-filter: blur(8px);
+        }
+        .asymmetric-grid {
+            display: grid;
+            grid-template-columns: 1fr 380px;
+            gap: 24px;
+        }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#f8bc51",
+                        "on-primary": "#462f00",
+                        "primary-container": "#c8922a",
+                        "on-primary-container": "#ffffff",
+                        "secondary": "#88d982",
+                        "on-secondary": "#00390a",
+                        "secondary-container": "#005312",
+                        "on-secondary-container": "#a3f69c",
+                        "tertiary": "#c8c6c5",
+                        "on-tertiary": "#31312d",
+                        "tertiary-container": "#474646",
+                        "on-tertiary-container": "#e5e2e1",
+                        "error": "#ffb4ab",
+                        "on-error": "#690005",
+                        "background": "#121414",
+                        "on-background": "#e5e2dc",
+                        "surface": "#121414",
+                        "on-surface": "#e5e2dc",
+                        "surface-variant": "#504536",
+                        "on-surface-variant": "#d4c4b0",
+                        "outline": "#9c8f80",
+                        "outline-variant": "#504536",
+                        "surface-container-lowest": "#0d0f0f",
+                        "surface-container-low": "#1a1c1c",
+                        "surface-container": "#1e2020",
+                        "surface-container-high": "#292a2a",
+                        "surface-container-highest": "#333535",
+                        "surface-bright": "#38393a",
+                        "surface-dim": "#121414"
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.5rem",
+                        "lg": "0.5rem",
+                        "xl": "1rem",
+                        "full": "9999px"
+                    },
+                    spacing: {
+                        "lg": "24px",
+                        "xl": "48px",
+                        "xs": "4px",
+                        "sm": "8px",
+                        "md": "16px",
+                        "gutter": "16px",
+                        "margin-mobile": "20px",
+                        "unit": "4px"
+                    },
+                    fontFamily: {
+                        "body-lg": ["Inter"],
+                        "headline-lg": ["Be Vietnam Pro"],
+                        "body-md": ["Inter"],
+                        "headline-xl": ["Be Vietnam Pro"],
+                        "title-md": ["Be Vietnam Pro"],
+                        "label-sm": ["Inter"]
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-background text-on-surface font-body-md min-h-screen flex">
+<!-- Sidebar Navigation -->
+<aside class="hidden md:flex flex-col w-72 bg-surface-container border-r border-outline-variant h-screen sticky top-0">
+<div class="p-lg flex items-center gap-md">
+<div class="w-10 h-10 bg-primary-container rounded-lg flex items-center justify-center text-on-primary-container">
+<span class="material-symbols-outlined text-2xl" style="font-variation-settings: 'FILL' 1;">account_tree</span>
+</div>
+<h1 class="font-headline-lg text-title-md text-primary tracking-tight">AfriMentor AI</h1>
+</div>
+<nav class="flex-1 px-md py-md space-y-xs">
+<div class="px-md py-sm text-label-sm text-on-surface-variant uppercase tracking-widest opacity-60">Management</div>
+<a class="flex items-center gap-md px-md py-md rounded-xl bg-secondary-container text-on-secondary-container transition-all" href="#">
+<span class="material-symbols-outlined">database</span>
+<span class="font-body-md font-semibold">RAG Corpus</span>
+</a>
+<a class="flex items-center gap-md px-md py-md rounded-xl text-on-surface-variant hover:bg-surface-variant hover:text-on-surface transition-all" href="#">
+<span class="material-symbols-outlined">insights</span>
+<span class="font-body-md">Insights</span>
+</a>
+<a class="flex items-center gap-md px-md py-md rounded-xl text-on-surface-variant hover:bg-surface-variant hover:text-on-surface transition-all" href="#">
+<span class="material-symbols-outlined">groups</span>
+<span class="font-body-md">Community</span>
+</a>
+<div class="pt-lg px-md py-sm text-label-sm text-on-surface-variant uppercase tracking-widest opacity-60">System</div>
+<a class="flex items-center gap-md px-md py-md rounded-xl text-on-surface-variant hover:bg-surface-variant hover:text-on-surface transition-all" href="#">
+<span class="material-symbols-outlined">workspace_premium</span>
+<span class="font-body-md">Achievements</span>
+</a>
+<a class="flex items-center gap-md px-md py-md rounded-xl text-on-surface-variant hover:bg-surface-variant hover:text-on-surface transition-all" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-body-md">Settings</span>
+</a>
+</nav>
+<div class="p-md mt-auto">
+<div class="bg-surface-container-highest rounded-2xl p-md flex items-center gap-md border border-outline-variant">
+<div class="w-10 h-10 rounded-full bg-primary-container border-2 border-primary overflow-hidden">
+<img alt="Profile" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDFl7_xVbV4Psc5QHjMNgs_5Zo59aNfQfnBzEnLoYASL3MpT67cEe4rQaXuQQ9EHn1OwQo98gkd3709kTVYeTsRKcKLF8sdbE8cEUCQrAKkQMPpIZ_wP-NqjhhiIFI07wf8KchsiPjkCdM_pRoINRqlrvsJzRSbsl2qa-w1rTlcs8oT4ib8amJ0O0UozbTx5gkOpjZG1udSotMg7-LdnuYetmsn0pMexggV6QbR2f5PodJXZsz1HZbmhQ"/>
+</div>
+<div class="flex-1 min-w-0">
+<p class="font-body-md font-bold text-on-surface truncate">Kofi Mensah</p>
+<p class="text-xs text-on-surface-variant truncate">Sankofa Level 4</p>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant cursor-pointer hover:text-primary">logout</span>
+</div>
+</div>
+</aside>
+<!-- Main Content Area -->
+<main class="flex-1 flex flex-col min-w-0 bg-background">
+<!-- Header -->
+<header class="h-20 bg-surface/80 backdrop-blur-md flex items-center justify-between px-xl sticky top-0 z-40 border-b border-outline-variant/30">
+<div class="flex flex-col">
+<h2 class="font-headline-lg text-2xl text-primary">RAG Corpus Admin</h2>
+<p class="text-xs text-on-surface-variant mono-metrics">Environment: production-af-west-1</p>
+</div>
+<div class="flex items-center gap-md">
+<div class="relative group">
+<input class="bg-surface-container-low border border-outline-variant rounded-full px-xl py-sm w-80 text-on-surface placeholder:text-on-surface-variant/50 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all" placeholder="Search corpus..." type="text"/>
+<span class="material-symbols-outlined absolute left-md top-1/2 -translate-y-1/2 text-on-surface-variant">search</span>
+</div>
+<button class="bg-primary text-on-primary px-lg py-md rounded-full font-semibold flex items-center gap-sm hover:brightness-110 active:scale-95 transition-all shadow-lg shadow-primary/10">
+<span class="material-symbols-outlined">upload_file</span>
+                    Upload New Document
+                </button>
+</div>
+</header>
+<!-- Dynamic Grid Content -->
+<div class="p-xl overflow-y-auto asymmetric-grid">
+<!-- Corpus Table Section -->
+<section class="space-y-lg">
+<div class="flex items-center justify-between">
+<h3 class="font-title-md text-on-surface flex items-center gap-sm">
+<span class="material-symbols-outlined text-primary">description</span>
+                        Document Index
+                    </h3>
+<div class="flex gap-xs">
+<button class="px-md py-xs rounded-lg border border-outline-variant text-on-surface text-sm font-medium hover:bg-surface-variant transition-colors">Filter</button>
+<button class="px-md py-xs rounded-lg border border-outline-variant text-on-surface text-sm font-medium hover:bg-surface-variant transition-colors">Export CSV</button>
+</div>
+</div>
+<div class="bg-surface-container-lowest border border-outline-variant rounded-2xl overflow-hidden shadow-xl">
+<table class="w-full text-left border-collapse">
+<thead class="bg-surface-container-high border-b border-outline-variant">
+<tr>
+<th class="px-lg py-md text-label-sm uppercase tracking-wider text-on-surface-variant">Title</th>
+<th class="px-lg py-md text-label-sm uppercase tracking-wider text-on-surface-variant">Sector</th>
+<th class="px-lg py-md text-label-sm uppercase tracking-wider text-on-surface-variant">Country</th>
+<th class="px-lg py-md text-label-sm uppercase tracking-wider text-on-surface-variant">Author</th>
+<th class="px-lg py-md text-label-sm uppercase tracking-wider text-on-surface-variant">Date</th>
+<th class="px-lg py-md text-label-sm uppercase tracking-wider text-on-surface-variant">Status</th>
+<th class="px-lg py-md text-label-sm uppercase tracking-wider text-on-surface-variant"></th>
+</tr>
+</thead>
+<tbody class="divide-y divide-outline-variant/30">
+<!-- Row 1 -->
+<tr class="hover:bg-surface-container transition-colors group">
+<td class="px-lg py-md">
+<div class="flex flex-col">
+<span class="font-body-md font-semibold text-on-surface">Cassava Yield Optimization v2</span>
+<span class="text-xs text-on-surface-variant mono-metrics">ID: DOC-4920-GH</span>
+</div>
+</td>
+<td class="px-lg py-md">
+<span class="px-md py-xs bg-secondary-container text-on-secondary-container rounded-full text-xs font-bold">Agriculture</span>
+</td>
+<td class="px-lg py-md text-on-surface font-medium">Ghana</td>
+<td class="px-lg py-md text-on-surface-variant">Dr. Amma Boateng</td>
+<td class="px-lg py-md text-on-surface-variant mono-metrics">2023-11-12</td>
+<td class="px-lg py-md">
+<span class="flex items-center gap-xs text-secondary font-bold text-xs uppercase">
+<span class="w-2 h-2 rounded-full bg-secondary"></span> Live
+                                    </span>
+</td>
+<td class="px-lg py-md text-right">
+<button class="material-symbols-outlined text-on-surface-variant opacity-0 group-hover:opacity-100 transition-opacity hover:text-on-surface">more_vert</button>
+</td>
+</tr>
+<!-- Row 2 -->
+<tr class="hover:bg-surface-container transition-colors group">
+<td class="px-lg py-md">
+<div class="flex flex-col">
+<span class="font-body-md font-semibold text-on-surface">Microfinance Literacy Framework</span>
+<span class="text-xs text-on-surface-variant mono-metrics">ID: DOC-8812-NG</span>
+</div>
+</td>
+<td class="px-lg py-md">
+<span class="px-md py-xs bg-primary-container/20 text-primary rounded-full text-xs font-bold border border-primary/30">Finance</span>
+</td>
+<td class="px-lg py-md text-on-surface font-medium">Nigeria</td>
+<td class="px-lg py-md text-on-surface-variant">Folake Adeleke</td>
+<td class="px-lg py-md text-on-surface-variant mono-metrics">2023-12-05</td>
+<td class="px-lg py-md">
+<span class="flex items-center gap-xs text-tertiary font-bold text-xs uppercase">
+<span class="w-2 h-2 rounded-full bg-tertiary"></span> Draft
+                                    </span>
+</td>
+<td class="px-lg py-md text-right">
+<button class="material-symbols-outlined text-on-surface-variant opacity-0 group-hover:opacity-100 transition-opacity hover:text-on-surface">more_vert</button>
+</td>
+</tr>
+<!-- Row 3 -->
+<tr class="hover:bg-surface-container transition-colors group">
+<td class="px-lg py-md">
+<div class="flex flex-col">
+<span class="font-body-md font-semibold text-on-surface">Solar Grid Decentralization Tech</span>
+<span class="text-xs text-on-surface-variant mono-metrics">ID: DOC-1103-KE</span>
+</div>
+</td>
+<td class="px-lg py-md">
+<span class="px-md py-xs bg-blue-900/30 text-blue-300 rounded-full text-xs font-bold border border-blue-700/50 uppercase">Energy</span>
+</td>
+<td class="px-lg py-md text-on-surface font-medium">Kenya</td>
+<td class="px-lg py-md text-on-surface-variant">John Kariuki</td>
+<td class="px-lg py-md text-on-surface-variant mono-metrics">2024-01-14</td>
+<td class="px-lg py-md">
+<span class="flex items-center gap-xs text-secondary font-bold text-xs uppercase">
+<span class="w-2 h-2 rounded-full bg-secondary"></span> Live
+                                    </span>
+</td>
+<td class="px-lg py-md text-right">
+<button class="material-symbols-outlined text-on-surface-variant opacity-0 group-hover:opacity-100 transition-opacity hover:text-on-surface">more_vert</button>
+</td>
+</tr>
+<!-- Row 4 -->
+<tr class="hover:bg-surface-container transition-colors group">
+<td class="px-lg py-md">
+<div class="flex flex-col">
+<span class="font-body-md font-semibold text-on-surface">Urban Water Management Policy</span>
+<span class="text-xs text-on-surface-variant mono-metrics">ID: DOC-5542-ZA</span>
+</div>
+</td>
+<td class="px-lg py-md">
+<span class="px-md py-xs bg-cyan-900/30 text-cyan-300 rounded-full text-xs font-bold border border-cyan-700/50 uppercase">Public Policy</span>
+</td>
+<td class="px-lg py-md text-on-surface font-medium">South Africa</td>
+<td class="px-lg py-md text-on-surface-variant">Lindiwe Dube</td>
+<td class="px-lg py-md text-on-surface-variant mono-metrics">2024-02-01</td>
+<td class="px-lg py-md">
+<span class="flex items-center gap-xs text-secondary font-bold text-xs uppercase">
+<span class="w-2 h-2 rounded-full bg-secondary"></span> Live
+                                    </span>
+</td>
+<td class="px-lg py-md text-right">
+<button class="material-symbols-outlined text-on-surface-variant opacity-0 group-hover:opacity-100 transition-opacity hover:text-on-surface">more_vert</button>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<!-- Stats Dashboard (Bento Style) -->
+<div class="grid grid-cols-3 gap-lg">
+<div class="bg-surface-container-low p-lg rounded-2xl border border-outline-variant hover:border-primary/50 transition-colors">
+<p class="text-label-sm text-on-surface-variant uppercase tracking-widest font-bold">Total Index Size</p>
+<h4 class="text-4xl font-headline-xl text-primary mt-sm">1.42 GB</h4>
+<div class="mt-md flex items-center gap-xs text-secondary font-bold text-xs">
+<span class="material-symbols-outlined text-sm">trending_up</span> +12% from last week
+                        </div>
+</div>
+<div class="bg-surface-container-low p-lg rounded-2xl border border-outline-variant hover:border-primary/50 transition-colors">
+<p class="text-label-sm text-on-surface-variant uppercase tracking-widest font-bold">Active Vectors</p>
+<h4 class="text-4xl font-headline-xl text-primary mt-sm">14.2M</h4>
+<div class="mt-md flex items-center gap-xs text-on-surface-variant font-medium text-xs">
+                            HNSW Indexing Active
+                        </div>
+</div>
+<div class="bg-surface-container-low p-lg rounded-2xl border border-outline-variant hover:border-primary/50 transition-colors">
+<p class="text-label-sm text-on-surface-variant uppercase tracking-widest font-bold">Inference Latency</p>
+<h4 class="text-4xl font-headline-xl text-primary mt-sm">42ms</h4>
+<div class="mt-md flex items-center gap-xs text-secondary font-bold text-xs">
+<span class="material-symbols-outlined text-sm">check_circle</span> Optimized
+                        </div>
+</div>
+</div>
+</section>
+<!-- Test Query Side Panel -->
+<aside class="space-y-lg">
+<div class="bg-surface-container p-lg rounded-2xl border border-outline-variant h-full flex flex-col sticky top-24 shadow-2xl">
+<div class="flex items-center gap-sm mb-lg">
+<span class="material-symbols-outlined text-primary" style="font-variation-settings: 'FILL' 1;">terminal</span>
+<h3 class="font-title-md text-on-surface">Test Query Bench</h3>
+</div>
+<div class="flex-1 space-y-lg overflow-y-auto pr-sm">
+<div class="space-y-sm">
+<label class="text-label-sm text-on-surface-variant font-bold">RESEARCHER PROMPT</label>
+<textarea class="w-full bg-surface-container-highest border border-outline-variant rounded-xl p-md text-sm font-body-md text-on-surface focus:ring-1 focus:ring-primary outline-none h-24 placeholder:text-on-surface-variant/40" placeholder="e.g., What are the best practices for irrigation in Northern Ghana?"></textarea>
+<button class="w-full bg-primary text-on-primary py-sm rounded-lg font-bold hover:brightness-110 active:scale-95 transition-all text-sm shadow-md">Run Simulation</button>
+</div>
+<div class="border-t border-outline-variant/30 pt-lg space-y-md">
+<div class="flex items-center justify-between">
+<label class="text-label-sm text-on-surface-variant font-bold uppercase">Top Retrieved Passages (3)</label>
+<span class="text-xs px-md py-xs bg-surface-container-highest text-on-surface-variant rounded-full mono-metrics border border-outline-variant/30">Score: 0.942</span>
+</div>
+<!-- Result Item 1 -->
+<div class="bg-surface-container-high border-l-4 border-primary rounded-r-lg p-md space-y-xs shadow-sm">
+<div class="flex justify-between items-center text-xs text-on-surface-variant font-bold">
+<span>DOC-4920-GH · Page 14</span>
+<span class="mono-metrics text-secondary">0.98 Match</span>
+</div>
+<p class="text-sm leading-relaxed italic text-on-surface">"...The adoption of drip irrigation in the Upper East region has shown a 40% increase in cassava tuber size when combined with organic mulching techniques..."</p>
+</div>
+<!-- Result Item 2 -->
+<div class="bg-surface-container-high border-l-4 border-outline-variant rounded-r-lg p-md space-y-xs">
+<div class="flex justify-between items-center text-xs text-on-surface-variant font-bold">
+<span>DOC-3211-GH · Page 02</span>
+<span class="mono-metrics text-secondary">0.89 Match</span>
+</div>
+<p class="text-sm leading-relaxed text-on-surface/80">"...Soil salinity levels must be monitored weekly in the Bawku district to ensure that ground water extraction remains sustainable..."</p>
+</div>
+</div>
+</div>
+<div class="pt-lg mt-md border-t border-outline-variant/30 flex items-center justify-between text-[10px] text-on-surface-variant mono-metrics uppercase tracking-widest">
+<span>Model: GPT-4-Afri-V2</span>
+<span class="flex items-center gap-xs">
+<span class="w-2 h-2 rounded-full bg-secondary animate-pulse shadow-[0_0_8px_rgba(136,217,130,0.5)]"></span>
+                            System Ready
+                        </span>
+</div>
+</div>
+</aside>
+</div>
+</main>
+<!-- Modal Placeholder (Hidden) -->
+<div class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md hidden" id="upload-modal">
+<div class="bg-surface-container-high p-xl rounded-2xl w-full max-w-lg shadow-2xl border border-outline-variant">
+<h2 class="font-headline-lg text-2xl text-primary mb-md">Upload Document</h2>
+<div class="border-2 border-dashed border-outline-variant rounded-2xl p-xl flex flex-col items-center justify-center gap-md hover:border-primary transition-colors cursor-pointer bg-surface-container/50">
+<span class="material-symbols-outlined text-5xl text-on-surface-variant">cloud_upload</span>
+<p class="text-on-surface font-medium">Drag and drop PDF or DOCX files here</p>
+<p class="text-xs text-on-surface-variant uppercase tracking-widest font-bold">Maximum file size: 50MB</p>
+</div>
+<div class="flex justify-end gap-md mt-xl">
+<button class="px-lg py-md rounded-full font-bold text-on-surface-variant hover:bg-surface-variant transition-all" onclick="document.getElementById('upload-modal').classList.add('hidden')">Cancel</button>
+<button class="bg-primary text-on-primary px-lg py-md rounded-full font-bold shadow-lg">Confirm Upload</button>
+</div>
+</div>
+</div>
+<script>
+        // Simple Interaction Logic
+        document.querySelector('button.bg-primary').addEventListener('click', () => {
+            document.getElementById('upload-modal').classList.remove('hidden');
+        });
+
+        // Search bar hover effect
+        const searchInput = document.querySelector('input[type="text"]');
+        searchInput.addEventListener('focus', () => {
+            searchInput.parentElement.classList.add('scale-[1.02]');
+        });
+        searchInput.addEventListener('blur', () => {
+            searchInput.parentElement.classList.remove('scale-[1.02]');
+        });
+
+        // Add some micro-animations to rows
+        document.querySelectorAll('tbody tr').forEach((row, idx) => {
+            row.style.opacity = '0';
+            row.style.transform = 'translateY(10px)';
+            setTimeout(() => {
+                row.style.transition = 'all 0.4s ease';
+                row.style.opacity = '1';
+                row.style.transform = 'translateY(0)';
+            }, idx * 100);
+        });
+    </script>
+</body></html>

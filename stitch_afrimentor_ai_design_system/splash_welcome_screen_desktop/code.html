@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>AfriMentor AI | Dignified Growth</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Be+Vietnam+Pro:wght@600;700&family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@100..900&family=Inter:wght@100..900&display=swap" rel="stylesheet"/>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .sankofa-pattern {
+            mask-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M30 5c-5 0-9 4-9 9s4 9 9 9 9-4 9-9-4-9-9-9zm0 14c-2.8 0-5-2.2-5-5s2.2-5 5-5 5 2.2 5 5-2.2 5-5 5zm0 10c-11 0-20 9-20 20h5c0-8.3 6.7-15 15-15s15 6.7 15 15h5c0-11-9-20-20-20z' fill='%237e5700' fill-opacity='0.05'/%3E%3C/svg%3E");
+            background-color: currentColor;
+        }
+        .hero-gradient {
+            background: linear-gradient(to right, rgba(252, 249, 243, 1) 30%, rgba(252, 249, 243, 0) 100%);
+        }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "surface-container-high": "#ebe8e2",
+                      "surface": "#fcf9f3",
+                      "on-primary": "#ffffff",
+                      "on-secondary": "#ffffff",
+                      "inverse-on-surface": "#f3f0ea",
+                      "surface-container-lowest": "#ffffff",
+                      "on-tertiary-fixed": "#1c1b1b",
+                      "surface-variant": "#e5e2dc",
+                      "surface-container-highest": "#e5e2dc",
+                      "on-background": "#1c1c18",
+                      "error-container": "#ffdad6",
+                      "on-error": "#ffffff",
+                      "error": "#ba1a1a",
+                      "background": "#fcf9f3",
+                      "surface-container-low": "#f6f3ed",
+                      "on-primary-fixed-variant": "#5f4100",
+                      "on-tertiary-container": "#343333",
+                      "on-surface": "#1c1c18",
+                      "on-error-container": "#93000a",
+                      "surface-dim": "#dcdad4",
+                      "outline": "#827564",
+                      "on-primary-container": "#462f00",
+                      "surface-container": "#f0eee8",
+                      "on-tertiary": "#ffffff",
+                      "tertiary-fixed-dim": "#c8c6c5",
+                      "tertiary-fixed": "#e5e2e1",
+                      "secondary": "#1b6d24",
+                      "on-tertiary-fixed-variant": "#474646",
+                      "tertiary": "#5f5e5e",
+                      "on-primary-fixed": "#281900",
+                      "inverse-surface": "#31312d",
+                      "secondary-fixed": "#a3f69c",
+                      "secondary-container": "#a0f399",
+                      "secondary-fixed-dim": "#88d982",
+                      "on-surface-variant": "#504536",
+                      "primary-container": "#c8922a",
+                      "surface-tint": "#7e5700",
+                      "on-secondary-container": "#217128",
+                      "inverse-primary": "#f8bc51",
+                      "primary-fixed-dim": "#f8bc51",
+                      "on-secondary-fixed-variant": "#005312",
+                      "on-secondary-fixed": "#002204",
+                      "surface-bright": "#fcf9f3",
+                      "tertiary-container": "#9d9b9b",
+                      "primary-fixed": "#ffdeab",
+                      "outline-variant": "#d4c4b0",
+                      "primary": "#7e5700"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.25rem",
+                      "lg": "0.5rem",
+                      "xl": "0.75rem",
+                      "full": "9999px"
+              },
+              "spacing": {
+                      "xl": "48px",
+                      "unit": "4px",
+                      "md": "16px",
+                      "sm": "8px",
+                      "lg": "24px",
+                      "gutter": "16px",
+                      "xs": "4px",
+                      "margin-mobile": "20px"
+              },
+              "fontFamily": {
+                      "headline-lg-mobile": ["Be Vietnam Pro"],
+                      "body-md": ["Inter"],
+                      "title-md": ["Be Vietnam Pro"],
+                      "label-sm": ["Inter"],
+                      "headline-xl": ["Be Vietnam Pro"],
+                      "headline-lg": ["Be Vietnam Pro"],
+                      "body-lg": ["Inter"]
+              },
+              "fontSize": {
+                      "headline-lg-mobile": ["28px", {"lineHeight": "34px", "fontWeight": "700"}],
+                      "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                      "title-md": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                      "label-sm": ["13px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                      "headline-xl": ["40px", {"lineHeight": "48px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                      "headline-lg": ["32px", {"lineHeight": "40px", "fontWeight": "700"}],
+                      "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}]
+              }
+            },
+          },
+        }
+    </script>
+</head>
+<body class="bg-surface text-on-surface min-h-screen selection:bg-primary-fixed selection:text-on-primary-fixed">
+<!-- Global Navigation Shell -->
+<header class="h-20 fixed top-0 left-0 right-0 z-50 bg-surface/80 backdrop-blur-md">
+<div class="max-w-[1440px] mx-auto h-full px-xl flex items-center justify-between">
+<!-- Brand Identity -->
+<div class="flex items-center gap-md">
+<div class="w-12 h-12 bg-primary-container rounded-xl flex items-center justify-center text-on-primary-container">
+<span class="material-symbols-outlined text-[32px]">psychology</span>
+</div>
+<div>
+<h1 class="font-headline-lg text-headline-lg text-primary tracking-tight">AfriMentor AI</h1>
+<p class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-widest -mt-1">Dignified Growth</p>
+</div>
+</div>
+<!-- Navigation Links -->
+<nav class="hidden md:flex items-center gap-xl">
+<a class="font-label-sm text-label-sm text-on-surface-variant hover:text-primary transition-colors duration-200" href="#">About</a>
+<a class="font-label-sm text-label-sm text-on-surface-variant hover:text-primary transition-colors duration-200" href="#">Mentors</a>
+<a class="font-label-sm text-label-sm text-on-surface-variant hover:text-primary transition-colors duration-200" href="#">Support</a>
+<button class="px-lg py-sm bg-primary text-on-primary rounded-full font-label-sm text-label-sm hover:shadow-lg active:scale-95 transition-all">
+                    Sign In
+                </button>
+</nav>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="relative pt-20 overflow-hidden min-h-screen flex flex-col">
+<!-- Hero Section -->
+<section class="relative flex-grow flex items-center max-w-[1440px] mx-auto w-full px-xl py-xl">
+<!-- Content Side -->
+<div class="relative z-10 w-full md:w-1/2 flex flex-col gap-lg">
+<div class="inline-flex items-center gap-sm px-md py-xs bg-secondary-container/30 text-on-secondary-container rounded-full w-fit">
+<span class="material-symbols-outlined text-[18px]">verified</span>
+<span class="font-label-sm text-label-sm">Communal Wisdom Powered by AI</span>
+</div>
+<h2 class="font-headline-xl text-headline-xl text-on-surface leading-tight max-w-md">
+                    Empowering Your Financial Journey with <span class="text-primary">Trusted Guidance</span>.
+                </h2>
+<p class="font-body-lg text-body-lg text-on-surface-variant max-w-lg">
+                    Experience a revolutionary approach to wealth and learning. Like a mentor sitting across from you, AfriMentor AI blends West African heritage with modern financial intelligence to help you flourish.
+                </p>
+<div class="flex flex-col sm:flex-row items-center gap-md pt-md">
+<button class="w-full sm:w-auto px-xl py-md bg-primary text-on-primary rounded-full font-title-md text-title-md flex items-center justify-center gap-md hover:bg-surface-tint shadow-lg transition-all group">
+                        Get Started
+                        <span class="material-symbols-outlined group-hover:translate-x-1 transition-transform">arrow_forward</span>
+</button>
+<button class="w-full sm:w-auto px-xl py-md border-2 border-outline-variant text-on-surface-variant rounded-full font-title-md text-title-md flex items-center justify-center gap-md hover:bg-surface-container-low transition-all">
+<span class="material-symbols-outlined">play_circle</span>
+                        Watch Story
+                    </button>
+</div>
+<!-- Social Proof / Context -->
+<div class="flex items-center gap-lg mt-xl pt-lg border-t border-outline-variant">
+<div class="flex -space-x-4">
+<div class="w-10 h-10 rounded-full border-2 border-surface bg-primary-fixed-dim flex items-center justify-center overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="Close up portrait of a smiling young African professional woman in business casual attire, warm sun-drenched lighting, high quality photography, soft bokeh background." src="https://lh3.googleusercontent.com/aida-public/AB6AXuC4214uAwznibBJ7fof4QA-H3AOeVZZmo8WIgpRWro_kGSCQzDKod0_Qy7JAJ-i4tdGUGczGZY903cIsYyksUiTv54DxA9_KyPhgyLK0L8L33jxoKvklPIZwgsEZllUw11aVCym6Ur5uoE7DdScsTzRD-ABtqTmi421QO6RDUWAV8OcdxvIR0vyWHiqZCvVyoVhRMyAytBrnOOakedFrj5Wd1EitFcI3Ayj_f8wTBme19WQnlWTeKdzzQ"/>
+</div>
+<div class="w-10 h-10 rounded-full border-2 border-surface bg-secondary-fixed flex items-center justify-center overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="Portrait of an elderly African gentleman wearing traditional woven Kente cloth details, expressive face showing wisdom and kindness, soft morning light, minimalist high-end portrait style." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBiLpCT2JogTzG6VUK1NFYeODapuj6uvZUwMxBwE86AKNSiM-MnfK7-Cg_L7Bo8_rKGvYp9y_s5JEDKLoXHh4W3QiXYY0NDE6SDibg8pUXtwf8wWhCFOVCPhYxt08vkqNhR_5tq2N7UTnuuziz3_GlRIoopKqBnMNWaeoIKDCwoko-DbgjYoLYv5yUTGtC1H4a3uOBkOnlhvJ9nQm-svnQ8BBz55yXn7RATNgksNgxp5EQTpNNpyeJlqw"/>
+</div>
+<div class="w-10 h-10 rounded-full border-2 border-surface bg-tertiary-fixed flex items-center justify-center overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="Portrait of a young African male entrepreneur in a modern office setting, bright natural lighting, confident smile, clean aesthetic, high resolution photography." src="https://lh3.googleusercontent.com/aida-public/AB6AXuB64ugz0AE4cU6OYQIm6imIU5ZkMzMJSDl2YLJqZIG_EKyX_Vh77NAoqbDQr-KPwUURJRUwX3Ho0K8_LaDmeP3zOBe-_rpbf7SOhhQjhBV0R6ME6ZaQLKEfROIq8CtcKt37jvDbn9jSQpt7T-xmSpK2m-np5djXi4Y2mY9SpfE03ZwBlRbn5zCY0rBx-vZl5-HY9yVTc4HcNQhW-S6C79Q3J-D8ay-HrdZrSpGdj3dajrFGysArK8j0Kg"/>
+</div>
+</div>
+<p class="font-label-sm text-label-sm text-on-surface-variant">
+                        Joined by <span class="text-on-surface font-bold">12,000+</span> seekers of growth across the continent.
+                    </p>
+</div>
+</div>
+<!-- Image Side -->
+<div class="absolute top-0 right-0 w-3/5 h-full hidden md:block select-none pointer-events-none">
+<div class="absolute inset-0 hero-gradient z-10"></div>
+<div class="w-full h-full overflow-hidden rounded-bl-[120px] bg-surface-container">
+<img class="w-full h-full object-cover opacity-90 scale-105" data-alt="A large, high-impact cinematic portrait of a wise African elder mentor sitting in a sun-drenched, modern minimalist room. He is wearing elegant neutral-toned clothing. The lighting is warm and optimistic, suggesting a dawn of new opportunities. The style is professional, dignified, and deeply personal, emphasizing the 'Dignified Optimism' brand identity of AfriMentor AI." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAmKgGVJ3Z9_mRDqriwYwz_ZT8zLPxlZUWrjwhgUADXEvHrtSJ9bvfh47AqF2hImNASXYet-jncb9UGBWKPzHdrzBN5FBJbjLLSN02Dv4TGkrY42fpQ7qge9GZFh1R9MzY0IbqU-SmRA81tP8f2rZukh70Zltyh2yGldDLmrgRa-S0JK7taDczSyHw9_aVpScRN5fna1kl1iYVv772jrz089ATNNvVsqcROhtw1C4M1JZukJCPAn8lLWw"/>
+</div>
+<!-- Decorative Sankofa Element -->
+<div class="absolute bottom-xl right-xl w-32 h-32 text-primary opacity-20">
+<div class="sankofa-pattern w-full h-full"></div>
+</div>
+</div>
+</section>
+<!-- Feature Bento Grid (Social proof/Value Prop) -->
+<section class="bg-surface-container-low py-xl">
+<div class="max-w-[1440px] mx-auto px-xl">
+<div class="grid grid-cols-1 md:grid-cols-3 gap-lg">
+<!-- Feature 1 -->
+<div class="p-lg bg-surface rounded-xl border border-outline-variant flex flex-col gap-md hover:shadow-md transition-shadow">
+<div class="w-12 h-12 rounded-lg bg-secondary-container text-on-secondary-container flex items-center justify-center">
+<span class="material-symbols-outlined">menu_book</span>
+</div>
+<h3 class="font-title-md text-title-md text-on-surface">Cultural Context</h3>
+<p class="font-body-md text-body-md text-on-surface-variant">AI that understands local nuances, languages, and traditional savings practices like Susu and Esusu.</p>
+</div>
+<!-- Feature 2 -->
+<div class="p-lg bg-surface rounded-xl border border-outline-variant flex flex-col gap-md hover:shadow-md transition-shadow">
+<div class="w-12 h-12 rounded-lg bg-primary-fixed-dim text-on-primary-fixed-variant flex items-center justify-center">
+<span class="material-symbols-outlined">handshake</span>
+</div>
+<h3 class="font-title-md text-title-md text-on-surface">Trusted Mentorship</h3>
+<p class="font-body-md text-body-md text-on-surface-variant">Access a network of virtual and human mentors dedicated to your long-term success and dignity.</p>
+</div>
+<!-- Feature 3 -->
+<div class="p-lg bg-surface rounded-xl border border-outline-variant flex flex-col gap-md hover:shadow-md transition-shadow">
+<div class="w-12 h-12 rounded-lg bg-tertiary-container text-on-tertiary-container flex items-center justify-center">
+<span class="material-symbols-outlined">insights</span>
+</div>
+<h3 class="font-title-md text-title-md text-on-surface">Data-Driven Growth</h3>
+<p class="font-body-md text-body-md text-on-surface-variant">Smart analytics that track your milestones and provide actionable steps toward your specific life goals.</p>
+</div>
+</div>
+</div>
+</section>
+<!-- Footer / Bottom Branding -->
+<footer class="py-lg border-t border-outline-variant mt-auto">
+<div class="max-w-[1440px] mx-auto px-xl flex flex-col md:flex-row items-center justify-between gap-md">
+<div class="flex items-center gap-sm">
+<span class="material-symbols-outlined text-primary">spa</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">© 2024 AfriMentor AI. Rooted in tradition, powered by future.</span>
+</div>
+<div class="flex gap-lg">
+<a class="font-label-sm text-label-sm text-on-surface-variant hover:text-primary transition-colors" href="#">Privacy Policy</a>
+<a class="font-label-sm text-label-sm text-on-surface-variant hover:text-primary transition-colors" href="#">Terms of Service</a>
+</div>
+</div>
+</footer>
+</main>
+<!-- Floating Atmosphere Elements (Low GPU overhead) -->
+<div class="fixed top-20 right-10 w-64 h-64 bg-primary-fixed-dim/10 blur-[100px] rounded-full -z-10 animate-pulse"></div>
+<div class="fixed bottom-20 left-10 w-96 h-96 bg-secondary-fixed-dim/10 blur-[120px] rounded-full -z-10"></div>
+<script>
+        // Micro-interaction for the CTA button
+        const ctaBtn = document.querySelector('button');
+        ctaBtn.addEventListener('mouseenter', () => {
+            // Subtle feedback if needed
+        });
+
+        // Initialize any necessary UI logic
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('AfriMentor AI Loaded');
+        });
+    </script>
+</body></html>

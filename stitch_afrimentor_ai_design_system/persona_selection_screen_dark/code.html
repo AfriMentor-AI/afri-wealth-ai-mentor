@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>AfriMentor AI - Choose Your Mentor</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;600;700;800&amp;family=Inter:wght@400;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "primary": "#f8bc51",
+                        "on-primary": "#462f00",
+                        "primary-container": "#c8922a",
+                        "on-primary-container": "#ffffff",
+                        "secondary": "#88d982",
+                        "on-secondary": "#00390a",
+                        "secondary-container": "#1b6d24",
+                        "on-secondary-container": "#a3f69c",
+                        "tertiary": "#c8c6c5",
+                        "on-tertiary": "#313131",
+                        "background": "#121414",
+                        "on-background": "#e5e2dc",
+                        "surface": "#121414",
+                        "on-surface": "#e5e2dc",
+                        "surface-variant": "#504536",
+                        "on-surface-variant": "#d4c4b0",
+                        "outline": "#9c8f80",
+                        "outline-variant": "#504536",
+                        "surface-container-lowest": "#0d0f0f",
+                        "surface-container-low": "#1a1c1c",
+                        "surface-container": "#1e2020",
+                        "surface-container-high": "#282a2a",
+                        "surface-container-highest": "#333535",
+                        "surface-bright": "#38393a",
+                        "surface-dim": "#121414",
+                        "error": "#ffb4ab",
+                        "on-error": "#690005"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.5rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "lg": "24px",
+                        "xl": "48px",
+                        "xs": "4px",
+                        "sm": "8px",
+                        "md": "16px",
+                        "gutter": "16px",
+                        "margin-mobile": "20px",
+                        "unit": "4px"
+                    },
+                    "fontFamily": {
+                        "body-lg": ["Inter"],
+                        "headline-lg": ["Be Vietnam Pro"],
+                        "body-md": ["Inter"],
+                        "headline-xl": ["Be Vietnam Pro"],
+                        "headline-lg-mobile": ["Be Vietnam Pro"],
+                        "title-md": ["Be Vietnam Pro"],
+                        "label-sm": ["Inter"]
+                    },
+                    "fontSize": {
+                        "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}],
+                        "headline-lg": ["32px", {"lineHeight": "40px", "fontWeight": "700"}],
+                        "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                        "headline-xl": ["40px", {"lineHeight": "48px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                        "headline-lg-mobile": ["28px", {"lineHeight": "34px", "fontWeight": "700"}],
+                        "title-md": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                        "label-sm": ["13px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600"}]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        body { background-color: #121414; font-family: 'Be Vietnam Pro', sans-serif; overflow-x: hidden; }
+        .sankofa-accent {
+            opacity: 0.04;
+            position: fixed;
+            z-index: 0;
+            pointer-events: none;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .persona-card {
+            transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        .persona-card:active {
+            transform: scale(0.97);
+        }
+    </style>
+<style>
+        body {
+            min-height: max(884px, 100dvh);
+        }
+    </style>
+</head>
+<body class="bg-background text-on-surface flex justify-center min-h-screen">
+<!-- Fixed Sankofa Background Decoration -->
+<div class="sankofa-accent top-[-50px] right-[-50px] w-64 h-64 text-primary">
+<svg fill="currentColor" viewbox="0 0 100 100">
+<path d="M50 10C30 10 10 30 10 50C10 70 30 90 50 90C70 90 90 70 90 50C90 30 70 10 50 10ZM50 80C33.5 80 20 66.5 20 50C20 33.5 33.5 20 50 20C66.5 20 80 33.5 80 50C80 66.5 66.5 80 50 80Z"></path>
+<circle cx="50" cy="50" r="10"></circle>
+</svg>
+</div>
+<!-- Mobile Container (390x844 simulated) -->
+<main class="w-full max-w-[390px] min-h-screen flex flex-col bg-background relative pb-32">
+<!-- TopAppBar -->
+<header class="flex justify-between items-center px-margin-mobile py-sm w-full sticky top-0 z-50 bg-background/80 backdrop-blur-md">
+<div class="w-10 h-10 rounded-full border-2 border-primary-container overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="A professional portrait of an African mentor." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBUVUZ8wH3d0sunk9boMjgOmFxfydj5VlWU7dQJ6blGVdGqw42VKe-3GOx6y02IW_rLYHRN1twA2NpHBYaGhMRSQiH_joMPTMt5cL8yuXUv5ORTN2XwstDaT4jFyTxJm8WjsdV-2fqBoldP0Bla3socxarR4vVmO2Y1FcAP3mFynWROmnKUG8vJXLKu9oIrw7P01ltYwDWszamhjOzWB7QjMEkWVfMl9D-LVmz33EOs2jlTArJDSYBIwQ"/>
+</div>
+<h1 class="font-headline-lg-mobile text-headline-lg-mobile text-primary">AfriMentor AI</h1>
+<button class="material-symbols-outlined text-primary hover:opacity-80 transition-opacity active:scale-95 duration-200">
+                settings
+            </button>
+</header>
+<!-- Headline Section -->
+<section class="px-margin-mobile pt-xl pb-lg relative z-10">
+<h2 class="font-headline-xl text-headline-xl text-on-surface leading-tight">Choose your mentor</h2>
+<p class="font-body-md text-body-md text-on-surface-variant mt-sm">Select a guide who understands your journey and speaks your language.</p>
+</section>
+<!-- Persona Selection Grid -->
+<div class="px-margin-mobile flex flex-col gap-md relative z-10">
+<!-- Recommended Persona: The Market Queen -->
+<div class="persona-card bg-surface-container-low rounded-lg p-md border border-primary-container/30 relative shadow-lg ring-1 ring-primary/20">
+<div class="absolute -top-3 left-4 bg-primary text-on-primary px-sm py-xs rounded-full flex items-center gap-xs">
+<span class="material-symbols-outlined text-[14px]" style="font-variation-settings: 'FILL' 1;">workspace_premium</span>
+<span class="font-label-sm text-label-sm uppercase tracking-wider">Recommended for you</span>
+</div>
+<div class="flex gap-md items-start mt-sm">
+<div class="w-16 h-16 rounded-full overflow-hidden border-2 border-primary-container shrink-0">
+<img class="w-full h-full object-cover" data-alt="The Market Queen persona." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBxelY779ZhcTFcP3_1H2ipIeGjptqsPHLvbpyh9u06JuVE5ofwk5Uj9YeVf3rLvfpwTDhSky7QV2ragLGloYCD3okNZG1qOw5Ioq5SJiwaXKVPcOvfU5nuMBH_uWaY_1wtyQJ6fnZCgxCib6BfZpo2bbUBe7dFGiPxgk4ZjC59lBWfCvXZJolwwnZPqaiX0IUu0h2wTcDVS7W0CA5TSlCVQujqq1Bsx9m7_KTYuZku0B6Y8mSwMyZajQ"/>
+</div>
+<div class="flex-1">
+<h3 class="font-title-md text-title-md text-on-surface">The Market Queen</h3>
+<p class="font-body-md text-body-md text-on-surface-variant line-clamp-2">Master of commerce, community scaling, and traditional resilience.</p>
+</div>
+</div>
+<div class="mt-md flex gap-sm">
+<button class="flex-1 bg-primary text-on-primary font-label-sm text-label-sm py-md rounded-full active:scale-95 transition-transform font-bold">
+                        Select Mentor
+                    </button>
+<button class="px-md border border-outline text-primary rounded-full flex items-center justify-center active:scale-95 transition-transform">
+<span class="material-symbols-outlined">volume_up</span>
+</button>
+</div>
+</div>
+<!-- Persona: The Tech Founder -->
+<div class="persona-card bg-surface-container-low rounded-lg p-md border border-outline-variant">
+<div class="flex gap-md items-start">
+<div class="w-16 h-16 rounded-full overflow-hidden border-2 border-outline-variant shrink-0">
+<img class="w-full h-full object-cover" data-alt="The Tech Founder persona." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCOiyJD_lcPV0gucYfiZPFUmP_U7nhvd7DaUkMZwlnkPJxxwk8PFWTz7tkVBUTz-Q1fh1Zq0oWW50emnEmfT5haxihhuqbxmmpvrcN3uMc-siiYWJsLnMd-U3sH0UvDLHW-k3NVqwUTWhaDO_4VaYk2e04DcR-ygrJjcXZzAT2ebZSONo94RAidwxGVC_94gTQ0yfIkcs5q1lDUE20hE-UylAFyzLfGPxxaGjPAWMMH77Or8gPQ3y8mHQ"/>
+</div>
+<div class="flex-1">
+<h3 class="font-title-md text-title-md text-on-surface">The Tech Founder</h3>
+<p class="font-body-md text-body-md text-on-surface-variant">Strategist for digital disruption, VC fundraising, and agile growth.</p>
+</div>
+</div>
+<div class="mt-md flex gap-sm">
+<button class="flex-1 bg-surface-container-highest text-on-surface font-label-sm text-label-sm py-md rounded-full active:scale-95 transition-transform">
+                        Hear an example
+                    </button>
+</div>
+</div>
+<!-- Persona: The Trader -->
+<div class="persona-card bg-surface-container-low rounded-lg p-md border border-outline-variant">
+<div class="flex gap-md items-start">
+<div class="w-16 h-16 rounded-full overflow-hidden border-2 border-outline-variant shrink-0">
+<img class="w-full h-full object-cover" data-alt="The Trader persona." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCHTA4sol1DK6DvYnzaxGWoPhQutloGqD0hKyLeB1iRGKKEC_mhUgORBTtqbfK97dOMJpwoF0G7kzpiYPEbDiOzBnovjpQVanO3pWJmrJaqtxYVpEItHjh19PPEoHEtNMuRp08t10-xCIfZgfXR53YLWxybCTHEze3D9nY84dO6ggVonanoOD6wSa9AYOIEK4_aPWUou6ICT6gfADzVOL-K_iQAJR5UPuuqlIeD4THohnGki00uY6TPng"/>
+</div>
+<div class="flex-1">
+<h3 class="font-title-md text-title-md text-on-surface">The Trader</h3>
+<p class="font-body-md text-body-md text-on-surface-variant">Expert in logistics, supply chains, and cross-border arbitrage.</p>
+</div>
+</div>
+<div class="mt-md flex gap-sm">
+<button class="flex-1 bg-surface-container-highest text-on-surface font-label-sm text-label-sm py-md rounded-full active:scale-95 transition-transform">
+                        Hear an example
+                    </button>
+</div>
+</div>
+<!-- Persona: The Rural Hustler -->
+<div class="persona-card bg-surface-container-low rounded-lg p-md border border-outline-variant">
+<div class="flex gap-md items-start">
+<div class="w-16 h-16 rounded-full overflow-hidden border-2 border-outline-variant shrink-0">
+<img class="w-full h-full object-cover" data-alt="The Rural Hustler persona." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDeLUuAjPS27Z53j5himYpIGjHWVnjWs-G_4BmU4jXJLCP5QjyMj6Z7atjlf0PgvplAwi2Hp-hyHhgvRpmNWfDEgDJ_j_lMI7hM1U0u28XMY2Ky1AWCo1gSpwD8ZiwCGxT-4ax8_oQ7ZwVPnqZWKhs2nhNePnYHDlygmgOp-ySCpoIVc71khLeE-NaZjyIHyde6aqY75tWMOXWLv4enbfS4Rs1WnDzQR0jxBy0U-H5huF_GtknSrfVZgQ"/>
+</div>
+<div class="flex-1">
+<h3 class="font-title-md text-title-md text-on-surface">The Rural Hustler</h3>
+<p class="font-body-md text-body-md text-on-surface-variant">Specialist in agri-business, micro-credits, and local sustainability.</p>
+</div>
+</div>
+<div class="mt-md flex gap-sm">
+<button class="flex-1 bg-surface-container-highest text-on-surface font-label-sm text-label-sm py-md rounded-full active:scale-95 transition-transform">
+                        Hear an example
+                    </button>
+</div>
+</div>
+<!-- Persona: The Creative -->
+<div class="persona-card bg-surface-container-low rounded-lg p-md border border-outline-variant">
+<div class="flex gap-md items-start">
+<div class="w-16 h-16 rounded-full overflow-hidden border-2 border-outline-variant shrink-0">
+<img class="w-full h-full object-cover" data-alt="The Creative persona." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBMseI-SNeWgsopfc6zTK0jJiRkNVKvfK7h9ljFgxRS6c3AAD0gj_-zBvoWg8fN0_qNV26lBzug9KUkwqdG1tuQqMJ1AZX9b6ft7yNx9cA7pE0qfeI0DFK_h6WxnCafFkqNZtGMsslTmvspii56zwnYCrtu6Rm3S7HBHAPda1FURYWgXcuJmsowsGEBPfi0xZgffylldVeUhb2aDjdPJvUcpZR2YCiwLwDDe-Waul74IGknOZwtX92ycQ"/>
+</div>
+<div class="flex-1">
+<h3 class="font-title-md text-title-md text-on-surface">The Creative</h3>
+<p class="font-body-md text-body-md text-on-surface-variant">Guide for personal branding, digital arts, and the orange economy.</p>
+</div>
+</div>
+<div class="mt-md flex gap-sm">
+<button class="flex-1 bg-surface-container-highest text-on-surface font-label-sm text-label-sm py-md rounded-full active:scale-95 transition-transform">
+                        Hear an example
+                    </button>
+</div>
+</div>
+</div>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 w-full z-50 bg-surface-container-lowest/95 backdrop-blur-md border-t border-outline-variant flex justify-around items-center h-16 px-sm pb-safe">
+<a class="flex flex-col items-center justify-center text-primary font-bold hover:bg-surface-container transition-colors active:scale-90 duration-150" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">chat_bubble</span>
+<span class="font-label-sm text-label-sm">Chat</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-container transition-colors active:scale-90 duration-150" href="#">
+<span class="material-symbols-outlined">target</span>
+<span class="font-label-sm text-label-sm">Goals</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-container transition-colors active:scale-90 duration-150" href="#">
+<span class="material-symbols-outlined">auto_stories</span>
+<span class="font-label-sm text-label-sm">Library</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-container transition-colors active:scale-90 duration-150" href="#">
+<span class="material-symbols-outlined">query_stats</span>
+<span class="font-label-sm text-label-sm">Progress</span>
+</a>
+</nav>
+<!-- Subtle Canvas Texture for Tactile Feel -->
+<div class="fixed inset-0 pointer-events-none opacity-[0.02] mix-blend-overlay" style="background-image: url('https://www.transparenttextures.com/patterns/natural-paper.png');"></div>
+</main>
+<script>
+        // Micro-interaction for buttons
+        document.querySelectorAll('button').forEach(button => {
+            button.addEventListener('click', function(e) {
+                console.log('Action triggered:', this.innerText || 'Icon Button');
+            });
+        });
+    </script>
+</body></html>

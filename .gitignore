@@ -3,11 +3,26 @@ node_modules/
 .next/
 dist/
 
+# Generated API docs site
+docs/api/_site/
+
 # Python environment & cache
 venv/
+.venv/
+.venv-lint/
+**/.venv-ci/
 __pycache__/
 *.pyc
+.pytest_cache/
+.ruff_cache/
 .env
+.env.*
+!.env.example
+
+# Secrets / crypto keys (dev keys are generated at runtime, never committed)
+infra/keys/
+*.pem
+*.key
 
 # Audio data and uploads
 *.mp3

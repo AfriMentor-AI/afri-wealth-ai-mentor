@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>AfriMentor | Insight Library</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;600;700;800&amp;family=Inter:wght@400;500;600&amp;family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            display: inline-block;
+            vertical-align: middle;
+        }
+        
+        .sankofa-pattern {
+            mask-image: url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M20 20c-5 0-8-3-8-8s3-8 8-8 8 3 8 8-3 8-8 8zm0-2c3.3 0 6-2.7 6-6s-2.7-6-6-6-6 2.7-6 6 2.7 6 6 6z' fill='%23000' fill-rule='evenodd'/%3E%3C/svg%3E");
+            mask-repeat: repeat;
+            opacity: 0.1;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #444746;
+            border-radius: 10px;
+        }
+
+        .glass-card {
+            background: rgba(18, 20, 20, 0.7);
+            backdrop-filter: blur(8px);
+        }
+    </style>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "surface": "#121414",
+                    "surface-dim": "#121414",
+                    "surface-bright": "#38393a",
+                    "surface-container-lowest": "#0d0f0f",
+                    "surface-container-low": "#1a1c1c",
+                    "surface-container": "#1e2020",
+                    "surface-container-high": "#282a2a",
+                    "surface-container-highest": "#333535",
+                    "on-surface": "#e2e2e2",
+                    "on-surface-variant": "#c4c7c5",
+                    "outline": "#8e918f",
+                    "outline-variant": "#444746",
+                    "primary": "#f8bc51",
+                    "on-primary": "#462f00",
+                    "primary-container": "#c8922a",
+                    "on-primary-container": "#ffffff",
+                    "secondary": "#88d982",
+                    "on-secondary": "#00390a",
+                    "secondary-container": "#1b6d24",
+                    "on-secondary-container": "#ffffff",
+                    "background": "#121414",
+                    "on-background": "#e2e2e2"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.5rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "xl": "48px",
+                    "unit": "4px",
+                    "md": "16px",
+                    "sm": "8px",
+                    "lg": "24px",
+                    "gutter": "16px",
+                    "xs": "4px",
+                    "margin-mobile": "20px"
+            },
+            "fontFamily": {
+                    "headline-lg-mobile": ["Be Vietnam Pro"],
+                    "body-md": ["Inter"],
+                    "title-md": ["Be Vietnam Pro"],
+                    "label-sm": ["Inter"],
+                    "headline-xl": ["Be Vietnam Pro"],
+                    "headline-lg": ["Be Vietnam Pro"],
+                    "body-lg": ["Inter"]
+            },
+            "fontSize": {
+                    "headline-lg-mobile": ["28px", {"lineHeight": "34px", "fontWeight": "700"}],
+                    "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                    "title-md": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                    "label-sm": ["13px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                    "headline-xl": ["40px", {"lineHeight": "48px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "headline-lg": ["32px", {"lineHeight": "40px", "fontWeight": "700"}],
+                    "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}]
+            }
+          },
+        },
+      }
+    </script>
+</head>
+<body class="bg-surface text-on-surface font-body-md overflow-hidden">
+<div class="flex h-screen w-full relative">
+<aside class="h-screen w-64 fixed left-0 top-0 bg-surface-container-low border-r border-outline-variant flex flex-col p-md gap-lg z-50">
+<div class="flex flex-col gap-xs mb-md">
+<h1 class="font-headline-lg text-headline-lg text-primary">AfriMentor</h1>
+<p class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Dignified Growth</p>
+</div>
+<nav class="flex flex-col gap-sm flex-1">
+<a class="flex items-center gap-md px-md py-sm text-on-surface-variant hover:bg-surface-container-highest rounded-lg transition-colors active:scale-95 duration-150" href="#">
+<span class="material-symbols-outlined">forum</span>
+<span class="font-title-md text-title-md">Chat</span>
+</a>
+<a class="flex items-center gap-md px-md py-sm text-on-surface-variant hover:bg-surface-container-highest rounded-lg transition-colors active:scale-95 duration-150" href="#">
+<span class="material-symbols-outlined">ads_click</span>
+<span class="font-title-md text-title-md">Goals</span>
+</a>
+<a class="flex items-center gap-md px-md py-sm bg-primary text-on-primary rounded-lg active:scale-95 transition-transform duration-150" href="#">
+<span class="material-symbols-outlined">menu_book</span>
+<span class="font-title-md text-title-md">Library</span>
+</a>
+<a class="flex items-center gap-md px-md py-sm text-on-surface-variant hover:bg-surface-container-highest rounded-lg transition-colors active:scale-95 duration-150" href="#">
+<span class="material-symbols-outlined">query_stats</span>
+<span class="font-title-md text-title-md">Progress</span>
+</a>
+<a class="flex items-center gap-md px-md py-sm text-on-surface-variant hover:bg-surface-container-highest rounded-lg transition-colors active:scale-95 duration-150" href="#">
+<span class="material-symbols-outlined">analytics</span>
+<span class="font-title-md text-title-md">Research Console</span>
+</a>
+</nav>
+<button class="mt-auto bg-primary-container text-on-primary-container py-md px-lg rounded-full font-title-md text-title-md shadow-lg hover:opacity-90 active:scale-95 transition-all flex items-center justify-center gap-sm">
+<span class="material-symbols-outlined">add</span>
+                New Goal
+            </button>
+</aside>
+<main class="ml-64 flex-1 h-full overflow-y-auto custom-scrollbar bg-surface flex flex-col">
+<header class="h-16 flex justify-between items-center px-lg bg-surface-container-lowest border-b border-outline-variant sticky top-0 z-40">
+<div class="flex items-center gap-md">
+<h2 class="font-headline-lg text-headline-lg text-primary">AfriMentor AI</h2>
+</div>
+<div class="flex items-center gap-lg">
+<div class="relative w-64 md:w-96">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant">search</span>
+<input class="w-full bg-surface-container border-none rounded-full pl-10 pr-4 py-2 font-body-md focus:ring-2 focus:ring-primary-container text-on-surface transition-all placeholder:text-on-surface-variant/50" placeholder="Search insights, methods, or wisdom..." type="text"/>
+</div>
+<div class="flex items-center gap-md">
+<button class="material-symbols-outlined text-on-surface-variant cursor-pointer hover:text-primary transition-colors">notifications</button>
+<button class="material-symbols-outlined text-on-surface-variant cursor-pointer hover:text-primary transition-colors">settings</button>
+<div class="w-8 h-8 rounded-full border-2 border-primary overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="A professional business headshot of a middle-aged African mentor with graying hair and a warm, encouraging smile. He wears a contemporary charcoal suit paired with a subtle, pattern-printed kente silk pocket square. The lighting is soft and golden, suggesting a high-end light-mode UI aesthetic that exudes trustworthiness and dignified optimism." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCTEjrZNkLM7It07P1gF780t_rFEIIp2Z3QDwy-VxC0ncINc65jcYr3bmigIJFeAyE5xtMGDqxL4dZb30Alv4hr9OR4S4fS1bASY5fSkcExOCrDlcXWrc66_36gdPjfTelav5rZwrrIE1WZXPv8YYs-ztbW7T7k0JKv4dRkSjD0GPN-sNNvxyFjMDUtNdZolH1kp7OAhTNSoL61YTSPM9FXSKxupJf-SP6DLyrkpbFtAbBa5YJsg2SZaQ"/>
+</div>
+</div>
+</div>
+</header>
+<div class="flex-1 flex flex-row">
+<aside class="w-72 bg-surface-container-low border-r border-outline-variant p-lg hidden lg:flex flex-col gap-xl h-[calc(100vh-64px)] overflow-y-auto custom-scrollbar sticky top-16">
+<div>
+<h3 class="font-title-md text-title-md mb-md flex items-center gap-sm text-on-surface">
+<span class="material-symbols-outlined text-primary">filter_list</span>
+                            Refine Library
+                        </h3>
+<div class="mb-lg">
+<label class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-widest mb-sm block">Sector</label>
+<div class="flex flex-col gap-xs">
+<label class="flex items-center gap-md p-sm rounded-lg hover:bg-surface-container-highest cursor-pointer transition-colors group">
+<input checked="" class="rounded border-outline bg-transparent text-primary focus:ring-primary" type="checkbox"/>
+<span class="font-body-md group-hover:text-primary">Agriculture &amp; Agri-tech</span>
+</label>
+<label class="flex items-center gap-md p-sm rounded-lg hover:bg-surface-container-highest cursor-pointer transition-colors group">
+<input class="rounded border-outline bg-transparent text-primary focus:ring-primary" type="checkbox"/>
+<span class="font-body-md group-hover:text-primary">Creative Economies</span>
+</label>
+<label class="flex items-center gap-md p-sm rounded-lg hover:bg-surface-container-highest cursor-pointer transition-colors group">
+<input class="rounded border-outline bg-transparent text-primary focus:ring-primary" type="checkbox"/>
+<span class="font-body-md group-hover:text-primary">Renewable Energy</span>
+</label>
+<label class="flex items-center gap-md p-sm rounded-lg hover:bg-surface-container-highest cursor-pointer transition-colors group">
+<input class="rounded border-outline bg-transparent text-primary focus:ring-primary" type="checkbox"/>
+<span class="font-body-md group-hover:text-primary">Social Enterprise</span>
+</label>
+</div>
+</div>
+<div class="mb-lg">
+<label class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-widest mb-sm block">Topic</label>
+<div class="flex flex-wrap gap-xs">
+<button class="px-md py-xs rounded-full border border-outline-variant font-label-sm text-label-sm hover:bg-primary-container hover:text-on-primary-container transition-colors">Sustainability</button>
+<button class="px-md py-xs rounded-full border border-outline-variant font-label-sm text-label-sm hover:bg-primary-container hover:text-on-primary-container transition-colors">Community Trust</button>
+<button class="px-md py-xs rounded-full border border-outline-variant font-label-sm text-label-sm hover:bg-primary-container hover:text-on-primary-container transition-colors">Financial Literacy</button>
+<button class="px-md py-xs rounded-full border border-outline-variant font-label-sm text-label-sm hover:bg-primary-container hover:text-on-primary-container transition-colors">Leadership</button>
+</div>
+</div>
+<div class="mb-lg">
+<label class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-widest mb-sm block">Content Type</label>
+<div class="grid grid-cols-2 gap-sm">
+<button class="flex flex-col items-center justify-center p-md bg-surface-container border border-outline-variant rounded-xl hover:border-primary transition-all gap-xs">
+<span class="material-symbols-outlined text-primary">mic</span>
+<span class="font-label-sm text-label-sm">Audio</span>
+</button>
+<button class="flex flex-col items-center justify-center p-md bg-surface-container border border-outline-variant rounded-xl hover:border-primary transition-all gap-xs">
+<span class="material-symbols-outlined text-primary">article</span>
+<span class="font-label-sm text-label-sm">Articles</span>
+</button>
+</div>
+</div>
+</div>
+<div class="mt-auto p-md bg-secondary-container rounded-xl border border-secondary/20">
+<div class="flex items-center gap-sm mb-xs">
+<span class="material-symbols-outlined text-secondary">verified_user</span>
+<span class="font-label-sm text-label-sm text-secondary font-bold uppercase">Sankofa Trust</span>
+</div>
+<p class="text-on-secondary-container text-sm leading-relaxed opacity-90">All materials are verified for cultural relevance and pan-African origin.</p>
+</div>
+</aside>
+<div class="flex-1 p-lg bg-surface relative">
+<div class="max-w-7xl mx-auto">
+<section class="mb-xl bg-primary-container/10 border border-primary-container/20 rounded-2xl p-lg relative overflow-hidden">
+<div class="absolute inset-0 sankofa-pattern"></div>
+<div class="relative z-10 flex flex-col md:flex-row items-center gap-lg">
+<div class="w-16 h-16 bg-primary-container rounded-full flex items-center justify-center flex-shrink-0 shadow-lg">
+<span class="material-symbols-outlined text-on-primary-container text-4xl">psychology</span>
+</div>
+<div class="flex-1">
+<div class="flex items-center gap-sm mb-xs">
+<h3 class="font-title-md text-title-md text-primary">Recommended for you</h3>
+<span class="px-sm py-unit bg-primary text-on-primary text-[10px] font-bold rounded uppercase tracking-tighter">AI Reasoning by CHIOMA</span>
+</div>
+<p class="font-body-md text-on-surface-variant">"Based on your recent progress in <span class="font-bold text-primary">Community Cooperative Finance</span>, I've curated these insights to help you navigate the nuances of collective bargaining and trust-based loan systems in urban West African markets."</p>
+</div>
+<button class="bg-primary text-on-primary px-lg py-md rounded-full font-title-md whitespace-nowrap hover:opacity-90 transition-all shadow-md">Explore Curated Set</button>
+</div>
+</section>
+<div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-lg mb-xl">
+<div class="group bg-surface-container rounded-2xl border border-outline-variant overflow-hidden hover:shadow-2xl hover:border-primary/30 transition-all flex flex-col">
+<div class="h-48 relative overflow-hidden">
+<img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 opacity-80" data-alt="A cinematic, low-angle shot of a vibrant West African street market during golden hour. The sunlight filters through colorful fabric stalls, casting long shadows. In the foreground, focused hands are exchanging gold-tinted tokens, symbolizing trade and community cooperation. The aesthetic is warm, tactile, and highly detailed, perfectly matching a premium light-mode UI." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAFseUcS0GHZY8TrW2_-IIfdTaltL9yULdhzDmDusWk7CIme3S5mYIxBt9Up7J1hnw6GeqfBjkQu2kDyMDK8Mm-zVRlUM6V0w64Psx1zsheJ80MG9p0nIJf8kgTCadXhpUlaDZoERCap9qC6bRX-_rzR9T7GpP6KdKaFj7hkMqbqqcnS1U9uIt-yGEpqRpuT1koCxOAeIOgVVexoQUdY7qpBwq5MEe2FnjVImRB4OGrEpSMAwp0a6Hv2A"/>
+<div class="absolute top-4 left-4 bg-surface/90 backdrop-blur-sm px-sm py-unit rounded-lg flex items-center gap-xs border border-primary/20">
+<span class="material-symbols-outlined text-primary text-sm" style="font-variation-settings: 'FILL' 1;">verified</span>
+<span class="text-[10px] font-bold text-primary uppercase">African Origin</span>
+</div>
+<div class="absolute bottom-4 right-4 w-10 h-10 bg-primary rounded-full flex items-center justify-center text-on-primary shadow-lg">
+<span class="material-symbols-outlined">play_arrow</span>
+</div>
+</div>
+<div class="p-lg flex-1 flex flex-col">
+<div class="flex justify-between items-start mb-sm">
+<span class="text-on-surface-variant font-label-sm text-label-sm uppercase tracking-widest">Audio Insight • 12m</span>
+<span class="material-symbols-outlined text-on-surface-variant hover:text-primary cursor-pointer">bookmark</span>
+</div>
+<h4 class="font-title-md text-title-md text-on-surface mb-md line-clamp-2">The 'Esusu' Evolution: Digital Transformation of Trust-Based Savings</h4>
+<p class="text-on-surface-variant font-body-md line-clamp-3 mb-lg">A deep dive into how traditional rotating savings and credit associations are being adapted for the 21st-century digital economy without losing communal essence.</p>
+<div class="mt-auto flex items-center gap-sm pt-md border-t border-outline-variant/30">
+<div class="w-6 h-6 rounded-full bg-secondary-container flex items-center justify-center">
+<span class="material-symbols-outlined text-on-secondary-container text-xs">group</span>
+</div>
+<span class="text-[12px] text-on-surface-variant">Shared by 40+ Mentors in your sector</span>
+</div>
+</div>
+</div>
+<div class="group bg-surface-container rounded-2xl border border-outline-variant overflow-hidden hover:shadow-2xl hover:border-primary/30 transition-all flex flex-col">
+<div class="h-48 relative overflow-hidden">
+<img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 opacity-80" data-alt="A clean, minimalist architectural sketch of a sustainable community hub in a rural African landscape. The drawing uses elegant charcoal lines against a warm cream background, punctuated by subtle gold accents on key structural nodes. The design emphasizes natural ventilation and communal spaces, reflecting an aesthetic of dignified optimism and modern heritage." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCVZeh65H3-mwGuYfjCq9_AoXGcbxm8t4v6sCK_9PujExnOeHkprSrj1NpXi-Lsygxjh_lRp-ODoQBZ8TN5s4SY92FcGJ4QoQVpMGAq2BdidE3n7Cy8gLNK9rBCDxbY0GwrxzZjCmzBLjjBHhDmi2dwViq_WFoNE5x7aUoBH01FZjUIdDrh7LFfn7J5JHlUm4vCkyXYLbnIdD-6-e3LcB4pSKobfwzv3UA0b_NZoL02mABYaxhUBOsB-g"/>
+<div class="absolute top-4 left-4 bg-surface/90 backdrop-blur-sm px-sm py-unit rounded-lg flex items-center gap-xs border border-primary/20">
+<span class="material-symbols-outlined text-primary text-sm" style="font-variation-settings: 'FILL' 1;">verified</span>
+<span class="text-[10px] font-bold text-primary uppercase">African Origin</span>
+</div>
+</div>
+<div class="p-lg flex-1 flex flex-col">
+<div class="flex justify-between items-start mb-sm">
+<span class="text-on-surface-variant font-label-sm text-label-sm uppercase tracking-widest">Article • 8m Read</span>
+<span class="material-symbols-outlined text-on-surface-variant hover:text-primary cursor-pointer">bookmark</span>
+</div>
+<h4 class="font-title-md text-title-md text-on-surface mb-md line-clamp-2">Sankofa Leadership: Integrating Ancestral Wisdom into Modern Startups</h4>
+<p class="text-on-surface-variant font-body-md line-clamp-3 mb-lg">Learn the 5 core principles of leadership derived from pre-colonial governance structures that drive sustainable growth today.</p>
+<div class="mt-auto flex items-center gap-sm pt-md border-t border-outline-variant/30">
+<div class="w-6 h-6 rounded-full bg-primary-container/20 flex items-center justify-center">
+<span class="material-symbols-outlined text-primary text-xs">history_edu</span>
+</div>
+<span class="text-[12px] text-on-surface-variant">Recommended by CHIOMA</span>
+</div>
+</div>
+</div>
+<div class="group bg-surface-container rounded-2xl border border-outline-variant overflow-hidden hover:shadow-2xl hover:border-primary/30 transition-all flex flex-col">
+<div class="h-48 relative overflow-hidden bg-primary/5 flex items-center justify-center">
+<img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 opacity-80" data-alt="A high-contrast macro photograph of sun-baked earth meeting lush green sprout growth. The texture of the cracked ground is detailed and sharp, transitioning into soft-focus vibrant seedlings. The composition uses a split-screen effect with a warm gold overlay on the left and a cool sage green on the right, symbolizing resilience and agricultural innovation in a modern African context." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAlVqaxkhZRGgLUxqZPPwO9Mvf9XC8tN-7yGghROPeA2j-daXAjGoPdMC0jhJWIIR8PnIXhwZIoBFNxoZ2mX6r-zYhclluftn9oyxWs7qxzF268RUstR7nfipUgC745YYeclEAuh5msL0tUFbjGLNwJQiQkBAOoHRu4J9XD42BkfU8X0hQGijSBySlgtO70cYRuodH27kQ42RjS9yzEwj4fjMIKtkPbgG5zKVicOk7dl_rZFhH9fRTTPQ"/>
+<div class="absolute top-4 left-4 bg-surface/90 backdrop-blur-sm px-sm py-unit rounded-lg flex items-center gap-xs border border-primary/20">
+<span class="material-symbols-outlined text-primary text-sm" style="font-variation-settings: 'FILL' 1;">verified</span>
+<span class="text-[10px] font-bold text-primary uppercase">African Origin</span>
+</div>
+<div class="absolute bottom-4 right-4 w-10 h-10 bg-primary rounded-full flex items-center justify-center text-on-primary shadow-lg">
+<span class="material-symbols-outlined">play_arrow</span>
+</div>
+</div>
+<div class="p-lg flex-1 flex flex-col">
+<div class="flex justify-between items-start mb-sm">
+<span class="text-on-surface-variant font-label-sm text-label-sm uppercase tracking-widest">Audio Insight • 18m</span>
+<span class="material-symbols-outlined text-on-surface-variant hover:text-primary cursor-pointer">bookmark</span>
+</div>
+<h4 class="font-title-md text-title-md text-on-surface mb-md line-clamp-2">Navigating Export Hurdles: A Guide for Pan-African Agri-entrepreneurs</h4>
+<p class="text-on-surface-variant font-body-md line-clamp-3 mb-lg">Mentors from three different regions share their successes in overcoming regulatory barriers and logistic bottlenecks.</p>
+<div class="mt-auto flex items-center gap-sm pt-md border-t border-outline-variant/30">
+<div class="w-6 h-6 rounded-full bg-secondary-container flex items-center justify-center">
+<span class="material-symbols-outlined text-on-secondary-container text-xs">eco</span>
+</div>
+<span class="text-[12px] text-on-surface-variant">Top trending in Agri-tech</span>
+</div>
+</div>
+</div>
+</div>
+<div class="mb-lg flex items-center justify-between">
+<h3 class="font-headline-lg text-headline-lg text-on-surface">Browse All Insights</h3>
+<div class="flex items-center gap-sm">
+<span class="text-on-surface-variant font-label-sm text-label-sm">Sort by:</span>
+<select class="bg-transparent border-none font-label-sm text-label-sm text-primary cursor-pointer focus:ring-0">
+<option>Most Recent</option>
+<option>Most Impactful</option>
+<option>Alphabetical</option>
+</select>
+</div>
+</div>
+<div class="grid grid-cols-12 grid-rows-2 gap-lg h-[600px] mb-xl">
+<div class="col-span-8 row-span-2 rounded-2xl bg-surface-container-high border border-outline-variant p-xl flex flex-col justify-end relative overflow-hidden group cursor-pointer shadow-xl">
+<img class="absolute inset-0 w-full h-full object-cover opacity-30 group-hover:opacity-50 transition-opacity duration-700" data-alt="A stylized aerial view of a futuristic smart-city integrated with lush green corridors and traditional circular architecture elements. The color palette is dominated by warm sand tones, deep greens, and occasional pops of vibrant copper. The image has a textured, tactile feel as if painted on fine linen, evoking a sense of communal wisdom meeting advanced urban planning." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCi6a_yf2GaJ_u-oRkvKjomAGrU0NPZU5Z11oNkqVlOqpQnmiD0iKrflaxGv-saI5KJ9TiT3yhpdHlw4OYhSbKOHMz09NMlYPPd-GlXG5BDV9XiN06rItRDKbKf2n5S_MdkeVdfZtWpOMwpZJzYPJTMIwUb82cKDhwkcO8-FbW3h4DEHM3YnfPdOvPsgjtPXXCzaMNxVWAUGnofNUHilrXHnidIKCp-aD4cjwCGBq8-Dwo_FmWX5a4s8A"/>
+<div class="absolute inset-0 bg-gradient-to-t from-surface-container-lowest via-transparent to-transparent"></div>
+<div class="relative z-10">
+<span class="inline-block px-md py-xs bg-primary text-on-primary rounded-full font-label-sm text-label-sm mb-md uppercase tracking-widest shadow-sm">Premium Deep Dive</span>
+<h4 class="font-headline-xl text-headline-xl mb-md text-on-surface">Mastering the African Continental Free Trade Area (AfCFTA)</h4>
+<p class="font-body-lg text-body-lg max-w-2xl mb-lg text-on-surface-variant">An exhaustive 5-part audio masterclass on leveraging the new trade protocols to expand your business footprint across 54 nations.</p>
+<div class="flex items-center gap-lg text-on-surface-variant">
+<div class="flex items-center gap-sm">
+<span class="material-symbols-outlined text-primary">schedule</span>
+<span class="font-label-sm">4h Total Content</span>
+</div>
+<div class="flex items-center gap-sm">
+<span class="material-symbols-outlined text-primary">verified</span>
+<span class="font-label-sm">AU Verified</span>
+</div>
+</div>
+</div>
+</div>
+<div class="col-span-4 row-span-1 rounded-2xl bg-surface-container-low border border-outline-variant p-lg flex flex-col hover:border-primary transition-all cursor-pointer shadow-md">
+<div class="flex justify-between items-start mb-lg">
+<div class="w-12 h-12 bg-secondary-container rounded-xl flex items-center justify-center shadow-inner">
+<span class="material-symbols-outlined text-on-secondary-container">account_balance_wallet</span>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant">open_in_new</span>
+</div>
+<h5 class="font-title-md text-title-md mb-sm text-on-surface">Micro-Lending Methods</h5>
+<p class="text-on-surface-variant font-body-md line-clamp-2">Exploring alternative credit scoring models using mobile data.</p>
+</div>
+<div class="col-span-4 row-span-1 rounded-2xl bg-surface-container-low border border-outline-variant p-lg flex flex-col hover:border-primary transition-all cursor-pointer shadow-md">
+<div class="flex justify-between items-start mb-lg">
+<div class="w-12 h-12 bg-primary-container/20 rounded-xl flex items-center justify-center shadow-inner">
+<span class="material-symbols-outlined text-primary">lightbulb</span>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant">open_in_new</span>
+</div>
+<h5 class="font-title-md text-title-md mb-sm text-on-surface">Quick Tips: Patenting</h5>
+<p class="text-on-surface-variant font-body-md line-clamp-2">Protecting indigenous intellectual property in the global market.</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+<footer class="mt-auto px-lg py-md border-t border-outline-variant bg-surface-container-lowest flex justify-between items-center">
+<p class="font-label-sm text-label-sm text-on-surface-variant">© 2024 AfriMentor. Grounded in Heritage, Aimed for the Horizon.</p>
+<div class="flex gap-lg">
+<a class="font-label-sm text-label-sm text-on-surface-variant hover:text-primary transition-colors" href="#">Help Center</a>
+<a class="font-label-sm text-label-sm text-on-surface-variant hover:text-primary transition-colors" href="#">Submission Guidelines</a>
+</div>
+</footer>
+</main>
+</div>
+<button class="fixed bottom-lg right-lg w-14 h-14 bg-primary text-on-primary rounded-2xl shadow-2xl hover:scale-110 active:scale-95 transition-all flex items-center justify-center z-[60]">
+<span class="material-symbols-outlined text-3xl">chat_bubble</span>
+</button>
+<script>
+        document.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+            checkbox.addEventListener('change', function() {
+                const label = this.closest('label');
+                if(this.checked) {
+                    label.classList.add('bg-primary-container/10');
+                } else {
+                    label.classList.remove('bg-primary-container/10');
+                }
+            });
+        });
+
+        const searchInput = document.querySelector('input[type="text"]');
+        searchInput.addEventListener('focus', () => {
+            searchInput.parentElement.classList.add('ring-2', 'ring-primary-container');
+        });
+        searchInput.addEventListener('blur', () => {
+            searchInput.parentElement.classList.remove('ring-2', 'ring-primary-container');
+        });
+    </script>
+</body></html>
