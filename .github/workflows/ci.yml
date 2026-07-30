@@ -24,6 +24,7 @@ jobs:
       - uses: dorny/paths-filter@v3
         id: filter
         with:
+          base: ${{ github.event_name == 'pull_request' && github.base_ref || 'HEAD~1' }}
           filters: |
             api-gateway: services/api-gateway/**
             auth-user-service: services/auth-user-service/**
