@@ -14,33 +14,32 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  # Discover which services changed so PRs only build what they touch, for now.
+  # Discover which services changed so PRs only build what they touch.
+  # On push to main/develop all services are built.
   changes:
     runs-on: ubuntu-latest
     outputs:
-      services: ${{ steps.filter.outputs.changes }}
+      services: ${{ steps.set.outputs.services }}
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 2
-      - uses: dorny/paths-filter@v3
-        id: filter
-        with:
-          base: ${{ github.event_name == 'pull_request' && github.base_ref || 'HEAD~1' }}
-          filters: |
-            api-gateway: services/api-gateway/**
-            auth-user-service: services/auth-user-service/**
-            intake-profiling-service: services/intake-profiling-service/**
-            chat-orchestration-service: services/chat-orchestration-service/**
-            persona-prompt-service: services/persona-prompt-service/**
-            rag-corpus-service: services/rag-corpus-service/**
-            goals-milestones-service: services/goals-milestones-service/**
-            progress-gamification-service: services/progress-gamification-service/**
-            insight-library-service: services/insight-library-service/**
-            feedback-service: services/feedback-service/**
-            research-evaluation-service: services/research-evaluation-service/**
-            voice-service: services/voice-service/**
-            notification-service: services/notification-service/**
+
+      - name: Detect changed services
+        id: set
+        run: |
+          ALL='["api-gateway","auth-user-service","intake-profiling-service","chat-orchestration-service","persona-prompt-service","rag-corpus-service","goals-milestones-service","progress-gamification-service","insight-library-service","feedback-service","research-evaluation-service","voice-service","notification-service"]'
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            CHANGED=$(git diff --name-only origin/${{ github.base_ref }}...HEAD | grep '^services/' | cut -d/ -f2 | sort -u)
+            if [ -z "$CHANGED" ]; then
+              echo "services=[]" >> "$GITHUB_OUTPUT"
+            else
+              JSON=$(echo "$CHANGED" | jq -Rsc '[split("\n")[] | select(length>0)]')
+              echo "services=$JSON" >> "$GITHUB_OUTPUT"
+            fi
+          else
+            echo "services=$ALL" >> "$GITHUB_OUTPUT"
+          fi
 
   service:
     needs: changes
