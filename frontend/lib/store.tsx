@@ -86,18 +86,14 @@ const AppStateContext = createContext<AppState | null>(null);
 const AppDispatchContext = createContext<React.Dispatch<Action> | null>(null);
 
 export function AppStateProvider({ children }: { children: React.ReactNode }) {
-  const [state, dispatch] = useReducer(reducer, initialState, (init) => {
-    // Lazy init runs during the client's first render pass. Guarded for SSR
-    // (no window there) — this doesn't cause a hydration mismatch since
-    // `theme` never changes what the server-rendered DOM structure looks
-    // like, only a `data-theme` attribute applied after mount (see below),
-    // which the blocking inline script in app/layout.tsx already set
-    // correctly before first paint anyway. This just brings React's state
-    // in sync with what's already on the page.
-    if (typeof window === "undefined") return init;
+  const [state, dispatch] = useReducer(reducer, initialState);
+
+  useEffect(() => {
     const stored = window.localStorage.getItem(THEME_STORAGE_KEY) as ThemeName | null;
-    return stored === "heritage" || stored === "nocturnal" ? { ...init, theme: stored } : init;
-  });
+    if (stored === "heritage" || stored === "nocturnal") {
+      dispatch({ type: "SET_THEME", theme: stored });
+    }
+  }, []);
 
   useEffect(() => {
     document.documentElement.setAttribute("data-theme", state.theme);

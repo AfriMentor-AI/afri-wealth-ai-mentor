@@ -1,9 +1,183 @@
-@import url("https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;600;700;800&family=Inter:wght@400;600&display=swap");
-@import url("https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap");
+@import "tailwindcss/tailwind.css";
 
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@theme inline {
+  /* Colors — mapped to CSS vars set per data-theme */
+  --color-surface: var(--surface);
+  --color-surface-dim: var(--surface-dim);
+  --color-surface-bright: var(--surface-bright);
+  --color-surface-container-lowest: var(--surface-container-lowest);
+  --color-surface-container-low: var(--surface-container-low);
+  --color-surface-container: var(--surface-container);
+  --color-surface-container-high: var(--surface-container-high);
+  --color-surface-container-highest: var(--surface-container-highest);
+  --color-on-surface: var(--on-surface);
+  --color-on-surface-variant: var(--on-surface-variant);
+  --color-inverse-surface: var(--inverse-surface);
+  --color-inverse-on-surface: var(--inverse-on-surface);
+  --color-outline: var(--outline);
+  --color-outline-variant: var(--outline-variant);
+  --color-surface-tint: var(--surface-tint);
+  --color-primary: var(--primary);
+  --color-on-primary: var(--on-primary);
+  --color-primary-container: var(--primary-container);
+  --color-on-primary-container: var(--on-primary-container);
+  --color-inverse-primary: var(--inverse-primary);
+  --color-secondary: var(--secondary);
+  --color-on-secondary: var(--on-secondary);
+  --color-secondary-container: var(--secondary-container);
+  --color-on-secondary-container: var(--on-secondary-container);
+  --color-tertiary: var(--tertiary);
+  --color-on-tertiary: var(--on-tertiary);
+  --color-tertiary-container: var(--tertiary-container);
+  --color-on-tertiary-container: var(--on-tertiary-container);
+  --color-error: var(--error);
+  --color-on-error: var(--on-error);
+  --color-error-container: var(--error-container);
+  --color-on-error-container: var(--on-error-container);
+  --color-primary-fixed: var(--primary-fixed);
+  --color-primary-fixed-dim: var(--primary-fixed-dim);
+  --color-on-primary-fixed: var(--on-primary-fixed);
+  --color-on-primary-fixed-variant: var(--on-primary-fixed-variant);
+  --color-secondary-fixed: var(--secondary-fixed);
+  --color-secondary-fixed-dim: var(--secondary-fixed-dim);
+  --color-on-secondary-fixed: var(--on-secondary-fixed);
+  --color-on-secondary-fixed-variant: var(--on-secondary-fixed-variant);
+  --color-background: var(--background);
+  --color-on-background: var(--on-background);
+  --color-surface-variant: var(--surface-variant);
+
+  /* Font families */
+  --font-family-headline-xl: "Be Vietnam Pro", system-ui, sans-serif;
+  --font-family-headline-lg: "Be Vietnam Pro", system-ui, sans-serif;
+  --font-family-headline-lg-mobile: "Be Vietnam Pro", system-ui, sans-serif;
+  --font-family-title-md: "Be Vietnam Pro", system-ui, sans-serif;
+  --font-family-body-lg: "Inter", system-ui, sans-serif;
+  --font-family-body-md: "Inter", system-ui, sans-serif;
+  --font-family-label-sm: "Inter", system-ui, sans-serif;
+
+  /* Font sizes */
+  --font-size-headline-xl: 40px;
+  --font-size-headline-lg: 32px;
+  --font-size-headline-lg-mobile: 28px;
+  --font-size-title-md: 20px;
+  --font-size-body-lg: 18px;
+  --font-size-body-md: 16px;
+  --font-size-label-sm: 13px;
+
+  /* Border radius */
+  --radius-sm: 0.25rem;
+  --radius: 0.5rem;
+  --radius-md: 0.75rem;
+  --radius-lg: 1rem;
+  --radius-xl: 1.5rem;
+  --radius-full: 9999px;
+}
+
+/* Spacing scale — named tokens exposed as utilities via CSS vars */
+:root {
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 16px;
+  --spacing-lg: 24px;
+  --spacing-xl: 48px;
+  --spacing-margin-mobile: 20px;
+  --spacing-gutter: 16px;
+}
+
+@utility p-xs { padding: var(--spacing-xs); }
+@utility p-sm { padding: var(--spacing-sm); }
+@utility p-md { padding: var(--spacing-md); }
+@utility p-lg { padding: var(--spacing-lg); }
+@utility p-xl { padding: var(--spacing-xl); }
+
+@utility px-xs { padding-inline: var(--spacing-xs); }
+@utility px-sm { padding-inline: var(--spacing-sm); }
+@utility px-md { padding-inline: var(--spacing-md); }
+@utility px-lg { padding-inline: var(--spacing-lg); }
+@utility px-xl { padding-inline: var(--spacing-xl); }
+@utility px-margin-mobile { padding-inline: var(--spacing-margin-mobile); }
+
+@utility py-xs { padding-block: var(--spacing-xs); }
+@utility py-sm { padding-block: var(--spacing-sm); }
+@utility py-md { padding-block: var(--spacing-md); }
+@utility py-lg { padding-block: var(--spacing-lg); }
+@utility py-xl { padding-block: var(--spacing-xl); }
+
+@utility pb-xs { padding-bottom: var(--spacing-xs); }
+@utility pb-sm { padding-bottom: var(--spacing-sm); }
+@utility pb-md { padding-bottom: var(--spacing-md); }
+@utility pb-lg { padding-bottom: var(--spacing-lg); }
+@utility pb-xl { padding-bottom: var(--spacing-xl); }
+
+@utility pt-xs { padding-top: var(--spacing-xs); }
+@utility pt-sm { padding-top: var(--spacing-sm); }
+@utility pt-md { padding-top: var(--spacing-md); }
+@utility pt-lg { padding-top: var(--spacing-lg); }
+@utility pt-xl { padding-top: var(--spacing-xl); }
+
+@utility pl-xs { padding-left: var(--spacing-xs); }
+@utility pl-sm { padding-left: var(--spacing-sm); }
+@utility pl-md { padding-left: var(--spacing-md); }
+@utility pl-lg { padding-left: var(--spacing-lg); }
+
+@utility pr-xs { padding-right: var(--spacing-xs); }
+@utility pr-sm { padding-right: var(--spacing-sm); }
+@utility pr-md { padding-right: var(--spacing-md); }
+@utility pr-lg { padding-right: var(--spacing-lg); }
+
+@utility m-xs { margin: var(--spacing-xs); }
+@utility m-sm { margin: var(--spacing-sm); }
+@utility m-md { margin: var(--spacing-md); }
+@utility m-lg { margin: var(--spacing-lg); }
+@utility m-xl { margin: var(--spacing-xl); }
+
+@utility mx-xs { margin-inline: var(--spacing-xs); }
+@utility mx-sm { margin-inline: var(--spacing-sm); }
+@utility mx-md { margin-inline: var(--spacing-md); }
+@utility mx-lg { margin-inline: var(--spacing-lg); }
+
+@utility my-xs { margin-block: var(--spacing-xs); }
+@utility my-sm { margin-block: var(--spacing-sm); }
+@utility my-md { margin-block: var(--spacing-md); }
+@utility my-lg { margin-block: var(--spacing-lg); }
+
+@utility mb-xs { margin-bottom: var(--spacing-xs); }
+@utility mb-sm { margin-bottom: var(--spacing-sm); }
+@utility mb-md { margin-bottom: var(--spacing-md); }
+@utility mb-lg { margin-bottom: var(--spacing-lg); }
+@utility mb-xl { margin-bottom: var(--spacing-xl); }
+
+@utility mt-xs { margin-top: var(--spacing-xs); }
+@utility mt-sm { margin-top: var(--spacing-sm); }
+@utility mt-md { margin-top: var(--spacing-md); }
+@utility mt-lg { margin-top: var(--spacing-lg); }
+@utility mt-xl { margin-top: var(--spacing-xl); }
+
+@utility gap-xs { gap: var(--spacing-xs); }
+@utility gap-sm { gap: var(--spacing-sm); }
+@utility gap-md { gap: var(--spacing-md); }
+@utility gap-lg { gap: var(--spacing-lg); }
+@utility gap-xl { gap: var(--spacing-xl); }
+
+@layer utilities {
+  .space-y-xs > * + * { margin-top: var(--spacing-xs); }
+  .space-y-sm > * + * { margin-top: var(--spacing-sm); }
+  .space-y-md > * + * { margin-top: var(--spacing-md); }
+  .space-y-lg > * + * { margin-top: var(--spacing-lg); }
+  .space-x-xs > * + * { margin-left: var(--spacing-xs); }
+  .space-x-sm > * + * { margin-left: var(--spacing-sm); }
+  .space-x-md > * + * { margin-left: var(--spacing-md); }
+}
+
+@utility top-md { top: var(--spacing-md); }
+@utility top-lg { top: var(--spacing-lg); }
+@utility bottom-md { bottom: var(--spacing-md); }
+@utility bottom-lg { bottom: var(--spacing-lg); }
+@utility left-md { left: var(--spacing-md); }
+@utility left-lg { left: var(--spacing-lg); }
+@utility right-md { right: var(--spacing-md); }
+@utility right-lg { right: var(--spacing-lg); }
+@utility right-margin-mobile { right: var(--spacing-margin-mobile); }
 
 /* Heritage-Forward — verbatim from the Stitch export's DESIGN.md */
 :root,
