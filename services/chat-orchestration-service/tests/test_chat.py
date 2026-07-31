@@ -118,7 +118,7 @@ def test_list_messages(client, session_id):
 # ── Commitment event ──────────────────────────────────────────────────────────
 
 def _commitment_reply(*args, **kwargs):
-    return "I will save ₦5,000 every week starting Monday.", 10, 5
+    return "That's a great commitment! Let's make it happen.", 10, 5
 
 
 def test_commitment_event_emitted(client, session_id):
@@ -128,7 +128,7 @@ def test_commitment_event_emitted(client, session_id):
     ):
         r = client.post(
             f"/api/v1/chat/sessions/{session_id}/messages",
-            json={"content": "What should I commit to?"},
+            json={"content": "I will save ₦5,000 every week starting Monday."},
             headers=USER_HEADERS,
         )
     assert r.status_code == 201

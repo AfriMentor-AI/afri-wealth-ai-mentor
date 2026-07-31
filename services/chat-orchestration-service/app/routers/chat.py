@@ -88,8 +88,11 @@ async def send_message(
         rag_collection=conv.rag_collection,
     )
 
-    # Detect commitment and persist assistant turn
-    candidate = is_commitment_candidate(reply_text)
+    # Detect commitment from the user message — the commitment is expressed
+    # by the user, not the assistant. Chioma echoes it in third person which
+    # never matches user-voiced keywords. Sprint 4 replaces this with a
+    # structured LLM output field.
+    candidate = is_commitment_candidate(body.content)
     assistant_msg = Message(
         conversation_id=conv.id,
         role="assistant",
