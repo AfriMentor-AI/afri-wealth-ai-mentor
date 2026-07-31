@@ -64,6 +64,20 @@ services:
       retries: 5
     networks: [afrimentor]
 
+  # ---------------------------------------------------- research: MLflow
+  mlflow:
+    build:
+      context: ./research/tracking
+      dockerfile: mlflow.Dockerfile
+    ports: ["5000:5000"]
+    environment:
+      MLFLOW_BACKEND_URI: sqlite:////mlflow/mlflow.db
+      MLFLOW_ARTIFACT_ROOT: /mlflow/artifacts
+    volumes:
+      - mlflowdata:/mlflow
+    networks: [afrimentor]
+    restart: unless-stopped
+
   # ------------------------------------------------------------- edge: gateway
   api-gateway:
     <<: *svc-defaults
@@ -241,3 +255,4 @@ volumes:
   pgdata:
   chromadata:
   voicedata:
+  mlflowdata:
