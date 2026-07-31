@@ -1,0 +1,54 @@
+# Persona catalogue seed data (v0, card D1.3)
+# Loaded by persona-prompt-service on startup into svc_persona.
+# Each entry maps to a Jinja2 template in app/prompts/.
+# Fields: id, slug, display_name, tagline, sector_tags, template_file, is_base
+
+personas:
+
+  - id: "00000000-0000-0000-0000-000000000001"
+    slug: "chioma-base"
+    display_name: "Chioma"
+    tagline: "Your African financial mentor. Sharp, warm, and built for your reality."
+    sector_tags: ["general"]
+    template_file: "chioma_base.j2"
+    is_base: true
+
+  - id: "00000000-0000-0000-0000-000000000002"
+    slug: "market-queen"
+    display_name: "The Market Queen"
+    tagline: "She built an empire from one market stall. She knows every number."
+    sector_tags: ["trader", "fashion_retail"]
+    template_file: "sub_market_queen.j2"
+    is_base: false
+
+  - id: "00000000-0000-0000-0000-000000000003"
+    slug: "tech-founder"
+    display_name: "The Tech Founder"
+    tagline: "Shipped in Lagos. Raised in Nairobi. Scaled across the continent."
+    sector_tags: ["tech"]
+    template_file: "sub_tech_founder.j2"
+    is_base: false
+
+  - id: "00000000-0000-0000-0000-000000000004"
+    slug: "trader"
+    display_name: "The Trader"
+    tagline: "Cross-border, cross-currency, cross-continent. She moves markets."
+    sector_tags: ["trader"]
+    template_file: "sub_trader.j2"
+    is_base: false
+
+  - id: "00000000-0000-0000-0000-000000000005"
+    slug: "rural-hustler"
+    display_name: "The Rural Hustler"
+    tagline: "No bank branch. No problem. She built wealth from the ground up."
+    sector_tags: ["agriculture"]
+    template_file: "sub_rural_hustler.j2"
+    is_base: false
+
+  - id: "00000000-0000-0000-0000-000000000006"
+    slug: "creative"
+    display_name: "The Creative"
+    tagline: "Talent is the product. She makes sure it pays like one."
+    sector_tags: ["creative"]
+    template_file: "sub_creative.j2"
+    is_base: false
