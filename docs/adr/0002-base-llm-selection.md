@@ -3,6 +3,7 @@
 - **Status:** Approved
 - **Card:** D1.1 (Sprint 1)
 - **Date:** 2026-07-28
+- **Last Updated:** 2026-07-31 (Sprint 1 implementation findings)
 - **Author:** Daniel Kusi Boateng (Lead Software Engineer / ML Engineer)
 - **Approvers:** Olusegun (Cost / Infra), Chukwuebuka (ML Feasibility)
 - **Depends on:** ADR 0001 (service boundaries — chat-orchestration-service)
@@ -72,7 +73,7 @@ AfriMentor AI requires a base LLM for two distinct operational requirements:
 
 Deploy **Together AI / Groq Serverless APIs** serving **Qwen/Qwen2.5-7B-Instruct** as
 the primary model for `chat-orchestration-service`, with
-**meta-llama/Llama-3.1-8B-Instruct** as the secondary/fallback model.
+**meta-llama/Llama-3.1-8B-Instruct** as the active Sprint 1 model.
 
 Rationale for Qwen 2.5 7B as primary:
 
@@ -95,6 +96,30 @@ Rationale for Llama 3.1 8B as secondary/fallback:
 - Broad community support and tooling.
 - Both models share identical OpenAI-compatible API schemas on Groq/Together AI —
   switching is a single config-line change in `chat-orchestration-service`.
+
+#### Sprint 1 Implementation Finding — Groq Model Availability
+
+During Sprint 1 implementation and live testing of `chat-orchestration-service`,
+**Qwen/Qwen2.5-7B-Instruct was found to be unavailable on Groq's platform**.
+Groq's available model catalogue (verified 2026-07-31) does not include Qwen 2.5 7B.
+
+Available models on Groq at time of writing:
+
+| Model ID | Notes |
+|---|---|
+| `llama-3.1-8b-instant` | Active Sprint 1 model — fastest on Groq free tier |
+| `llama-3.3-70b-versatile` | Available but overkill for Sprint 1 |
+| `qwen/qwen3.6-27b` | Qwen available but larger/slower than target |
+| `whisper-large-v3` | STT only — for voice-service |
+
+**Interim decision:** `llama-3.1-8b-instant` is the active model for Sprint 1–3 on
+Groq. This is the ADR-0002 fallback model and performs well — live test confirmed
+~0.3 s p95 response time and high-quality Chioma persona output.
+
+**Qwen 2.5 7B remains the primary target model** and will be served via **Together AI**
+(`Qwen/Qwen2.5-7B-Instruct`) when Sprint 2 frontend integration begins, or when Groq
+adds it to their catalogue. The `LLM_BASE_URL` and `LLM_MODEL` config vars in
+`chat-orchestration-service` make this a zero-code switch.
 
 Model comparison:
 
@@ -128,11 +153,13 @@ weights will be:
 **Positive:** sub-second latency in Sprint 1–3 at near-zero cost; no GPU management
 overhead during frontend/RAG development; full fine-tuning freedom in Sprint 4–5 without
 paying for idle GPU time; Apache 2.0 licence removes legal friction for research
-publication.
+publication; `llama-3.1-8b-instant` on Groq confirmed ~0.3 s p95 in live testing.
 
 **Negative / trade-offs:** US/EU data residency in Tier 1 (mitigated by provider
 non-retention policies; full residency compliance deferred to Tier 2 / prod hardening via
-AWS af-south-1); dependency on third-party API availability during Sprint 1–3.
+AWS af-south-1); dependency on third-party API availability during Sprint 1–3;
+Qwen 2.5 7B unavailable on Groq — Together AI required to serve the primary model
+(zero-code switch via `LLM_BASE_URL` env var).
 
 **Follow-up ADRs:** 0003 RAG embedding model selection; 0004 multi-region data residency
 & AWS af-south-1 migration criteria.
