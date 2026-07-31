@@ -1,0 +1,71 @@
+# research/configs/c4_rlhf_preference_opt.yaml
+# Condition C4: RLHF / Preference Optimization — reward model + PPO.
+
+experiment:
+  name: "C4_rlhf_preference_optimization"
+  condition_id: "C4"
+  sprint: 5
+
+model:
+  base_model_id: "Qwen/Qwen2.5-7B-Instruct"
+  dpo_checkpoint: "research/experiments/03_contrastive_learning/checkpoints/final"
+  output_dir: "research/experiments/04_rlhf_preference_opt/checkpoints"
+  hub_repo: "afrimentor/chioma-rlhf-v1"
+
+reward_model:
+  base_model_id: "Qwen/Qwen2.5-7B-Instruct"
+  output_dir: "research/experiments/04_rlhf_preference_opt/reward_model"
+  dataset: "research/datasets/splits/rlhf_train.jsonl"
+  eval_dataset: "research/datasets/splits/rlhf_val.jsonl"
+  num_train_epochs: 2
+  per_device_train_batch_size: 4
+  learning_rate: 1.0e-5
+  # Reward dimensions weighted in the reward signal
+  reward_weights:
+    persona_adherence: 0.25
+    cultural_fluency: 0.20
+    anti_dependency: 0.20
+    financial_accuracy: 0.20
+    urgency: 0.15
+
+ppo:
+  learning_rate: 1.0e-5
+  batch_size: 16
+  mini_batch_size: 4
+  gradient_accumulation_steps: 4
+  ppo_epochs: 4
+  kl_penalty: "kl"
+  init_kl_coef: 0.2
+  target_kl: 6.0
+  horizon: 10000
+  gamma: 1.0
+  lam: 0.95
+  cliprange: 0.2
+  cliprange_value: 0.2
+  vf_coef: 0.1
+  max_new_tokens: 512
+  temperature: 0.7
+
+quantization:
+  load_in_4bit: true
+  bnb_4bit_compute_dtype: "bfloat16"
+  bnb_4bit_quant_type: "nf4"
+  bnb_4bit_use_double_quant: true
+
+evaluation:
+  metrics:
+    - persona_adherence
+    - cultural_fluency
+    - anti_dependency
+    - financial_accuracy
+    - urgency
+    - rouge_l
+    - bert_score_f1
+  compare_against: "C3_persona_contrastive_learning"
+  human_eval: true                          # flag: requires human annotators in Sprint 5
+
+mlflow:
+  experiment_name: "C4_rlhf_preference_optimization"
+  run_name_prefix: "c4"
+  log_artifacts: true
+  log_model: true

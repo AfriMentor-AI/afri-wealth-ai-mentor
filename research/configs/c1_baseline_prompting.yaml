@@ -1,0 +1,44 @@
+# research/configs/c1_baseline_prompting.yaml
+# Condition C1: Baseline Prompting — no weight updates, establishes performance floor.
+
+experiment:
+  name: "C1_baseline_prompting"
+  condition_id: "C1"
+  sprint: 3
+
+model:
+  provider: "groq"                          # groq | together_ai | local_vllm
+  model_id: "llama-3.1-8b-instant"
+  base_url: "https://api.groq.com/openai/v1"
+  max_tokens: 512
+  temperature: 0.7
+
+prompting:
+  modes:
+    - zero_shot                             # system prompt only
+    - few_shot_3                            # system prompt + 3 examples
+    - few_shot_5                            # system prompt + 5 examples
+  persona_slugs:
+    - chioma-base
+    - market-queen
+    - tech-founder
+    - trader
+    - rural-hustler
+    - creative
+
+evaluation:
+  metrics:
+    - persona_adherence
+    - cultural_fluency
+    - anti_dependency
+    - financial_accuracy
+    - urgency
+    - rouge_l
+    - bert_score_f1
+  eval_split: "test"
+  sample_size: 100                          # responses to evaluate per mode/persona
+
+mlflow:
+  experiment_name: "C1_baseline_prompting"
+  run_name_prefix: "c1"
+  log_artifacts: true

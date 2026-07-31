@@ -1,0 +1,55 @@
+# AfriMentor AI — Dataset Versioning Plan (card D1.4)
+# DVC pipeline: raw → processed → splits
+# Run: dvc repro   (from repo root)
+# Push: dvc push   (requires remote configured in .dvc/config)
+
+stages:
+
+  # ── Stage 1: Raw data ingestion ─────────────────────────────────────────────
+  # Sources: scraped AfriMentor session logs (Sprint 3+), synthetic seed data,
+  # human-annotated preference pairs (Sprint 4-5).
+  ingest_raw:
+    cmd: python research/datasets/scripts/ingest_raw.py
+    deps:
+      - research/datasets/scripts/ingest_raw.py
+    outs:
+      - research/datasets/raw/conversations.jsonl
+      - research/datasets/raw/preference_pairs.jsonl
+
+  # ── Stage 2: Processing & cleaning ──────────────────────────────────────────
+  # Filters low-quality turns, normalises text, adds persona labels,
+  # detects commitment candidates, and scores cultural fluency.
+  process:
+    cmd: python research/datasets/scripts/process.py
+    deps:
+      - research/datasets/scripts/process.py
+      - research/datasets/raw/conversations.jsonl
+      - research/datasets/raw/preference_pairs.jsonl
+    outs:
+      - research/datasets/processed/sft_conversations.jsonl   # Condition C2
+      - research/datasets/processed/dpo_pairs.jsonl           # Condition C3
+      - research/datasets/processed/rlhf_preferences.jsonl    # Condition C4
+    metrics:
+      - research/datasets/processed/stats.json:
+          cache: false
+
+  # ── Stage 3: Train/val/test splits ──────────────────────────────────────────
+  # Stratified by persona, sector, and country to ensure eval coverage.
+  split:
+    cmd: python research/datasets/scripts/split.py
+    deps:
+      - research/datasets/scripts/split.py
+      - research/datasets/processed/sft_conversations.jsonl
+      - research/datasets/processed/dpo_pairs.jsonl
+      - research/datasets/processed/rlhf_preferences.jsonl
+    params:
+      - research/configs/dataset.yaml:
+          - split.train_ratio
+          - split.val_ratio
+          - split.test_ratio
+          - split.random_seed
+    outs:
+      - research/datasets/splits/
+    metrics:
+      - research/datasets/splits/split_stats.json:
+          cache: false
