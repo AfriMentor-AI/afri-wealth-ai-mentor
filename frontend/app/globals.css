@@ -1,4 +1,4 @@
-@import "tailwindcss/tailwind.css";
+@import "tailwindcss";
 
 @theme inline {
   /* Colors — mapped to CSS vars set per data-theme */
