@@ -3,23 +3,17 @@
 import { useEffect, useState } from "react";
 import { Icon } from "@/components/Icon";
 import { fetchBadges, fetchStreak } from "@/lib/api";
-import type { Badge, StreakStat } from "@/lib/types";
+import type { BadgeWithStatus, StreakStat } from "@/lib/types";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { useAppDispatch } from "@/lib/store";
 
 const WEEKDAY_BARS = [40, 60, 55, 85, 100, 95, 98]; // % height, matches reference chart shape
 const HEATMAP_INTENSITIES = ["bg-surface-container", "bg-secondary-fixed", "bg-secondary-container", "bg-secondary"];
 
-const badgeIcon: Record<string, string> = {
-  "Consistency Queen": "workspace_premium",
-  "Smart Saver": "savings",
-  "Scholar Spirit": "menu_book",
-};
-
 export default function ProgressBoardPage() {
   const dispatch = useAppDispatch();
   const [streak, setStreak] = useState<StreakStat | null>(null);
-  const [badges, setBadges] = useState<Badge[] | null>(null);
+  const [badges, setBadges] = useState<BadgeWithStatus[] | null>(null);
   const [heatmap, setHeatmap] = useState<number[][] | null>(null);
 
   useEffect(() => {
@@ -115,13 +109,14 @@ export default function ProgressBoardPage() {
             ? Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-32 w-full rounded" />)
             : badges.map((b, i) => {
                 const wide = i === 2;
+                const earned = b.earnedAt !== null;
                 return (
                   <div
                     key={b.id}
                     className={`flex flex-col items-center gap-sm rounded border p-md text-center transition-transform active:scale-95 ${
                       wide ? "col-span-2 flex-row justify-start text-left" : ""
                     } ${
-                      b.earned
+                      earned
                         ? i === 0
                           ? "border-secondary-container bg-secondary-container/20"
                           : "border-primary-fixed bg-primary-fixed/20"
@@ -129,20 +124,16 @@ export default function ProgressBoardPage() {
                     }`}
                   >
                     <div
-                      className={`flex shrink-0 items-center justify-center rounded-full ${wide ? "h-12 w-12" : "h-16 w-16"} ${
-                        b.earned ? (i === 0 ? "bg-secondary-container text-on-secondary-container" : "bg-primary-fixed text-on-primary-fixed") : "bg-surface-variant text-on-surface-variant"
+                      className={`relative flex shrink-0 items-center justify-center rounded-full ${wide ? "h-12 w-12" : "h-16 w-16"} ${
+                        earned ? (i === 0 ? "bg-secondary-container text-on-secondary-container" : "bg-primary-fixed text-on-primary-fixed") : "bg-surface-variant text-on-surface-variant"
                       }`}
                     >
-                      <Icon name={badgeIcon[b.label] ?? "workspace_premium"} filled={b.earned} size={wide ? 24 : 32} />
-                      {!b.earned && <Icon name="lock" className="absolute" size={14} />}
+                      <Icon name={b.iconName ?? "workspace_premium"} filled={earned} size={wide ? 24 : 32} />
+                      {!earned && <Icon name="lock" className="absolute -bottom-1 -right-1" size={14} />}
                     </div>
                     <div>
                       <p className="font-label-sm text-label-sm font-bold text-on-surface">{b.label}</p>
-                      <p className="text-[10px] text-on-surface-variant">
-                        {b.label === "Consistency Queen" && "7 days streak"}
-                        {b.label === "Smart Saver" && "Saved ₵500 this week"}
-                        {b.label === "Scholar Spirit" && "Finished 5 lessons in Library"}
-                      </p>
+                      <p className="text-[10px] text-on-surface-variant">{b.description}</p>
                     </div>
                   </div>
                 );

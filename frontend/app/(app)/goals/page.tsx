@@ -3,20 +3,32 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Icon } from "@/components/Icon";
-import { fetchGoals } from "@/lib/api";
-import type { Goal } from "@/lib/types";
+import { fetchGoals, fetchMilestonesByGoal } from "@/lib/api";
+import type { Goal, Milestone } from "@/lib/types";
 import { ProgressRing } from "@/components/ui/ProgressRing";
 import { Skeleton } from "@/components/ui/Skeleton";
 
-function nextMilestone(goal: Goal) {
-  return goal.milestones.find((m) => m.status === "in_progress") ?? goal.milestones.find((m) => m.status === "upcoming");
+function nextMilestone(milestones: Milestone[] | undefined) {
+  if (!milestones) return undefined;
+  return milestones.find((m) => m.status === "in_progress") ?? milestones.find((m) => m.status === "upcoming");
 }
 
 export default function GoalsOverviewPage() {
   const [goals, setGoals] = useState<Goal[] | null>(null);
+  // Milestone is its own normalized collection per the contract, so it's
+  // fetched separately per goal and joined here client-side — a real
+  // backend might instead offer a batch/expand endpoint to avoid the
+  // N+1 fetch pattern this causes once there are many goals.
+  const [milestonesByGoal, setMilestonesByGoal] = useState<Record<string, Milestone[]>>({});
 
   useEffect(() => {
-    fetchGoals().then(setGoals);
+    fetchGoals().then(async (fetchedGoals) => {
+      setGoals(fetchedGoals);
+      const entries = await Promise.all(
+        fetchedGoals.map(async (g) => [g.id, await fetchMilestonesByGoal(g.id)] as const)
+      );
+      setMilestonesByGoal(Object.fromEntries(entries));
+    });
   }, []);
 
   return (
@@ -54,7 +66,9 @@ export default function GoalsOverviewPage() {
               </div>
               <div className="rounded-lg border-l-4 border-primary bg-surface-bright p-sm">
                 <p className="mb-xs font-label-sm text-label-sm uppercase text-on-surface-variant">Next Milestone</p>
-                <p className="font-body-md font-semibold text-on-surface">{nextMilestone(goals[0])?.title}</p>
+                <p className="font-body-md font-semibold text-on-surface">
+                  {nextMilestone(milestonesByGoal[goals[0].id])?.title}
+                </p>
               </div>
             </Link>
 
@@ -71,7 +85,7 @@ export default function GoalsOverviewPage() {
                 <div className="flex items-center gap-sm">
                   <Icon name="workspace_premium" filled className="text-on-secondary-container" />
                   <p className="font-body-md font-semibold text-on-secondary-container">
-                    {nextMilestone(goals[1])?.title}
+                    {nextMilestone(milestonesByGoal[goals[1].id])?.title}
                   </p>
                 </div>
               </div>
@@ -97,7 +111,9 @@ export default function GoalsOverviewPage() {
               <div className="flex items-center justify-between text-on-surface-variant">
                 <div className="flex items-center gap-xs">
                   <Icon name="flag" size={18} />
-                  <span className="font-label-sm text-label-sm">{nextMilestone(goals[2])?.title}</span>
+                  <span className="font-label-sm text-label-sm">
+                    {nextMilestone(milestonesByGoal[goals[2].id])?.title}
+                  </span>
                 </div>
                 <span className="font-label-sm text-label-sm italic">Jan 2027</span>
               </div>

@@ -1,0 +1,782 @@
+# AfriMentor AI — API Contract Stub (G1.3)
+# =========================================
+# Mirrors contract/types.ts 1:1. If a schema here and the TS interface of
+# the same name ever disagree, that's a bug — one of them is stale.
+#
+# STATUS: STUB, not a final spec. Paths cover the minimum each screen
+# needs (mostly list/get, a few create/update where the UI clearly writes
+# data) so backend and frontend can scaffold in parallel starting Sprint
+# 2 — not an exhaustive, production-ready API design. Expect changes
+# after review with Olusegun, especially around:
+#   - Auth (nothing modeled here yet — every path implicitly assumes a
+#     resolved `userId` from a session/token, not passed as a param)
+#   - Pagination (list endpoints below return bare arrays; real endpoints
+#     will likely need cursor/offset pagination once data volume grows)
+#   - Error response shapes (not modeled — using bare HTTP status codes
+#     as placeholders)
+
+openapi: 3.0.3
+info:
+  title: AfriMentor AI API
+  version: 0.1.0-stub
+  description: >
+    Contract stub for parallel frontend/backend development starting
+    Sprint 2. Source of truth is contract/types.ts in the same repo
+    folder — this file is generated to match it, not authored
+    independently.
+
+servers:
+  - url: https://api.afrimentor.example/v1
+    description: Placeholder — real base URL TBD with Olusegun.
+
+tags:
+  - name: Users
+  - name: Personas
+  - name: Goals
+  - name: Chat
+  - name: Insights
+  - name: Feedback
+  - name: DailyActions
+  - name: Progress
+
+paths:
+  # ---------------------------------------------------------------------
+  # User / Profile
+  # ---------------------------------------------------------------------
+  /users/me:
+    get:
+      tags: [Users]
+      summary: Get the current authenticated user.
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "401":
+          description: Not authenticated
+
+  /users/me/profile:
+    get:
+      tags: [Users]
+      summary: Get the current user's Profile (Intake data).
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Profile"
+        "404":
+          description: Profile not yet created (Intake not completed).
+    put:
+      tags: [Users]
+      summary: Create or update the current user's Profile (end of Intake flow).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProfileInput"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Profile"
+
+  # ---------------------------------------------------------------------
+  # Personas
+  # ---------------------------------------------------------------------
+  /personas:
+    get:
+      tags: [Personas]
+      summary: List all personas, with isRecommended computed against the current user's Profile.
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Persona"
+
+  /users/me/persona:
+    put:
+      tags: [Personas]
+      summary: Select a persona (Persona Selection screen).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [personaId]
+              properties:
+                personaId:
+                  $ref: "#/components/schemas/ID"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Profile"
+
+  # ---------------------------------------------------------------------
+  # Goals / Milestones / Commitments
+  # ---------------------------------------------------------------------
+  /goals:
+    get:
+      tags: [Goals]
+      summary: List the current user's goals (Goals Overview screen).
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Goal"
+    post:
+      tags: [Goals]
+      summary: Create a new goal ("Create New Goal" button).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GoalInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Goal"
+
+  /goals/{goalId}:
+    get:
+      tags: [Goals]
+      summary: Get a single goal.
+      parameters:
+        - $ref: "#/components/parameters/goalId"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Goal"
+        "404":
+          description: Not found
+
+  /goals/{goalId}/milestones:
+    get:
+      tags: [Goals]
+      summary: List milestones for a goal, ordered (Goal Milestone Path screen).
+      parameters:
+        - $ref: "#/components/parameters/goalId"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Milestone"
+
+  /goals/{goalId}/commitments:
+    get:
+      tags: [Goals]
+      summary: List tagged commitments for a goal.
+      parameters:
+        - $ref: "#/components/parameters/goalId"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Commitment"
+    post:
+      tags: [Goals]
+      summary: Tag a new commitment (from the Chat "Tag It" prompt).
+      parameters:
+        - $ref: "#/components/parameters/goalId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CommitmentInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Commitment"
+
+  # ---------------------------------------------------------------------
+  # Chat
+  # ---------------------------------------------------------------------
+  /chat/messages:
+    get:
+      tags: [Chat]
+      summary: Get chat history for the current user.
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ChatMessage"
+    post:
+      tags: [Chat]
+      summary: Send a message; response includes the mentor's reply.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [text]
+              properties:
+                text:
+                  type: string
+      responses:
+        "201":
+          description: Created — returns the user message AND the mentor's generated reply.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  userMessage:
+                    $ref: "#/components/schemas/ChatMessage"
+                  mentorReply:
+                    $ref: "#/components/schemas/ChatMessage"
+
+  # ---------------------------------------------------------------------
+  # Insight Library
+  # ---------------------------------------------------------------------
+  /insights:
+    get:
+      tags: [Insights]
+      summary: List insight items, optionally filtered.
+      parameters:
+        - name: category
+          in: query
+          schema:
+            type: string
+        - name: search
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/InsightItem"
+
+  /insights/{insightId}/favorite:
+    put:
+      tags: [Insights]
+      summary: Mark an insight as favorited by the current user.
+      parameters:
+        - name: insightId
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/ID"
+      responses:
+        "200":
+          description: OK
+    delete:
+      tags: [Insights]
+      summary: Un-favorite an insight.
+      parameters:
+        - name: insightId
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/ID"
+      responses:
+        "204":
+          description: No Content
+
+  # ---------------------------------------------------------------------
+  # Feedback
+  # ---------------------------------------------------------------------
+  /feedback:
+    post:
+      tags: [Feedback]
+      summary: Submit the Feedback Survey modal.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FeedbackSurveyInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FeedbackSurvey"
+
+  # ---------------------------------------------------------------------
+  # Daily Action
+  # ---------------------------------------------------------------------
+  /daily-action/today:
+    get:
+      tags: [DailyActions]
+      summary: Get today's action for the current user.
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DailyAction"
+        "404":
+          description: No action generated for today yet.
+
+  /daily-action/{actionId}:
+    patch:
+      tags: [DailyActions]
+      summary: Update action status ("Mark done" / "In progress" / "Need help").
+      parameters:
+        - name: actionId
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/ID"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                done:
+                  type: boolean
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DailyAction"
+
+  # ---------------------------------------------------------------------
+  # Progress (streak + badges)
+  # ---------------------------------------------------------------------
+  /progress/streak:
+    get:
+      tags: [Progress]
+      summary: Get the current user's streak stats (Progress Board screen).
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StreakStat"
+
+  /progress/badges:
+    get:
+      tags: [Progress]
+      summary: List all badges with the current user's earned/locked state.
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/BadgeWithStatus"
+
+components:
+  parameters:
+    goalId:
+      name: goalId
+      in: path
+      required: true
+      schema:
+        $ref: "#/components/schemas/ID"
+
+  schemas:
+    ID:
+      type: string
+      description: Opaque unique identifier (UUID in practice). Do not parse.
+
+    # --- User / Profile -----------------------------------------------
+    User:
+      type: object
+      required: [id, createdAt]
+      properties:
+        id:
+          $ref: "#/components/schemas/ID"
+        phoneNumber:
+          type: string
+        email:
+          type: string
+        locale:
+          type: string
+          example: en-GH
+        createdAt:
+          type: string
+          format: date-time
+
+    Profile:
+      type: object
+      required:
+        - userId
+        - name
+        - businessName
+        - location
+        - sector
+        - educationLevel
+        - timeAvailablePerWeek
+        - constraints
+        - personaId
+        - createdAt
+        - updatedAt
+      properties:
+        userId:
+          $ref: "#/components/schemas/ID"
+        name:
+          type: string
+        businessName:
+          type: string
+        location:
+          type: string
+        sector:
+          type: string
+        educationLevel:
+          type: string
+        timeAvailablePerWeek:
+          type: string
+        constraints:
+          type: array
+          items:
+            type: string
+        personaId:
+          $ref: "#/components/schemas/ID"
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    ProfileInput:
+      type: object
+      required: [name, businessName, location, sector, educationLevel, timeAvailablePerWeek]
+      properties:
+        name:
+          type: string
+        businessName:
+          type: string
+        location:
+          type: string
+        sector:
+          type: string
+        educationLevel:
+          type: string
+        timeAvailablePerWeek:
+          type: string
+        constraints:
+          type: array
+          items:
+            type: string
+
+    # --- Persona ---------------------------------------------------
+    Persona:
+      type: object
+      required: [id, name, tagline, isRecommended]
+      properties:
+        id:
+          $ref: "#/components/schemas/ID"
+        name:
+          type: string
+        tagline:
+          type: string
+        isRecommended:
+          type: boolean
+          description: Computed per-request against the current user's Profile.sector — not a static Persona property.
+        traitProfileId:
+          $ref: "#/components/schemas/ID"
+
+    # --- Goal / Milestone / Commitment ------------------------------
+    Goal:
+      type: object
+      required: [id, userId, title, progressPct, createdAt, updatedAt]
+      properties:
+        id:
+          $ref: "#/components/schemas/ID"
+        userId:
+          $ref: "#/components/schemas/ID"
+        title:
+          type: string
+        progressPct:
+          type: number
+          minimum: 0
+          maximum: 100
+          description: Server-computed from milestones. Read-only.
+        deadline:
+          type: string
+          format: date
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    GoalInput:
+      type: object
+      required: [title]
+      properties:
+        title:
+          type: string
+        deadline:
+          type: string
+          format: date
+
+    MilestoneStatus:
+      type: string
+      enum: [done, in_progress, blocked, upcoming]
+
+    Milestone:
+      type: object
+      required: [id, goalId, title, status, order, createdAt, updatedAt]
+      properties:
+        id:
+          $ref: "#/components/schemas/ID"
+        goalId:
+          $ref: "#/components/schemas/ID"
+        title:
+          type: string
+        status:
+          $ref: "#/components/schemas/MilestoneStatus"
+        order:
+          type: integer
+          minimum: 0
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    CommitmentStatus:
+      type: string
+      enum: [done, in_progress, blocked]
+
+    Commitment:
+      type: object
+      required: [id, goalId, title, status, createdAt, updatedAt]
+      properties:
+        id:
+          $ref: "#/components/schemas/ID"
+        goalId:
+          $ref: "#/components/schemas/ID"
+        title:
+          type: string
+        status:
+          $ref: "#/components/schemas/CommitmentStatus"
+        mentorHelpNote:
+          type: string
+        sourceChatMessageId:
+          $ref: "#/components/schemas/ID"
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    CommitmentInput:
+      type: object
+      required: [title]
+      properties:
+        title:
+          type: string
+        sourceChatMessageId:
+          $ref: "#/components/schemas/ID"
+
+    # --- Chat ---------------------------------------------------------
+    ChatSender:
+      type: string
+      enum: [user, mentor]
+
+    ChatMessage:
+      type: object
+      required: [id, userId, sender, text, createdAt]
+      properties:
+        id:
+          $ref: "#/components/schemas/ID"
+        userId:
+          $ref: "#/components/schemas/ID"
+        personaId:
+          $ref: "#/components/schemas/ID"
+        sender:
+          $ref: "#/components/schemas/ChatSender"
+        text:
+          type: string
+        sourceCitation:
+          type: string
+          description: >
+            Human-readable citation string today (e.g. "Based on TEF
+            curriculum"). Likely becomes a structured
+            {documentId, chunkId} reference once Epic A's US-A4 retrieval
+            logging exists — flagged as a probable future breaking change.
+        createdAt:
+          type: string
+          format: date-time
+
+    # --- Insight Library ------------------------------------------
+    InsightItem:
+      type: object
+      required: [id, title, summary, category, durationMinutes, isAudio, createdAt]
+      properties:
+        id:
+          $ref: "#/components/schemas/ID"
+        title:
+          type: string
+        summary:
+          type: string
+        category:
+          type: string
+        durationMinutes:
+          type: integer
+        isAudio:
+          type: boolean
+        mediaUrl:
+          type: string
+          format: uri
+        createdAt:
+          type: string
+          format: date-time
+
+    # --- Feedback -------------------------------------------------
+    FeedbackSurvey:
+      type: object
+      required: [id, userId, npsScore, submittedAt]
+      properties:
+        id:
+          $ref: "#/components/schemas/ID"
+        userId:
+          $ref: "#/components/schemas/ID"
+        npsScore:
+          type: integer
+          minimum: 1
+          maximum: 10
+        comment:
+          type: string
+        submittedAt:
+          type: string
+          format: date-time
+
+    FeedbackSurveyInput:
+      type: object
+      required: [npsScore]
+      properties:
+        npsScore:
+          type: integer
+          minimum: 1
+          maximum: 10
+        comment:
+          type: string
+
+    # --- Daily Action -----------------------------------------------
+    DailyAction:
+      type: object
+      required: [id, userId, date, title, description, estimatedMinutes, linkedGoalId, done, createdAt, updatedAt]
+      properties:
+        id:
+          $ref: "#/components/schemas/ID"
+        userId:
+          $ref: "#/components/schemas/ID"
+        date:
+          type: string
+          format: date
+        title:
+          type: string
+        description:
+          type: string
+        estimatedMinutes:
+          type: integer
+        linkedGoalId:
+          $ref: "#/components/schemas/ID"
+        done:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    # --- Streak / Badges ---------------------------------------------
+    StreakStat:
+      type: object
+      required: [userId, currentStreakDays, longestStreakDays, actionsCompletedTotal, updatedAt]
+      properties:
+        userId:
+          $ref: "#/components/schemas/ID"
+        currentStreakDays:
+          type: integer
+        longestStreakDays:
+          type: integer
+        actionsCompletedTotal:
+          type: integer
+        updatedAt:
+          type: string
+          format: date-time
+
+    Badge:
+      type: object
+      required: [id, label]
+      properties:
+        id:
+          $ref: "#/components/schemas/ID"
+        label:
+          type: string
+        description:
+          type: string
+        iconName:
+          type: string
+          description: Material Symbols icon name.
+
+    BadgeWithStatus:
+      description: Badge catalog entry plus the current user's earned/locked state.
+      allOf:
+        - $ref: "#/components/schemas/Badge"
+        - type: object
+          required: [earnedAt]
+          properties:
+            earnedAt:
+              type: string
+              format: date-time
+              nullable: true
+              description: null means not yet earned.

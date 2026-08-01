@@ -2,11 +2,16 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Icon } from "@/components/Icon";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { useAppDispatch, useAppState } from "@/lib/store";
 import type { ChatMessage } from "@/lib/types";
 
+function formatTime(iso: string) {
+  return new Date(iso).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+}
+
 export default function ChatPage() {
-  const { chatMessages, chatDraft } = useAppState();
+  const { chatMessages, chatDraft, profile } = useAppState();
   const dispatch = useAppDispatch();
   const [isRecording, setIsRecording] = useState(false);
   const [commitmentTagged, setCommitmentTagged] = useState(false);
@@ -20,9 +25,10 @@ export default function ChatPage() {
     if (!chatDraft.trim()) return;
     const userMessage: ChatMessage = {
       id: `local-${Date.now()}`,
+      userId: profile?.userId ?? "local-user",
       sender: "user",
       text: chatDraft.trim(),
-      timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+      createdAt: new Date().toISOString(),
     };
     dispatch({ type: "APPEND_CHAT_MESSAGE", message: userMessage });
     dispatch({ type: "SET_CHAT_DRAFT", draft: "" });
@@ -34,9 +40,10 @@ export default function ChatPage() {
         type: "APPEND_CHAT_MESSAGE",
         message: {
           id: `local-${Date.now() + 1}`,
+          userId: profile?.userId ?? "local-user",
           sender: "mentor",
           text: "Got it — let's break that down into one thing you can actually do today.",
-          timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+          createdAt: new Date().toISOString(),
         },
       });
     }, 600);
@@ -45,15 +52,15 @@ export default function ChatPage() {
   const lastIsMentor = chatMessages.length > 0 && chatMessages[chatMessages.length - 1].sender === "mentor";
 
   return (
-    <div className="flex h-[calc(100vh-4rem)] flex-col md:h-[calc(100vh-5rem)]">
-      <div className="flex items-center justify-between border-b border-outline-variant px-margin-mobile py-md">
+    <div className="flex h-full flex-col">
+      <div className="flex shrink-0 items-center justify-between border-b border-outline-variant px-margin-mobile py-md">
         <div>
           <p className="font-title-md text-title-md text-primary">CHIOMA</p>
           <p className="flex items-center gap-xs font-label-sm text-label-sm text-on-surface-variant">
             <span className="h-1.5 w-1.5 rounded-full bg-secondary" /> online
           </p>
         </div>
-        <Icon name="settings" className="text-on-surface-variant" />
+        <ThemeToggle />
       </div>
 
       <div ref={scrollRef} className="flex-1 overflow-y-auto px-margin-mobile py-lg">
@@ -75,7 +82,7 @@ export default function ChatPage() {
                   </div>
                 )}
               </div>
-              <span className="mt-xs font-label-sm text-[10px] text-on-surface-variant">{m.timestamp}</span>
+              <span className="mt-xs font-label-sm text-[10px] text-on-surface-variant">{formatTime(m.createdAt)}</span>
             </div>
           ))}
 
@@ -98,7 +105,7 @@ export default function ChatPage() {
         </div>
       </div>
 
-      <div className="flex items-center gap-sm border-t border-outline-variant px-margin-mobile py-sm">
+      <div className="flex shrink-0 items-center gap-sm border-t border-outline-variant px-margin-mobile py-sm">
         <button aria-label="Attach a file" className="tap-target flex items-center justify-center rounded-full text-on-surface-variant hover:bg-surface-container-low">
           <Icon name="attach_file" />
         </button>

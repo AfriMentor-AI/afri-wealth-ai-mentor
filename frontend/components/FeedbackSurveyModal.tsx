@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Icon } from "./Icon";
 import { useAppDispatch, useAppState } from "@/lib/store";
+import { submitFeedback } from "@/lib/api";
 
 export function FeedbackSurveyModal() {
   const { feedbackModalOpen } = useAppState();
@@ -10,6 +11,7 @@ export function FeedbackSurveyModal() {
   const [rating, setRating] = useState<number | null>(null);
   const [comment, setComment] = useState("");
   const [submitted, setSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
   if (!feedbackModalOpen) return null;
 
@@ -20,8 +22,11 @@ export function FeedbackSurveyModal() {
     setComment("");
   }
 
-  function submit() {
-    // Swap point: POST to the research/feedback endpoint (Epic F) once it exists.
+  async function submit() {
+    if (!rating) return;
+    setSubmitting(true);
+    await submitFeedback({ npsScore: rating, comment: comment.trim() || undefined });
+    setSubmitting(false);
     setSubmitted(true);
   }
 
@@ -117,10 +122,10 @@ export function FeedbackSurveyModal() {
               <div className="flex flex-col gap-sm">
                 <button
                   onClick={submit}
-                  disabled={!rating}
+                  disabled={!rating || submitting}
                   className="tap-target h-12 w-full rounded-full bg-primary font-title-md text-title-md text-on-primary transition-all active:scale-[0.98] disabled:opacity-40"
                 >
-                  Submit Feedback
+                  {submitting ? "Sending..." : "Submit Feedback"}
                 </button>
                 <button
                   onClick={close}

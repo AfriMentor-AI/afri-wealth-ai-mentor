@@ -1,12 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Icon } from "@/components/Icon";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { Chip } from "@/components/ui/Chip";
 import { Button } from "@/components/ui/Button";
 import { useAppDispatch } from "@/lib/store";
+import { fetchCurrentUser } from "@/lib/api";
 import type { Profile } from "@/lib/types";
 
 const SECTORS = ["Trader", "Tech", "Fashion/Retail", "Agriculture", "Creative"];
@@ -42,6 +43,7 @@ export default function IntakePage() {
   const dispatch = useAppDispatch();
   const [step, setStep] = useState(0);
   const [isRecording, setIsRecording] = useState(false);
+  const [userId, setUserId] = useState<string | null>(null);
   const [answers, setAnswers] = useState<IntakeAnswers>({
     sector: "",
     educationLevel: "",
@@ -51,6 +53,10 @@ export default function IntakePage() {
     businessName: "",
     location: "",
   });
+
+  useEffect(() => {
+    fetchCurrentUser().then((u) => setUserId(u.id));
+  }, []);
 
   function toggleConstraint(option: string) {
     setAnswers((a) => ({
@@ -70,7 +76,9 @@ export default function IntakePage() {
       setStep((s) => s + 1);
       return;
     }
+    const now = new Date().toISOString();
     const profile: Profile = {
+      userId: userId ?? "local-user",
       name: answers.name,
       businessName: answers.businessName,
       location: answers.location,
@@ -78,7 +86,9 @@ export default function IntakePage() {
       educationLevel: answers.educationLevel,
       timeAvailablePerWeek: answers.timeAvailablePerWeek,
       constraints: answers.constraints,
-      personaId: "",
+      personaId: null,
+      createdAt: now,
+      updatedAt: now,
     };
     dispatch({ type: "SET_PROFILE", profile });
     router.push("/persona");

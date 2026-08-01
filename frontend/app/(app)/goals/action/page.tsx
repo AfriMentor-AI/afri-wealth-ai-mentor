@@ -29,7 +29,7 @@ export default function DailyActionCardPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-surface">
+    <div className="min-h-full bg-surface">
       <header className="sticky top-0 z-10 flex items-center justify-between bg-surface px-margin-mobile py-sm">
         <div className="flex items-center gap-sm">
           <button

@@ -50,6 +50,15 @@ Implemented against the real `DESIGN.md` tokens, with three things worth knowing
 - `Skeleton` — flat `#e0e0e0` wash, exact hex from spec, radius passed in per-usage to match whatever it's standing in for.
 - `Chip` — one open gap, flagged in the component's own comment: DESIGN.md prose says chips use "Learning"/"Community" semantic colors, but those aren't defined as actual hex tokens anywhere. Currently matches the real intake screen reference (primary/primary-container) instead of inventing hex values for the undefined names.
 
+## G1.3 — API contract (TypeScript + OpenAPI)
+
+New `contract/` folder at the repo root — see `contract/README.md` for the full writeup. Short version:
+
+- `contract/types.ts` is now the actual source of truth for every entity shape. `lib/types.ts` just re-exports from it, and `lib/api.ts` / `lib/mockData.ts` were rewritten to genuinely build against these stricter shapes (ids, timestamps, foreign keys included) — not a parallel simplified type set that happens to look similar.
+- `contract/openapi.yaml` mirrors it, and is a **validated, loadable OpenAPI 3.0 document** (checked with `openapi-spec-validator`, not just "is this YAML").
+- Real modeling calls made along the way — User split from Profile, Milestone/Commitment normalized out of Goal instead of nested, Badge split into catalog + per-user earned state — are documented with reasoning in `contract/README.md`, since Olusegun may want to push back on any of them.
+- **Two acceptance criteria I can't mark done:** actually reviewing this with Olusegun, and committing it to a shared docs repo — both need access/coordination I don't have. The files are ready for both; someone needs to do the human part.
+
 ## Structure
 
 ```

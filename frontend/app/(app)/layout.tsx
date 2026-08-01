@@ -1,7 +1,9 @@
 "use client";
 
 import { useEffect } from "react";
-import { TopNav } from "@/components/TopNav";
+import { usePathname } from "next/navigation";
+import { BottomTabNav } from "@/components/BottomTabNav";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { FeedbackSurveyModal } from "@/components/FeedbackSurveyModal";
 import { useAppDispatch, useAppState } from "@/lib/store";
 import { fetchChatMessages, fetchProfile } from "@/lib/api";
@@ -9,9 +11,9 @@ import { fetchChatMessages, fetchProfile } from "@/lib/api";
 export default function AppShellLayout({ children }: { children: React.ReactNode }) {
   const { chatMessages, profile } = useAppState();
   const dispatch = useAppDispatch();
+  const pathname = usePathname();
+  const hasOwnHeader = pathname?.startsWith("/chat");
 
-  // Hydrate cross-tab data once at the shell level, not per-tab, so
-  // switching tabs never re-fetches or loses state.
   useEffect(() => {
     if (chatMessages.length === 0) {
       fetchChatMessages().then((messages) => dispatch({ type: "SET_CHAT_MESSAGES", messages }));
@@ -22,13 +24,25 @@ export default function AppShellLayout({ children }: { children: React.ReactNode
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Fixed-viewport flex shell — no `fixed`/`calc(100vh-Nrem)` positioning
+  // anywhere. Nav is a normal flex sibling (bottom row on mobile, left
+  // sidebar on desktop) sized by its own content, and the content area is
+  // the ONE scrollable region (flex-1 min-h-0 overflow-y-auto). This is
+  // what actually fixes "content overflows/gets cut off" as a category —
+  // the previous approach (fixed nav + guessing how much padding clears
+  // it) breaks any time the nav's real height doesn't match the guess.
   return (
-    <div className="min-h-screen bg-surface">
-      <TopNav />
-      {/* pt clears the fixed top-left nav cluster; its real height varies
-          slightly by breakpoint (icon+label stacked vs. inline), so this
-          is intentionally generous rather than pixel-matched to it. */}
-      <div className="mx-auto max-w-2xl pt-16 md:pt-20">{children}</div>
+    <div className="mx-auto flex h-screen max-w-md flex-col bg-surface md:max-w-5xl md:flex-row-reverse">
+      <div className="flex min-h-0 flex-1 flex-col">
+        {!hasOwnHeader && (
+          <header className="flex shrink-0 items-center justify-between px-margin-mobile py-md md:hidden">
+            <p className="font-title-md text-title-md text-on-surface">AfriMentor AI</p>
+            <ThemeToggle />
+          </header>
+        )}
+        <div className="min-h-0 flex-1 overflow-y-auto">{children}</div>
+      </div>
+      <BottomTabNav />
       <FeedbackSurveyModal />
     </div>
   );

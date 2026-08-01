@@ -3,8 +3,8 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Icon } from "@/components/Icon";
-import { fetchCommitmentsByGoal, fetchGoalById } from "@/lib/api";
-import type { Commitment, Goal } from "@/lib/types";
+import { fetchCommitmentsByGoal, fetchGoalById, fetchMilestonesByGoal } from "@/lib/api";
+import type { Commitment, Goal, Milestone } from "@/lib/types";
 import { MilestoneRoad } from "@/components/ui/MilestoneRoad";
 import { Skeleton } from "@/components/ui/Skeleton";
 
@@ -17,15 +17,17 @@ const commitmentStyles: Record<string, { icon: string; badge: string; card: stri
 export default function GoalMilestonePathPage({ params }: { params: { goalId: string } }) {
   const router = useRouter();
   const [goal, setGoal] = useState<Goal | null | undefined>(null);
+  const [milestones, setMilestones] = useState<Milestone[] | null>(null);
   const [commitments, setCommitments] = useState<Commitment[] | null>(null);
 
   useEffect(() => {
     fetchGoalById(params.goalId).then(setGoal);
+    fetchMilestonesByGoal(params.goalId).then(setMilestones);
     fetchCommitmentsByGoal(params.goalId).then(setCommitments);
   }, [params.goalId]);
 
   return (
-    <div className="min-h-screen bg-surface">
+    <div className="min-h-full bg-surface">
       <header className="flex items-center justify-between px-margin-mobile py-md">
         <div className="flex items-center gap-sm">
           <button onClick={() => router.back()} aria-label="Go back" className="tap-target flex items-center justify-center rounded-full text-primary">
@@ -55,7 +57,7 @@ export default function GoalMilestonePathPage({ params }: { params: { goalId: st
             </p>
 
             <div className="mt-xl">
-              <MilestoneRoad milestones={goal.milestones} />
+              {milestones === null ? <Skeleton className="h-64 w-full" /> : <MilestoneRoad milestones={milestones} />}
             </div>
 
             <section className="mt-xl">
