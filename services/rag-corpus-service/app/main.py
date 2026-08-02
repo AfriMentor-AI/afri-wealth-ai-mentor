@@ -1,25 +1,24 @@
-"""Rag Corpus Service — AfriMentor AI microservice stub.
-
-Generated for card O1.2. Real implementation lands in later sprints.
-Health endpoint is live so docker-compose health checks pass.
+"""RAG Corpus Service — AfriMentor AI.
+C1.1: service skeleton with ingestion pipeline, document metadata,
+and retrieval stub. Chroma embedding wired in C2.1.
 """
 import os
-
 from fastapi import FastAPI
+from app.api.routes import router
 
 SERVICE_NAME = "rag-corpus-service"
 SERVICE_VERSION = "0.1.0"
 
 app = FastAPI(
-    title="AfriMentor AI — Rag Corpus Service",
+    title="AfriMentor AI — RAG Corpus Service",
     version=SERVICE_VERSION,
-    description="Stub service. See docs/adr/0001-microservices-architecture.md",
+    description="Corpus ingestion, chunking, embedding, vector retrieval. See ADR-0001.",
 )
 
+app.include_router(router)
 
 @app.get("/health", tags=["meta"])
 def health() -> dict:
-    """Liveness/readiness probe used by docker-compose and the gateway."""
     return {
         "status": "healthy",
         "service": SERVICE_NAME,
@@ -27,7 +26,6 @@ def health() -> dict:
         "env": os.getenv("APP_ENV", "dev"),
     }
 
-
 @app.get("/", tags=["meta"])
 def root() -> dict:
-    return {"service": SERVICE_NAME, "message": "Rag Corpus Service online", "docs": "/docs"}
+    return {"service": SERVICE_NAME, "docs": "/docs"}
