@@ -5,6 +5,8 @@ and retrieval stub. Chroma embedding wired in C2.1.
 import os
 from fastapi import FastAPI
 from app.api.routes import router
+from app.db.session import engine, Base
+from app.models.document import Document  # noqa: F401
 
 SERVICE_NAME = "rag-corpus-service"
 SERVICE_VERSION = "0.1.0"
@@ -14,6 +16,10 @@ app = FastAPI(
     version=SERVICE_VERSION,
     description="Corpus ingestion, chunking, embedding, vector retrieval. See ADR-0001.",
 )
+
+@app.on_event("startup")
+def create_tables():
+    Base.metadata.create_all(bind=engine)
 
 app.include_router(router)
 

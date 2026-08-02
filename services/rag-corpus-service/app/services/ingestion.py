@@ -1,7 +1,7 @@
 """
 Ingestion pipeline: text -> chunks -> embeddings -> ChromaDB.
-Sprint 1: chunking logic is production-ready.
-Chroma write is stubbed until C2.1 wires the real embedding model.
+C1.1: chunking + ChromaDB write wired. Embedding uses ChromaDB's
+default all-MiniLM-L6-v2 model (no external API key needed in dev).
 """
 from __future__ import annotations
 import os
@@ -49,11 +49,9 @@ def ingest_document(
     chroma_collection,
 ) -> int:
     """
-    Chunk text and write embeddings to ChromaDB.
+    Chunk text and write to ChromaDB.
     Returns number of chunks written.
-
-    Sprint 1: Chroma write is STUBBED.
-    Replace the stub block with real embedding call in C2.1.
+    If chroma_collection is None (tests), skips the Chroma write.
     """
     chunks = chunk_text(text)
     if not chunks:
@@ -65,8 +63,11 @@ def ingest_document(
         for i in range(len(chunks))
     ]
 
-    # --- STUB: replace with real embedding in Sprint 2 (C2.1) ---
-    # chroma_collection.add(documents=chunks, ids=ids, metadatas=metadatas)
-    # ---
+    if chroma_collection is not None:
+        chroma_collection.add(
+            documents=chunks,
+            ids=ids,
+            metadatas=metadatas,
+        )
 
     return len(chunks)

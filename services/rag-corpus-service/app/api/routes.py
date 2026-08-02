@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, Header
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 from app.db.session import get_db
+from app.db.chroma import get_chroma_collection
 from app.models.document import Document, DocumentStatus, DocumentOrigin
 from app.services.ingestion import ingest_document
 from app.services.retrieval import retrieve_chunks
@@ -81,6 +82,7 @@ def ingest(
     db.refresh(doc)
 
     try:
+        collection = get_chroma_collection()
         chunk_count = ingest_document(
             doc_id=doc.id,
             text=body.text,
@@ -88,7 +90,7 @@ def ingest(
             figure_id=body.figure_id,
             market=body.market,
             language=body.language,
-            chroma_collection=None,
+            chroma_collection=collection,
         )
         doc.chunk_count = chunk_count
         doc.status = DocumentStatus.ready
@@ -121,6 +123,12 @@ def delete_document(
     doc = db.query(Document).filter(Document.id == doc_id).first()
     if not doc:
         raise HTTPException(status_code=404, detail="Document not found")
+    try:
+        collection = get_chroma_collection()
+        # Delete all chunks belonging to this document
+        collection.delete(where={"doc_id": doc.id})
+    except Exception:
+        pass  # Chroma delete is best-effort; Postgres delete always proceeds
     db.delete(doc)
     db.commit()
     return {"deleted": doc_id}
@@ -132,11 +140,15 @@ def query(
     db: Session = Depends(get_db),
     x_user_id: str = Header(..., alias="X-User-Id"),
 ):
-    """Retrieve relevant chunks for a query. Sprint 1: returns stub empty list."""
+    """Retrieve relevant chunks for a query."""
+    try:
+        collection = get_chroma_collection()
+    except Exception:
+        collection = None
     results = retrieve_chunks(
         query=body.query,
         top_k=body.top_k,
         filters=body.filters,
-        chroma_collection=None,
+        chroma_collection=collection,
     )
     return QueryResponse(query=body.query, results=results, total=len(results))
