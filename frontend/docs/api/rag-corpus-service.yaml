@@ -1,0 +1,319 @@
+openapi: 3.1.0
+info:
+  title: "AfriMentor AI \u2014 RAG Corpus Service"
+  version: 1.0.0
+  description: Corpus ingestion, chunking, embedding, and vector retrieval (ChromaDB).
+servers:
+- url: http://localhost:8000
+  description: via API gateway
+- url: http://localhost:8005
+  description: rag-corpus-service direct (dev)
+security:
+- bearerAuth: []
+tags:
+- name: rag
+- name: meta
+paths:
+  /health:
+    get:
+      tags:
+      - meta
+      summary: Liveness/readiness probe
+      security: []
+      responses:
+        '200':
+          description: healthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Health'
+  /api/v1/rag/documents:
+    post:
+      tags:
+      - rag
+      summary: Ingest a document
+      description: >
+        Ingest a document into the corpus. Required metadata fields (sector, country,
+        content_type, author_profile, language) must be provided. See ADR-0003 §6
+        for the full metadata schema.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IngestRequest'
+      responses:
+        '201':
+          description: Document ingested successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IngestResponse'
+        '401':
+          description: unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          description: Missing required metadata fields
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    get:
+      tags:
+      - rag
+      summary: List documents
+      description: List all ingested documents with their metadata.
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                type: object
+        '401':
+          description: unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/v1/rag/documents/{id}:
+    delete:
+      tags:
+      - rag
+      summary: Delete a document and all its chunks
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                type: object
+        '401':
+          description: unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: document not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/v1/rag/query:
+    post:
+      tags:
+      - rag
+      summary: Retrieve relevant chunks
+      description: >
+        Hybrid retrieval: metadata pre-filter + dense vector similarity.
+        Contract locked per ADR-0003 §7 — consumed by chat-orchestration-service.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RAGQueryRequest'
+      responses:
+        '200':
+          description: Relevant chunks returned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RAGQueryResponse'
+        '401':
+          description: unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    Health:
+      type: object
+      properties:
+        status:
+          type: string
+          example: healthy
+        service:
+          type: string
+        version:
+          type: string
+      required:
+      - status
+      - service
+    Error:
+      type: object
+      properties:
+        detail:
+          type: string
+      required:
+      - detail
+
+    # ── Ingestion ─────────────────────────────────────────────────────────────────────────────
+    ChunkMetadata:
+      type: object
+      description: >
+        Per-chunk metadata schema (ADR-0003 §6). Required fields must be
+        present at ingestion time or the request is rejected (422).
+      required:
+      - sector
+      - country
+      - content_type
+      - author_profile
+      - language
+      properties:
+        sector:
+          type: string
+          enum: [trader, tech, fashion_retail, agriculture, creative, general]
+        country:
+          type: string
+          description: ISO 3166-1 alpha-2 or AFRICA for pan-continental
+          example: NG
+        content_type:
+          type: string
+          enum:
+          - financial_fundamentals
+          - pricing_strategy
+          - cash_flow_management
+          - supplier_relationships
+          - market_dynamics
+          - savings_method
+          - investment_basics
+          - regulatory
+          - trade_finance
+          - agri_economics
+          - tech_business
+          - creative_economy
+          - case_study
+          - community_wisdom
+        author_profile:
+          type: string
+          enum: [practitioner, academic, ngo, government, community, synthetic]
+        language:
+          type: string
+          description: BCP-47 language code
+          example: en
+        source_url:
+          type: string
+          nullable: true
+        quality_score:
+          type: number
+          format: float
+          minimum: 0.0
+          maximum: 1.0
+          nullable: true
+        persona_relevance:
+          type: string
+          enum: [market-queen, tech-founder, trader, rural-hustler, creative, all]
+          nullable: true
+        date_published:
+          type: string
+          format: date
+          nullable: true
+
+    IngestRequest:
+      type: object
+      required:
+      - title
+      - content
+      - metadata
+      properties:
+        title:
+          type: string
+          maxLength: 255
+        content:
+          type: string
+          description: Raw document text. Chunking is performed server-side.
+        metadata:
+          $ref: '#/components/schemas/ChunkMetadata'
+
+    IngestResponse:
+      type: object
+      properties:
+        document_id:
+          type: string
+          format: uuid
+        chunk_count:
+          type: integer
+          description: Number of chunks created from this document
+        collection:
+          type: string
+          description: ChromaDB collection the chunks were written to
+
+    # ── Query (contract locked — ADR-0003 §7, mitigates backlog risk R3) ───────────
+    RAGQueryRequest:
+      type: object
+      required:
+      - query
+      - sector
+      - country
+      properties:
+        query:
+          type: string
+          description: User message or reformulated query string
+          maxLength: 1024
+        sector:
+          type: string
+          enum: [trader, tech, fashion_retail, agriculture, creative, general]
+        country:
+          type: string
+          description: ISO 3166-1 alpha-2 or AFRICA
+          example: NG
+        language:
+          type: string
+          default: en
+        persona_slug:
+          type: string
+          nullable: true
+          description: Boosts chunks matching this persona's relevance tag
+        top_k:
+          type: integer
+          default: 5
+          minimum: 1
+          maximum: 20
+        min_quality_score:
+          type: number
+          format: float
+          default: 0.5
+
+    RAGChunk:
+      type: object
+      properties:
+        chunk_id:
+          type: string
+        content:
+          type: string
+        similarity_score:
+          type: number
+          format: float
+        metadata:
+          $ref: '#/components/schemas/ChunkMetadata'
+
+    RAGQueryResponse:
+      type: object
+      properties:
+        chunks:
+          type: array
+          items:
+            $ref: '#/components/schemas/RAGChunk'
+        query_embedding_ms:
+          type: integer
+          description: Time taken to embed the query in milliseconds
+        total_candidates:
+          type: integer
+          description: Total chunks evaluated before top_k selection

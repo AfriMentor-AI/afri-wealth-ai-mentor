@@ -1,0 +1,151 @@
+openapi: 3.1.0
+info:
+  title: "AfriMentor AI \u2014 Chat Orchestration Service"
+  version: 1.0.0
+  description: "Orchestrates a mentor turn: persona + RAG context + history \u2192 LLM reply."
+servers:
+- url: http://localhost:8000
+  description: via API gateway
+- url: http://localhost:8003
+  description: chat-orchestration-service direct (dev)
+security:
+- bearerAuth: []
+tags:
+- name: chat
+- name: meta
+paths:
+  /health:
+    get:
+      tags:
+      - meta
+      summary: Liveness/readiness probe
+      security: []
+      responses:
+        '200':
+          description: healthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Health'
+  /api/v1/chat/sessions:
+    post:
+      tags:
+      - chat
+      summary: Create a chat session
+      responses:
+        '201':
+          description: success
+          content:
+            application/json:
+              schema:
+                type: object
+        '401':
+          description: unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      description: 'TODO: request/response bodies finalised in later sprint.'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+  /api/v1/chat/sessions/{id}:
+    get:
+      tags:
+      - chat
+      summary: Get a chat session
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                type: object
+        '401':
+          description: unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      description: 'TODO: request/response bodies finalised in later sprint.'
+      parameters: &id001
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+  /api/v1/chat/sessions/{id}/messages:
+    post:
+      tags:
+      - chat
+      summary: Send a message
+      responses:
+        '201':
+          description: success
+          content:
+            application/json:
+              schema:
+                type: object
+        '401':
+          description: unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      description: 'TODO: request/response bodies finalised in later sprint.'
+      parameters: *id001
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+    get:
+      tags:
+      - chat
+      summary: List messages
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                type: object
+        '401':
+          description: unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      description: 'TODO: request/response bodies finalised in later sprint.'
+      parameters: *id001
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    Health:
+      type: object
+      properties:
+        status:
+          type: string
+          example: healthy
+        service:
+          type: string
+        version:
+          type: string
+      required:
+      - status
+      - service
+    Error:
+      type: object
+      properties:
+        detail:
+          type: string
+      required:
+      - detail

@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>AfriMentor AI — Offline</title>
+<style>
+  /* Deliberately self-contained, zero external dependencies (no fonts,
+     no linked CSS) — this is the LAST-RESORT fallback for when nothing
+     else is cached yet, so it can't depend on anything else being
+     cached either. Colors are hand-copied from app/globals.css's
+     Heritage-Forward tokens rather than imported, for the same reason. */
+  body {
+    margin: 0;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    padding: 24px;
+    text-align: center;
+    background: #fcf9f3;
+    color: #1c1c18;
+    font-family: system-ui, -apple-system, sans-serif;
+  }
+  h1 { font-size: 22px; margin: 0; color: #7e5700; }
+  p { margin: 0; color: #504536; max-width: 320px; line-height: 1.5; }
+  button {
+    margin-top: 8px;
+    min-height: 44px;
+    min-width: 44px;
+    padding: 12px 28px;
+    border: none;
+    border-radius: 9999px;
+    background: #c8922a;
+    color: #462f00;
+    font-weight: 700;
+    font-size: 15px;
+  }
+</style>
+</head>
+<body>
+  <h1>You're offline</h1>
+  <p>AfriMentor AI couldn't load this page and nothing was cached for it yet. Reconnect and try again.</p>
+  <button onclick="location.reload()">Try again</button>
+</body>
+</html>

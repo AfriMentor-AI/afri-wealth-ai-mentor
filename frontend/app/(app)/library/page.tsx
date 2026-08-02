@@ -105,7 +105,7 @@ export default function InsightLibraryPage() {
       <section className="space-y-md">
         <div className="flex items-center justify-between">
           <h2 className="font-title-md text-title-md text-on-surface">Recommended for you</h2>
-          <button className="font-label-sm text-label-sm text-primary">View all</button>
+          <button className="tap-target font-label-sm text-label-sm text-primary">View all</button>
         </div>
         <div className="-mx-margin-mobile flex gap-md overflow-x-auto px-margin-mobile pb-sm">
           {insights === null

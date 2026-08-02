@@ -1,17 +1,25 @@
 import type { Metadata, Viewport } from "next";
 import { AppStateProvider } from "@/lib/store";
+import { OfflineBanner } from "@/components/OfflineBanner";
 import "./globals.css";
 
 export const metadata: Metadata = {
   title: "AfriMentor AI",
   description: "A financial mentorship companion for African entrepreneurs.",
   manifest: "/manifest.json",
+  icons: {
+    icon: [
+      { url: "/icons/icon-192.png", sizes: "192x192", type: "image/png" },
+      { url: "/icons/icon-512.png", sizes: "512x512", type: "image/png" },
+    ],
+    apple: "/icons/apple-touch-icon.png",
+  },
 };
 
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  themeColor: "#f7efe1",
+  themeColor: "#fcf9f3",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -23,18 +31,24 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             default "heritage" theme even for users who chose "nocturnal",
             since React state (and thus the useEffect that normally sets
             this attribute) isn't available until after hydration. */}
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;600;700;800&family=Inter:wght@400;600&display=swap" rel="stylesheet" />
-        <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap" rel="stylesheet" />
         <script
           dangerouslySetInnerHTML={{
             __html: `(function(){try{var t=localStorage.getItem("afrimentor-theme");if(t==="heritage"||t==="nocturnal"){document.documentElement.setAttribute("data-theme",t);}}catch(e){}})();`,
           }}
         />
+        {/* Registers the service worker (app-shell caching + offline
+            fallback, see public/sw.js) as early as possible. Guarded for
+            browsers without SW support and wrapped so a registration
+            failure never breaks the page. */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `if("serviceWorker" in navigator){window.addEventListener("load",function(){navigator.serviceWorker.register("/sw.js").catch(function(e){console.warn("SW registration failed:",e);});});}`,
+          }}
+        />
       </head>
       <body className="font-body min-h-screen">
         <AppStateProvider>
+          <OfflineBanner />
           <div className="min-h-screen">{children}</div>
         </AppStateProvider>
       </body>

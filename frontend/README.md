@@ -3,6 +3,8 @@
 Built for: **[G1.1] Build full frontend PWA from Stitch design export (all screens)**
 Assignee: Grace · 8 pts
 
+> **New to this codebase?** Read [`FRONTEND_HANDOFF.md`](./FRONTEND_HANDOFF.md) first — G1.5's handoff doc for Daniel, Chukwuebuka, and Olusegun. Covers component structure, the mock data layer, and exactly what changes when the real backend lands.
+
 ## Run it
 
 ```bash
@@ -58,6 +60,20 @@ New `contract/` folder at the repo root — see `contract/README.md` for the ful
 - `contract/openapi.yaml` mirrors it, and is a **validated, loadable OpenAPI 3.0 document** (checked with `openapi-spec-validator`, not just "is this YAML").
 - Real modeling calls made along the way — User split from Profile, Milestone/Commitment normalized out of Goal instead of nested, Badge split into catalog + per-user earned state — are documented with reasoning in `contract/README.md`, since Olusegun may want to push back on any of them.
 - **Two acceptance criteria I can't mark done:** actually reviewing this with Olusegun, and committing it to a shared docs repo — both need access/coordination I don't have. The files are ready for both; someone needs to do the human part.
+
+## G1.4 — PWA, offline shell & accessibility pass
+
+**PWA:** real `manifest.json` (name, icons at 192/512 + maskable variants, theme color), a hand-written service worker (`public/sw.js`, no next-pwa dependency) doing cache-first for hashed static assets and network-first-with-cache-fallback for navigations, plus a zero-dependency `public/offline.html` last-resort page. Icons in `public/icons/` are generated placeholders — real brand icons should replace them before this ships for real.
+
+**Honest note on "offline capability" right now:** since Chat/Goals/Library's data currently comes from `lib/mockData.ts` compiled straight into the JS bundle (not a network call), caching the app shell makes those screens work *fully* offline today, not just show a fallback. That stops being automatically true the moment G1.3's real API is live — the service worker will need real response caching at that point. Added an `<OfflineBanner />` now so cached content is never silently indistinguishable from live content, ahead of that transition.
+
+**What I could and couldn't verify for real:**
+- ❌ **Lighthouse PWA score ≥ 90** — couldn't run this. Headless Chrome isn't obtainable in this environment (network-restricted, download blocked). Needs to run somewhere with real Chrome — CI, or your own machine (`npx lighthouse http://localhost:3000 --view` after `npm run build && npm start`).
+- ❌ **"Installable on Android/iOS home screen"** — same issue; needs a real device/browser, not something verifiable from a sandboxed environment.
+- ✅ **axe accessibility check** — ran real `axe-core` against the actual prerendered HTML (`scripts/run-axe.js`: `npm install jsdom axe-core` then `node scripts/run-axe.js`): **zero critical/serious violations** on structural/ARIA rules across all 9 routes checked. Caveat: the CSS failed to load in this jsdom environment, so axe's own `color-contrast` rule didn't run — that's why the next line exists as a separate check.
+- ✅ **Color contrast** — computed the actual WCAG relative-luminance formula (`scripts/check-contrast.py`) against every real token pair the components use, not eyeballed. **Found and fixed a genuine AA failure**: dark mode's `on-primary-container` (#fff2dc) on `primary-container` (#c8922a) was 2.50:1 against a 4.5:1 requirement — affected the CTA button and the persona "Recommended" badge in dark mode. Fixed by using the same dark text color as light mode (the background swatch doesn't actually change between themes — only the text color had mistakenly been given a light-mode pairing). All pairs now pass in both themes.
+- ✅ **44×44px tap targets** — audited every interactive element; found and fixed one genuine gap (Insight Library's "View all" text link had no padding at all).
+- ✅ **Voice-input affordances** — mic buttons on Chat and Intake already had proper `aria-label`s from G1.1/G1.2 work; verified, no changes needed.
 
 ## Structure
 
