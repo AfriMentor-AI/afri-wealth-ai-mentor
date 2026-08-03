@@ -3,23 +3,38 @@ C1.1: service skeleton with ingestion pipeline, document metadata,
 and retrieval stub. Chroma embedding wired in C2.1.
 """
 import os
+import time
+import logging
 from fastapi import FastAPI
 from app.api.routes import router
 from app.db.session import engine, Base
 from app.models.document import Document  # noqa: F401
 
+logger = logging.getLogger(__name__)
 SERVICE_NAME = "rag-corpus-service"
 SERVICE_VERSION = "0.1.0"
 
 app = FastAPI(
-    title="AfriMentor AI — RAG Corpus Service",
+    title="AfriMentor AI - RAG Corpus Service",
     version=SERVICE_VERSION,
     description="Corpus ingestion, chunking, embedding, vector retrieval. See ADR-0001.",
 )
 
 @app.on_event("startup")
 def create_tables():
-    Base.metadata.create_all(bind=engine)
+    max_retries = 10
+    for attempt in range(max_retries):
+        try:
+            Base.metadata.create_all(bind=engine)
+            logger.info("Database tables created successfully.")
+            return
+        except Exception as e:
+            if attempt < max_retries - 1:
+                logger.warning("DB not ready, retrying in 3s... (%s)", e)
+                time.sleep(3)
+            else:
+                logger.error("Failed to create tables after %d attempts.", max_retries)
+                raise
 
 app.include_router(router)
 

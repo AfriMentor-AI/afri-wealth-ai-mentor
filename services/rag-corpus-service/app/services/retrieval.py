@@ -1,10 +1,8 @@
-"""
-Retrieval pipeline: query -> embed -> ChromaDB similarity search.
-Sprint 1: skeleton only. Real hybrid retrieval (BM25 + dense) in C2.1.
-"""
 from __future__ import annotations
 import os
+import logging
 
+logger = logging.getLogger(__name__)
 TOP_K = int(os.getenv("RAG_TOP_K", "5"))
 
 def retrieve_chunks(
@@ -14,16 +12,29 @@ def retrieve_chunks(
     filters: dict | None = None,
     chroma_collection,
 ) -> list[dict]:
-    """
-    Query ChromaDB for the top-k most relevant chunks.
-    Sprint 1: STUBBED — returns empty list.
-    Real embedding + BM25 hybrid retrieval in C2.1.
-    """
-    # --- STUB: replace in Sprint 2 (C2.1) ---
-    # results = chroma_collection.query(
-    #     query_texts=[query],
-    #     n_results=top_k,
-    #     where=filters,
-    # )
-    # return _format_results(results)
-    return []
+    if chroma_collection is None:
+        return []
+    try:
+        results = chroma_collection.query(
+            query_texts=[query],
+            n_results=min(top_k, chroma_collection.count()),
+            where=filters if filters else None,
+        )
+        chunks = []
+        if not results or not results.get("documents"):
+            return []
+        docs = results["documents"][0]
+        ids = results["ids"][0]
+        metas = results["metadatas"][0]
+        distances = results["distances"][0] if results.get("distances") else [None]*len(docs)
+        for doc, chunk_id, meta, dist in zip(docs, ids, metas, distances):
+            chunks.append({
+                "chunk_id": chunk_id,
+                "content": doc,
+                "metadata": meta,
+                "score": round(1 - dist, 4) if dist is not None else None,
+            })
+        return chunks
+    except Exception as e:
+        logger.error("Retrieval error: %s", e)
+        return []
