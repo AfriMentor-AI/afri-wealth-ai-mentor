@@ -1,0 +1,234 @@
+Personality #10: Strive Masiyiwa
+Speaker Full Name: Strive Masiyiwa
+
+Video Title (Exact): Strive Masiyiwa, Founder and Executive Chairman of Econet
+
+YouTube URL: http://www.youtube.com/watch?v=aSIQNt6t0bo
+
+Channel Name: Stanford Graduate School of Business
+
+Approximate Duration: 52 minutes 3 seconds
+
+Relevance to Informal Sector African Entrepreneurs: Strive Masiyiwa details his five-year legal battle to dismantle state telecom monopolies and launch Econet, demonstrating how African micro-entrepreneurs can navigate institutional hostility, deploy unconventional grassroots marketing (like bus riders and township street theater to drive EcoCash adoption), and build scalable digital solutions across African markets.
+
+Full Transcript Text:
+
+Transcript Metadata
+Speaker: Strive Masiyiwa
+
+Video Title: Strive Masiyiwa, Founder and Executive Chairman of Econet
+
+URL: http://www.youtube.com/watch?v=aSIQNt6t0bo
+
+Channel: Stanford Graduate School of Business
+
+Publish Date: December 5, 2017
+
+Country: Zimbabwe / Pan-African
+
+Sector: Telecommunications, Digital Payments, Venture Capital & Philanthropy
+
+Full Transcript Text
+Strive Masiyiwa, I want to first start off by saying that you have easily been one of the most instrumental leaders in shaping my journey, and you've even been responsible for my journey here to Stanford Business School. So it's truly an honor to be here today, and I think I speak for many of the people here in this audience that it's truly an honor.  
+
+So I'd like to start with one of the most compelling pieces of advice I've heard from any business leader: You've mentioned that the three most important skills in business are to read, count, and sell. Take us back to the early days of your career and how you cultivated these skills and used them to become a successful entrepreneur.  
+
+Well, first of all, it's indeed a great privilege and honor to be here. Thank you for inviting me, in particular my colleague and dear friend, the chairman of Stanford, Jeff Raikes. Thank you, Jeff. Jeff and I work on the Alliance for a Green Revolution in Africa, and he invited us here to hold our board meeting here. So I've got a number of my colleagues from the board, Judith Rodin, I see there, Josette and Lena. Thank you so much for joining us today.  
+
+Well, you got to be able to read, you got to be able to count, and you got to be able to sell. In reality, that's what we as entrepreneurs do.  
+
+When I was a little boy, my mother, she came up with this idea that I should earn my own pocket money. So she bought me a box of chewing gum, and I started selling them in my school. But I got lost on the way back home because I couldn't read that well, because I was only little! So I quickly learned that you got to be able to sell. I could count, but I couldn't read before! That's probably why I did maths and engineering.  
+
+So let me talk a little bit more about entrepreneurship. It's easy for a lot of us to think of entrepreneurship from a more current context—it's such a hot topic and respected career path here, with thousands of tech startups emerging each year. But let's go back to Zimbabwe in the early '90s when you first had the vision for Econet. What gave you the courage to take on such a daring and uncommon career path?  
+
+Well, by the time I decided to set up Econet in 1993, I had been in business for about six or seven years. So I had a well-established business, because I started in 1986. I had built up a fairly successful construction business. I'm an engineer, and in telecommunications, the whole mobile revolution was something I had been tracking since school, actually. When I was at university, we already knew what was going on, like most engineers do at school. You know, if you want to know what's going to happen in artificial intelligence, talk to the guys at Stanford; they'll tell you what's going to happen in ten years. So we knew this was going to happen, and it was going to be big.  
+
+But 1993 was particularly important in my tracking, because that's when they were introducing the digital standard, which we call GSM. And I immediately knew this is the time to get in. And I thought it was going to be a fairly simple thing, you know. I went to my former employers and I said, "Hey guys, this thing's going to happen. I'd like to do a joint venture with you."
+
+And I used to have a letter—I think someone from intelligence stole it—but I used to have a letter which used to be on my wall written by the head of the telephone company back to me to say, "You know, this is a fad. It's going to disappear. We have more important things to do here, so don't bother us."  
+
+So I went back and I said, "Okay, since you don't want to be bothered, let me do it."  
+
+They said, "No, you can't do that, because then you would violate our monopoly."  
+
+I said, "So how can you have a monopoly in something you don't do?"  
+
+So I did the smartest thing, which was hire a lawyer! Right? I went to a lawyer and I said, "You know, do they really have a monopoly?"  
+
+He says, "No, they don't. But if you really want to take them on, there's an easier thing to do: Just steal a tank and go park it in front of the president's office. That's it! Much quicker, because that's how he's going to react!"  
+
+I think somebody did it to him about three weeks ago!
+
+So anyway, I took them to court, and I hired a lawyer from New York, an amazing American lawyer called Judith O'Neill. And she was a specialist in telecommunications law, but she couldn't practice in our jurisdiction. And she read the law and she said to me, "You know, you've got a point. I'll help you with this."
+
+So she actually used to come to Harare and advise my legal team on this battle. And it took us five years. Wow.
+
+So at the time, you were trying to bring in a service when 75% of Africans had not heard a telephone ringing. So you were trying to solve a problem that Africans did not yet know they had. How did you gain the boldness and the conviction to take on such a problem at the time?
+
+You know, when I worked as a telephone engineer... imagine, we used to take out adverts, the government used to, saying to people, "You talk too much on the phone!" Dad used to say, "Don't jabber-jabber so much to the customers!"
+
+I mean, together, when you work for the telephone company in any African country, one of the great... whenever you walk down the street, people would come up to you and say, "You know, can you help me get a telephone line?" It was just a badge of honor. And a lot of my friends made money out of it; it was called corruption, yeah!
+
+But it could take officially 14 years to get a telephone in most African countries. Our teledensity was 0.07%. So it was literally impossible for anyone to have a telephone line.
+
+And when we went to the Constitutional Court—we took this thing through the lower courts—and of course, to be honest, by the time we got to the Constitutional Court, I was Public Enemy Number One! I mean, it wasn't funny. I used to get arrested.
+
+So, but when we finally get to the Constitutional Court, we had to get evidence for our court to even consider. It's not very different from your own Supreme Court, and we were to face a nine-member bench. The matter was no longer about the monopoly; we had taken it as a natural freedom of expression.
+
+And so we said, "Look, 75% of the people of this country have never heard a telephone ringing." That was the headline, and that captured headlines across the entire African continent: "75% of our people have never heard a telephone ringing."
+
+And people were calling in: "So where did you get this statistic from?"
+
+And I showed them where we got it. We had to gather this research, which is very important. As an entrepreneur, you've got to get your data. So the court pulled down the monopoly.
+
+And for me, it was really... we were just trying to respond to a need. The revolution for me in telecommunications in Africa, when we look back now, that is just over 20 years ago, 75% of the African people have a telephone now—not just ringing, but their own one! Because our teledensity now is 75% continentally. Some countries like Botswana, well, you know, they're 120%, 130%. I don't know how they do that! In Nigeria, I know how they do it, because it's the robes, you see, so they have one phone here...
+
+But it's a remarkable revolution for our industry.
+
+It seems like every step of the way, building trustworthy partnerships were fundamental to your success—whether it was gaining the trust of agents who enable mobile money to work, or the trust of the hundreds of young people who first spread the message of Econet during the early days. How did you get people to trust you?
+
+You know, I think the key is by not being transactional in relationships. And it goes broader than just your relationship with customers. Getting people to accept mobile money rather than mobile phones was the most counterintuitive thing we ever had to do, because you're talking to people who don't have money, or very little money, and they also had no bank accounts. So we had to persuade them that they could give us their money.
+
+In the case of Zimbabwe, they had faced 500,000% hyperinflation. They knew if you put money in the bank, the next day you didn't have it. And we had to launch mobile money during that time.
+
+So I used to say to my people, when we were discussing how do you take mobile money across, how do we get people to accept it: It's just like trying to get people to drink... How did they do that? Coca-Cola! A black drink in a bottle! But they did it, right? To build this incredible company, Coca-Cola! I mean, that must have been the most difficult thing, to get somebody to drink that black stuff!
+
+Well, we got people to open bank accounts—millions of them! And one of the ways we used to do it, which you're familiar, many of you, with what we call matatus, right? In Africa, the little kombis. So we went to the universities, and we hired the university students, and we wanted them to ride on matatus. So they ride two-by-two in matatus.
+
+But you know how noisy and lively African buses are, right? We talk to each other. So you get onto the bus, and you start... they're supposed to strike a conversation about mobile money: "I'm sending money to my cousin on the other side of town." The whole bus stops! And they talk! They get off the next bus stop, they get onto the next one. And they had to do this, and we had a calculation that said we needed them to talk to 1.5 million people to get to our tipping point. There was no marketing; that was it! Those guys on the buses talking and getting onto the next one.
+
+And people didn't realize the same guys coming on the bus and having an argument about... And we also set street comedy, where someone would say, "You've stolen my money!" and they start a mock fight in the middle of a township. And people will always gather when there's a fight, right? So they then explain that, "Actually, you can't steal my money, because it's in my phone!" And we got people to go out and register. And so these are just techniques that our people worked on.
+
+Amazing. Here at the Stanford Business School, we celebrate failure. We even go as far as to say it's necessary for growth and success. And to look at a leader such as yourself, it can be extremely tempting to view you as absent of failure. Given that entrepreneurship, one of the hardest parts is managing your own psychology, can you talk to us about how you've navigated failure and self-doubt?
+
+Well, I wouldn't stand and say I've ever celebrated failure! I've run into it now and again. Probably the most spectacular was my entry into Nigeria. Now that was pretty spectacular. You know, we went in just after the end of military rule in Nigeria, this would be I guess '99, 2000. And because one in five black people in the world is a Nigerian, this is some market! And we were trying to get in.
+
+And we went in, and of course, we had to build a consortium. Nigeria was particularly difficult. Today, you've got billions of dollars going into Nigeria. But if you look back in 2000, 2001, there was no mobile industry in Nigeria. No one was putting money into Nigeria. I remember going around the banks in South Africa and investors, and they said, "Are you mad? You want to go to Nigeria?"
+
+So, we have to be in Nigeria. If you're going to be in business in Africa, you have to be in Nigeria, period. So we went in and we built a consortium of Nigerian high-net-worth businesses and business leaders to bid for a license. And the government had set up an auction system, and they became the most expensive—even to this day—licenses ever issued in Sub-Saharan Africa. In Tunisia, somebody paid more for it, but we paid in 2001 $285 million for a license.
+
+And a year into the business, one of my partners walked in and put a bill on the table for one of the state governors, and said, "You know, you got to pay us each $4 million, or we throw you out of the country." So I got thrown out of the country, and lost... you know, pretty much got kicked out of that investment.
+
+It took me ten years of international arbitration to win back our investment that we had lost. And along the way, I had that governor jailed! Spent 13 years in a British prison, after making the mistake of going to Dubai and got picked up by Interpol. I mean, it's a known fact that I was a witness against him for corruption.
+
+So, you know, there was bittersweet... very difficult time for us, but there were a lot of entrepreneurial lessons. And after five years, we went back into Nigeria, and the fastest-growing parts of our businesses are in Nigeria today. So we learned a lot. That was really, really difficult, and there were no celebrations except when I got the arbitral award, which is the biggest in African history. So there was a nice end to it.
+
+You've been sought out by many leaders, such as Barack Obama. But who do you look to for inspiration? Are there any up-and-coming young leaders on the continent that inspire you about the future of Africa?
+
+Absolutely. You know, when I started that Facebook page... I didn't know that my daughter, who was at college in the US, was sharing things I was sending her with her friends. So she started saying to me, "You know, my friends think you should talk about this, that's what my friends said." "Well, you know, we share everything."
+
+So we then got to start working on this Facebook page, and the most interesting part for me is reading the comments. I just get absolutely inspired by the comments of young Africans from virtually every corner of the continent who are running businesses in extraordinary situations that even I couldn't have imagined, and they're making a success of it. So I really get inspired by what our young entrepreneurs are doing, and I am in constant conversations with them on Facebook. I even know some of them, you know. I go into meetings and I say, "Where's Austin?" and stuff like this, and they come because they're doing amazing things.
+
+And surely you got people like Juliana Rotich, the young Kenyan woman who built Ushahidi. We got Fred... Is Fred here, too? Fred Swaniker, the African Leadership Academy. Many of you know Fred is an alumnus of Stanford. I mean, these are the guys who are going to totally transform our continent and the world, to be honest.
+
+So, but you know, it's not so much... and it's a great privilege, of course, when you can have a conversation with people like President Obama, who I knew before he was president. And I always remind him that, "You know, I'm eight months older!" This helps you to get a stability. And then it's such a great success, but in Africa, "Demaris, I'm senior brother!"
+
+So, no, but we are... really, it's people I work with over the years. People like Dr. Judith Rodin, she's here. She's the former president of the Rockefeller Foundation. She's been an amazing mentor to me over the last ten years, particularly in understanding philanthropy. Because many of us as entrepreneurs, when we set out to go into philanthropy, we actually don't know how it works. And you need to learn to be talking to people like Dr. Rodin to understand. So it's a lot of people that I work with over a very, very long time that I turn to when I face challenges.
+
+Shifting to philanthropy a bit, in addition to your success as an entrepreneur, you've funded the education of over 40,000 children across Zimbabwe and Africa. How must it feel to have come so far from humble beginnings, and what has motivated you to give back in such an extraordinary way?
+
+Well, first of all, I'm really excited this week, because we just got an announcement that we got our... the Rhodes... of our program this year, and we got one last year. And I think that's our third or fourth now.
+
+So, and it began like a lot of things. I don't think my wife and I sat down and said, "You know, let's give back," because to be honest with you, we started when we didn't have any money! So there's almost nothing to give back if you think of it that way. There was a crisis in Africa at the time, which was HIV/AIDS. People were dying on a scale you cannot imagine. If in my small business I was burying members of my workforce every week, you know... We actually thought we're all going to die! That's how it felt living in Africa in 1990, '91, because of the HIV crisis.
+
+And what made the crisis so difficult were these children. What would we do with the children? I knew what happens when children don't go to school. We had Liberia to tell us about that: child soldiers, all sorts of challenges. You could rip apart a country if these kids did not go to school.
+
+So for us, it was responding to that. And we came up with this model which my wife then said she was going to run full-time. It was basically: if we can find a relative to the child, rather than try to institutionalize any children, let's find their relatives and tell their relatives we will meet the economic side. We'll pay for school fees, we'll give you some food, we'll help with clothing, and so forth.
+
+So it began as a little program really around our own employees, and we probably had 50 when my wife kind of began to do it on a full-time basis. And she'd come from work, and she would just really just make sure these kids were looked after. And one day, you know, it just walked in and said, "Actually, you know, there's 5,000 that we now help, and we've extended beyond the company because people keep bringing these kids to us."
+
+So we built it from there. And as of this year, twenty-odd years into it, we've assisted 250,000 that went through our system of education. We began to... wherever we went, the first thing we told our management teams, if we went to Botswana or Zambia, any country: "You've got to set up the program. You've got to support it." So we support it across every single country where we operate.
+
+And then we select from those kids the really high performers. What do you do if he's 16 and you got a genius on your hands? You say, "Go home"? We just treat them like our own kids. We help them apply for scholarships to Stanford and Harvard and wherever. So we have 354 in the United States this year of our kids, and we've got some in China, some in the UK, and so forth, and we help them along. And so it's been a great program to see.
+
+You've mentioned that entrepreneurship is not just about making money, but about being an agent for change. There's many people here in this audience who have large dreams of going into the world and being catalysts for transformative change. What do you think we should know, and most importantly today, what is your call to action for us?
+
+First of all, don't wait until you've made your billion! Okay? I know everyone at Stanford ends up making a billion once they're entrepreneurs, right? I mean, that's why you come to Stanford, right? Right! So look, you're almost guaranteed to be successful, so start straight away! Why do you have to wait? As you register your company, register your foundation, register your philanthropy! And it's actually good for you.
+
+In our house, we actually never discuss business; we discuss the things we're doing around philanthropy with my kids. And it's very difficult with my kids, because they're more interested in the philanthropy side than... Maybe during holidays, they prefer to go work for their mother; very few volunteer to go and sell in one of my shops!
+
+But the reality is these things, in today's society, we have to start straight away. There's no reason for you to wait. You've got to find a cause. If you don't find a cause, you'll find that making money is itself quite empty. You kind of get into your cause now. What is it you're interested in? Is it the environment? Is it climate change? Is it... There is something that should capture your interest every day.
+
+And for me, I can't wait at the end of my day to escape into discussing the issues of philanthropy. That's why I'm here. We are here to discuss smallholder farmers in Africa. So make it an integral part of what you are doing.
+
+But if there's an even more excellent way, as they say, why not just do the philanthropy? Because if you feel you can make a change with that, rather than going off to run a for-profit, do it! That's my counsel.
+
+Final question before we open it up to some of our business students here for questions: What do you think are some of the most pressing global problems that we should be thinking about today?
+
+Wow. You know, we always think, don't we, that we would like to hand our children fewer problems than were handed to us. You know, our parents kind of handed over a world where they said, "Well, we've achieved... the Soviet Union is gone, because we lived through the Cold War." Not so sure we're handing over a great world to you at the moment. I'm sorry about that! You got a few problems that you're going to have to deal with.
+
+Because top of mind for me is climate change, because it doesn't give us... what is it? We don't have a Planet B. Somebody said we don't get another shot at it if we don't get into it now. So it's up there.
+
+From an African perspective, it's jobs. One would argue it's global, but for your generation, it's bigger than decolonization ever was as a challenge. We have a continent where the average age is 19. We are 1.2 billion; by some estimates, we'll be 4 billion by the turn of this century, in the lives of most of you. If we don't create jobs, we end up with Boko Haram and Al-Shabaab. It's as simple as that, and they can sweep all the way down to the south.
+
+So the security nexus is linked to the jobs. We have to create hope. You know, when I think of the people trying to cross the Mediterranean... sometimes you read reports of five hundred drownings a week in the Mediterranean. We almost forget that they had to cross the Sahara first to get to the Mediterranean, and yet we have a continent with so much resources, so much capacity.
+
+So it's an extraordinary charge for us where we are still able to do something, but an even greater challenge for our children. But it's also global. I think the stability of the world, the future of the world, will to a great extent be shaped by our response to this. So we have to pick up every tool, everything that we can, to try and take on some of these challenges. The rest, we're at Stanford, you know them—amazing!
+
+So now we'll take some questions from the audience.
+
+I was just wondering, on either a personal or professional level, sort of what keeps you up at night? What do you wake up in the morning really concerned about, thinking about?
+
+You know, I never stay up at night! President Obama said to me, "What keeps you up at night?" I said, "Nothing! I'm not running the world, you are!"
+
+Is it okay suppose you woke up in the middle of the night? So, okay: jobs. How do we create employment? That really is a challenge to me. How do we get our young people... So I am persuaded that the answer lies in part with entrepreneurship, okay? If I can't create somebody a job, maybe I can help them create their jobs, inspire them to go out and do something. But I have an exciting job to do, which does give me a lot of energy in the morning.
+
+We have a question right up here.
+
+Thank you so much for this opportunity. I mean, I've always dreamed to come very close to you. My name is Brian and I'm from Zimbabwe. So my question was: I understand after you finished your undergraduate in Germany or somewhere in Europe, I'm no longer sure, you went back to Zimbabwe to work, you know, in Africa, and then start to build your ideas from the continent. What advice would you give to someone who is graduating right now, or maybe to this specific graduating in 2020: Do you think it's best for us, if we dream of changing our continent through entrepreneurship, to first start working and gain some skills, or to go and work maybe in specific sectors that we think we would want to change in the future?
+
+Yeah, thank you. That's quite multifaceted. I think, you know, there's no simple answer to this. I wish I could say that, but what I can say to you: The sooner you... if you have an intention to get home and work there, the sooner you go, the better. It's actually very difficult if you kind of spent 5, 10 years, you've got a family, you've got roots, and so forth. That's harder to do.
+
+I just picked up my bag and I went home, okay? And, you know, it was easy. I think it would have been much harder if it had been ten years later. But having said that, I know a lot of friends who came after they had spent some time building up experience and so forth, and did very well.
+
+But I also go as far as to say that I'll never condemn somebody who doesn't come, okay? They are contributing. Africans living and working in the Diaspora are contributing as much to Africa today as anybody who's there, and I'm very proud of what they do. We can't accommodate a lot of these guys even if we wanted to. But they are sending money home, they are keeping people in school. The burden they carry for such a small group of people is extraordinary. So that's why I say there's no simple answer. I wish I could say there was. All the above will work out.
+
+But I wouldn't send you to a country at war. There might be an issue. I had to leave Zimbabwe 18 years ago; haven't been back even for one day, okay? So, you know, there are always issues that one needs to take into consideration.
+
+Hello, Strive. Hi, my name is Tunde. I'm from Nigeria.
+
+I figured Tunde! There are just some names, you know: Tunde from Nigeria, Tendai from Zimbabwe. I mean, you never get a Tendai from Kenya! Anyways, thank you.
+
+Kind of piggybacking on your point, I feel about initiatives like what Africans in the Diaspora can kind of do to support development or goals in Africa, more sort of entrepreneurship rather than what you mentioned in terms of like philanthropy or supporting folks back home, so like investments and stuff like that. Because from what you said, not only do we have like people here, we have like tremendous talent that work for tough companies and stuff like that.
+
+And there's a lot of conversation around this issue today: How can we encourage... if we call it the Diaspora, which means we include people like LeBron James, by the way—he's an African in the Diaspora! In Africa, we think of all black people around the world as part of the African Diaspora. But you know, Africa is not just black people; we have a wonderful diversity on our continent.
+
+But on a serious note, there's a lot of conversation around encouraging those who are living and working outside Africa to invest in creating businesses and supporting entrepreneurship, even investing through local stock exchanges and so forth, trying to mobilize capital. I'm a great supporter of that, but I haven't seen anything that I could say to you, "This is the perfect solution." Thank you.
+
+Hi, Strive. My name is Ruth, I'm from Ghana. I was wondering, as chairman of AGRA, what do you think is the future of smallholder farming in Africa? And in thinking about that, how do you think we're going to meet food security challenges?
+
+You should listen to the radio interview that Jeff and I did this morning at 7 o'clock! Jeff Raikes, please, Jeff, stand up! He's the chairman of your esteemed university, but has been a member of the AGRA board for many, many years, and helped set it up. And we spent, goodness, an hour and a half, and you really got to listen to what Jeff had to say, because I was just the backup, you know. I'm a city boy; I'm not a farmer.
+
+But I've learned a few things, and amongst them, of course, you know, 70% of our food production in Africa is done by women smallholder farmers, and they are aging. It's a paradox for us: We've got millions of young people without jobs, but they're not interested in agriculture, and rightly so—it's not sustainable. What we got to do is to put in place a policy framework that modernizes the way we do agriculture, looks at agriculture as an industry, sustains the incomes of smallholder farmers, increases their incomes.
+
+And this is what we are trying to do from the perspective of AGRA. We are investing and catalyzing in small businesses. We've created over a hundred seed companies in Africa, and these seed companies now produce a third of all the certified seed produced on the African continent. It's phenomenal! In ten years, they produce enough seed to feed 15 million people every year. So we're trying to help 30 million smallholder households.
+
+The smallholder farmer is the absolute bedrock of Africa. There's no nation—China, Europe, the United States—that ever got going without sorting out their agriculture. So to the extent that... we got to put in place the right framework from a policy perspective, and that's what we work to try and encourage governments to do: Ensure that there is sustained domestic investment, both from governments, from entrepreneurs, and create a stable environment for farmers' markets, ensuring they get access to seeds, and there's a whole value chain around it. So there's a lot of space in agriculture.
+
+Hi, Mr. Masiyiwa. I'm Elmer from Angola. Here at the GSB, we think a lot about managerial practices that we're supposed to implement to increase the likelihood of success. But those are mostly premised on the existence of certain factors, such as the enforceability of the rule of law or the existence of a highly qualified labor market. People that have succeeded in developing economies in spite of those obstacles are usually associated with the ruling regime. I think it's fair to say that you are not one of those people, but you still succeeded. So how did you do that? And for those of us that are still working on our first billion or million or thousands, what sort of advice would you give?
+
+You know, somebody asked Richard Branson, "How do I become a billionaire?" And he said, "Start buying..." He says, "How do I become a millionaire?" He says, "You know, start with a billion and buy an airline!"
+
+I understand where you want to go. You know, it's one of my challenges when I'm advising young entrepreneurs from different African countries, because, you know, there are different types of governments, there are different situations on the ground. And how do I advise someone from Togo and someone in South Africa, Zimbabwe, Zambia, you know? Because I can't... So what I try to do is to teach principles that will make you a success as an entrepreneur irrespective of the conditions.
+
+And one of my mantras is to say: The entrepreneur must train like a soldier. We fight in the conditions, not the conditions! Because we really can't wake up in the morning and say, "Today it's raining, I'm not fighting!"
+
+So the challenges are there, but the thing is, Africa is full of entrepreneurs. Entrepreneurship is alive and well in Africa. It is just building the support systems to ensure that these ventures can grow in scale. So I hope that as some of you get skills from here, you can take them home to be able to help others to scale.
+
+All right. My name is Terry, I'm from Rwanda. I took that as advice, but I tried to look into that. The problem is part of data in Africa is in the air; it's not somewhere you can actually find data. And even when there is data, it's so hard to break through the government censorship actually to get that data. So what do you think about how can you break through that?
+
+And I also have an insight question about your program. How do you make it more attractive to students to come back to Africa?
+
+I have a better offer for you: Go and start your own business! It's a better offer than Microsoft or Intel or anybody! Once you decide to go down that route, none of those are good offers. So that's my challenge for you.
+
+I have a program which is fascinating, which we take young American graduates every year—this year we had 30—and we send them to Africa for three to six months, and they work for African companies. They don't work for governments, it's not Peace Corps; you got to go and you got to work for companies like mine. And guess what? They don't want to go home either! So there's something going on there, my friend. You got to come!
+
+Afternoon. My name is Daphne. I'm from Zimbabwe, and fortunately, I'm one of your Capernaum scholars. I graduated from Spelman College this past May, so I have a background in biochemistry, and I am interested in addressing health problems in developing countries, mostly particularly in diagnostics, because I feel like those diseases such as malaria, HIV, tuberculosis have been neglected mostly. And I'm interested in someday owning my own biotechnology company in Zimbabwe to address matters in Zimbabwe, because it's very, very important for us to have such facilities that allow us to try and solve our own problems using our own resources. What advice would you give a young person like myself with no background in business, but interested in making such changes to our continent, to the place that we come from?
+
+Wow, that's great! We have a program with Morehouse College, so Andrew Young came to me and said, "Why don't you have a program just for Morehouse?" So that's okay, so we did a deal where it said we would send ten students to Morehouse. But I forgot that was only men, so we ended up doing the identical program at Spelman, and that's where the Andrew Young program she talks about comes.
+
+So it's always meeting these amazing young people there, and this is the future of Africa. Look, the most important thing for you... the challenges for you are there, but they are no different from any generation anywhere else in the world, okay? To the extent that you can come home, come home, and we will help you and we will get you started in the business that you want to get into.
+
+And really, we want to say that about... I mean, your country Zimbabwe, which is also my country, has just gone through an extraordinary change that the whole world witnessed, and so there's a lot of sense of hope. So I'll see you there for Christmas next year!
+
+So I know there's still tons of questions in the audience, but you'll have to post it to his Facebook page because we're out of time now. But I think that we all agree that it's been phenomenal, and let me give another round of applause!
