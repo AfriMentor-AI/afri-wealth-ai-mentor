@@ -29,7 +29,7 @@ jobs:
         id: set
         run: |
           ALL='["api-gateway","auth-user-service","intake-profiling-service","chat-orchestration-service","persona-prompt-service","rag-corpus-service","goals-milestones-service","progress-gamification-service","insight-library-service","feedback-service","research-evaluation-service","voice-service","notification-service"]'
-          if [ "${{ github.event_name }}" = "pull_request" ]; then
+          if [ "${{ github.event_name }}" = "pull_request" ] && [ "${{ github.base_ref }}" != "develop" ]; then
             CHANGED=$(git diff --name-only origin/${{ github.base_ref }}...HEAD | grep '^services/' | cut -d/ -f2 | sort -u)
             if [ -z "$CHANGED" ]; then
               echo "services=[]" >> "$GITHUB_OUTPUT"
