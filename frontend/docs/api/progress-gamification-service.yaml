@@ -1,0 +1,113 @@
+openapi: 3.1.0
+info:
+  title: "AfriMentor AI \u2014 Progress & Gamification Service"
+  version: 1.0.0
+  description: XP, streaks, badges and levels. Reacts to milestone/session events.
+servers:
+- url: http://localhost:8000
+  description: via API gateway
+- url: http://localhost:8007
+  description: progress-gamification-service direct (dev)
+security:
+- bearerAuth: []
+tags:
+- name: progress
+- name: meta
+paths:
+  /health:
+    get:
+      tags:
+      - meta
+      summary: Liveness/readiness probe
+      security: []
+      responses:
+        '200':
+          description: healthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Health'
+  /api/v1/progress:
+    get:
+      tags:
+      - progress
+      summary: Get the user's progress summary
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                type: object
+        '401':
+          description: unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      description: 'TODO: request/response bodies finalised in later sprint.'
+  /api/v1/progress/badges:
+    get:
+      tags:
+      - progress
+      summary: List earned badges
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                type: object
+        '401':
+          description: unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      description: 'TODO: request/response bodies finalised in later sprint.'
+  /api/v1/progress/streak:
+    get:
+      tags:
+      - progress
+      summary: Get current streak
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                type: object
+        '401':
+          description: unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      description: 'TODO: request/response bodies finalised in later sprint.'
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    Health:
+      type: object
+      properties:
+        status:
+          type: string
+          example: healthy
+        service:
+          type: string
+        version:
+          type: string
+      required:
+      - status
+      - service
+    Error:
+      type: object
+      properties:
+        detail:
+          type: string
+      required:
+      - detail

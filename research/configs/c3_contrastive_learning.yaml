@@ -1,0 +1,66 @@
+# research/configs/c3_contrastive_learning.yaml
+# Condition C3: Persona-Aware Contrastive Learning — DPO on (chosen, rejected) pairs.
+
+experiment:
+  name: "C3_persona_contrastive_learning"
+  condition_id: "C3"
+  sprint: 4
+
+model:
+  base_model_id: "Qwen/Qwen2.5-7B-Instruct"
+  sft_checkpoint: "research/experiments/02_supervised_finetuning/checkpoints/final"
+  adapter_type: "dpo"
+  output_dir: "research/experiments/03_contrastive_learning/checkpoints"
+  hub_repo: "afrimentor/chioma-dpo-v1"
+
+lora:
+  r: 16
+  lora_alpha: 32
+  lora_dropout: 0.05
+  target_modules: ["q_proj", "v_proj", "k_proj", "o_proj"]
+  bias: "none"
+  task_type: "CAUSAL_LM"
+
+quantization:
+  load_in_4bit: true
+  bnb_4bit_compute_dtype: "bfloat16"
+  bnb_4bit_quant_type: "nf4"
+  bnb_4bit_use_double_quant: true
+
+dpo:
+  beta: 0.1                                 # KL penalty coefficient
+  loss_type: "sigmoid"                      # sigmoid | hinge | ipo
+  dataset: "research/datasets/splits/dpo_train.jsonl"
+  eval_dataset: "research/datasets/splits/dpo_val.jsonl"
+  max_length: 2048
+  max_prompt_length: 512
+
+training:
+  num_train_epochs: 2
+  per_device_train_batch_size: 2
+  gradient_accumulation_steps: 8           # effective batch = 16
+  learning_rate: 5.0e-5
+  lr_scheduler_type: "cosine"
+  warmup_ratio: 0.05
+  bf16: true
+  logging_steps: 10
+  eval_steps: 50
+  save_steps: 100
+  save_total_limit: 3
+
+evaluation:
+  metrics:
+    - persona_adherence
+    - cultural_fluency
+    - anti_dependency
+    - financial_accuracy
+    - urgency
+    - rouge_l
+    - bert_score_f1
+  compare_against: "C2_supervised_persona_finetuning"
+
+mlflow:
+  experiment_name: "C3_persona_contrastive_learning"
+  run_name_prefix: "c3"
+  log_artifacts: true
+  log_model: true

@@ -1,0 +1,195 @@
+openapi: 3.1.0
+info:
+  title: "AfriMentor AI \u2014 Goals & Milestones Service"
+  version: 1.0.0
+  description: Goals & milestones CRUD and milestone state machine. Publishes goal.* events.
+servers:
+- url: http://localhost:8000
+  description: via API gateway
+- url: http://localhost:8006
+  description: goals-milestones-service direct (dev)
+security:
+- bearerAuth: []
+tags:
+- name: goals
+- name: meta
+paths:
+  /health:
+    get:
+      tags:
+      - meta
+      summary: Liveness/readiness probe
+      security: []
+      responses:
+        '200':
+          description: healthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Health'
+  /api/v1/goals:
+    post:
+      tags:
+      - goals
+      summary: Create a goal
+      responses:
+        '201':
+          description: success
+          content:
+            application/json:
+              schema:
+                type: object
+        '401':
+          description: unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      description: 'TODO: request/response bodies finalised in later sprint.'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+    get:
+      tags:
+      - goals
+      summary: List goals
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                type: object
+        '401':
+          description: unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      description: 'TODO: request/response bodies finalised in later sprint.'
+  /api/v1/goals/{id}:
+    get:
+      tags:
+      - goals
+      summary: Get a goal
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                type: object
+        '401':
+          description: unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      description: 'TODO: request/response bodies finalised in later sprint.'
+      parameters: &id001
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+    patch:
+      tags:
+      - goals
+      summary: Update a goal
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                type: object
+        '401':
+          description: unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      description: 'TODO: request/response bodies finalised in later sprint.'
+      parameters: *id001
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+  /api/v1/goals/{id}/milestones:
+    post:
+      tags:
+      - goals
+      summary: Add a milestone
+      responses:
+        '201':
+          description: success
+          content:
+            application/json:
+              schema:
+                type: object
+        '401':
+          description: unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      description: 'TODO: request/response bodies finalised in later sprint.'
+      parameters: *id001
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+  /api/v1/milestones/{id}/complete:
+    post:
+      tags:
+      - goals
+      summary: Complete a milestone
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                type: object
+        '401':
+          description: unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      description: 'TODO: request/response bodies finalised in later sprint.'
+      parameters: *id001
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    Health:
+      type: object
+      properties:
+        status:
+          type: string
+          example: healthy
+        service:
+          type: string
+        version:
+          type: string
+      required:
+      - status
+      - service
+    Error:
+      type: object
+      properties:
+        detail:
+          type: string
+      required:
+      - detail

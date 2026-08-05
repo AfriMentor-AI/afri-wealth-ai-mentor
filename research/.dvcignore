@@ -1,0 +1,8 @@
+# DVC ignore file — patterns DVC should not track
+research/tracking/mlflow.db
+research/tracking/artifacts/
+research/experiments/**/checkpoints/
+**/__pycache__/
+**/*.pyc
+**/.pytest_cache/
+notebooks/.ipynb_checkpoints/

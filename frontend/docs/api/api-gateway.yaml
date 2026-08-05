@@ -1,0 +1,107 @@
+openapi: 3.1.0
+info:
+  title: "AfriMentor AI \u2014 API Gateway"
+  version: 1.0.0
+  description: Single ingress. Verifies JWTs, applies per-route rate limits, and proxies to the 12 capability
+    services under /api/v1/*. Reflects the implemented v1 gateway.
+servers:
+- url: http://localhost:8000
+  description: via API gateway
+- url: http://localhost:8000
+  description: api-gateway direct (dev)
+security:
+- bearerAuth: []
+tags:
+- name: proxy
+- name: meta
+paths:
+  /health:
+    get:
+      tags:
+      - meta
+      summary: Liveness/readiness probe
+      security: []
+      responses:
+        '200':
+          description: healthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Health'
+  /api/v1/{path}:
+    x-summary: Reverse proxy to capability services
+    get:
+      tags:
+      - proxy
+      summary: Proxied GET
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                type: object
+        '401':
+          description: unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      description: 'TODO: request/response bodies finalised in later sprint.'
+      parameters:
+      - name: path
+        in: path
+        required: true
+        schema:
+          type: string
+    post:
+      tags:
+      - proxy
+      summary: Proxied POST
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                type: object
+        '401':
+          description: unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      description: 'TODO: request/response bodies finalised in later sprint.'
+      parameters:
+      - name: path
+        in: path
+        required: true
+        schema:
+          type: string
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    Health:
+      type: object
+      properties:
+        status:
+          type: string
+          example: healthy
+        service:
+          type: string
+        version:
+          type: string
+      required:
+      - status
+      - service
+    Error:
+      type: object
+      properties:
+        detail:
+          type: string
+      required:
+      - detail

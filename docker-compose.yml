@@ -64,6 +64,20 @@ services:
       retries: 5
     networks: [afrimentor]
 
+  # ---------------------------------------------------- research: MLflow
+  mlflow:
+    build:
+      context: ./research/tracking
+      dockerfile: mlflow.Dockerfile
+    ports: ["5000:5000"]
+    environment:
+      MLFLOW_BACKEND_URI: sqlite:////mlflow/mlflow.db
+      MLFLOW_ARTIFACT_ROOT: /mlflow/artifacts
+    volumes:
+      - mlflowdata:/mlflow
+    networks: [afrimentor]
+    restart: unless-stopped
+
   # ------------------------------------------------------------- edge: gateway
   api-gateway:
     <<: *svc-defaults
@@ -122,6 +136,11 @@ services:
       PERSONA_SERVICE_URL: http://persona-prompt-service:8004
       RAG_SERVICE_URL: http://rag-corpus-service:8005
       RABBITMQ_URL: amqp://afrimentor:afrimentor@rabbitmq:5672/
+      LLM_API_KEY: ${LLM_API_KEY}
+      LLM_BASE_URL: ${LLM_BASE_URL:-https://api.groq.com/openai/v1}
+      LLM_MODEL: ${LLM_MODEL:-Qwen/Qwen2.5-7B-Instruct}
+      LLM_MAX_TOKENS: ${LLM_MAX_TOKENS:-512}
+      LLM_TEMPERATURE: ${LLM_TEMPERATURE:-0.7}
     depends_on:
       postgres: {condition: service_healthy}
 
@@ -236,3 +255,4 @@ volumes:
   pgdata:
   chromadata:
   voicedata:
+  mlflowdata:
