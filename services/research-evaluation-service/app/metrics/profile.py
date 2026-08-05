@@ -1,8 +1,7 @@
 """Loader for the CHIOMA target personality profile.
 
-v0 reads a local JSON stand-in (``data/chioma_profile.v0.json``). Card C1.4
-publishes the canonical versioned profile from persona-prompt-service; when it
-lands, point ``CHIOMA_PROFILE_PATH`` at it — the schema here is the contract.
+Card C1.4 publishes the canonical versioned profile from persona-prompt-service
+(data/chioma_profile.v1.json); when present, DEFAULT_PROFILE_PATH resolves to it.
 """
 
 from __future__ import annotations
@@ -25,7 +24,9 @@ LEVEL_VALUES: dict[str, float] = {
     "VERY_HIGH": 0.95,
 }
 
-DEFAULT_PROFILE_PATH = Path(__file__).resolve().parents[2] / "data" / "chioma_profile.v0.json"
+CANONICAL_PROFILE_PATH = Path(__file__).resolve().parents[3] / "persona-prompt-service" / "data" / "chioma_profile.v1.json"
+LOCAL_STANDIN_PATH = Path(__file__).resolve().parents[2] / "data" / "chioma_profile.v0.json"
+DEFAULT_PROFILE_PATH = CANONICAL_PROFILE_PATH if CANONICAL_PROFILE_PATH.is_file() else LOCAL_STANDIN_PATH
 
 
 class TraitTarget(BaseModel):
