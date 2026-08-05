@@ -52,4 +52,4 @@ def health() -> dict:
 
 @app.get("/", tags=["meta"])
 def root() -> dict:
-    return {"service": SERVICE_NAME, "message": "Chat Orchestration Service online", "docs": "/docs"}
+    return {"service": SERVICE_NAME, "message": "Chat Orchestration Service online", "docs": "/docs"}  # noqa: E501
