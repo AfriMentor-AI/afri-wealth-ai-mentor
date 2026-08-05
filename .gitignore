@@ -27,3 +27,7 @@ infra/keys/
 # Audio data and uploads
 *.mp3
 *.wav
+
+# Claude CI workflows — kept locally but not pushed (no API credits)
+.github/workflows/claude-review.yml
+.github/workflows/claude.yml
