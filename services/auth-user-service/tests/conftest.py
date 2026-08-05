@@ -18,9 +18,10 @@ os.environ["APP_ENV"] = "test"
 
 @pytest.fixture()
 def client():
+    from fastapi.testclient import TestClient
+
     from app.database import Base, engine
     from app.main import app
-    from fastapi.testclient import TestClient
 
     # Fresh schema per test.
     Base.metadata.drop_all(bind=engine)

@@ -11,5 +11,7 @@ from fastapi import Header, HTTPException, status
 def get_current_user(x_user_id: str = Header(..., alias="X-User-Id")) -> str:
     """Return the authenticated user-id forwarded by the gateway."""
     if not x_user_id:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Missing identity header")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Missing identity header"
+        )
     return x_user_id
