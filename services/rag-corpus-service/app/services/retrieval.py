@@ -1,8 +1,8 @@
 from __future__ import annotations
+
 import logging
 import os
 import re
-from typing import Any
 
 from rank_bm25 import BM25Okapi
 
@@ -115,15 +115,17 @@ def retrieve_chunks(
         # Step 3: Apply metadata pre-filter
         filtered = [
             (doc, chunk_id, meta, dist)
-            for doc, chunk_id, meta, dist in zip(docs, ids, metas, distances)
+            for doc, chunk_id, meta, dist in zip(docs, ids, metas, distances, strict=False)
             if _apply_metadata_filter(filters, meta)
         ]
 
         if not filtered:
-            logger.warning("All %d candidates filtered out by metadata filters: %s", len(docs), filters)
+            logger.warning(
+                "All %d candidates filtered out by metadata filters: %s", len(docs), filters
+            )
             return []
 
-        f_docs, f_ids, f_metas, f_dists = zip(*filtered)
+        f_docs, f_ids, f_metas, f_dists = zip(*filtered, strict=False)
 
         # Step 4 & 5: BM25 scoring over filtered candidate pool
         tokenized_corpus = [_tokenize(d) for d in f_docs]

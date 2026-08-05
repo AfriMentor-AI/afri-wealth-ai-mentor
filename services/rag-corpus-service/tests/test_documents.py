@@ -1,4 +1,5 @@
 from fastapi.testclient import TestClient
+
 from app.main import app
 
 client = TestClient(app)
@@ -33,6 +34,7 @@ def test_query_empty_string_rejected():
 
 def test_delete_nonexistent_doc_returns_404():
     from unittest.mock import MagicMock
+
     from app.api import routes
 
     mock_db = MagicMock()

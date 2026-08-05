@@ -127,7 +127,7 @@ def rerank(
         return candidates[:top_k]
 
     reranked = []
-    for candidate, raw in zip(candidates, scores):
+    for candidate, raw in zip(candidates, scores, strict=False):
         base = float(raw)
         bonus = _affinity_bonus(query, candidate)
         enriched = dict(candidate)

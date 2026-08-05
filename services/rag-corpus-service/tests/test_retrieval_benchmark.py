@@ -3,6 +3,7 @@ C2.1 Benchmark — Hybrid retrieval accuracy test.
 Acceptance criterion: relevant Tier-1 document in top-3 results >= 80% of the time.
 """
 import os
+
 import pytest
 
 os.environ.setdefault("CHROMA_URL", "http://localhost:8100")
@@ -151,7 +152,7 @@ def test_hybrid_retrieval_benchmark():
             failures.append(spec["query"])
 
     accuracy = hits / total
-    print("Benchmark accuracy: {}/{} = {:.1%}".format(hits, total, accuracy))
+    print(f"Benchmark accuracy: {hits}/{total} = {accuracy:.1%}")
     if failures:
         print("Failed queries:")
         for f in failures:

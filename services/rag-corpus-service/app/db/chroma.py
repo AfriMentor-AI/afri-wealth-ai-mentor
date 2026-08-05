@@ -1,4 +1,5 @@
 import os
+
 import chromadb
 
 CHROMA_URL = os.getenv("CHROMA_URL", "http://localhost:8100")

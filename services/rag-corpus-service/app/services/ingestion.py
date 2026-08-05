@@ -4,8 +4,10 @@ C1.1: chunking + ChromaDB write wired. Embedding uses ChromaDB's
 default all-MiniLM-L6-v2 model (no external API key needed in dev).
 """
 from __future__ import annotations
+
 import os
 import re
+
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 
 CHUNK_SIZE = int(os.getenv("RAG_CHUNK_SIZE", "600"))

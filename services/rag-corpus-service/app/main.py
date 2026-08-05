@@ -2,12 +2,14 @@
 C1.1: service skeleton with ingestion pipeline, document metadata,
 and retrieval stub. Chroma embedding wired in C2.1.
 """
+import logging
 import os
 import time
-import logging
+
 from fastapi import FastAPI
+
 from app.api.routes import router
-from app.db.session import engine, Base
+from app.db.session import Base, engine
 from app.models.document import Document  # noqa: F401
 
 logger = logging.getLogger(__name__)

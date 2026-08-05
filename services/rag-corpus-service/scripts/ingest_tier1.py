@@ -27,6 +27,14 @@ def ingest_record(record):
         "sector":        meta.get("primary_sector") or None,
         "content_type":  meta.get("content_type") or None,
         "language":      meta.get("language", "en"),
+        # Catalogue metadata for the admin screen (card C2.2). The API coerces
+        # empty strings to null, which matters here: url and date are blank in
+        # 20 of the 21 Tier-1 records and channel is blank in 12.
+        "title":          meta.get("title") or None,
+        "author":         meta.get("speaker") or None,
+        "published_date": meta.get("date") or None,
+        "source_url":     meta.get("url") or None,
+        "channel":        meta.get("channel") or None,
     }
     data = json.dumps(payload).encode("utf-8")
     req = urllib.request.Request(
