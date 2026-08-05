@@ -1,0 +1,29 @@
+Hi everyone. My name is Shola Akinlade, co-founder and CEO of Paystack. Today I want to share the story of how we started Paystack, the lessons we learned along the way, and why building for local businesses in Africa requires a fundamentally different approach to software design and customer empathy.
+
+When Ezra and I started thinking about payments in 2015, the problem was simple: it was unnecessarily hard for a business in Nigeria to accept payments online. If you were a small merchant, a school, a fashion designer, or a software developer trying to build an e-commerce platform, getting integrated with traditional bank gateways took weeks. You needed physical documentation, expensive setup fees, and after all that hassle, the transaction failure rates were still painfully high.
+
+I remember talking to small business owners in Lagos who were taking orders on WhatsApp and Instagram, but when it came time to collect payments, they had to send back-and-forth bank account numbers, confirm manual bank transfers, wait for SMS alerts, and deal with fraud. The friction was destroying sales.
+
+We asked ourselves a fundamental question: What if accepting payments online in Africa could be as simple as pasting five lines of code, or sending a simple payment link to a customer?
+
+That was the inception of Paystack. But having a good idea is only 5% of the battle. When we started reaching out to potential customers and investors, the initial feedback was tough. People told us, "Payments in Africa are solved by the big institutions," or "Nigerians don't trust paying online."
+
+We realized that in emerging markets, you aren't just building a software product—you are building trust.
+
+To build trust when you don't have a big brand name, you have to do two things exceptionally well:
+
+Solve the core functional pain point flawlessly. If a customer attempts a transaction, it must work seamlessly and securely.
+
+Provide fanatical customer support. In the early days, whenever a transaction failed or a merchant had a question, Ezra or I would respond within minutes. When merchants saw that there were real human beings standing behind the software, willing to fix problems instantly, their trust grew exponentially.
+
+One of our key insights was listening to micro-entrepreneurs who didn't even have websites. They were selling goods through social media or physical shops. So we didn't just build developer APIs; we built Paystack Payment Pages and Payment Links. That enabled a local merchant with zero coding knowledge to generate a link in 30 seconds, share it with a customer, and receive payment instantly into their bank account. That single feature democratized digital payments for thousands of informal and small-scale traders across Nigeria.
+
+Another huge lesson for founders building in Africa is perseverance during hard times. When we applied to Y Combinator in late 2015, we were the first Nigerian company to be accepted into the program. Going to Silicon Valley opened our eyes, but it also reinforced to us that the hardest challenges in Africa require localized solutions. Silicon Valley models cannot just be copy-pasted onto Lagos, Nairobi, or Accra without understanding the local payment rails, local consumer behavior, and regulatory realities.
+
+We stayed relentless about execution. We optimized our routing engines to work across multiple banks so that if one bank network went down, the transaction automatically rerouted through a working alternative without the buyer ever noticing. That focus on reliability and developer experience is what allowed us to grow from serving a handful of early merchants to processing billions of Naira for over 60,000 businesses.
+
+When Stripe acquired Paystack in 2020, it validated something we believed from day one: that world-class engineering and transformative enterprise can come out of Africa.
+
+My advice to every young African entrepreneur watching this is simple: Focus deeply on solving real problems for real people. Don't build for vanity metrics or global hype. Go to the market, talk to the merchant on the street, understand where they are losing money or wasting time, and build a product that makes their life measurably better. If you solve real friction for people, economic growth and commercial success will follow.
+
+Thank you very much.

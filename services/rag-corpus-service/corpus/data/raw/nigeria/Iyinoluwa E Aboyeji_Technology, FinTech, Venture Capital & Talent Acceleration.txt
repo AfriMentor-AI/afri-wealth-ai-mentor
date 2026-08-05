@@ -1,0 +1,147 @@
+Hey guys, so I was thinking this morning that one of my favorite things on Founders Connect now is I have the opportunity to actually have a sit down with people that I really admire. I'm just like, oh my god, is this my life now? Anyway, on today's episode, we're going to be having a conversation and interview with famous E. I'm just going to learn all about his journey from Andela to Flutterwave to Future Africa, and all the many, many companies that he's a board of director or non-executive director at.
+
+So hey guys, this is Iyin.
+
+Hi, it's good to have you here.
+
+Thank you very much for having me, I'm so excited.
+
+Thanks for stopping to watch this video. My name is Peace Itimi and I'm very passionate about growing people and growing businesses. On this channel, I create videos on marketing, branding, business, and life. Sometimes I share my life lessons, like on this series where I interview leading African entrepreneurs. If this is your first time on this channel, thank you so much for being here! Make sure you click on the subscribe button down below, and the bell notification button so every time I release a new video, you'll be one of the first people to know. And if this is not your first time, you know how I feel about you—I really love you, thank you so much for being here. Now let's get right into the video.
+
+Welcome to my YouTube channel! I am Peace Itimi—a changemaker, professional, and creative who is passionate about growing people and growing businesses. Like, comment, subscribe to my channel, and please always share my videos. It promises to always be impactful and insightful.
+
+So, first question right: beyond entrepreneurship and venture capital, who are you? Like what three phrases most accurately describe who you are?
+
+Huh, that's a great question. Before entrepreneurship, beyond entrepreneurship and venture capital, I think of myself as a changemaker, right? Somebody who really loves to inspire change. I'm an optimist—I really do believe in working towards a better future for myself and for my country. And then I would say I'm a Christian.
+
+So he's a changemaker, an optimist, and a Christian.
+
+Yeah, I wish I could squeeze Nigerian in there somewhere... I don't know, can I?
+
+Awesome! What was growing up like for you?
+
+Well, that's a great question. I grew up in Lagos, I was born in Lagos actually, in Yaba, and I grew up in the Yaba community area. When I was growing up, my father had just finished his MBA at the University of Lagos and he was looking to get a job. And so it was somewhat a tumultuous childhood, not too bad, but I had to go stay with my grandmother, my mom's mother. I remember very fondly we used to hawk wara.
+
+Hawking wara?
+
+Yeah, very fondly! And then when my father got a job first at Mobil and then Shell, he came back to Lagos and then we started a typical middle-class upbringing in the '90s. I went to primary school at St. Saviour's in Ebute Metta. And then when I was in Primary 4, my parents had to move to Warri, so I spent a bit of my childhood in Warri where my father was working community relations for Shell, trying to manage hostage-taking and stuff like that.
+
+So I grew up a little bit in Warri, and then I went to boarding school at Loyola Jesuit College in Abuja—still the best secondary school! I mean, I'm sorry, it's not about bragging, the record speaks for itself. So I went to boarding school, made a lot of great friends till this day at Loyola, and the education was excellent—Jesuit education full of values.
+
+So that was really my path all the way up to that point. I think for me, I always had a strange kind of ambition growing up, because I wasn't one of those kids who was like, "Oh, I'm going to be an entrepreneur from day one." I didn't think that. I oscillated a little bit; I was good at a lot of things, whatever I wanted to be good at. That made my life very difficult because it was like: do science, do arts, do this...
+
+When I started out seeing my father, he was a cab driver, so I would follow him. I'd be in the front seat—people were nicer about that then, like "today is school day, why is your child in your front seat?" But people were nice. So I would sit with him in the front while he picked people up and dropped people off doing kabu-kabu. My mother used to sell fish, so I also watched her do some entrepreneurship. Education was one of those things where we did it to survive, so I never really thought about business as a career path, because I thought business people were poor!
+
+So I thought I would go and be an engineer or a doctor or something like that, until I got into secondary school SS1 where you have to pick your subjects. My parents really, really wanted me to study science. I said, "Let me give it a try," but with chemistry and physics, there was nothing for me there! So I remember my mother flew all the way to Abuja like, "How did you change your subjects without telling us?" I said, "See ma, literature, English, and government—that's my thing, that's how I like it."
+
+So I switched over. When I went to Canada, I went to the University of Waterloo. I spent a year in Ibadan, which was very formative for me because I learned how to fend for myself in the outside world. I spent some time at UI, and some time at a school called Lead City, one of those A-level schools. And then we left for Canada in January.
+
+The whole family?
+
+No, just myself and my brother. Actually, you know the funny story about that? This honestly is one of the things that defined my time in Canada. My father was only going to send my brother because my brother studied science. He was like, "It's a waste of money for you to study arts, what's my business?" So my father was like, "I don't want to spend the money," but being a Nigerian parent, he couldn't resist a good deal! They told him, "If you send two people, we'll give you a 25% discount." He sort of did the math and was like, "25% off is something!" So he said, "Okay, if I'm only paying half fees for this one, let his brother follow him so it won't be as if I was wicked."
+
+But I always imagined that one day my father would just call me and be like, "Don't waste my money, just pack your bags." So you know what I did? The first semester in Canada, I went to this prep school called Columbia International College. First semester, I took ten courses—ten! I was like, I must enter university with scholarships! You're supposed to be there for one year before you go to university. I got there in January; my fear was if I stayed till next January, my father would pull the plug in September. So I just took all ten courses, and I got into school in September with a partial scholarship.
+
+I went to Waterloo, and one of the good things about Waterloo is they have cooperative education (co-op). So out of four years, you have to have two and a half years of work experience to graduate. So I worked—I actually went to New York and worked for my school fees. It didn't come easy; I had to work for it.
+
+After doing legal studies, how did you find tech?
+
+That's an interesting story. I have a very close friend, his name is Pierre. The way we met was very random: I walked into the first day of school, I couldn't afford to live on campus because it was too expensive, so I lived off-campus. I was with all the other people for orientation, and this guy with long hair walks up to me and says, "Hey, my name is Pierre." I'm like, "Yeah, my name is E." He's like, "Yeah, my accommodation on campus isn't ready, can I stay at yours tonight?"
+
+Just straight asking for a place to stay! But I was like, "I need friends, so okay, come inside the house." We became very close friends from that day.
+
+What happened was, because of co-op, we lost touch. He went off to co-op in Silicon Valley, and I went to the UN in New York for an NGO. So we lost touch. I was running the school newspaper, and I was coming out of the student life center basement office, went to get my pizza and Coke, and I saw Pierre coding on his computer.
+
+I said, "Guy, what's up? What are you up to?" He said, "I went to work for this guy called Peter Thiel, he's a member of the PayPal Mafia." He started telling me all these stories, romanticizing things: "I used to sleep under the desk, San Francisco is a beautiful city, working for Peter Thiel..."
+
+I got roped into this thing, and he kept pulling me. Two things happened on campus around 2010 that were defining: The Social Network movie came out, and there was this wave of entrepreneurship from Y Combinator that had just started. A number of founders were starting to get real attention. The most famous founders from Waterloo were all dropouts—like Mike Lazaridis who built the BlackBerry, he never finished.
+
+So the school, being very smart, said, "If we allow this, everyone will drop out. Let's create a lab for people in residence." So they created a new residence. Pierre was living in that residence with a lot of very interesting people: Vitalik (founder of Ethereum), Ted Livingston (founder of Kik), Eric Migicovsky (founder of Pebble). Today I look at these guys like, "Billionaires!" But then we were together eating pizza without money.
+
+So that was the circle the school brought together. I went with Pierre to found a startup. That was how we started our first company. I got the seed capital from the former Ologbotsere of Warri—I just went to visit and collected money! I took the money, used it for my startup called 1000ml (or The Network).
+
+How long did you spend on it?
+
+Three years. It was easy because we were in school, but the day I got involved in that startup, I stopped going to classes and spent all my time on it. One of the companies, Kik, backed by Fred Wilson, became super big. The founder sold secondary shares, made maybe $2-$3 million, and took $1 million of his money and gave it to the school to set up Velocity! That's literally how the school started funding velocity labs. Without that $1 million, none of us would be here.
+
+What ended up happening with our product? We had eight co-founders—we were inexperienced, immature, and the product didn't make sense. We tried to build an LMS to replace Blackboard. Blackboard was $500,000, and schools give tenders. Why would they give a tender to students still in school? So that failed.
+
+Then, as sharp guys, we started downloading past question papers from the Chinese Students Association and charged people to access them. We made small money, but Waterloo is a research school, and professors reuse their exam questions. When students started paying us for past questions, professors said, "Wait, these questions are my IP, you're using them without permission and making money!" They threatened to sue us and expel me!
+
+So I went to meet the professors, begged them, and asked, "What can I do to help you?" A professor said he wanted to teach his courses outside the university online, but there was no Udemy then. He asked if we could build websites for that. So we built that for him and sold the technology to Professor Andrew. We didn't make money; we just paid off debt, and I came back to Nigeria straight.
+
+When I was coming back to Nigeria, I had ideas. I had two options: stay in Canada and get a job, or come back to Nigeria. Canada was too cold for my mental health! I couldn't find a job in America or Canada, so I looked at home and said, "There's no money there, let me look for money as I'm coming back."
+
+My co-founders and I built Fora. The big idea was: Covenant University has a professor in AI, Babcock has a professor in psychology. Babcock doesn't offer AI because they lack a professor, Covenant doesn't offer psychology. What if students could watch lectures from other universities and get cross-credits?
+
+When I landed in Nigeria, I landed in Abuja—big mistake! I went to the NUC (National Universities Commission) to get permission for credit exchanges. I went every day for 4-5 weeks, sitting outside waiting for the official. One day he saw me and said, "I'm tired of seeing you. What you want to do, I don't agree. That's it."
+
+So I carried my bag and went to Warri. My parents were like, "This startup thing didn't work, come and do an LNG or Shell interview." But I wasn't cut out for oil and gas. I missed the interview, my father was angry. I told them, "God said I should go to Lagos, and God will provide!" I used my remaining N40,000 as a seed on the altar, begged my mother for bus fare to Lagos, and stayed with my uncle.
+
+We tweaked the idea for Fora. Since NUC blocked credit exchanges, we targeted online MBAs—selling online MBA programs from University of Liverpool and Walden University. We helped executives apply, do paperwork, get bank loans, and pay from their salaries. We made 20% commissions. It was hustle work, but it kept us afloat.
+
+When I wanted to raise money again, I reached out to a Canadian VC who offered $50,000, but I had to come to New York for a program. I went to New York, met my team (who I hadn't seen in 3 years), and we won the pitch competition!
+
+An older gentleman, Lee Rubinstein, connected me to Jeremy Johnson. Jeremy had previously co-founded 2U, which did online degree enablement. I badgered him for a meeting. He invited me to his office in New York at 9:00 AM. I took a 12-hour $100 Greyhound bus overnight from Toronto to New York, arrived at 8:00 AM, bought him coffee, and we had a great discussion.
+
+Later, when we met again, I explained how Fora's model was struggling with regulatory friction. Jeremy broke it down for me: "Online MBAs in Africa can't scale easily at high price points. But Africans have the grit to work. Instead of credentials, what if we train them in software engineering skills for free, and connect them to global tech jobs where they earn money?"
+
+I said, "Do you want to try this in Nigeria?" He said, "I'll back you if you run it."
+
+I called my team: "Look, I've been suffering, let's try this!" Coding was where the money was, and that's how Andela was born out of Fora.
+
+I carried my Fora investors over to Andela at a $5 million valuation so they wouldn't lose their money. That built immense trust with my investors.
+
+We started Andela in 2014. At first, it was extremely hard. We moved offices six times in the first year! Myself, Nad, Iyin, Christina, and Bangkoli all lived in one 3-bedroom apartment in Palm Grove. Every morning, we'd take a bus from Palmgrove to Yaba, then to Golden Gate in Ikoyi where Mrs. Adelaiye gave us her BQ to use.
+
+When she got full-time tenants, we got scammed by a fake landlord who took our rent money to fund his wedding! Then we squatted at CC Hub for a while. We did digital marketing on the streets—handing out flyers at churches, mosques, and bus stops: "Come for free coding training!"
+
+That's how we grew the program. When Jeremy and Christina saw the first class—people going from earning N40,000 a month (or nothing) to gaining skills and landing remote engineering jobs paying $2,000-$3,000 a month—it was incredible. Jeremy came on as CEO, and I served as co-founder and Director of Recruitment, driving talent sourcing and evangelism.
+
+I stayed at Andela for two and a half years, from 2014 to May 2016.
+
+Why did you leave Andela after all that hustle?
+
+It boiled down to two things: First, the company grew very fast. Because it grew so fast, there were things I didn't understand about managing a company at that scale. Success is a much better teacher than failure, but I had never worked at a scaled startup before. I felt I needed to go to business school to learn management frameworks. I applied and got accepted into two business schools.
+
+Second, around that same time, I met the founding team of Flutterwave—GB (Olugbenga Agboola) and others. The problem they were solving was massive: payments in Africa were completely broken. Even at Andela, we struggled to process payments locally.
+
+So instead of business school, I applied to Y Combinator with the Flutterwave team. I said, "If YC accepts Flutterwave, I'll forgo business school and build Flutterwave." YC accepted us!
+
+I became founding CEO of Flutterwave because I had more startup experience in the African terrain. My job was handling regulatory approvals, pitch narrative, banking partnerships, and government relations. I was flying every week between Lagos, San Francisco, and Abuja—educating bank CEOs and regulators about digital payment rails.
+
+What lessons from Andela did you bring to Flutterwave?
+
+The biggest lesson was that mission is everything. Everyone underestimates the power of a company mission. Andela was world-class at defining mission—you knew why your work mattered. At Flutterwave, our mission was connecting Africa to the global economy through payments. That mission made prioritization clear and helped us attract world-class talent and investment.
+
+Why did you eventually leave Flutterwave?
+
+Flutterwave was GB's vision and company—I came in to help get it off the ground, build early momentum, structure the team, and establish regulatory trust. Once the foundation was rock-solid, it was time to hand over total executive leadership to GB.
+
+Additionally, I had just gotten married and had a child. I was on back-to-back long-haul flights every single week. I wanted to spend time with my newborn child and take paternity leave. So in 2018, I stepped down as CEO.
+
+Both Andela and Flutterwave became tech unicorns. What makes you most proud about them?
+
+It's the ripple effects and the people. The companies themselves are just vehicles. What makes me proud is seeing engineers who earned N40,000 now leading engineering teams globally, or small African businesses accepting payments from anywhere in the world. They proved that world-class technology companies can be built from Africa.
+
+How did Future Africa start?
+
+After taking time off, I moved to Silicon Valley, intending to angel invest. But I faced two major frustrations: First, Silicon Valley investors wanted me to scout deals for them, but weren't willing to back an African-led fund investing directly in African founders on the ground. Second, I experienced casual racism and banking friction despite having legitimate exit proceeds.
+
+Then COVID-19 happened, and I moved back to Nigeria permanently. My co-founders and I started writing online articles about African tech, and when we surveyed our readers on what they needed most, the overwhelming answer was: "Capital!"
+
+Founders were struggling to raise $25,000 or $50,000 pre-seed rounds. So we built Future Africa as a syndicate platform using AngelList. I wrote detailed investment memos on promising African startups and shared them with global investors.
+
+We grew from zero to hundreds of syndicate members funding dozens of African startups at the earliest stages. Future Africa evolved into an asset management firm and venture studio that doesn't just write checks, but actively helps early-stage founders with talent hiring, regulatory navigation, marketing, and go-to-market execution.
+
+What is the biggest lesson you've learned over your journey?
+
+My biggest lesson is that the biggest challenges are actually the biggest opportunities. The moment you put on glasses that view infrastructural friction, lack of systems, or market gaps as business opportunities, the entire world looks different. In a country like Nigeria, everywhere you turn there are problems—and every single problem is a multi-million dollar business waiting to be built.
+
+What is your advice for young Africans thinking about leaving the country ("japa")?
+
+Go get global experience if you can! See how world-class systems operate, build skills, and learn best practices. But ultimately realize that Africa is the frontier where you can make the greatest impact and build true legacy. You can't build the next Flutterwave or Andela in markets that are already saturated and mature. Greatness is built on the frontier.
+
+Thank you so much, Iyin, for sharing your story!
+
+Thank you for having me!

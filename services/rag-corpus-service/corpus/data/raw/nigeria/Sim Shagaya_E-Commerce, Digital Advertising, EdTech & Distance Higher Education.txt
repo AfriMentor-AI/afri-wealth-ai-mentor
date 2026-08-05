@@ -1,0 +1,345 @@
+Hi everyone, my name is Peace Itimi and you're welcome to Episode 3 of Founders Connect Live Show! Because we had two episodes of this in the last live event, on this show we have conversations with amazing entrepreneurs and operators in Africa—people who have built amazing things, amazing businesses, and amazing careers. On this very special episode of the Builders Summit Live in Lagos, we are having a conversation with the one and only Sim Shagaya! He's a renowned serial entrepreneur. Sit back, relax, listen.
+
+Sim Shagaya's journey from the Nigerian Military Academy to tech mogul is nothing short of remarkable. Armed with degrees from esteemed institutions like George Washington University and Harvard Business School, he pioneered ventures like DealDey and Konga.com, revolutionizing e-commerce in West Africa. Shagaya's vision extended to education accessibility, and he founded uLesson Education Limited and the more recent Miva Open University.
+
+Shagaya has been recognized for his entrepreneurial achievements. In 2013, he was named Entrepreneur of the Year at the CNBC All Africa Business Leaders Awards in West Africa. The following year, he was included in Forbes' list of the 10 Most Powerful Men in Africa. Shagaya's relentless pursuit of innovation and empowerment has earned him recognition as one of Africa's most influential entrepreneurs. Shagaya's journey inspires countless aspiring builders.
+
+Hi, Sim! So I usually start with just easy conversation.
+
+She's really built this up! I'm feeling nervous now, let's see how this goes.
+
+It's good, I think the vibes did match because I'm matching in clothes to you. Okay, first of all, tell us about your background, right? We heard about all of your professional achievements, we're not going to dive into that yet. But what's your background like? Where did you grow up, what was family life like as much as you can in two minutes?
+
+Sure, okay. So I was born in Lagos, in Yaba, but I lived all across Nigeria. I was born into a military family: my uncles were in the military, my dad was in the military, I went to military school, my brother went to military school, I was trained in military primary and secondary schools.
+
+Let's see... so that means I traveled a lot, so I've lived in Gombe—I bet not many people have been to Gombe here! I've lived in Gombe, I've lived in Minna, I've lived in Kaduna, so a lot of the North, yes, a lot of the North.
+
+And then I went out of the country for school, studied electrical engineering. And you know how they say like a lot of what you do in life is driven by the times you are born into, not really so much you? But I was fortunate enough, I think when I was really, really young, my dad had this friend—he's passed away now—Engineer Mewu was his name. He used to work at NEPA back then, and he bought me my first computer in 1986. 1986! I was in Ibadan.
+
+So he bought me this basic computer, so I think this was like when I really started getting super interested in tech. And then the internet took off, and this happened when I was in America in school. I had the sense that it would impact the continent really profoundly. And it has in some ways that I expected, in some other ways that I've not expected. And I'm sure we'll talk about a lot of that, Peace.
+
+But I came back here to try and build businesses. I've been very fortunate, really lucky, worked with some amazing people, built some really cool stuff, stumbled along the way. I mean, I think if anything, I've had like a really interesting journey.
+
+We'll talk about the journey a little bit. So you mentioned that Engineer Mewu buying your first computer was one of the key moments in your life. Are there any other key moments that you can remember that, looking back, were very pivotal to what you ended up becoming?
+
+I think... well, there are a few big ones. So the first one is not really related to tech. My dad wanted me to join the military really badly, so I was supposed to be in the Nigerian Navy. If I had listened to him, I probably would have been hitting like General level right now!
+
+But this was the first time in my life... I had a very strong father—he's passed away now—but it was the first time I disobeyed him. Oh, and I refused to join the military. And so he shipped me off to UNILAG at the time. But that was the first time I disobeyed him, so that was a very big one.
+
+And then I think the second one was actually... a lot of this has to do with disobedience, Peace! So I disobeyed my mom when she said, "Stay in America, stay in the States." She's passed away also, but she didn't want me to come back to Nigeria. But my disobedience was to such a degree I literally just bought a ticket and showed up!
+
+Oh wow!
+
+And I'm like, "I'm back now!" So yeah, there was not much...
+
+Why did you come back?
+
+Well, I mean, I think there were a lot of reasons. You know, I was in my 20s at the time, and it was a really special time in Nigeria. Military rule had just ended, Obasanjo had just kicked off democracy, our GDP growth rate was taking off, there was a lot of optimism not just in Nigeria, but across the continent—a lot of optimism!
+
+Sounds very different from today!
+
+Yes, yeah, and I'm sure we'll talk about that. That's one of the things that I think has surprised me. I didn't think it would turn out the way we are right now, but I remain optimistic, and we can talk about that too.
+
+And then there were a lot of my friends looking to come back. And also, when I thought about my future in the States, I could have joined all kinds of companies back then. At the time I was finishing business school, for example, I crossed the river from the business school, there was a guy called Mark Zuckerberg starting Facebook, and maybe I should have just gone to him and said, "Give me some stock, don't pay me, I'll join you." So who knows how that would have gone?
+
+But I couldn't see a future in America for myself—I just couldn't, on a deep level, see myself there. I wanted to be back here. I love this country really deeply, really deeply. All the national anthems and pledges and NTA jingles, I guess those things work because they brainwash you! Because I have this irrational love for Nigeria, really deep love, above the capitalism and making money. And I'm Nigerian, I want to make money of course, but beyond that, there's a deep love for the country. So that's one of the reasons I came back.
+
+And so you said when you came back, you started experimenting and trying different businesses?
+
+Yes, I did a lot of businesses, like a lot of them!
+
+Like, we know the big ones that took off, but you did a lot?
+
+Yes. Do you know how many? Does this include companies I registered? Yes, let me go from there.
+
+So let's see... I tried a dating site, which... that is news to you guys, really? You guys didn't know this? Yeah, no, I tried a dating site, and it was called Alarino, which is Yoruba for "Matchmaker." And it actually did well! We actually... there were marriages, we had some marriages, yes! And they actually came by the office to say thank you for hooking us up. This was like in 2006.
+
+Alarino died because Facebook took off.
+
+And then I tried... who remembers Yelp? Like a local directories business that has been rolled into Google Maps now. Even Yelp is not really doing well. So I tried one of those, and a couple of my colleagues from back then who built some of these things with me... I didn't see them for very long, but they've joined Miva now, and they're actually in the booth! Nice, yeah.
+
+What we were trying to do was to index all the businesses starting with Lagos, with phone numbers and addresses and geolocation. So I was located at Awolowo Road, and I went through every business, took pictures, and indexed the businesses. Did that die because of Google Maps? Yes and no.
+
+Since we're just having a casual conversation, if we were at my home or your home, I think it speaks to a general trend that there are some properties or internet opportunities that are inherently global, and so there's a risk you kind of get steamrolled over. A lot of the things I tried back then, I think I didn't have the insight back then to differentiate between opportunities that are local or global. So I did that.
+
+And then there was one business I wish I had stayed with.
+
+Which one was that?
+
+It was called Ebu, which is the Yoruba word also for "everything." It was classifieds, basically what Jiji is now. It was my friend Uba and a few guys, we started this thing and we saw listings right away.
+
+And then Seun Osewa of Nairaland started his own classifieds business called NairaList. You guys probably don't remember any of this! When we saw NairaList, we were like, "Seun has traffic, we're dead! So let me just shut this thing down."
+
+So we shut it down, which was a terrible mistake, because Seun shut his own down!
+
+You saw another business and said, "Oh, they're doing better, we're not going to make it, let's not even bother"?
+
+Yeah, let's not even bother! So we shut it down, and then Seun, for reasons best known to him—I wish he had hung on to it—there was Nairaland and NairaList, and he shut that down. So I wish we didn't do that.
+
+Do you think you'd still be doing that by now?
+
+Yeah, no, I think classifieds are really good businesses. Jiji is like the catfish of e-commerce—it will always be there. These are really, really good businesses, and I think it would have been around. The overheads, the running expenses of classifieds are super low, and there was need for it.
+
+We didn't have a sense of how we would monetize, I think that was part of the reason, because we were paying for all the server costs and there was no revenue line—like, no revenue line! But if you hang on to classifieds, at some point you hit this critical mass where the thing just explodes, and I don't think we waited long enough for that.
+
+So there was a bunch of them. Let's see what else... then there's iNollywood, which is like iROKOtv.
+
+And what is interesting is all of these businesses are across different fields: dating, classifieds, entertainment, education, e-commerce... You don't have a specific... there are some people who are like, "I want to build or solve problems in education." You just...
+
+So the plan was always like... I wasn't really focused on money at the time. All I was looking for—and that brings me back to Miva, which is really interesting—I just wanted to do something that would pay my bills, take care of the kids, so I could go back to school! That was like all I was looking to do. I wanted a PhD. I wanted to go back, get a PhD, and just teach, because I really like schools! I like the school environment, I enjoy everything, the essence of it, the youthfulness of it, the curiosity that is just kind of inherent in the environment. I really like school environments. So I was just looking to do anything that would just generate cash.
+
+I have so many questions, but let me go back to school. Why this? If you wanted to do a business, why not "let me get a job, get some money, and then go back"?
+
+That "why" is deep! So this is the Builders Summit, right? So I mean, I think the stakeholders here are sort of self-selected for people that probably are thinking like how I was thinking. At some point, I genuinely felt like I was not employable!
+
+And it's not because... my last job in America before I came back was with this company called MicroStrategy, and I loved the company, I loved my boss, he was a great guy, I had a lot of fun. And then contrast that with South Africa where I did investment banking—great bank, didn't like it as much as the previous company. But in all of those, I just had this like... I really enjoy my freedom.
+
+And this is hard to say, being a builder or like many of you here are, because you know, you're saying you don't like being an employee, but then you're going to hire employees! So I don't know whether I'm telling my people to quit or something! But yeah, I really like my freedom, I like this sense of adventure, I don't like feeling constrained. As soon as I start feeling like there's constraint or there's monotony, like you're doing the same thing every day, I want to go off and do something else. It's cooling down now, but definitely in my 20s and 30s, I didn't feel like I wanted to do like the corporate job.
+
+Makes sense. So after trying all of these businesses, the first one that you had a longer stint was eMotion?
+
+Before that was eMotion.
+
+Was that longer than the time you spent at Konga?
+
+No, it's about the same amount of time.
+
+Okay, so tell us a little bit about eMotion, and then we'll do Konga.
+
+Sure, sure. So eMotion was... okay, so I'm trying to make money to do this PhD. I'll just give you a very quick version, because this can be very long. Stop me if I start going off; I tend to talk too much, so just start acting like you're sleeping if you get bored!
+
+So I was working at this bank in South Africa, in this part of South Africa called Sandton in Johannesburg. Sandton, I don't know if anybody knows Sandton, and there are all these digital billboards around Sandton. So many nights I would look out my window in my office—I was like on the 14th floor, investment banking, you work very late—and there was this one billboard that was always blaring ads, had like 10 adverts on it.
+
+So one day I said, "I'm going to run the numbers on this billboard." So I went down to the billboard—it was in flowers and in a bush—so I walked through the bush and I checked the phone number of the manufacturer, and I called the manufacturer. I said, "How much is this billboard?" And they were like, "Oh, I think it was like $70,000" or something. And I was like, "Okay, deliver to Nigeria?" I think it was like $90,000 delivered to Nigeria.
+
+I was very frugal. I saved like everything I made when I was younger. Don't live that way, enjoy yourself! Like I never went to clubs or partied, I just saved everything. So I had some money.
+
+And then I called the billboard company operating the billboard and I said, "How much is one ad for a month?" And I think it was like $5,000 for a month, and there were 10 advertisers on the billboard. So this is simple mathematics: 10 advertisers = $50,000 a month! The billboard cost $90k! You see where I'm going here, right?
+
+So I'm like, "I want to do this!" So I moved back to Nigeria. One of the first things I did, I went to the FCT—they didn't even have a Department of Signage—and convinced them to give me a license to build a digital billboard in Wuse. And so all of my money, I poured it into this billboard.
+
+Abuja wasn't as developed. Abuja is so nice right now; the uLesson offices in Jabi... back then Jabi was bare, it was just welders and people. So I was there welding the billboard frame with the people, insisting it would be like the perfect billboard frame. It was very hard, friends of mine were asking if I had lost my mind.
+
+But we finally got this billboard up, myself and the engineer who came from South Africa. And I promise you, like it had not been up one hour, and the Chief Marketing Officer of VMobile (now Airtel)... my phone went off, because it was my phone number, I didn't have an office! The office was literally my phone.
+
+And my phone rang, and he's like, "What is this thing?"
+
+I'm like, "It's a digital..."
+
+He's like, "How much is it?"
+
+And I just blurted out a price!
+
+How much did you say?
+
+I think it was 4 million Naira for a year. But this was when 4 million was like 4 million! We don't know what that feels like. I think 4 million then was like maybe $25,000, so that's like 37 million now or something like that.
+
+And they were like, "Yes!" She was like, "Okay, I'm going to SMS you my email, send us an invoice," and they paid! And I had paid $90,000 for that billboard!
+
+And so one billboard became two, two became four, four became 20. And then we at some point moved to Lagos and we bid on the rights to the Lekki Expressway. We won, and that business just took off! It generated cash from day one, like literally from day one. And I ran that for about four years.
+
+I can go on, like I said, I can just ramble! But the segue to Konga...
+
+So for four years... I wanted you to finish: why did you leave it to then do something else? Because if you were making a lot of money, why leave? You probably had the money you needed to go do a PhD.
+
+Yeah, so that's a really good question. So again, for me, it's like... and as I've gotten older—I turn 50 next year, believe it or not, which is kind of crazy...
+
+What is clapping? You know he's an elder!
+
+So it wasn't always about the money. I like building things, and I got very bored with billboards. Okay, and again, like at that point, ARM, our investor—so you guys know ARM Assets & Resource Management—they were an investor, really good guys. But at that point, it was just like quarterly reports and...
+
+Okay, so here's one thing: all media, whether it's Twitter (sorry, X) or Miva or NTA, all media is like content production and distribution. And the strength of the media company really is derived from how much power you have in one part of that value chain. So right now, what you're doing is really powerful, because you're controlling the content generation (which is what we're doing) and the distribution.
+
+So, but billboards... if you think about radio, billboards, radio... radio, they package the content and then they go to government for distribution. YouTube, they don't have to go to government for distribution, and they control the content—so incredibly powerful!
+
+Now think about billboards: the content side of billboards is a static image that you basically just design, so there's really no creativity per se, and a lot of the billboard ads are pretty bad, like really, really bad! And then the distribution side: for every billboard you want to deploy—say I want to put a new billboard up at the corner of Raymond Njoku and Awolowo Road—I have to go to Lagos State. So you need government's permission for every incremental asset to increase distribution, and it was just driving me nuts!
+
+Not as scalable.
+
+Yes, it's very... it's a special kind of person that runs billboard businesses, and so I didn't think I was that person.
+
+I want to ask a question. You mentioned that ARM was an investor in eMotion. When we hear investment now, we think about it has to be a tech product, but that was a billboard, but it was an investable business. I just want you to speak to that: the notion of there are a lot of businesses that can generate money/revenue from day one, there are lots of businesses that are investable and bankable, might not be VC and doesn't always have to be tech, and just how people can think about that from your experience.
+
+Yes, no, absolutely. And I think it's... how can I put this? So I think the reason that eMotion was so investable was because it was so cash-flow generative—that's the reason. Billboard businesses, it's not just eMotion, all of them—Continental, JCDecaux—they spit out a lot of cash.
+
+And ARM got a good deal. So my co-founder Demola and I, really smart guy, we were friends. When we pitched ARM, we knew we needed them to really get into Lagos, so they gave us a term sheet. And I love ARM, but I don't think anybody here would take that deal today!
+
+So they invested $800,000 back then in the billboard business, and they got I think 25% to 30% of the business—I can't remember the details now. But we had to pay back the $800,000 over four years in equal installments, AND they still had the 30% in the business!
+
+So these were very different times in the country. And don't feel sorry for us, like we did okay, we did fine. It was just the nature of the investor market back then, and also the business could carry it; the cash flow was there.
+
+So yes, I mean, I think tech is very sexy, right? It's very cool. The people that we admire and we look up to and we're in awe of and the press writes about are tech guys, right? Jeff Bezos and Zuckerberg and Elon and all of these guys. And that's good, that's important.
+
+And I think the other thing is that because of where Nigeria is, tech is relatively immune from energy deficits. So a lot of this youthful energy that you see here gravitates to it. But the truth is that there are incredible opportunities outside of it also, a lot of opportunities outside of it. And I think this is something that we miss out on sometimes.
+
+Makes sense. So let me talk about Konga. I don't know how quickly we'll be able to do it, but yeah, kind of like key milestones: from deciding you wanted to do it, the peak, deciding you wanted to leave. Let me see how we can get there.
+
+Okay, so ARM got an investor from Sweden called Kinnevik. They invested in ARM, and then they said, "ARM, show us the companies you've invested in," and we were their only portfolio company! So they introduced me to Kinnevik.
+
+I got along with the principal of Kinnevik, a guy called Henrik—we're friends still today, amazing guy. He went on to fund iROKO and a bunch of companies.
+
+And so as we went on, I told him, "Look, I'm getting bored with this billboard thing, I'm thinking about what to do."
+
+And he says, "Well, what do you have in mind?"
+
+And I said, "I'm thinking about doing e-commerce."
+
+And Henrik is this Swedish guy... you know, Swedish people are very direct, like Germans, and generally very good-looking people! But he's very direct, and he's like, "You want to build Amazon?" That's what he always said.
+
+I'm like, "Yeah, I want to build Amazon!"
+
+He's like, "Okay, come to Sweden."
+
+I went to Sweden, he showed me their own Amazon, because they had invested in one in Sweden, and they took me around the warehouse. And I gave a pitch. It's a very Kinnevik... it's a very strange venture capital fund. I remember like there were 10 people in the room, nine of them were women, two of them had their babies—that's nice! Yes, very odd.
+
+It was a very emotional pitch, I don't know why it was emotional for me. I remember I teared up while I was presenting it. I think somewhere in my mind, I realized the scale of the difficulty of what this thing was.
+
+And they were like, "So how much do you need?"
+
+And very naively, I said, "I want to start off with a million... give me $1 million and we'll start off."
+
+And they're like, "Go back to your hotel room." They booked me a room in Stockholm. I went back, and—I'm going to accelerate the story in a second—and then Henrik comes at night and he's like, "I'm going to give you your napkin moment." And so he literally brings out a napkin and writes "$3.5 million for 20%." And I asked for one! And he's like, "You need to go back and build Amazon."
+
+And so that's how that started.
+
+So you did that with an idea, you hadn't started at all?
+
+No, no, nothing, no!
+
+Interesting! What was it like building Konga to the peak, and then to the point where I guess it started struggling and you wanted to leave?
+
+I mean, it was... it just felt like a rollercoaster ride. Some things were easier than they are now, but it was generally very difficult, like it was just one operational... You have to understand like e-commerce, and that's why when you see people like Chowdeck, like what these guys are doing, if you haven't been in that industry, you can't really appreciate how hard what these guys are doing is! It's retail combined with payments combined with logistics.
+
+So the first thing we did is like, what category are we going to start with? And I was like, "You know, let's go to Marina and get some inventory."
+
+We went to Marina, went to this big baby goods distributor, this really nice lady, and she was like, "What are you trying to do?"
+
+"Like, we're trying to build Amazon."
+
+And shockingly, this woman had heard of Amazon! And she was like, "Okay, pick everything you want here, go and sell." Literally she said that! "And then when you finish selling, bring it back." She didn't even take a record! "And pay me later."
+
+So we took this inventory, built up the site, put the inventory on, got a billboard on Awolowo Road, and again, just like the billboard company, within like 5 minutes of the site going live, the first sale came through! It was a lady that had placed an order for Zaron lipstick, and she worked at Southern Sun Hotel.
+
+And so we all... you remember it? Yes! And so we all lined up, and the bike guy... I packaged the first order, we put it on the bike, and he drove off. And then like 30 minutes later, he drives back and he's like, "You got... it was the wrong color!"
+
+But anyway, it was a rollercoaster ride. You're buying bikes, you're learning as you go. At one point, we had a fleet of 200-300 motorcycles for Lagos alone. We were changing engine oil every day! I'm just giving you examples.
+
+And then, you know, you realize that the only way we're going to scale this thing is the drivers have to own the assets. So we created a program and told the drivers, "As you deliver, you earn the bike." And so within like six months, the delivery volumes had paid for all the bikes, the assets... the cars, the bikes were owned by our drivers, and then it scaled even more.
+
+I think at the very peak, at some point... so we created this Yakata sale, which was our top month of trading. We hit a billion Naira! And again, this is when a billion Naira was a billion Naira, all right!
+
+I mean, the thing grew fast, and I sent you this graph... you don't have to put it on, don't worry. But if you go back and you Google, just check Nigeria's GDP growth from 2010 to 2014. The story of Konga was not really about me or Shola Adekoya or some of the other people that started the business; it was the story of Nigeria!
+
+How do you mean?
+
+Because literally, the GDP was just like... for like 5 years, the economy was just growing, right? I mean, when we started Konga, for example, I think Nigeria's GDP in 2010 was about $200-$240 billion, maybe $270 billion. By 2015, that GDP had risen to $500 billion, right? I mean, we were just... it seemed like we were doing all the right things. There were some painful things we should have done then, like fuel subsidy removal—we should have removed it then, but we didn't do it.
+
+And then in 2015, the economy just went down, went South, and the Naira devalued. Now when I say the Naira devalued—and this should just tell you guys how amazing, how resilient you are—now the Naira went from I think about 140 to about 220, and that was devaluation versus now, right?
+
+1,000 and something!
+
+Yes! So that gives you a sense. But it was the story of Nigeria: people were buying things like you wouldn't believe it. And I loved doing deliveries, I loved being in the warehouse, I would take my kids to the warehouse, we would pick things, I'd take my son to do deliveries.
+
+And I remember once we got an order for a phone from Banana Island, and it was a very odd address. So I did this like once a month, everybody on the team actually, and I took the phone in my car and I went... I was driving around Banana Island trying to find who this person was, and it was a construction worker on a building site—not even like a senior engineer, like an entry-level construction worker had bought this phone! So that was Nigeria of 2010-2014, like the economy was just really picking up.
+
+And at the time when the economy was picking up and there was a lot of volume, was Konga profitable at any point in that?
+
+No, no way, no, no, no! I mean, I think we would have been if that trajectory had just continued for like another 3 years. E-commerce margins are so thin, like really thin! You sell an iPhone... an iPhone, by the way, is the worst thing you can sell, because the profit margin on an iPhone specifically is like 4%! So if you lose an iPhone in the process of delivery, you've lost the profit for 25 iPhones!
+
+How did you guys compete at the time, because your biggest competitor was Jumia?
+
+It was... I mean, should I be honest?
+
+Yes, please!
+
+Let me see... because of that experience, today I think about competition very differently, I'm more immune to it. But back then, it was a mix of... having a competitor is good, it focuses the attention of an entity. So all of us were... on the Jumia side too, we were just hyper-focused on being number one. Every quarterly report to my investors, they were comparing SimilarWeb data.
+
+So you were hyper-focused on competition?
+
+And we were responding to each other with price slashes, so gross margin was getting sacrificed, which was not good, it's not a good thing. It was scary, it is scary. But also I had this nationalistic... again, this love for Nigeria, that, "You know, we have to build this thing for ourselves, like we have to do this for ourselves!" And every time Nigerians bought on Jumia, on some level I'd be like, "Why don't you guys understand that we have to do this for ourselves?" But of course, consumers are consumers, they go for the cheapest price.
+
+Is there anything you would have done differently?
+
+Yes, I think so. So I think Nigeria is complex enough. So if you look at e-commerce, you're investing in inventory, you're investing in assets, you're investing in building a payment infrastructure... I don't think you can do all, it's too heavy. And that's why Alibaba, for example, the leading e-commerce player in China, they picked payments and focused on that. They don't own any delivery assets, don't own any inventory. On the part of America, because they have the postal system, they could do inventory and do all of that.
+
+But to be honest, I think I shouldn't have done any inventory. This should have been a marketplace, pure marketplace—no warehouses, no heavy assets. Where we should have focused should have been the payments and the logistics. So this was a big mistake.
+
+And to be honest, at the time, my investors were saying, "You can't turn off inventory, you have to keep going." And I think this is one of the things as founders you have to understand: your investors love you, they care about you, they want you to do well, but you're not perfectly aligned. Let's not make any mistakes about that; there is a divergence, there must be.
+
+And so I think that there is a point where you as the founder, you're the only one ultimately that can make certain decisions. And I've heard stories of nightmare founders who are just horrible to their investors—that's not what I'm talking about. But if you genuinely, selflessly believe that a path is right for your business, and it's not that you're doing something... you're not stealing from the company, you're not doing anything like that, I think there is a place for putting your foot down and saying, "This is what I'm going to do."
+
+Makes sense. Yeah, I have two questions. I want to leave Konga because our time is running out. But one, why did you leave? And then, why was the next thing that you did uLesson? It was completely different from the things that you'd done—DealDey, Konga, and then boom: education! So why did you leave Konga first, and then why education?
+
+So I mean, I think I'm starting to talk about this now, although to be honest, I'm not going to talk about it as much going forward. But no, I mean, I think Konga was very tragic, like it was. And in many ways, the same ways rather that the Nigerian story for the past 8 years has been somewhat tragic, because retail and countries are just... they're one and the same.
+
+So I knew a devaluation was coming. I had called the team together—at that time, Konga was about 900-1,000 people—and we had this big Friends & Family Day at Eko Hotel. But before our family members arrived, I wanted to give a presentation to the team, and I used this analogy from the Bible of the years of starvation and the years of abundance. And because we hadn't lifted fuel subsidy, I knew this was going to happen. So I put up this slide of starving cows, and I said, "Things are going to get bad, so we're going to have to get a lot smarter, make different decisions."
+
+And then I had a board meeting the next week, and the board members flew in from South Africa and the UK. Konga was a very important asset; you have to understand, from 2010 to 2014, we were growing faster than the equivalent business in the Middle East, we were growing faster than the equivalent business in India. So when we would do these CEO meetups with Naspers CEOs, the Flipkart CEOs would be there and the Souq CEOs would be there, literally like they would... we would have like special places.
+
+So anyway, I had this board meeting, and I invited this economist, brilliant guy called Bismarck Rewane, and I called him in—and he did it for free—and I told him to come tell the board... I wanted to be open with the board that I felt macroeconomic instability was coming and a devaluation was inevitable. And so Bismarck gave this presentation, and when he was done with the presentation, you saw the face of the board.
+
+I knew I had made a mistake. It's almost like I was punished for telling the truth. And so they all went back and immediately started re-evaluating their decisions.
+
+So basically, a few months later, the brutal honest truth—just to put it as succinctly and as briefly as possible—is both of my investors at the same time said they were not funding anymore. Wow. And to be honest, these were the same investors a year ago that were saying, "Stay with inventory!" And I remember one of them was even saying like, "Oh yeah, buy more vans, buy more vans! Don't give the vans to the bike riders. When the van breaks down, just leave it at the corner of the road, paint Konga on it, turn it into a billboard!"
+
+And the point is that this sentiment can change very quickly. And so I offered to buy the business from them. I said, "It's fine, if you want to leave Nigeria, you can leave, I want to buy it." And I'd arranged a bunch of people, some that you know, to buy it. And they both came back and said, "No, we don't sell businesses to entrepreneurs."
+
+And so I was left with this really tough place. Not many of you will know what it is to be the last person to switch off the light, right? It is a profoundly painful thing. And so I just told myself, "You know, I'm done."
+
+And so I moved to Cape Town. I had bought a home in Cape Town, and I went to Stellenbosch University and I became faculty. So every time bad things happen, I run back to universities! And so I was teaching, and it was just a tragic time, incredibly tragic, like Book of Job-level tragic: my mom died, my dad died, my marriage fell apart... like it was just like boom, boom, boom, boom!
+
+But through that teaching and just the joy I found in the educational environment, I thought to myself, "Let me just go back to this thing, there must be opportunity here."
+
+And that's the other thing I would tell you: this strength that has gotten me through all of this, and now Miva which is doing fantastic—like it's just the most amazing impact and business—the strength that got me through all of that, like all of you have it! You would be shocked by how strong you are, and you don't really know until you are tested.
+
+And so yeah, I came back. My dad passed away, and so I went to Jos to bury him—Jos is where we're from—and then when I got there and the weather is nice and the mosquitoes aren't plenty, I thought, "Why don't I just stay here and try and build this uLesson thing?"
+
+To be honest, if you ask me what my strength is, it's that I'm not embarrassed of failing in front of people. And I'm not embarrassed to be one moment eating in a Michelin-star restaurant in Mayfair, and in the next moment I'm ordering roundabout and shaki! I can be with CEOs one moment, global CEOs, and in just the next... I just don't process the world like that.
+
+And so it was easy going to just building uLesson and watching that thing grow to what it is right now, which is... I'm so proud of that business now.
+
+So you touched a little bit on uLesson, and then Miva. Which one do you want us... let me talk about Miva. You did uLesson for a while, and my assumption is in doing an edtech business, you realized there's something much bigger I can do in education. In as short as we can, why Miva, what is Miva, and you say it's doing well, how?
+
+So I mean, education is ultimately like a media business, Peace, right? So okay, just think about television or movies: the original way we consumed entertainment was you go to a theater and you see two actors on the stage, right? This is the old way. And then people started shooting movies, and then that actor could scale his performance across thousands of screens and make much more money, and it's all about using technology. So technology made these switches from theater to cinemas to VHS to Netflix.
+
+Now education is still caught in the theater world, so there's no leverage. So you may have an incredibly brilliant professor in the Department of Economics in Nsukka, but how do you make that professor available to everybody? And that's what we're doing now.
+
+If the regulatory environment, I'll also be honest with you, was in place then, we wouldn't have started uLesson, I would have gone straight to Miva. In many ways, uLesson prepared us for Miva. It took Miva seven months to attain the same revenue numbers that it took uLesson four years!
+
+Wow! What's the number?
+
+No, no, no, I had to try!
+
+And why is that? I mean, just look at the state of tertiary education, look at the state of all education, but especially tertiary. You've got 1.6 million odd people writing JAMB, qualified on some level at least on the SSCE level to enter university, and we have capacity for 600,000 in Nigeria! So it's an incredibly deep deficit. Like even if there were four Mivas competing, if there was a Jumia now, I wouldn't be as worried, it's much less scary.
+
+And besides, it's one of those industries that I think like, I welcome the competition, because the problem is so big! And that deficit, this 1.2 million is an annual deficit, I don't know if you're following me. So every year, and that deficit is only Nigeria!
+
+So we launched Miva, we've not advertised—I promise you, not a dime has been spent on acquisition outside of the borders of Nigeria—but the first semester, we had students from six countries; the second semester, we had students from I think 12 countries; the third semester, we're just in our third semester now, students from 19 countries! And many times, they're Nigerians in Hong Kong or Canada, but it's also Congolese students and Nigerian students.
+
+And you call them and you ask them, "Well, how did you hear about us?"
+
+"A friend in Nigeria told me about this."
+
+"And why are you doing this?"
+
+And they say, "Because in some instances, there's only like two universities in my country." Like Nigeria is actually okay, right? "And the two universities are full."
+
+So this is, for me, Miva is like... this is a story I can write for like 20 years, right? Like this thing is going to go through all kinds of technological waves. Right now, we're doing pre-recorded videos and our curriculum is based on documents and PDFs, but I can't wait for the day where we can offer medicine using virtual reality when the unit cost of these things have dropped, when we can use large language models—and we're starting to see it now. You guys probably all saw the OpenAI GPT-4o demo. I personally predicted that would come next year, and it's here already!
+
+I would tell you some of the things that I really take from this. Thank you so much, I think you shared a lot, even more than I expected to. The one thing that I really like is how you're always looking out for problems to solve, and how you're like, "I want to try this, I'm going to try it," almost like it doesn't matter how many times I failed, if I see something here, I would try it anyway. And you also said like not being afraid to fail in public or to feel like "I'm here now and I could make a mistake that takes me there." I think that's such a very admirable quality that everybody should have, because you kind of never know where the tide will get you, and you don't know if the next thing that you are doing will be the best thing. But if you stop because something happened in the past, then you would never get to that next thing. I think that's one of my very key takeaways.
+
+But also when you said that everybody here has the same strengths that you have and we might not always know, and maybe we don't always want the opportunity to find out, but it was such a good reminder that if you ever feel like this is the end of the road, we can remember we all have that same strength that we can tap into.
+
+But also on the business side: customer is king, take care of your customers, and focus on gross margins! Everyone is like, "Let me raise money," but I think it's just a really great way to re-emphasize you need to make money, and you need to be profitable, you need to make sure that the business is very sustainable. Those are like my key takeaways that are going to stay with me.
+
+I wanted to take questions, but time is fast spent. I think Sim is still around hanging around for a bit, so you can see him during the break. But in one minute, what is your final word to this audience of up to a thousand people here right now?
+
+Unpopular opinion... and this is not a political statement, please, it's not: the decisions that we're taking right now, the reason you know how I said I'm still optimistic, the decisions we're taking now as a country, whether it is floating the Naira—and I know, Jesus, I can just see Twitter going off right now—whether it's floating the Naira or removing the subsidy, we can argue about the manner and the tactics, but a lot of the things we're doing now, whether it's state police going through the National Assembly... the point I'm making is that these are decisions I personally believe Nigeria needs to take. Some of them we should have taken a long time ago, it wouldn't have been this bad.
+
+But basically, this pain that we're going through right now, I believe if I had to quantify, I think it's going to continue into next year a bit, but I think that these things are setting us up for a better future. Unpopular opinion, I know!
+
+There is no way, let me put it like this, forget about the personalities and the politics, there is no way we would have built the country we want without this pain. No way, we had to go through it one way or the other. We've been drunk on crude oil for 40 years; this is withdrawal symptoms now!
+
+So if you have a friend that is hooked on alcohol or hooked on drugs and you've seen them go through withdrawals, that is what is happening now. And I know many of us in this room are not responsible for the 40 years of addiction, some of us didn't even benefit from it—that's the part that is unjust. But I believe in this country. Again, forget the personalities, I think these decisions are important, and I remain optimistic.
+
+Thank you very much, ladies and gentlemen! Sim Shagaya!
