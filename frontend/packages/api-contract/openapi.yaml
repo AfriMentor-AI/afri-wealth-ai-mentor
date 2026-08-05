@@ -1,0 +1,526 @@
+openapi: 3.0.3
+info:
+  title: AfriMentor AI API
+  version: 0.1.0
+  description: >
+    Contract stub generated alongside src/index.ts (TypeScript). Every schema
+    here must have a matching TypeScript interface with identical field
+    names/types — see README.md for the reconciliation process. This is a
+    STUB: enough shape to unblock parallel frontend/backend work in Sprint 2,
+    not a final, fully-specified API. Open questions are called out inline
+    with `# TBD` comments and summarized in README.md.
+servers:
+  - url: https://api.afrimentor.example/v1
+    description: Placeholder — real base URL TBD with backend infra setup.
+
+# TBD with backend: auth scheme (JWT bearer vs. session cookie), applied
+# here as a placeholder bearerAuth so every endpoint at least documents
+# that auth is required, without committing to the exact mechanism yet.
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    User:
+      type: object
+      required: [id, createdAt, updatedAt]
+      properties:
+        id: { type: string }
+        email: { type: string, format: email }
+        phone: { type: string }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+
+    Profile:
+      type: object
+      required: [userId, name, businessName, location, sector, educationLevel, timeAvailablePerWeek, constraints, personaId, createdAt, updatedAt]
+      properties:
+        userId: { type: string }
+        name: { type: string }
+        businessName: { type: string }
+        location: { type: string }
+        sector: { type: string }
+        educationLevel: { type: string }
+        timeAvailablePerWeek: { type: string }
+        constraints: { type: array, items: { type: string } }
+        personaId: { type: string, nullable: true }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+
+    Goal:
+      type: object
+      required: [id, userId, title, progressPct, createdAt, updatedAt]
+      properties:
+        id: { type: string }
+        userId: { type: string }
+        title: { type: string }
+        progressPct: { type: integer, minimum: 0, maximum: 100, readOnly: true }
+        deadline: { type: string, format: date }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+
+    MilestoneStatus:
+      type: string
+      enum: [done, in_progress, blocked, upcoming]
+
+    Milestone:
+      type: object
+      required: [id, goalId, title, status, order, createdAt, updatedAt]
+      properties:
+        id: { type: string }
+        goalId: { type: string }
+        title: { type: string }
+        status: { $ref: "#/components/schemas/MilestoneStatus" }
+        order: { type: integer }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+
+    CommitmentStatus:
+      type: string
+      enum: [done, in_progress, blocked]
+
+    Commitment:
+      type: object
+      required: [id, goalId, userId, title, status, createdAt, updatedAt]
+      properties:
+        id: { type: string }
+        goalId: { type: string }
+        userId: { type: string }
+        title: { type: string }
+        status: { $ref: "#/components/schemas/CommitmentStatus" }
+        mentorHelpNote: { type: string }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+
+    ChatSender:
+      type: string
+      enum: [user, mentor]
+
+    ChatMessage:
+      type: object
+      required: [id, userId, sender, text, createdAt]
+      properties:
+        id: { type: string }
+        userId: { type: string }
+        personaId: { type: string }
+        sender: { $ref: "#/components/schemas/ChatSender" }
+        text: { type: string }
+        sourceCitation: { type: string }
+        createdAt: { type: string, format: date-time }
+
+    Persona:
+      type: object
+      required: [id, name, tagline]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        tagline: { type: string }
+        archetypeId: { type: string }
+
+    PersonaWithRecommendation:
+      allOf:
+        - $ref: "#/components/schemas/Persona"
+        - type: object
+          required: [isRecommended]
+          properties:
+            isRecommended: { type: boolean }
+
+    InsightItem:
+      type: object
+      required: [id, title, summary, category, durationMinutes, isAudio, createdAt]
+      properties:
+        id: { type: string }
+        title: { type: string }
+        summary: { type: string }
+        category: { type: string }
+        durationMinutes: { type: integer }
+        isAudio: { type: boolean }
+        mediaUrl: { type: string, format: uri }
+        sourceCurriculum: { type: string }
+        createdAt: { type: string, format: date-time }
+
+    FeedbackSurvey:
+      type: object
+      required: [id, userId, npsScore, submittedAt]
+      properties:
+        id: { type: string }
+        userId: { type: string }
+        npsScore: { type: integer, minimum: 1, maximum: 10 }
+        comment: { type: string }
+        context: { type: string }
+        submittedAt: { type: string, format: date-time }
+
+    DailyActionStatus:
+      type: string
+      enum: [pending, in_progress, done, needs_help]
+
+    DailyAction:
+      type: object
+      required: [id, userId, goalId, title, description, estimatedMinutes, category, status, date, createdAt, updatedAt]
+      properties:
+        id: { type: string }
+        userId: { type: string }
+        goalId: { type: string }
+        title: { type: string }
+        description: { type: string }
+        estimatedMinutes: { type: integer }
+        category: { type: string }
+        status: { $ref: "#/components/schemas/DailyActionStatus" }
+        date: { type: string, format: date }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+
+    StreakStat:
+      type: object
+      required: [userId, currentStreakDays, longestStreakDays, actionsCompletedTotal, weeklyActivity, asOf]
+      properties:
+        userId: { type: string }
+        currentStreakDays: { type: integer }
+        longestStreakDays: { type: integer }
+        actionsCompletedTotal: { type: integer }
+        weeklyActivity:
+          type: array
+          items: { type: integer }
+          minItems: 7
+          maxItems: 7
+        asOf: { type: string, format: date-time }
+
+    Badge:
+      type: object
+      required: [id, code, label]
+      properties:
+        id: { type: string }
+        code: { type: string }
+        label: { type: string }
+        description: { type: string }
+        iconName: { type: string }
+
+    BadgeWithEarnedStatus:
+      allOf:
+        - $ref: "#/components/schemas/Badge"
+        - type: object
+          required: [earned, earnedAt]
+          properties:
+            earned: { type: boolean }
+            earnedAt: { type: string, format: date-time, nullable: true }
+
+    # TBD with backend: standard error envelope shape. Placeholder below.
+    Error:
+      type: object
+      required: [message]
+      properties:
+        message: { type: string }
+        code: { type: string }
+
+security:
+  - bearerAuth: []
+
+paths:
+  /profile:
+    get:
+      summary: Get the current user's profile
+      operationId: getMyProfile
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Profile" }
+    put:
+      summary: Create or update the current user's profile (Intake flow)
+      operationId: upsertMyProfile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/Profile" }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Profile" }
+
+  /personas:
+    get:
+      summary: List personas, with recommendation computed against the caller's profile sector
+      operationId: listPersonas
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/PersonaWithRecommendation" }
+
+  /goals:
+    get:
+      summary: List the current user's goals
+      operationId: listGoals
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Goal" }
+    post:
+      summary: Create a goal
+      operationId: createGoal
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/Goal" }
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Goal" }
+
+  /goals/{goalId}:
+    get:
+      summary: Get a goal by id
+      operationId: getGoal
+      parameters:
+        - name: goalId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Goal" }
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+
+  /goals/{goalId}/milestones:
+    get:
+      summary: List milestones for a goal, ordered by `order`
+      operationId: listMilestonesForGoal
+      parameters:
+        - name: goalId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Milestone" }
+
+  /goals/{goalId}/commitments:
+    get:
+      summary: List commitments tagged against a goal
+      operationId: listCommitmentsForGoal
+      parameters:
+        - name: goalId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Commitment" }
+
+  /commitments/{commitmentId}:
+    patch:
+      summary: Update a commitment's status
+      operationId: updateCommitment
+      parameters:
+        - name: commitmentId
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status: { $ref: "#/components/schemas/CommitmentStatus" }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Commitment" }
+
+  /chat/messages:
+    get:
+      summary: List the current user's chat history with Chioma
+      operationId: listChatMessages
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/ChatMessage" }
+    post:
+      summary: Send a chat message and receive the persona's reply
+      operationId: sendChatMessage
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [text]
+              properties:
+                text: { type: string }
+      responses:
+        "200":
+          description: >
+            OK — TBD with backend whether this returns just the mentor's
+            reply message, or both the persisted user message + reply.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ChatMessage" }
+
+  /insights:
+    get:
+      summary: List insight library items, with per-user favorite status
+      operationId: listInsights
+      parameters:
+        - name: category
+          in: query
+          schema: { type: string }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  allOf:
+                    - $ref: "#/components/schemas/InsightItem"
+                    - type: object
+                      properties:
+                        isFavorite: { type: boolean }
+
+  /insights/{insightId}/favorite:
+    put:
+      summary: Favorite an insight
+      operationId: favoriteInsight
+      parameters:
+        - name: insightId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "204":
+          description: No content
+    delete:
+      summary: Unfavorite an insight
+      operationId: unfavoriteInsight
+      parameters:
+        - name: insightId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "204":
+          description: No content
+
+  /feedback:
+    post:
+      summary: Submit a feedback survey response
+      operationId: submitFeedback
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [npsScore]
+              properties:
+                npsScore: { type: integer, minimum: 1, maximum: 10 }
+                comment: { type: string }
+                context: { type: string }
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/FeedbackSurvey" }
+
+  /daily-action:
+    get:
+      summary: Get today's daily action for the current user
+      operationId: getTodaysDailyAction
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/DailyAction" }
+
+  /daily-action/{dailyActionId}:
+    patch:
+      summary: Update a daily action's status
+      operationId: updateDailyAction
+      parameters:
+        - name: dailyActionId
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status: { $ref: "#/components/schemas/DailyActionStatus" }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/DailyAction" }
+
+  /streak:
+    get:
+      summary: Get the current user's streak stats for the Progress Board
+      operationId: getMyStreak
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/StreakStat" }
+
+  /badges:
+    get:
+      summary: List all badges with the current user's earned status
+      operationId: listBadges
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/BadgeWithEarnedStatus" }

@@ -1,0 +1,38 @@
+# research/configs/dataset.yaml
+# Dataset versioning config — consumed by DVC pipeline and all experiment configs.
+# Change random_seed to create a new reproducible split version.
+
+schema_version: "1.0"
+
+split:
+  train_ratio: 0.80
+  val_ratio: 0.10
+  test_ratio: 0.10
+  random_seed: 42
+  stratify_by: ["persona_slug", "sector", "country"]
+
+# Dataset format specs
+formats:
+  sft_conversations:
+    description: "Supervised fine-tuning data — (system, user, assistant) triples"
+    fields: [conversation_id, persona_slug, sector, country, messages, quality_score]
+    min_quality_score: 0.7
+
+  dpo_pairs:
+    description: "DPO contrastive pairs — (prompt, chosen, rejected)"
+    fields: [pair_id, persona_slug, prompt, chosen, rejected, rejection_reason]
+    rejection_reasons:
+      - generic_response       # no Chioma voice
+      - culturally_misaligned  # Western framework imposed without adaptation
+      - dependency_creating    # gives answer without teaching framework
+      - factually_incorrect    # wrong financial advice
+
+  rlhf_preferences:
+    description: "RLHF human preference annotations — (prompt, response_a, response_b, preferred)"
+    fields: [annotation_id, persona_slug, prompt, response_a, response_b, preferred, annotator_id, dimensions]
+    annotation_dimensions:
+      - persona_adherence
+      - cultural_fluency
+      - anti_dependency
+      - financial_accuracy
+      - urgency

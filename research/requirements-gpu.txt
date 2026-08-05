@@ -1,0 +1,13 @@
+# AfriMentor AI — GPU fine-tuning dependencies (card D1.4)
+# Install ONLY on ephemeral cloud GPU nodes (RunPod / AWS EC2 g5.xlarge).
+# Do NOT install locally — these require CUDA.
+# Usage: pip install -r requirements.txt -r requirements-gpu.txt
+
+# ── Parameter-efficient fine-tuning (Condition 2 & 3) ────────────────────────
+peft==0.14.0            # LoRA / QLoRA adapter training
+bitsandbytes==0.45.0    # 4-bit / 8-bit quantization (QLoRA)
+trl==0.13.0             # SFTTrainer, DPOTrainer, PPOTrainer (Condition 4)
+
+# ── Training infrastructure ───────────────────────────────────────────────────
+accelerate==1.2.1       # multi-GPU / mixed-precision training
+torch==2.5.1            # PyTorch (CUDA build installed by RunPod/EC2 AMI)

@@ -1,0 +1,163 @@
+@import url("https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;600;700;800&family=Inter:wght@400;600&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap");
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Heritage-Forward — verbatim from the Stitch export's DESIGN.md */
+:root,
+[data-theme="heritage"] {
+  --surface: #fcf9f3;
+  --surface-dim: #dcdad4;
+  --surface-bright: #fcf9f3;
+  --surface-container-lowest: #ffffff;
+  --surface-container-low: #f6f3ed;
+  --surface-container: #f0eee8;
+  --surface-container-high: #ebe8e2;
+  --surface-container-highest: #e5e2dc;
+  --on-surface: #1c1c18;
+  --on-surface-variant: #504536;
+  --inverse-surface: #31312d;
+  --inverse-on-surface: #f3f0ea;
+  --outline: #827564;
+  --outline-variant: #d4c4b0;
+  --surface-tint: #7e5700;
+  --primary: #7e5700;
+  --on-primary: #ffffff;
+  --primary-container: #c8922a;
+  --on-primary-container: #462f00;
+  --inverse-primary: #f8bc51;
+  --secondary: #1b6d24;
+  --on-secondary: #ffffff;
+  --secondary-container: #a0f399;
+  --on-secondary-container: #217128;
+  --tertiary: #5f5e5e;
+  --on-tertiary: #ffffff;
+  --tertiary-container: #9d9b9b;
+  --on-tertiary-container: #343333;
+  --error: #ba1a1a;
+  --on-error: #ffffff;
+  --error-container: #ffdad6;
+  --on-error-container: #93000a;
+  --primary-fixed: #ffdeab;
+  --primary-fixed-dim: #f8bc51;
+  --on-primary-fixed: #281900;
+  --on-primary-fixed-variant: #5f4100;
+  --secondary-fixed: #a3f69c;
+  --secondary-fixed-dim: #88d982;
+  --on-secondary-fixed: #002204;
+  --on-secondary-fixed-variant: #005312;
+  --background: #fcf9f3;
+  --on-background: #1c1c18;
+  --surface-variant: #e5e2dc;
+}
+
+/* Nocturnal Heritage — NOT present in the Stitch export (its dark: variants
+   reused the light tokens as-is). This is our own derivation, keeping the
+   same hue relationships, until real dark tokens come from design. Replace
+   this block wholesale once DESIGN.md ships a dark palette. */
+[data-theme="nocturnal"] {
+  --surface: #17140f;
+  --surface-dim: #17140f;
+  --surface-bright: #262019;
+  --surface-container-lowest: #100e0a;
+  --surface-container-low: #1f1b14;
+  --surface-container: #231e17;
+  --surface-container-high: #2e281f;
+  --surface-container-highest: #3a3226;
+  --on-surface: #f3f0ea;
+  --on-surface-variant: #d4c4b0;
+  --inverse-surface: #f3f0ea;
+  --inverse-on-surface: #31312d;
+  --outline: #9c8f7c;
+  --outline-variant: #504536;
+  --surface-tint: #f8bc51;
+  --primary: #f8bc51;
+  --on-primary: #462f00;
+  --primary-container: #c8922a;
+  --on-primary-container: #462f00;
+  --inverse-primary: #7e5700;
+  --secondary: #88d982;
+  --on-secondary: #00390a;
+  --secondary-container: #217128;
+  --on-secondary-container: #a3f69c;
+  --tertiary: #c8c6c5;
+  --on-tertiary: #313030;
+  --tertiary-container: #474646;
+  --on-tertiary-container: #e5e2e1;
+  --error: #ffb4ab;
+  --on-error: #690005;
+  --error-container: #93000a;
+  --on-error-container: #ffdad6;
+  --primary-fixed: #ffdeab;
+  --primary-fixed-dim: #f8bc51;
+  --on-primary-fixed: #281900;
+  --on-primary-fixed-variant: #5f4100;
+  --secondary-fixed: #a3f69c;
+  --secondary-fixed-dim: #88d982;
+  --on-secondary-fixed: #002204;
+  --on-secondary-fixed-variant: #005312;
+  --background: #17140f;
+  --on-background: #f3f0ea;
+  --surface-variant: #3a3226;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  background-color: var(--background);
+  color: var(--on-background);
+  font-family: "Inter", system-ui, sans-serif;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.material-symbols-outlined {
+  font-variation-settings: "FILL" 0, "wght" 400, "GRAD" 0, "opsz" 24;
+  font-size: 24px;
+  line-height: 1;
+  user-select: none;
+}
+
+/* Per DESIGN.md: pill buttons use a "pressed" 3D shadow that flattens on tap */
+.button-shadow {
+  box-shadow: 0 4px 0 0 var(--on-primary-fixed-variant);
+}
+.button-shadow:active {
+  box-shadow: 0 0 0 0 var(--on-primary-fixed-variant);
+  transform: translateY(4px);
+}
+
+/* WCAG AA: visible focus ring everywhere, never suppressed */
+:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+/* Minimum 44x44px tap targets per DESIGN.md components spec */
+.tap-target {
+  min-height: 44px;
+  min-width: 44px;
+}
+
+/* Adinkra/Sankofa line-art treated as a background shape, 15% opacity per DESIGN.md */
+.sankofa-bg {
+  position: absolute;
+  opacity: 0.04;
+  pointer-events: none;
+  z-index: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}

@@ -1,37 +1,55 @@
-"""Chat Orchestration Service — AfriMentor AI microservice stub.
+"""Chat Orchestration Service — AfriMentor AI (card D1.1).
 
-Generated for card O1.2. Real implementation lands in later sprints.
-Health endpoint is live so docker-compose health checks pass.
+Orchestrates a mentor turn: persona system-prompt + RAG context + message history
+→ LLM reply. Emits `commitment.tag_suggested` when the model proposes tagging a
+message as a user commitment (the 'Tag it' interaction on the Chat screen).
+
+See docs/adr/0001-microservices-architecture.md and docs/adr/0002-base-llm-selection.md.
 """
-import os
+from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 
-SERVICE_NAME = "chat-orchestration-service"
-SERVICE_VERSION = "0.1.0"
+from .config import get_settings
+from .database import init_db
+from .routers.chat import router as chat_router
+
+settings = get_settings()
+
+SERVICE_NAME = settings.service_name
+SERVICE_VERSION = "1.0.0"
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    init_db()  # dev/test bootstrap; prod uses Alembic migrations
+    yield
+
 
 app = FastAPI(
     title="AfriMentor AI — Chat Orchestration Service",
     version=SERVICE_VERSION,
-    description="Stub service. See docs/adr/0001-microservices-architecture.md",
+    description=(
+        "Orchestrates mentor turns: persona + RAG context + history → LLM reply. "
+        "Emits commitment.tag_suggested domain events."
+    ),
+    lifespan=lifespan,
 )
+
+app.include_router(chat_router)
 
 
 @app.get("/health", tags=["meta"])
 def health() -> dict:
-    """Liveness/readiness probe used by docker-compose and the gateway."""
     return {
         "status": "healthy",
         "service": SERVICE_NAME,
         "version": SERVICE_VERSION,
-        "env": os.getenv("APP_ENV", "dev"),
+        "env": settings.env,
+        "llm_model": settings.llm_model,
     }
 
 
 @app.get("/", tags=["meta"])
 def root() -> dict:
-    return {
-        "service": SERVICE_NAME,
-        "message": "Chat Orchestration Service online",
-        "docs": "/docs",
-    }
+    return {"service": SERVICE_NAME, "message": "Chat Orchestration Service online", "docs": "/docs"}  # noqa: E501

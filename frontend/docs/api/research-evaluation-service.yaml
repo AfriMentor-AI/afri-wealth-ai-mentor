@@ -1,0 +1,118 @@
+openapi: 3.1.0
+info:
+  title: "AfriMentor AI \u2014 Research & Evaluation Service"
+  version: 1.0.0
+  description: Session auditing, quality scoring, and drift detection for the research console.
+servers:
+- url: http://localhost:8000
+  description: via API gateway
+- url: http://localhost:8010
+  description: research-evaluation-service direct (dev)
+security:
+- bearerAuth: []
+tags:
+- name: research
+- name: meta
+paths:
+  /health:
+    get:
+      tags:
+      - meta
+      summary: Liveness/readiness probe
+      security: []
+      responses:
+        '200':
+          description: healthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Health'
+  /api/v1/research/audits:
+    get:
+      tags:
+      - research
+      summary: List session audits
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                type: object
+        '401':
+          description: unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      description: 'TODO: request/response bodies finalised in later sprint.'
+    post:
+      tags:
+      - research
+      summary: Trigger an audit
+      responses:
+        '201':
+          description: success
+          content:
+            application/json:
+              schema:
+                type: object
+        '401':
+          description: unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      description: 'TODO: request/response bodies finalised in later sprint.'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+  /api/v1/research/drift:
+    get:
+      tags:
+      - research
+      summary: Get drift-detection results
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                type: object
+        '401':
+          description: unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      description: 'TODO: request/response bodies finalised in later sprint.'
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    Health:
+      type: object
+      properties:
+        status:
+          type: string
+          example: healthy
+        service:
+          type: string
+        version:
+          type: string
+      required:
+      - status
+      - service
+    Error:
+      type: object
+      properties:
+        detail:
+          type: string
+      required:
+      - detail
