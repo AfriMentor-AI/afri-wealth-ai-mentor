@@ -19,6 +19,8 @@ class IngestRequest(BaseModel):
     source_origin: DocumentOrigin = DocumentOrigin.general
     figure_id: Optional[str] = Field(None, max_length=100)
     market: Optional[str] = Field(None, max_length=10)
+    sector: Optional[str] = Field(None, max_length=100)
+    content_type: Optional[str] = Field(None, max_length=50)
     language: str = Field("en", max_length=10)
 
 class DocumentResponse(BaseModel):
@@ -90,6 +92,8 @@ def ingest(
             figure_id=body.figure_id,
             market=body.market,
             language=body.language,
+            sector=body.sector,
+            content_type=body.content_type,
             chroma_collection=collection,
         )
         doc.chunk_count = chunk_count

@@ -5,31 +5,18 @@ API_URL      = os.getenv("RAG_API_URL", "http://localhost:8005")
 USER_ID      = "system-ingest-001"
 CORPUS_JSONL = "corpus/data/corpus.jsonl"
 
-def map_source_origin(meta):
-    sector = meta.get("primary_sector", "").lower()
-    content_type = meta.get("content_type", "").lower()
-    if "financial literacy" in sector:
-        return "financial_literacy"
-    if "trade" in sector or "retail" in sector or "wholesale" in sector:
-        return "trade_guide"
-    if "vocational" in sector or "education" in sector:
-        return "vocational"
-    return "entrepreneur_corpus"
-
 def ingest_record(record):
     meta = record["metadata"]
     payload = {
         "filename":      record["doc_id"] + ".txt",
         "text":          record["content"],
-        "source_origin": map_source_origin(meta),
+        "source_origin": meta.get("content_type", "video_transcript"),
         "figure_id":     meta.get("figure_id") or None,
         "market":        meta.get("country_code", "general"),
-        "sector":        meta.get("primary_sector") or None,
-        "content_type":  meta.get("content_type") or None,
         "language":      meta.get("language", "en"),
     }
     data = json.dumps(payload).encode("utf-8")
-    req = urllib.request.Request(
+    req  = urllib.request.Request(
         API_URL + "/api/v1/rag/documents",
         data=data,
         headers={"Content-Type": "application/json", "X-User-Id": USER_ID},
@@ -49,28 +36,34 @@ def main():
     if not os.path.exists(CORPUS_JSONL):
         print("ERROR: " + CORPUS_JSONL + " not found.")
         sys.exit(1)
+
     with open(CORPUS_JSONL, "r", encoding="utf-8") as f:
         records = [json.loads(line) for line in f if line.strip()]
+
     print("AfriMentor RAG Corpus Ingestion")
     print("Target:  " + API_URL)
     print("Records: " + str(len(records)))
     print()
+
     success, failed = 0, 0
     for record in records:
         meta = record["metadata"]
-        src = map_source_origin(meta)
         print("Ingesting: " + record["doc_id"])
-        print("  Speaker:       " + meta.get("speaker", "-"))
-        print("  Country:       " + meta.get("country", "-"))
-        print("  Sector:        " + meta.get("primary_sector", "-"))
-        print("  source_origin: " + src)
+        print("  Speaker: " + meta.get("speaker", "-"))
+        print("  Country: " + meta.get("country", "-"))
+        print("  Sector:  " + meta.get("primary_sector", "-"))
+
         result = ingest_record(record)
         if result.get("status") == "ready":
             print("  OK — chunks=" + str(result["chunk_count"]) + "  id=" + result["id"])
             success += 1
+        elif result.get("status") == "failed":
+            print("  FAILED — " + str(result.get("error_message")))
+            failed += 1
         else:
             failed += 1
         print()
+
     print("=" * 50)
     print("Done: " + str(success) + " ingested / " + str(failed) + " failed / " + str(len(records)) + " total")
     sys.exit(0 if success == len(records) else 1)
