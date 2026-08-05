@@ -1,0 +1,145 @@
+Hi guys, it's The Big Tech Show, and my name is Benjamin Dada. On today's episode, I'm going to be speaking with the founder and Group Managing Director of Interswitch, Mitchell Elegbe. We're going to be talking about Interswitch's origin story, its evolution, and the big questions on everyone's mind.
+
+Hi guys, it's The Big Tech Show, and I'm super excited to have the founder and Group Managing Director of Interswitch here with me. Hi, Mitchell!
+
+Hello, how are you?
+
+It's nice to have you here. So I think my biggest question for you is: what's the origin story of Interswitch? Because everybody has told their own, right, but I have the founder here, so why don't I just get it live?
+
+Okay. I think Interswitch for me was as a young man, three years after NYSC service, looking at the country, the continent, and having the opportunity to experience payments in the UK especially. I felt that perhaps Nigeria deserved better. So I started thinking about this whole idea of retail payments.
+
+I'm an engineer by training—never done banking, never done payments. But I could tell by going to the bank then, studying the queue, getting tally numbers, queuing up to get cash, going home, taking the risk of armed robbery... I just thought there was a better way to do this. And that is where the idea to start Interswitch came from.
+
+So how did you proceed from the idea?
+
+I think the first thing was I tried to do a business case. I remember our very first meeting at a house in Ikoyi, where we tried to engage with some of the bank CEOs, and the late Hakeem Belo-Osagie tore my business case to pieces!
+
+So I went back to the drawing board, and this time around, I got Accenture to work with us to really develop this. Accenture at that time did a lot of work with the banks, so they knew what the banks were looking for, and the ideas I had were just a perfect match.
+
+A few months down the line, having spoken to some bank CEOs and been invited to one or two management retreats, the idea for Interswitch really started.
+
+Funding was the big issue. Unlike today, where there are 8,000 venture capitalists looking at opportunities on the continent, then I didn't know of any—I didn't even know what they called venture capital then!
+
+So what we did was... luckily for us, there was a scheme by the Central Bank called the SMEEIS scheme—the Small and Medium Enterprises Equity Investment Scheme—where the Central Bank had said that banks should put a percentage of their profit aside to invest in startups. So we tapped into that fund.
+
+We needed, based on the business plan, 450 million Naira then, but we got 200 million Naira because the scheme limited investment to 200 million. So that's how we started, and the plan was for the company to be profitable in four years. One year later, we were profitable! And having been profitable in our second year, we just had to sustain that growth. The company has seen 18 years of profitable growth since then.
+
+How do you see your role evolving, or how has it evolved from all the years when you started going about with a business plan to now? What was your day-to-day like?
+
+Initially, I was the CEO and worker—Chief Sales Officer, planner. So it was a lot of selling, going from bank to bank trying to convince them to get onto the switch.
+
+Once we started getting some traction, my role changed slightly. It became more of putting structures and processes in place. Don't forget, at the time we started, there was no template, nobody to learn from really. So everything we knew we had to do, we made lots of mistakes, as expected. We were quite young then, none of us had any serious work experience—it was just a group of young people with the passion to change the environment we were in, believing that we deserved better. And that was just it.
+
+Today, many years down the line, my role has evolved. It keeps evolving. I've had to move from being an entrepreneur to a manager of business, and so on and so forth.
+
+Things that you tend to take for granted at the early stages—processes—are now required. How you make decisions has to be a bit more organized, and so on. For me, the role I'm in now, I've moved to the group. We have CEOs who run line businesses—we have about five of them, creating the sixth one now—they run the business from day to day. So I focus more on strategy: what are the sectors where we have to play, what are those areas to focus on, and how to win in those particular areas. So the role has really changed over the years.
+
+Interswitch is associated with Nigeria's payment ecosystem, especially card issuance. How did the company grow to these heights?
+
+A few things to clarify: Interswitch is not just a payment card company. Interswitch deals with a lot of card businesses—Visa, Mastercard, American Express—and another one of the card businesses ourselves: we have a card business called Verve, which is a domestic card scheme.
+
+When Interswitch started, we just wanted to build infrastructure. The thinking was that once we build infrastructure, people will use the infrastructure. It's like you're in a community where there are no roads, but you know people need to move goods from one place to the other. So the thinking there was: build the roads, people move the goods.
+
+We built the infrastructure connecting all the banks, but goods were not being moved! So we got into developing products. One of the products we developed was Verve, and the reason for that was that we noticed at that point in time... if you looked at the number of bank accounts compared to the number of accounts that had cards, it didn't make sense.
+
+When we looked further, we realized that banks found it too expensive to give the traditional international cards—Mastercard, Visa—to all their customers. So it was just for an elite population of bank customers. We felt the way to solve that problem was to create what I call a "cheap and cheerful" card that met the needs of the market.
+
+Just to give you some perspective: at that time—I don't know what it is now—less than 5% of Nigerians traveled abroad, right? So in our research, it was a domestic economy that needed to be taken care of. And so we felt that 95% was big enough for us to create a domestic card scheme for.
+
+So I went ahead and created the Verve card scheme, which is charged in local currency, designed to work within the environment, and so on and so forth.
+
+Of course, having built infrastructure, we have a "live-and-let-live" strategy whereby we allow competitors to use what we have built. So we are currently a major processor for Mastercard—actually, I think the biggest processor in the market—and if you've been following the news, Visa has also invested in Interswitch.
+
+To grow the ecosystem, there has to be this idea of collaboration in different forms. That is why I was quick to point out the fact that Interswitch is an infrastructure provider, and Verve is just one of the card schemes that runs on that infrastructure. Visa and Mastercard domestically, when they are used, also run on the infrastructure.
+
+How have you managed to balance both infrastructure and product? Do you feel like at some point you're going to fast-track infrastructure and slow down product, or move products first?
+
+Interswitch plays a very unique role, and that unique role creates some responsibility on us. It's not just about the commercial value we get from it; there's this idea of growth for the ecosystem. Everybody wins if the ecosystem grows bigger.
+
+With good infrastructure, sometimes we build the infrastructure and then go into the products and solutions. But my understanding is that there's no one company that can build all the products that the market needs.
+
+You'll be very shocked when you look at the Nigerian environment. If you look at key customer segments, even among the student population, you'll be very surprised at the differences you see. A product you built for students in one university in the South will not work for the same students in the North. So you begin to see that it's not possible for one company to build all the products that are required.
+
+And the same thing when you even ask two people to build the same product for the same customer: they go about it in two different ways. Looking at that, therefore, and recognizing that Interswitch cannot be everywhere, we took a view that drives that "live-and-let-live" strategy.
+
+We'll build a highway; everybody should use it. If Verve is going to use the Interswitch highway, they will pay, just the way Mastercard and Visa will pay. We don't discriminate in fees.
+
+Now, one of the decisions we take from time to time is: where we start a product, and competition starts in that same product space, we always have to ask ourselves the question: Do we want to push it fully, or is it time to retreat and let competition win in that space because there are other things to be done?
+
+If you have the bigger concept that the ultimate goal is we want to impact where we operate from, and not one person can do it... sometimes there's this tension when you start something up. But young guys in Nigeria are smart. Once they see an opportunity, they will easily jump at it.
+
+So sometimes what we do, we just seed it. For us, the infrastructure play will always be our bread and butter. If there are clear gaps, we'll go in. Where nobody was bold enough to go in, we went in. But the ultimate goal is to make our competitors—our partners, as I like to call them—feel comfortable working with us, because that is how we win.
+
+How have you managed to attract the right talent and retain them? Some people stay at Interswitch for many years, which is rare in tech today.
+
+If you asked me this question five years ago, I would just tell you how we do it. But to be honest with you, these days, it's evolving.
+
+This morning, one of my directors sent me something about talent competition. Listen: Google is here, everybody is in Nigeria. Technology means you don't have to be physically where the technology is being used. Nigerians are smart, so you're going to have people working in Nigeria but working for companies abroad that are paying them in dollars.
+
+Once they pay them in dollars, that dollar converts into significant local currency. People ask: "How are you going to compete?" It's not just an Interswitch problem; when I look at this problem, I look at it from the point of view of the whole ecosystem.
+
+Another factor is a lot of our youth want to live abroad—they want to go to Canada, the US, the UK. So we're dealing with that migration as well, and that has nothing to do with whether you're running a good company or not.
+
+The way I try to deal with it at Interswitch: all our staff have shares in the company. The promise is: grow the business, create value for shareholders, you're a shareholder yourself, you'll be better for that value. At the same time, create a compelling purpose within your organization that resonates with your staff.
+
+When we started Interswitch, we didn't pay a lot of money. If you start with 200 million Naira, how much can you pay? But we weren't losing staff then. So I think the key message for me is to take Interswitch back to that point where people remember the purpose why we are doing these things—not just for the money. The money will come; if you solve problems, people reward you. But at the same time, people want to do things where they believe that they are here because there's a higher order of things, a calling that they're chasing.
+
+You can't take away the issue of money, so I am actually thinking of how to pay good money, but I also recognize that paying good money alone does not solve the problem. There are other things that you need to look at as well.
+
+In listening to your responses, I see you're very big on solving problems that human beings face. Why is that?
+
+A lot of reasons, and sometimes it's never quite clear where this comes from. I do a fair amount of travel across Africa, and I see the way people live. What comes to my head all the time is: "We deserve better."
+
+What is that "better"? "Better" is not going to come if you don't do something about it.
+
+So we took payments as one area where we felt: let me find out the pains. I'll give you one example. You see, what people don't realize is that to move forward, sometimes we have to go back.
+
+This whole innovation... everybody was talking about "Cashless Nigeria" many years ago. I remember at a conference, I spoke about the fact that Nigerians don't need to leave cash; they just want cash just in time.
+
+When you look at the people on the streets, their biggest problem was not how to move cash. How many Nigerians can afford 20,000 Naira a day in their pockets? So you can't be telling me how to move cash is a problem when I don't even have 20,000 Naira!
+
+That idea of moving cash was not the problem of the man on the street; it was the problem of institutions that produce cash—the Central Bank, the commercial banks. So I thought, maybe for once, focus on the people on the street! Find out what their issue is.
+
+When you go close to them, they just want their cash just in time. And the technology that gives that is ATMs. So we had to go back to ATMs to create that affinity, so people can take the cash just when they need it, and the amount is such that you don't have to take too much cash and be robbed on the way home.
+
+That, to me, was focusing on people. One thing I learned is that if you want to solve a problem, you have to solve the problem for individuals. Understand individuals and deal with it.
+
+Coming to Interswitch, our focus has always been: what are the friction points that people in society face?
+
+I bring that up to our staff also. When you work at Interswitch, will you leave Interswitch regretting the day you worked here, or happy that you worked here? I wanted people to leave Interswitch happy.
+
+So this idea of shares for everybody—my driver has shares in the company! It was my own way of saying: at the end of the day, when you work hard, your salary helps you day-to-day, but long-term you have to build wealth. Every human being, every staff member deserves to be able to build wealth, not just the leadership. And the only way I could think of staff building wealth was to make sure that everybody got a piece of the wealth creation, which is shares. So it's always back to the people.
+
+When we moved into healthcare, it wasn't because we thought there was quick money—there was more money to be made in payments! It was difficult to convince the board to see where we were going. But during the COVID period, we saw what that move did for us. Today, there are state governments where in rural areas, nurses have access to computers and they can diagnose when there aren't enough doctors. If you want to solve problems beyond the cities, you have to take solutions to places where even if you're not a registered medical doctor, the system can help you make the right decisions.
+
+We do stuff in education with InterswitchSPAK to encourage young Nigerians to get involved in science and mathematics. If you want to move the country forward, your citizens have to embrace science and mathematics. You don't want to wake up one day and realize that nobody wants to study engineering anymore because everybody wants to be a social influencer. Technology is something you cannot ignore.
+
+Finally, if you want to be successful, ask yourself the right questions. What do you tell people? "I want to be rich." Nobody cares if you want to be rich! People care about the problem you solve.
+
+Taking time to ask the right questions when it comes to human issues is very important, because if you ask the right questions, you get the right answer. That's what we did in the case of payments. So focus on the human element.
+
+I can't end this interview without asking the big question: what about an Interswitch IPO? Are we having an IPO, dual listing, or listing on the NGX or NYSE?
+
+You said there's this big question nobody likes to answer! But let me tell you a few things:
+
+The things to worry about are:
+
+Is Interswitch making an impact?
+
+Is the ecosystem growing, and is it growing sustainably?
+
+How are we dealing with the challenges of cybercrime that you can't run away from when you go electronic?
+
+Are we living the kind of examples that will encourage people to want to come into this space, contribute, and excel?
+
+My answer to all four questions is: Yes, yes, yes, yes!
+
+If you do that, it's just a matter of time before things happen. We are owned by private equity to a large extent, so it is true that at some point they will exit. What are the options for people to exit? One of them is a bigger PE firm buys them out, or we do a strategic deal like the kind of deal we've done with Visa, or we do an IPO.
+
+Everything is on the table, but I don't want to live my life focusing on what the next valuation is. That's not where we started the company. We started the company on a 200 million Naira budget, and we've tried to grow sustainably.
+
+If I'm going to raise money today, I'm raising money for growth. If an IPO becomes the best way to do that, fine. But the truth is that the decision on timing is something that gets evaluated continuously.
+
+Thank you so much, Mitchell, for your time. I really enjoyed our conversation!
+
+Thank you! This is The Big Tech Show, my name is Benjamin Dada. See you next time!

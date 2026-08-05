@@ -341,7 +341,9 @@ SERVICES: dict[str, tuple] = {
         [
             ("post", "/api/v1/rag/documents", "rag", "Ingest a document", True),
             ("get", "/api/v1/rag/documents", "rag", "List documents", False),
+            ("get", "/api/v1/rag/documents/export.csv", "rag", "Export the document catalogue as CSV", False),
             ("delete", "/api/v1/rag/documents/{id}", "rag", "Delete a document", False),
+            ("get", "/api/v1/rag/stats", "rag", "Corpus index-health statistics", False),
             ("post", "/api/v1/rag/query", "rag", "Retrieve relevant chunks", True),
         ],
     ),

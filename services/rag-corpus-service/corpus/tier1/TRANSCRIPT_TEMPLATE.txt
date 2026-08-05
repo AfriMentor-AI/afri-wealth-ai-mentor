@@ -1,0 +1,13 @@
+TRANSCRIPT TEMPLATE — AfriMentor RAG Corpus
+==========================================
+Speaker:      [Full Name]
+Channel:      [YouTube Channel Name]
+Video Title:  [Exact Video Title]
+Video URL:    [https://youtube.com/watch?v=XXXXX]
+Date:         [YYYY-MM-DD]
+Sector:       [fashion | wholesale_trade | food_trade | financial_literacy | general_business]
+Country:      [NG | GH | KE | ZA]
+==========================================
+
+[PASTE FULL TRANSCRIPT TEXT BELOW THIS LINE — remove timestamps]
+
