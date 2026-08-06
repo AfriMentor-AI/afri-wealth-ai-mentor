@@ -77,6 +77,18 @@ def test_valid_token_proxies_and_forwards_identity(client, token_factory, monkey
     assert capture["url"].endswith("/api/v1/goals")
 
 
+def test_profiles_route_proxies_to_intake_service(client, token_factory, monkeypatch):
+    capture = {}
+    _patch_upstream(monkeypatch, capture)
+    tok = token_factory(sub="user-42")
+    r = client.get(
+        "/api/v1/profiles/user-42/diagnostic", headers={"Authorization": f"Bearer {tok}"}
+    )
+    assert r.status_code == 200
+    assert capture["url"].endswith("/api/v1/profiles/user-42/diagnostic")
+    assert capture["headers"]["X-User-Id"] == "user-42"
+
+
 def test_client_cannot_spoof_identity_header(client, token_factory, monkeypatch):
     capture = {}
     _patch_upstream(monkeypatch, capture)

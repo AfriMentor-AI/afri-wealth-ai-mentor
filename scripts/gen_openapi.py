@@ -402,6 +402,177 @@ def auth_spec() -> dict:
     return spec
 
 
+def intake_spec() -> dict:
+    spec = base(
+        "Intake Profiling Service",
+        "intake-profiling-service",
+        8002,
+        "Backs the 4-step Intake flow and exposes the resulting diagnostic profile. "
+        "Reflects the implemented v1 API (card O2.2).",
+    )
+    schemas = spec["components"]["schemas"]
+    schemas["IntakeStep"] = {
+        "type": "string",
+        "enum": ["sector", "education_time", "constraints", "confirm"],
+    }
+    schemas["AnswerSubmitRequest"] = {
+        "type": "object",
+        "required": ["step", "payload"],
+        "properties": {
+            "step": {"$ref": "#/components/schemas/IntakeStep"},
+            "payload": {
+                "type": "object",
+                "description": "Shape depends on `step`: sector={sector}, "
+                "education_time={education_level,time_available_per_week}, "
+                "constraints={constraints:[]}, confirm={name,business_name,location}.",
+            },
+        },
+    }
+    schemas["AnswerResponse"] = {
+        "type": "object",
+        "properties": {
+            "step": {"$ref": "#/components/schemas/IntakeStep"},
+            "payload": {"type": "object"},
+            "updated_at": {"type": "string", "format": "date-time"},
+        },
+    }
+    schemas["SessionResponse"] = {
+        "type": "object",
+        "properties": {
+            "id": {"type": "string"},
+            "user_id": {"type": "string"},
+            "status": {"type": "string", "enum": ["in_progress", "completed"]},
+            "started_at": {"type": "string", "format": "date-time"},
+            "completed_at": {"type": ["string", "null"], "format": "date-time"},
+            "answers": {"type": "array", "items": {"$ref": "#/components/schemas/AnswerResponse"}},
+        },
+    }
+    schemas["DiagnosticProfileResponse"] = {
+        "type": "object",
+        "properties": {
+            "user_id": {"type": "string"},
+            "name": {"type": "string"},
+            "business_name": {"type": "string"},
+            "location": {"type": "string"},
+            "sector": {"type": "string"},
+            "education_level": {"type": "string"},
+            "time_available_per_week": {"type": "string"},
+            "constraints": {"type": "array", "items": {"type": "string"}},
+            "persona_id": {"type": ["string", "null"]},
+            "created_at": {"type": "string", "format": "date-time"},
+            "updated_at": {"type": "string", "format": "date-time"},
+        },
+    }
+
+    spec["tags"] = [{"name": "intake"}, {"name": "profiles"}, {"name": "meta"}]
+    session_response = {
+        "200": {
+            "description": "session",
+            "content": {
+                "application/json": {"schema": {"$ref": "#/components/schemas/SessionResponse"}}
+            },
+        },
+        "401": {
+            "description": "missing X-User-Id",
+            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Error"}}},
+        },
+        "404": {
+            "description": "session not found (or not owned by the caller)",
+            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Error"}}},
+        },
+    }
+    spec["paths"].update(
+        {
+            "/api/v1/intake/sessions": {
+                "post": {
+                    "tags": ["intake"],
+                    "summary": "Start (or resume) the caller's intake session",
+                    "responses": {
+                        "201": session_response["200"],
+                        "200": {
+                            **session_response["200"],
+                            "description": "resumed an existing in-progress session",
+                        },
+                        "401": session_response["401"],
+                    },
+                }
+            },
+            "/api/v1/intake/sessions/{id}": {
+                "get": {
+                    "tags": ["intake"],
+                    "summary": "Get an intake session and its answers so far",
+                    "parameters": ID_PARAM,
+                    "responses": session_response,
+                }
+            },
+            "/api/v1/intake/sessions/{id}/answers": {
+                "post": {
+                    "tags": ["intake"],
+                    "summary": "Submit (or update) the answer for one intake step",
+                    "parameters": ID_PARAM,
+                    "requestBody": {
+                        "required": True,
+                        "content": {
+                            "application/json": {
+                                "schema": {"$ref": "#/components/schemas/AnswerSubmitRequest"}
+                            }
+                        },
+                    },
+                    "responses": {
+                        **session_response,
+                        "409": {"description": "session already completed"},
+                        "422": {"description": "payload doesn't match the shape for `step`"},
+                    },
+                }
+            },
+            "/api/v1/intake/sessions/{id}/complete": {
+                "post": {
+                    "tags": ["intake"],
+                    "summary": "Mark intake complete and build the diagnostic profile",
+                    "parameters": ID_PARAM,
+                    "responses": {
+                        **session_response,
+                        "400": {"description": "one or more required steps have no answer yet"},
+                        "409": {"description": "session already completed"},
+                    },
+                }
+            },
+            "/api/v1/profiles/{userId}/diagnostic": {
+                "get": {
+                    "tags": ["profiles"],
+                    "summary": "Get a user's diagnostic profile",
+                    "description": "Called via the gateway by the end user (X-User-Id must match "
+                    "userId) or service-to-service on the internal network (no X-User-Id, "
+                    "trusted) — e.g. by Chat Orchestration for personalization.",
+                    "parameters": [
+                        {
+                            "name": "userId",
+                            "in": "path",
+                            "required": True,
+                            "schema": {"type": "string"},
+                        }
+                    ],
+                    "responses": {
+                        "200": {
+                            "description": "diagnostic profile",
+                            "content": {
+                                "application/json": {
+                                    "schema": {
+                                        "$ref": "#/components/schemas/DiagnosticProfileResponse"
+                                    }
+                                }
+                            },
+                        },
+                        "403": {"description": "X-User-Id doesn't match userId"},
+                        "404": {"description": "no diagnostic profile for this user yet"},
+                    },
+                }
+            },
+        }
+    )
+    return spec
+
+
 def gateway_spec() -> dict:
     spec = base(
         "API Gateway",
@@ -425,16 +596,6 @@ def gateway_spec() -> dict:
 
 # service -> (title, port, description, [(method, path, tag, summary, has_body)])
 SERVICES: dict[str, tuple] = {
-    "intake-profiling-service": (
-        "Intake & Profiling Service", 8002,
-        "Guided intake flow that builds the initial user profile and financial context.",
-        [
-            ("post", "/api/v1/intake/sessions", "intake", "Start an intake session", True),
-            ("get", "/api/v1/intake/sessions/{id}", "intake", "Get an intake session", False),
-            ("post", "/api/v1/intake/sessions/{id}/answers", "intake", "Submit an answer", True),
-            ("post", "/api/v1/intake/sessions/{id}/complete", "intake", "Complete intake", False),
-        ],
-    ),
     "chat-orchestration-service": (
         "Chat Orchestration Service", 8003,
         "Orchestrates a mentor turn: persona + RAG context + history → LLM reply.",
@@ -554,6 +715,7 @@ def main() -> None:
     for name, spec in [
         ("api-gateway", gateway_spec()),
         ("auth-user-service", auth_spec()),
+        ("intake-profiling-service", intake_spec()),
     ]:
         path = OUT / f"{name}.yaml"
         path.write_text(yaml.safe_dump(spec, sort_keys=False, width=100), encoding="utf-8")
