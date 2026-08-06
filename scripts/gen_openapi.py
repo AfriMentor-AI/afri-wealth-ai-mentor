@@ -192,6 +192,30 @@ def auth_spec() -> dict:
             },
         ]
     }
+    schemas["ProfileUpdateRequest"] = {"$ref": "#/components/schemas/ProfileFields"}
+    schemas["PasswordResetRequestSchema"] = {
+        "type": "object",
+        "required": ["email"],
+        "properties": {"email": {"type": "string", "format": "email"}},
+    }
+    schemas["PasswordResetRequestResponse"] = {
+        "type": "object",
+        "properties": {
+            "detail": {"type": "string"},
+            "reset_token": {
+                "type": ["string", "null"],
+                "description": "Only populated outside prod — no email provider is wired up yet.",
+            },
+        },
+    }
+    schemas["PasswordResetConfirmRequest"] = {
+        "type": "object",
+        "required": ["reset_token", "new_password"],
+        "properties": {
+            "reset_token": {"type": "string"},
+            "new_password": {"type": "string", "minLength": 8, "maxLength": 128},
+        },
+    }
 
     def token_op(summary, body_ref, code="200"):
         return {
@@ -263,6 +287,101 @@ def auth_spec() -> dict:
                         },
                         "401": {
                             "description": "unauthorized",
+                            "content": {
+                                "application/json": {"schema": {"$ref": "#/components/schemas/Error"}}
+                            },
+                        },
+                    },
+                },
+                "patch": {
+                    "tags": ["auth"],
+                    "summary": "Partially update the authenticated user's profile",
+                    "requestBody": {
+                        "required": True,
+                        "content": {
+                            "application/json": {
+                                "schema": {"$ref": "#/components/schemas/ProfileUpdateRequest"}
+                            }
+                        },
+                    },
+                    "responses": {
+                        "200": {
+                            "description": "updated profile",
+                            "content": {
+                                "application/json": {
+                                    "schema": {"$ref": "#/components/schemas/UserResponse"}
+                                }
+                            },
+                        },
+                        "401": {
+                            "description": "unauthorized",
+                            "content": {
+                                "application/json": {"schema": {"$ref": "#/components/schemas/Error"}}
+                            },
+                        },
+                    },
+                },
+                "delete": {
+                    "tags": ["auth"],
+                    "summary": "Deactivate the authenticated user's account and revoke its sessions",
+                    "responses": {
+                        "204": {"description": "deactivated"},
+                        "401": {
+                            "description": "unauthorized",
+                            "content": {
+                                "application/json": {"schema": {"$ref": "#/components/schemas/Error"}}
+                            },
+                        },
+                    },
+                },
+            },
+            "/auth/password-reset/request": {
+                "post": {
+                    "tags": ["auth"],
+                    "summary": "Request a password-reset token",
+                    "security": [],
+                    "requestBody": {
+                        "required": True,
+                        "content": {
+                            "application/json": {
+                                "schema": {"$ref": "#/components/schemas/PasswordResetRequestSchema"}
+                            }
+                        },
+                    },
+                    "responses": {
+                        "200": {
+                            "description": (
+                                "Same response whether or not the email is registered, "
+                                "so this endpoint can't be used to enumerate accounts."
+                            ),
+                            "content": {
+                                "application/json": {
+                                    "schema": {
+                                        "$ref": "#/components/schemas/PasswordResetRequestResponse"
+                                    }
+                                }
+                            },
+                        }
+                    },
+                }
+            },
+            "/auth/password-reset/confirm": {
+                "post": {
+                    "tags": ["auth"],
+                    "summary": "Confirm a password reset with the issued token",
+                    "security": [],
+                    "requestBody": {
+                        "required": True,
+                        "content": {
+                            "application/json": {
+                                "schema": {"$ref": "#/components/schemas/PasswordResetConfirmRequest"}
+                            }
+                        },
+                    },
+                    "responses": {
+                        "204": {"description": "password changed, sessions revoked"},
+                        "400": {
+                            "description": "invalid or expired reset token",
                             "content": {
                                 "application/json": {"schema": {"$ref": "#/components/schemas/Error"}}
                             },

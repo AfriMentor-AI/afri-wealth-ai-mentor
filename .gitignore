@@ -15,9 +15,15 @@ __pycache__/
 *.pyc
 .pytest_cache/
 .ruff_cache/
+.coverage
+.coverage.*
+htmlcov/
 .env
 .env.*
 !.env.example
+
+# Per-service SQLite dev fallback DBs (DATABASE_URL unset) and alembic scratch DBs
+*.db
 
 # Secrets / crypto keys (dev keys are generated at runtime, never committed)
 infra/keys/

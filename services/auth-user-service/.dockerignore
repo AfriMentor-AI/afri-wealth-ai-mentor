@@ -12,3 +12,4 @@ requirements-dev.txt
 .env.*
 *.pem
 *.key
+*.db

@@ -30,6 +30,9 @@ class Settings(BaseModel):
     jwt_private_key_path: str = os.getenv("JWT_PRIVATE_KEY_PATH", "")
     jwt_public_key_path: str = os.getenv("JWT_PUBLIC_KEY_PATH", "")
 
+    # Password reset
+    password_reset_ttl_seconds: int = int(os.getenv("PASSWORD_RESET_TTL", str(30 * 60)))
+
 
 @lru_cache
 def get_settings() -> Settings:
