@@ -367,10 +367,11 @@ def test_rag_retrieve_called_with_user_content(client, session_id):
 def test_rag_context_injected_into_prompt(client, session_id):
     """When chunks are returned, a second system message must appear in the
     messages list passed to the LLM containing the chunk text."""
-    from app.rag import RagResult
-    from app.main import app as _app
     from fastapi.testclient import TestClient as _TC
-    from app.database import get_db, SessionLocal
+
+    from app.database import SessionLocal, get_db
+    from app.main import app as _app
+    from app.rag import RagResult
 
     chunks = [RagResult(content="Save 20% of income.", source_label="TEF curriculum", score=0.9)]
     captured: list = []
