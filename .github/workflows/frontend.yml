@@ -2,7 +2,6 @@ name: Frontend CI
 
 on:
   push:
-    branches: [main, develop]
     paths: ["frontend/**"]
   pull_request:
     branches: [main, develop]
@@ -15,8 +14,8 @@ jobs:
       run:
         working-directory: frontend
     steps:
-      - uses: actions/checkout@v5
-      - uses: actions/setup-node@v5
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: "24"
           cache: npm
