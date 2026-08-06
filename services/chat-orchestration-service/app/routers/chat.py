@@ -14,6 +14,7 @@ from ..schemas import (
     ConversationResponse,
     MessageCreate,
     MessageResponse,
+    PersonaBindRequest,
 )
 
 router = APIRouter(prefix="/api/v1/chat", tags=["chat"])
@@ -47,6 +48,26 @@ def get_session(
     conv = db.get(Conversation, session_id)
     if not conv or conv.user_id != user_id:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Session not found")
+    return conv
+
+
+@router.patch("/sessions/{session_id}/persona", response_model=ConversationResponse)
+def bind_persona(
+    session_id: str,
+    body: PersonaBindRequest,
+    db: Session = Depends(get_db),
+) -> Conversation:
+    """Bind a persona to an existing session (called by persona-prompt-service on 'Select Mentor').
+
+    No user-auth header required — this is an internal service-to-service call
+    routed inside the private network (ADR-0001 §D5).
+    """
+    conv = db.get(Conversation, session_id)
+    if not conv:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Session not found")
+    conv.persona_id = body.persona_id
+    db.commit()
+    db.refresh(conv)
     return conv
 
 

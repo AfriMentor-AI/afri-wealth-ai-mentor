@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import logging
 
+import httpx
 from openai import AsyncOpenAI
 
 from .config import get_settings
@@ -31,13 +32,29 @@ def get_llm_client() -> AsyncOpenAI:
 # ── System prompt ─────────────────────────────────────────────────────────────
 
 def _get_system_prompt(persona_id: str | None) -> str:
-    """TODO Sprint 2 — call persona-prompt-service to fetch the rendered system prompt."""
-    return (
+    """Fetch the rendered system prompt from persona-prompt-service.
+
+    Falls back to the hardcoded Chioma base prompt when PERSONA_SERVICE_URL
+    is not configured (dev / test without Docker).
+    """
+    _FALLBACK = (
         "You are Chioma, a warm and direct African financial mentor. "
         "You give practical, actionable advice grounded in African business realities. "
         "When a user expresses a clear financial commitment or goal, acknowledge it "
         "explicitly so they feel accountable."
     )
+    if not settings.persona_service_url or not persona_id:
+        return _FALLBACK
+    try:
+        resp = httpx.get(
+            f"{settings.persona_service_url}/api/v1/personas/{persona_id}/prompt",
+            timeout=3.0,
+        )
+        resp.raise_for_status()
+        return resp.json()["system_prompt"]
+    except Exception:
+        logger.warning("persona-prompt-service unavailable — using fallback prompt")
+        return _FALLBACK
 
 
 # ── RAG context injection ─────────────────────────────────────────────────────

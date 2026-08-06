@@ -21,6 +21,11 @@ class ConversationCreate(BaseModel):
     rag_collection: str | None = Field(default=None, description="Resolved in Sprint 3")
 
 
+class PersonaBindRequest(BaseModel):
+    """Body for PATCH /api/v1/chat/sessions/{id}/persona (internal, called by persona-prompt-service)."""
+    persona_id: str
+
+
 class ConversationResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 

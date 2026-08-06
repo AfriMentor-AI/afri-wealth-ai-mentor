@@ -187,6 +187,58 @@ def test_no_citations_when_rag_empty(client, session_id):
     assert r.json()["citations"] == []
 
 
+# ── Persona binding (D2.2) ────────────────────────────────────────────────────
+
+_MARKET_QUEEN_ID = "00000000-0000-0000-0000-000000000002"
+
+
+def test_bind_persona_updates_session(client, session_id):
+    r = client.patch(
+        f"/api/v1/chat/sessions/{session_id}/persona",
+        json={"persona_id": _MARKET_QUEEN_ID},
+    )
+    assert r.status_code == 200
+    assert r.json()["persona_id"] == _MARKET_QUEEN_ID
+
+
+def test_bind_persona_persists(client, session_id):
+    client.patch(
+        f"/api/v1/chat/sessions/{session_id}/persona",
+        json={"persona_id": _MARKET_QUEEN_ID},
+    )
+    r = client.get(f"/api/v1/chat/sessions/{session_id}", headers=USER_HEADERS)
+    assert r.json()["persona_id"] == _MARKET_QUEEN_ID
+
+
+def test_bind_persona_unknown_session(client):
+    r = client.patch(
+        "/api/v1/chat/sessions/does-not-exist/persona",
+        json={"persona_id": _MARKET_QUEEN_ID},
+    )
+    assert r.status_code == 404
+
+
+def test_send_message_uses_bound_persona(client, session_id):
+    """After binding, chat_completion receives the persona_id."""
+    client.patch(
+        f"/api/v1/chat/sessions/{session_id}/persona",
+        json={"persona_id": _MARKET_QUEEN_ID},
+    )
+    captured = {}
+
+    async def _capture(*args, **kwargs):
+        captured.update(kwargs)
+        return "Reply.", 5, 3, []
+
+    with patch("app.routers.chat.chat_completion", side_effect=_capture):
+        client.post(
+            f"/api/v1/chat/sessions/{session_id}/messages",
+            json={"content": "Hello"},
+            headers=USER_HEADERS,
+        )
+    assert captured.get("persona_id") == _MARKET_QUEEN_ID
+
+
 def test_rag_retrieve_called_with_user_content(client, session_id):
     """rag.retrieve must be called with the user's message text."""
     with (
