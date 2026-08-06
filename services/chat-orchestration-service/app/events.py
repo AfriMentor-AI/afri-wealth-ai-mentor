@@ -95,3 +95,32 @@ def emit_session_completed(*, conversation_id: str, user_id: str) -> None:
         data={"conversation_id": conversation_id, "user_id": user_id},
     )
     _publish("session.completed", payload)
+
+
+def emit_commitment_created(
+    *,
+    commitment_id: str,
+    goal_id: str,
+    user_id: str,
+    conversation_id: str,
+    message_id: str,
+    content_preview: str,
+) -> None:
+    """Emit `commitment.created` after goals-milestones-service persists the tag.
+
+    Consumed by: progress-gamification-service, notification-service,
+    research-evaluation-service.
+    """
+    payload = _envelope(
+        event="commitment.created",
+        actor=user_id,
+        data={
+            "commitment_id": commitment_id,
+            "goal_id": goal_id,
+            "user_id": user_id,
+            "conversation_id": conversation_id,
+            "message_id": message_id,
+            "content_preview": content_preview[:200],
+        },
+    )
+    _publish("commitment.created", payload)

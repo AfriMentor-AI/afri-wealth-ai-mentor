@@ -26,6 +26,21 @@ class PersonaBindRequest(BaseModel):
     persona_id: str
 
 
+class TagItRequest(BaseModel):
+    """Body for POST /api/v1/chat/sessions/{id}/messages/{msg_id}/tag.
+
+    The frontend sends this when the user taps 'Yes, Tag It' on a commitment suggestion.
+    goal_id must be the active goal shown on the Goal Milestone Path screen.
+    """
+    goal_id: str
+
+
+class TagItResponse(BaseModel):
+    commitment_id: str
+    goal_id: str
+    message_id: str
+
+
 class ConversationResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
