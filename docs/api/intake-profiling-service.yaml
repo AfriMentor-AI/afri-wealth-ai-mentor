@@ -1,8 +1,9 @@
 openapi: 3.1.0
 info:
-  title: "AfriMentor AI \u2014 Intake & Profiling Service"
+  title: "AfriMentor AI \u2014 Intake Profiling Service"
   version: 1.0.0
-  description: Guided intake flow that builds the initial user profile and financial context.
+  description: Backs the 4-step Intake flow and exposes the resulting diagnostic profile. Reflects the
+    implemented v1 API (card O2.2).
 servers:
 - url: http://localhost:8000
   description: via API gateway
@@ -12,6 +13,7 @@ security:
 - bearerAuth: []
 tags:
 - name: intake
+- name: profiles
 - name: meta
 paths:
   /health:
@@ -31,98 +33,101 @@ paths:
     post:
       tags:
       - intake
-      summary: Start an intake session
+      summary: Start (or resume) the caller's intake session
       responses:
-        '201':
-          description: success
-          content:
+        '201': &id002
+          description: session
+          content: &id001
             application/json:
               schema:
-                type: object
-        '401':
-          description: unauthorized
+                $ref: '#/components/schemas/SessionResponse'
+        '200':
+          description: resumed an existing in-progress session
+          content: *id001
+        '401': &id003
+          description: missing X-User-Id
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-      description: 'TODO: request/response bodies finalised in later sprint.'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
   /api/v1/intake/sessions/{id}:
     get:
       tags:
       - intake
-      summary: Get an intake session
-      responses:
-        '200':
-          description: success
-          content:
-            application/json:
-              schema:
-                type: object
-        '401':
-          description: unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-      description: 'TODO: request/response bodies finalised in later sprint.'
-      parameters: &id001
+      summary: Get an intake session and its answers so far
+      parameters: &id004
       - name: id
         in: path
         required: true
         schema:
           type: string
-  /api/v1/intake/sessions/{id}/answers:
-    post:
-      tags:
-      - intake
-      summary: Submit an answer
       responses:
-        '201':
-          description: success
-          content:
-            application/json:
-              schema:
-                type: object
-        '401':
-          description: unauthorized
+        '200': *id002
+        '401': *id003
+        '404': &id005
+          description: session not found (or not owned by the caller)
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-      description: 'TODO: request/response bodies finalised in later sprint.'
-      parameters: *id001
+  /api/v1/intake/sessions/{id}/answers:
+    post:
+      tags:
+      - intake
+      summary: Submit (or update) the answer for one intake step
+      parameters: *id004
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              type: object
+              $ref: '#/components/schemas/AnswerSubmitRequest'
+      responses:
+        '200': *id002
+        '401': *id003
+        '404': *id005
+        '409':
+          description: session already completed
+        '422':
+          description: payload doesn't match the shape for `step`
   /api/v1/intake/sessions/{id}/complete:
     post:
       tags:
       - intake
-      summary: Complete intake
+      summary: Mark intake complete and build the diagnostic profile
+      parameters: *id004
+      responses:
+        '200': *id002
+        '401': *id003
+        '404': *id005
+        '400':
+          description: one or more required steps have no answer yet
+        '409':
+          description: session already completed
+  /api/v1/profiles/{userId}/diagnostic:
+    get:
+      tags:
+      - profiles
+      summary: Get a user's diagnostic profile
+      description: "Called via the gateway by the end user (X-User-Id must match userId) or service-to-service\
+        \ on the internal network (no X-User-Id, trusted) \u2014 e.g. by Chat Orchestration for personalization."
+      parameters:
+      - name: userId
+        in: path
+        required: true
+        schema:
+          type: string
       responses:
         '200':
-          description: success
+          description: diagnostic profile
           content:
             application/json:
               schema:
-                type: object
-        '401':
-          description: unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-      description: 'TODO: request/response bodies finalised in later sprint.'
-      parameters: *id001
+                $ref: '#/components/schemas/DiagnosticProfileResponse'
+        '403':
+          description: X-User-Id doesn't match userId
+        '404':
+          description: no diagnostic profile for this user yet
 components:
   securitySchemes:
     bearerAuth:
@@ -150,3 +155,87 @@ components:
           type: string
       required:
       - detail
+    IntakeStep:
+      type: string
+      enum:
+      - sector
+      - education_time
+      - constraints
+      - confirm
+    AnswerSubmitRequest:
+      type: object
+      required:
+      - step
+      - payload
+      properties:
+        step:
+          $ref: '#/components/schemas/IntakeStep'
+        payload:
+          type: object
+          description: 'Shape depends on `step`: sector={sector}, education_time={education_level,time_available_per_week},
+            constraints={constraints:[]}, confirm={name,business_name,location}.'
+    AnswerResponse:
+      type: object
+      properties:
+        step:
+          $ref: '#/components/schemas/IntakeStep'
+        payload:
+          type: object
+        updated_at:
+          type: string
+          format: date-time
+    SessionResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        user_id:
+          type: string
+        status:
+          type: string
+          enum:
+          - in_progress
+          - completed
+        started_at:
+          type: string
+          format: date-time
+        completed_at:
+          type:
+          - string
+          - 'null'
+          format: date-time
+        answers:
+          type: array
+          items:
+            $ref: '#/components/schemas/AnswerResponse'
+    DiagnosticProfileResponse:
+      type: object
+      properties:
+        user_id:
+          type: string
+        name:
+          type: string
+        business_name:
+          type: string
+        location:
+          type: string
+        sector:
+          type: string
+        education_level:
+          type: string
+        time_available_per_week:
+          type: string
+        constraints:
+          type: array
+          items:
+            type: string
+        persona_id:
+          type:
+          - string
+          - 'null'
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
