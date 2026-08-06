@@ -42,6 +42,12 @@ infra/       postgres init, dev infrastructure
 docs/        ADRs (docs/adr) and API contracts (docs/api)
 ```
 
+## Staging
+
+For services with a shipped v1 (`api-gateway`, `auth-user-service`), see
+**[docs/deployment/staging.md](docs/deployment/staging.md)** for the interim staging
+overlay and `scripts/deploy-staging.sh`.
+
 ## Development
 
 Run and test a single service:

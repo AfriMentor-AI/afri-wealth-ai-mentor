@@ -1,0 +1,38 @@
+# Staging overlay (card O2.1) — layers on top of docker-compose.yml:
+#   docker compose -f docker-compose.yml -f docker-compose.staging.yml up -d --build <services>
+#
+# There is no cloud environment yet (see docs/deployment/staging.md for why); this
+# overlay is the interim "staging" — a longer-lived, production-shaped Docker Compose
+# stack (real migrations via Alembic, no host ports on datastores, named `-staging`
+# volumes so it never shares data with the dev stack). Only services that have shipped
+# a real v1 so far are listed; add a service's block here as it goes live.
+name: afrimentor-staging
+
+services:
+  postgres:
+    # `!reset` clears the base file's published ports (Compose just concatenates plain
+    # lists across -f files, so a bare `[]` here would be a no-op).
+    ports: !reset []
+    volumes:
+      - pgdata_staging:/var/lib/postgresql/data
+      - ./infra/postgres/init-databases.sh:/docker-entrypoint-initdb.d/init-databases.sh:ro
+
+  redis:
+    ports: !reset []
+
+  api-gateway:
+    environment:
+      APP_ENV: staging
+
+  auth-user-service:
+    environment:
+      APP_ENV: staging
+      # Real RS256 keypair for staging (never the dev in-process fallback). Mount via
+      # infra/keys/ (gitignored) or inject as secrets in a real CD pipeline later.
+      JWT_PRIVATE_KEY_PATH: /run/secrets/jwt_private_key.pem
+      JWT_PUBLIC_KEY_PATH: /run/secrets/jwt_public_key.pem
+    volumes:
+      - ./infra/keys:/run/secrets:ro
+
+volumes:
+  pgdata_staging:

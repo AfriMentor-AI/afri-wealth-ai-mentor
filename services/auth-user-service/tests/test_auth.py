@@ -22,6 +22,12 @@ def test_health_ok(client):
     assert r.json()["service"] == "auth-user-service"
 
 
+def test_root_ok(client):
+    r = client.get("/")
+    assert r.status_code == 200
+    assert r.json()["service"] == "auth-user-service"
+
+
 def test_signup_issues_tokens_and_persists_profile(client):
     r = client.post("/auth/signup", json=_signup_payload())
     assert r.status_code == 201

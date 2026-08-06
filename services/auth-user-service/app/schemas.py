@@ -85,3 +85,23 @@ class UserResponse(ProfileFields):
     roles: list[str]
     is_active: bool
     created_at: dt.datetime
+
+
+class ProfileUpdateRequest(ProfileFields):
+    """PATCH /auth/me — every field optional; only supplied fields are updated."""
+
+
+class PasswordResetRequestSchema(BaseModel):
+    email: EmailStr
+
+
+class PasswordResetRequestResponse(BaseModel):
+    detail: str = "if that email is registered, a reset link has been issued"
+    # Only populated outside prod, where there is no email provider wired up yet
+    # (card O2.1 note): lets the flow be exercised end-to-end in dev/test/staging.
+    reset_token: str | None = None
+
+
+class PasswordResetConfirmRequest(BaseModel):
+    reset_token: str
+    new_password: str = Field(min_length=8, max_length=128)
