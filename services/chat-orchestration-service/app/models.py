@@ -8,7 +8,7 @@ from __future__ import annotations
 import datetime as dt
 import uuid
 
-from sqlalchemy import DateTime, ForeignKey, Integer, String, Text
+from sqlalchemy import DateTime, ForeignKey, Integer, JSON, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .database import Base
@@ -71,6 +71,10 @@ class Message(Base):
 
     prompt_tokens: Mapped[int] = mapped_column(Integer, default=0)
     completion_tokens: Mapped[int] = mapped_column(Integer, default=0)
+
+    # List of {"label": str} dicts — rendered as source-pills on the Chat screen.
+    # Empty list when no RAG chunks were retrieved for this turn.
+    citations: Mapped[list] = mapped_column(JSON, default=list)
 
     created_at: Mapped[dt.datetime] = mapped_column(DateTime(timezone=True), default=_now)
 

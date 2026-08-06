@@ -80,8 +80,8 @@ async def send_message(
     db.add(user_msg)
     db.flush()
 
-    # Call LLM (or stub)
-    reply_text, prompt_tokens, completion_tokens = await chat_completion(
+    # Call LLM (with RAG retrieval)
+    reply_text, prompt_tokens, completion_tokens, citations = await chat_completion(
         history=conv.messages,
         user_content=body.content,
         persona_id=conv.persona_id,
@@ -101,6 +101,7 @@ async def send_message(
         is_commitment_candidate=int(candidate),
         prompt_tokens=prompt_tokens,
         completion_tokens=completion_tokens,
+        citations=citations,
     )
     db.add(assistant_msg)
 
