@@ -1,6 +1,6 @@
 {
-  "total_conversations": 2,
-  "sft_kept": 2,
-  "dpo_pairs": 1,
-  "rlhf_pairs": 1
+  "total_conversations": 10,
+  "sft_kept": 10,
+  "dpo_pairs": 3,
+  "rlhf_pairs": 3
 }
