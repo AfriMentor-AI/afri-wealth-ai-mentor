@@ -1,30 +1,35 @@
-"""Persona Prompt Service — AfriMentor AI microservice stub.
+"""Persona Prompt Service — AfriMentor AI (card D2.2).
 
-Generated for card O1.2. Real implementation lands in later sprints.
-Health endpoint is live so docker-compose health checks pass.
+Exposes persona catalogue, session binding, audio preview stub, and
+rendered system-prompt endpoint consumed by chat-orchestration-service.
 """
 import os
 
 from fastapi import FastAPI
 
+from .config import get_settings
+from .routers.personas import router as personas_router
+
 SERVICE_NAME = "persona-prompt-service"
-SERVICE_VERSION = "0.1.0"
+SERVICE_VERSION = "1.0.0"
 
 app = FastAPI(
     title="AfriMentor AI — Persona Prompt Service",
     version=SERVICE_VERSION,
-    description="Stub service. See docs/adr/0001-microservices-architecture.md",
+    description="Persona catalogue, session binding, and prompt rendering.",
 )
+
+app.include_router(personas_router)
 
 
 @app.get("/health", tags=["meta"])
 def health() -> dict:
-    """Liveness/readiness probe used by docker-compose and the gateway."""
+    settings = get_settings()
     return {
         "status": "healthy",
         "service": SERVICE_NAME,
         "version": SERVICE_VERSION,
-        "env": os.getenv("APP_ENV", "dev"),
+        "env": settings.env,
     }
 
 
