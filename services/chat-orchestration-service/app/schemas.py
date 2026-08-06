@@ -42,6 +42,14 @@ class MessageCreate(BaseModel):
     content: str = Field(min_length=1, max_length=4096)
 
 
+class Citation(BaseModel):
+    """A single source-pill shown under a mentor message.
+
+    ``label`` is the human-readable text, e.g. "TEF curriculum" or "AfriMentor corpus".
+    """
+    label: str
+
+
 class MessageResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
@@ -53,4 +61,5 @@ class MessageResponse(BaseModel):
     is_commitment_candidate: bool
     prompt_tokens: int
     completion_tokens: int
+    citations: list[Citation] = []
     created_at: dt.datetime

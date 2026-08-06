@@ -1,9 +1,6 @@
 """LLM message assembler for chat-orchestration-service.
 
 Builds the messages list sent to the OpenAI-compatible API.
-
-Extension points (marked with TODO Sprint tags) are where persona-prompt-service
-and rag-corpus-service will be plugged in during Sprints 2–3.
 """
 from __future__ import annotations
 
@@ -13,6 +10,7 @@ from openai import AsyncOpenAI
 
 from .config import get_settings
 from .models import Message
+from .rag import RagResult, retrieve
 
 logger = logging.getLogger(__name__)
 settings = get_settings()
@@ -30,13 +28,10 @@ def get_llm_client() -> AsyncOpenAI:
     return _client
 
 
-# ── Extension point stubs ─────────────────────────────────────────────────────
+# ── System prompt ─────────────────────────────────────────────────────────────
 
 def _get_system_prompt(persona_id: str | None) -> str:
-    """TODO Sprint 2 — call persona-prompt-service to fetch the rendered system prompt.
-
-    Until then, return a generic mentor prompt so the service is functional.
-    """
+    """TODO Sprint 2 — call persona-prompt-service to fetch the rendered system prompt."""
     return (
         "You are Chioma, a warm and direct African financial mentor. "
         "You give practical, actionable advice grounded in African business realities. "
@@ -45,18 +40,36 @@ def _get_system_prompt(persona_id: str | None) -> str:
     )
 
 
-def _get_rag_context(rag_collection: str | None, query: str) -> str:
-    """TODO Sprint 3 — call rag-corpus-service to retrieve relevant passages.
+# ── RAG context injection ─────────────────────────────────────────────────────
 
-    Returns an empty string until the RAG service is integrated.
+def _build_rag_system_message(chunks: list[RagResult]) -> str:
+    """Format retrieved chunks into the context-injection system message.
+
+    Each chunk is prefixed with its source label so the LLM can attribute
+    claims. The template is intentionally terse to stay within the 512-token
+    LLM_MAX_TOKENS budget.
     """
-    return ""
+    lines = ["Use the following knowledge to inform your response:"]
+    for i, chunk in enumerate(chunks, 1):
+        lines.append(f"[{i}] ({chunk.source_label}) {chunk.content}")
+    return "\n".join(lines)
+
+
+def _deduplicate_labels(chunks: list[RagResult]) -> list[str]:
+    """Return unique source labels in retrieval-rank order."""
+    seen: set[str] = set()
+    labels: list[str] = []
+    for chunk in chunks:
+        if chunk.source_label not in seen:
+            seen.add(chunk.source_label)
+            labels.append(chunk.source_label)
+    return labels
 
 
 # ── Commitment detection ──────────────────────────────────────────────────────
 
 def is_commitment_candidate(text: str) -> bool:
-    """Heuristic: does the assistant reply contain a user-voiced commitment phrase?
+    """Heuristic: does the text contain a user-voiced commitment phrase?
 
     Sprint 4 — replace with a dedicated classifier or structured LLM output field.
     """
@@ -72,21 +85,23 @@ async def chat_completion(
     user_content: str,
     persona_id: str | None,
     rag_collection: str | None,
-) -> tuple[str, int, int]:
+) -> tuple[str, int, int, list[dict]]:
     """Assemble context and call the LLM.
 
-    Returns (reply_text, prompt_tokens, completion_tokens).
+    Returns (reply_text, prompt_tokens, completion_tokens, citations).
+    ``citations`` is a list of {"label": str} dicts ready for the source-pill
+    renderer; it is empty when no RAG chunks were retrieved.
     Falls back to a stub reply when LLM_API_KEY is not configured.
     """
     system_prompt = _get_system_prompt(persona_id)
-    rag_context = _get_rag_context(rag_collection, user_content)
+    chunks = await retrieve(user_content, collection=rag_collection)
 
     messages: list[dict] = [{"role": "system", "content": system_prompt}]
 
-    if rag_context:
+    if chunks:
         messages.append({
             "role": "system",
-            "content": f"Relevant knowledge:\n{rag_context}",
+            "content": _build_rag_system_message(chunks),
         })
 
     for msg in history:
@@ -94,13 +109,15 @@ async def chat_completion(
 
     messages.append({"role": "user", "content": user_content})
 
+    citations = [{"label": label} for label in _deduplicate_labels(chunks)]
+
     if not settings.llm_api_key:
         logger.debug("LLM_API_KEY not set — returning stub reply")
         stub = (
             "I hear you! Let's work through this together. "
             "(LLM stub — set LLM_API_KEY to enable real responses.)"
         )
-        return stub, len(messages) * 10, 20  # fake token counts
+        return stub, len(messages) * 10, 20, citations
 
     client = get_llm_client()
     response = await client.chat.completions.create(
@@ -115,4 +132,5 @@ async def chat_completion(
         choice.message.content or "",
         usage.prompt_tokens if usage else 0,
         usage.completion_tokens if usage else 0,
+        citations,
     )

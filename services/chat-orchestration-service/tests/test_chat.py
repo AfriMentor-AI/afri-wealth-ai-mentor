@@ -85,7 +85,7 @@ def session_id(client):
 
 
 def _stub_completion(*args, **kwargs):
-    return "Great plan! Let's make it happen.", 10, 5
+    return "Great plan! Let's make it happen.", 10, 5, []
 
 
 def test_send_message_returns_assistant_reply(client, session_id):
@@ -118,7 +118,7 @@ def test_list_messages(client, session_id):
 # ── Commitment event ──────────────────────────────────────────────────────────
 
 def _commitment_reply(*args, **kwargs):
-    return "That's a great commitment! Let's make it happen.", 10, 5
+    return "That's a great commitment! Let's make it happen.", 10, 5, []
 
 
 def test_commitment_event_emitted(client, session_id):
@@ -150,3 +150,104 @@ def test_no_commitment_event_for_normal_reply(client, session_id):
             headers=USER_HEADERS,
         )
     mock_emit.assert_not_called()
+
+
+# ── RAG citations ─────────────────────────────────────────────────────────────
+
+def _rag_reply_with_citations(*args, **kwargs):
+    return "Here is advice grounded in the TEF curriculum.", 20, 8, [
+        {"label": "TEF curriculum"},
+        {"label": "AfriMentor corpus"},
+    ]
+
+
+def test_citations_returned_in_response(client, session_id):
+    with patch("app.routers.chat.chat_completion", side_effect=_rag_reply_with_citations):
+        r = client.post(
+            f"/api/v1/chat/sessions/{session_id}/messages",
+            json={"content": "What does the TEF programme say about working capital?"},
+            headers=USER_HEADERS,
+        )
+    assert r.status_code == 201
+    body = r.json()
+    assert body["citations"] == [
+        {"label": "TEF curriculum"},
+        {"label": "AfriMentor corpus"},
+    ]
+
+
+def test_no_citations_when_rag_empty(client, session_id):
+    with patch("app.routers.chat.chat_completion", side_effect=_stub_completion):
+        r = client.post(
+            f"/api/v1/chat/sessions/{session_id}/messages",
+            json={"content": "Hello"},
+            headers=USER_HEADERS,
+        )
+    assert r.status_code == 201
+    assert r.json()["citations"] == []
+
+
+def test_rag_retrieve_called_with_user_content(client, session_id):
+    """rag.retrieve must be called with the user's message text."""
+    with (
+        patch("app.llm.retrieve", return_value=[]) as mock_retrieve,
+        patch("app.llm.get_llm_client"),  # prevent real OpenAI call
+    ):
+        # LLM_API_KEY is empty in test env so the stub path runs;
+        # retrieve is still awaited before the stub branch.
+        client.post(
+            f"/api/v1/chat/sessions/{session_id}/messages",
+            json={"content": "How do I build an emergency fund?"},
+            headers=USER_HEADERS,
+        )
+    mock_retrieve.assert_awaited_once_with(
+        "How do I build an emergency fund?", collection=None
+    )
+
+
+def test_rag_context_injected_into_prompt(client, session_id):
+    """When chunks are returned, a second system message must appear in the
+    messages list passed to the LLM containing the chunk text."""
+    from app.rag import RagResult
+    from app.main import app as _app
+    from fastapi.testclient import TestClient as _TC
+    from app.database import get_db, SessionLocal
+
+    chunks = [RagResult(content="Save 20% of income.", source_label="TEF curriculum", score=0.9)]
+    captured: list = []
+
+    async def _fake_create(**kwargs):
+        captured.extend(kwargs["messages"])
+        raise RuntimeError("stop")
+
+    def _override_db():
+        db = SessionLocal()
+        try:
+            yield db
+        finally:
+            db.close()
+
+    _app.dependency_overrides[get_db] = _override_db
+    safe_client = _TC(_app, raise_server_exceptions=False)
+
+    with (
+        patch("app.llm.retrieve", return_value=chunks),
+        patch("app.llm.get_llm_client") as mock_client,
+        patch("app.llm.settings") as mock_settings,
+    ):
+        mock_client.return_value.chat.completions.create.side_effect = _fake_create
+        mock_settings.llm_api_key = "fake-key"
+        mock_settings.commitment_keywords = []
+        mock_settings.llm_model = "test"
+        mock_settings.llm_max_tokens = 512
+        mock_settings.llm_temperature = 0.7
+        safe_client.post(
+            f"/api/v1/chat/sessions/{session_id}/messages",
+            json={"content": "How do I save?"},
+            headers=USER_HEADERS,
+        )
+
+    _app.dependency_overrides.clear()
+
+    rag_messages = [m for m in captured if "TEF curriculum" in m.get("content", "")]
+    assert rag_messages, "RAG context system message not found in LLM messages list"
