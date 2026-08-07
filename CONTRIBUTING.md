@@ -128,7 +128,22 @@ Per [ADR-0001](docs/adr/0001-microservices-architecture.md):
 Conventional-commit style: `type(scope): summary`, e.g.
 `feat(auth): add refresh-token rotation`. Keep the summary imperative and under ~72 chars.
 
-## 7. Coding standards
+## 7. Code Review & SLA
+
+To keep development velocity high, we have a lightweight review process with a clear
+Service-Level Agreement (SLA), as per card D2.5.
+
+- **First response within 24 hours:** The assigned reviewer (see Code Ownership table)
+  is expected to provide a first response (comments, questions, or an approval) on
+  all non-draft PRs within 24 business hours.
+- **Author responds promptly:** The PR author is responsible for addressing feedback
+  in a timely manner.
+- **Approval:** One approving review from the designated area owner is required to merge.
+  Reviews from other team members are welcome and encouraged.
+- **Self-merging:** Once the PR is approved and CI is green, the author may squash-merge
+  their own PR.
+
+## 8. Coding standards
 
 - **Python:** `ruff` for lint/format; type hints on public functions; Pydantic v2 models
   for request/response bodies. Tests with `pytest`; every service keeps `tests/` green.
@@ -137,7 +152,7 @@ Conventional-commit style: `type(scope): summary`, e.g.
 - **No secrets in git.** Use env vars and `.env` (gitignored). Dev keys are generated at
   runtime, never committed.
 
-## 8. CI
+## 9. CI
 
 `.github/workflows/ci.yml` runs on every PR: for each changed service it runs
 `ruff check` → `pytest` → `docker build` (and pushes on merge to `main`). The aggregate
