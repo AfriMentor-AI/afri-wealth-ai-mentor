@@ -4,6 +4,7 @@ import datetime as dt
 from pydantic import BaseModel, ConfigDict, Field
 
 
+
 # ── Goal ──────────────────────────────────────────────────────────────────────
 
 class GoalCreate(BaseModel):
