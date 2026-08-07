@@ -239,7 +239,7 @@ def test_send_message_uses_bound_persona(client, session_id):
     assert captured.get("persona_id") == _MARKET_QUEEN_ID
 
 
-# ── Tag It / commitment pipeline (D2.3) ──────────────────────────────────────────────────────────────
+# ── Tag It / commitment pipeline (D2.3) ─────────────────────────────────────
 
 _GOAL_ID = "goal-001"
 

@@ -161,7 +161,7 @@ def list_messages(
     return conv.messages
 
 
-# ── Tag It (D2.3) ──────────────────────────────────────────────────────────────────────────────────
+# ── Tag It (D2.3) ───────────────────────────────────────────────────────────
 
 @router.post(
     "/sessions/{session_id}/messages/{message_id}/tag",
