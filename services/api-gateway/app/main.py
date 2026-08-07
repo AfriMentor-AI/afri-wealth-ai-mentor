@@ -12,6 +12,7 @@ from fastapi.responses import JSONResponse
 
 from .auth import TokenError, verify_access_token
 from .config import get_settings
+from .observability import instrument
 from .ratelimit import check_rate_limit
 from .routes import ROUTES, match_route
 
@@ -24,6 +25,8 @@ app = FastAPI(
     version=SERVICE_VERSION,
     description="Edge routing, JWT verification, and rate limiting.",
 )
+
+instrument(app, SERVICE_NAME)
 
 # Mobile app + admin console origins (tighten in prod).
 app.add_middleware(

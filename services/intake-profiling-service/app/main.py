@@ -10,6 +10,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 
 from .database import init_db
+from .observability import instrument
 from .routers import intake_router, profiles_router
 
 SERVICE_NAME = "intake-profiling-service"
@@ -28,6 +29,8 @@ app = FastAPI(
     description="4-step guided intake and the diagnostic profile it produces.",
     lifespan=lifespan,
 )
+
+instrument(app, SERVICE_NAME)
 
 app.include_router(intake_router)
 app.include_router(profiles_router)

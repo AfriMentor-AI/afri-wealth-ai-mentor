@@ -1,0 +1,13 @@
+# Grafana dashboard provisioning (card O2.5): loads every *.json in this folder
+# as a dashboard owned by the platform team.
+apiVersion: 1
+
+providers:
+  - name: afrimentor
+    orgId: 1
+    folder: AfriMentor
+    type: file
+    disableDeletion: false
+    updateIntervalSeconds: 30
+    options:
+      path: /etc/grafana/provisioning/dashboards

@@ -6,6 +6,7 @@ rendered system-prompt endpoint consumed by chat-orchestration-service.
 from fastapi import FastAPI
 
 from .config import get_settings
+from .observability import instrument
 from .routers.personas import router as personas_router
 
 SERVICE_NAME = "persona-prompt-service"
@@ -16,6 +17,8 @@ app = FastAPI(
     version=SERVICE_VERSION,
     description="Persona catalogue, session binding, and prompt rendering.",
 )
+
+instrument(app, SERVICE_NAME)
 
 app.include_router(personas_router)
 
