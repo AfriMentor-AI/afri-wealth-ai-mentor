@@ -2,7 +2,8 @@ openapi: 3.1.0
 info:
   title: "AfriMentor AI \u2014 Goals & Milestones Service"
   version: 1.0.0
-  description: Goals & milestones CRUD and milestone state machine. Publishes goal.* events.
+  description: Goals CRUD, milestone state machine (card O2.3), and tagged commitments pipeline (card
+    D2.3). Reflects the implemented v1 API.
 servers:
 - url: http://localhost:8000
   description: via API gateway
@@ -12,6 +13,7 @@ security:
 - bearerAuth: []
 tags:
 - name: goals
+- name: milestones
 - name: meta
 paths:
   /health:
@@ -32,140 +34,195 @@ paths:
       tags:
       - goals
       summary: Create a goal
-      responses:
-        '201':
-          description: success
-          content:
-            application/json:
-              schema:
-                type: object
-        '401':
-          description: unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-      description: 'TODO: request/response bodies finalised in later sprint.'
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              type: object
-    get:
-      tags:
-      - goals
-      summary: List goals
+              $ref: '#/components/schemas/GoalCreate'
       responses:
-        '200':
-          description: success
+        '201': &id002
+          description: goal
           content:
             application/json:
               schema:
-                type: object
-        '401':
-          description: unauthorized
+                $ref: '#/components/schemas/GoalResponse'
+        '401': &id001
+          description: missing/invalid X-User-Id
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-      description: 'TODO: request/response bodies finalised in later sprint.'
+    get:
+      tags:
+      - goals
+      summary: List the caller's active goals
+      responses:
+        '200':
+          description: goals
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/GoalResponse'
+        '401': *id001
   /api/v1/goals/{id}:
     get:
       tags:
       - goals
       summary: Get a goal
-      responses:
-        '200':
-          description: success
-          content:
-            application/json:
-              schema:
-                type: object
-        '401':
-          description: unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-      description: 'TODO: request/response bodies finalised in later sprint.'
-      parameters: &id001
+      parameters: &id003
       - name: id
         in: path
         required: true
         schema:
           type: string
+      responses: &id004
+        '200': *id002
+        '401': *id001
+        '404': &id005
+          description: resource not found (or not owned by the caller)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
     patch:
       tags:
       - goals
-      summary: Update a goal
-      responses:
-        '200':
-          description: success
-          content:
-            application/json:
-              schema:
-                type: object
-        '401':
-          description: unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-      description: 'TODO: request/response bodies finalised in later sprint.'
-      parameters: *id001
+      summary: Partially update a goal
+      parameters: *id003
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              type: object
+              $ref: '#/components/schemas/GoalUpdate'
+      responses: *id004
+    delete:
+      tags:
+      - goals
+      summary: Delete a goal (cascades its milestones and commitments)
+      parameters: *id003
+      responses:
+        '204':
+          description: deleted
+        '401': *id001
+        '404': *id005
   /api/v1/goals/{id}/milestones:
     post:
       tags:
-      - goals
-      summary: Add a milestone
-      responses:
-        '201':
-          description: success
-          content:
-            application/json:
-              schema:
-                type: object
-        '401':
-          description: unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-      description: 'TODO: request/response bodies finalised in later sprint.'
-      parameters: *id001
+      - milestones
+      summary: Add a milestone to a goal
+      parameters: *id003
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              type: object
-  /api/v1/milestones/{id}/complete:
-    post:
-      tags:
-      - goals
-      summary: Complete a milestone
+              $ref: '#/components/schemas/MilestoneCreate'
       responses:
-        '200':
-          description: success
+        '201': &id006
+          description: milestone
           content:
             application/json:
               schema:
-                type: object
-        '401':
-          description: unauthorized
+                $ref: '#/components/schemas/MilestoneResponse'
+        '401': *id001
+        '404': *id005
+    get:
+      tags:
+      - milestones
+      summary: List a goal's milestones in display order
+      parameters: *id003
+      responses:
+        '200':
+          description: milestones
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/MilestoneResponse'
+        '401': *id001
+        '404': *id005
+  /api/v1/milestones/{id}:
+    patch:
+      tags:
+      - milestones
+      summary: Update a milestone (title, status, order)
+      parameters: *id003
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MilestoneUpdate'
+      responses: &id007
+        '200': *id006
+        '401': *id001
+        '404': *id005
+    delete:
+      tags:
+      - milestones
+      summary: Delete a milestone
+      parameters: *id003
+      responses:
+        '204':
+          description: deleted
+        '401': *id001
+        '404': *id005
+  /api/v1/milestones/{id}/complete:
+    post:
+      tags:
+      - milestones
+      summary: Mark a milestone done
+      parameters: *id003
+      responses: *id007
+  /api/v1/goals/{id}/commitments:
+    post:
+      tags:
+      - goals
+      summary: "Persist a tagged commitment (internal \u2014 chat-orchestration)"
+      description: "Called by chat-orchestration-service when the user confirms 'Yes, Tag It'. No X-User-Id\
+        \ gate \u2014 internal network call."
+      parameters: *id003
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CommitmentCreate'
+      responses:
+        '201':
+          description: commitment
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommitmentResponse'
+        '404': *id005
+        '409':
+          description: message already tagged as a commitment
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-      description: 'TODO: request/response bodies finalised in later sprint.'
-      parameters: *id001
+    get:
+      tags:
+      - goals
+      summary: List a goal's tagged commitments
+      parameters: *id003
+      responses:
+        '200':
+          description: commitments
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CommitmentResponse'
+        '401': *id001
+        '404': *id005
 components:
   securitySchemes:
     bearerAuth:
@@ -193,3 +250,186 @@ components:
           type: string
       required:
       - detail
+    GoalCreate:
+      type: object
+      required:
+      - title
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 255
+        description:
+          type:
+          - string
+          - 'null'
+        deadline:
+          type:
+          - string
+          - 'null'
+          format: date
+    GoalUpdate:
+      type: object
+      properties:
+        title:
+          type:
+          - string
+          - 'null'
+          minLength: 1
+          maxLength: 255
+        description:
+          type:
+          - string
+          - 'null'
+        deadline:
+          type:
+          - string
+          - 'null'
+          format: date
+    GoalResponse:
+      type: object
+      required:
+      - id
+      - user_id
+      - title
+      - status
+      - progress_pct
+      - created_at
+      - updated_at
+      properties:
+        id:
+          type: string
+        user_id:
+          type: string
+        title:
+          type: string
+        description:
+          type:
+          - string
+          - 'null'
+        status:
+          type: string
+          enum:
+          - active
+          - completed
+          - abandoned
+        deadline:
+          type:
+          - string
+          - 'null'
+          format: date
+        progress_pct:
+          type: integer
+          description: Server-computed % of this goal's milestones with status 'done'.
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    MilestoneStatus:
+      type: string
+      enum:
+      - done
+      - in_progress
+      - blocked
+      - upcoming
+    MilestoneCreate:
+      type: object
+      required:
+      - title
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 160
+        status:
+          $ref: '#/components/schemas/MilestoneStatus'
+        order:
+          type: integer
+          minimum: 0
+    MilestoneUpdate:
+      type: object
+      properties:
+        title:
+          type:
+          - string
+          - 'null'
+          minLength: 1
+          maxLength: 160
+        status:
+          $ref: '#/components/schemas/MilestoneStatus'
+        order:
+          type: integer
+          minimum: 0
+    MilestoneResponse:
+      type: object
+      required:
+      - id
+      - goal_id
+      - title
+      - status
+      - order
+      - created_at
+      - updated_at
+      properties:
+        id:
+          type: string
+        goal_id:
+          type: string
+        title:
+          type: string
+        status:
+          $ref: '#/components/schemas/MilestoneStatus'
+        order:
+          type: integer
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    CommitmentCreate:
+      type: object
+      required:
+      - user_id
+      - conversation_id
+      - message_id
+      - content
+      properties:
+        user_id:
+          type: string
+        conversation_id:
+          type: string
+        message_id:
+          type: string
+        content:
+          type: string
+          minLength: 1
+          maxLength: 2000
+    CommitmentResponse:
+      type: object
+      required:
+      - id
+      - goal_id
+      - user_id
+      - conversation_id
+      - message_id
+      - content
+      - created_at
+      properties:
+        id:
+          type: string
+        goal_id:
+          type: string
+        user_id:
+          type: string
+        conversation_id:
+          type: string
+        message_id:
+          type: string
+        content:
+          type: string
+        created_at:
+          type: string
+          format: date-time
