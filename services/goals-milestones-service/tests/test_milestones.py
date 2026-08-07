@@ -35,7 +35,9 @@ def client(fresh_db):
 
 @pytest.fixture
 def goal_id(client):
-    r = client.post("/api/v1/goals", json={"title": "Start a Poultry Business"}, headers=USER_HEADERS)
+    r = client.post(
+        "/api/v1/goals", json={"title": "Start a Poultry Business"}, headers=USER_HEADERS
+    )
     assert r.status_code == 201
     return r.json()["id"]
 

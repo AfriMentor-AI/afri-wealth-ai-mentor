@@ -24,7 +24,9 @@ router = APIRouter(prefix="/api/v1/goals", tags=["goals"])
 
 def _get_user(x_user_id: str = Header(..., alias="X-User-Id")) -> str:
     if not x_user_id:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Missing identity header")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Missing identity header"
+        )
     return x_user_id
 
 
@@ -193,12 +195,12 @@ def create_commitment(
     db.add(commitment)
     try:
         db.commit()
-    except IntegrityError:
+    except IntegrityError as err:
         db.rollback()
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail="Message already tagged as a commitment",
-        )
+        ) from err
     db.refresh(commitment)
 
     emit_commitment_created(
