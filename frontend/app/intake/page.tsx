@@ -1,14 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Icon } from "@/components/Icon";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { Chip } from "@/components/ui/Chip";
 import { Button } from "@/components/ui/Button";
 import { useAppDispatch } from "@/lib/store";
-import { fetchCurrentUser } from "@/lib/api";
-import type { Profile } from "@/lib/types";
+import { submitIntake } from "@/lib/api";
 
 const SECTORS = ["Trader", "Tech", "Fashion/Retail", "Agriculture", "Creative"];
 const EDUCATION_LEVELS = ["No formal schooling", "Primary school", "Secondary school", "Vocational training", "University"];
@@ -43,7 +42,8 @@ export default function IntakePage() {
   const dispatch = useAppDispatch();
   const [step, setStep] = useState(0);
   const [isRecording, setIsRecording] = useState(false);
-  const [userId, setUserId] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
   const [answers, setAnswers] = useState<IntakeAnswers>({
     sector: "",
     educationLevel: "",
@@ -53,10 +53,6 @@ export default function IntakePage() {
     businessName: "",
     location: "",
   });
-
-  useEffect(() => {
-    fetchCurrentUser().then((u) => setUserId(u.id));
-  }, []);
 
   function toggleConstraint(option: string) {
     setAnswers((a) => ({
@@ -71,27 +67,21 @@ export default function IntakePage() {
     step === 2 ||
     (step === 3 && answers.name !== "" && answers.businessName !== "");
 
-  function handleNext() {
+  async function handleNext() {
     if (step < 3) {
       setStep((s) => s + 1);
       return;
     }
-    const now = new Date().toISOString();
-    const profile: Profile = {
-      userId: userId ?? "local-user",
-      name: answers.name,
-      businessName: answers.businessName,
-      location: answers.location,
-      sector: answers.sector,
-      educationLevel: answers.educationLevel,
-      timeAvailablePerWeek: answers.timeAvailablePerWeek,
-      constraints: answers.constraints,
-      personaId: null,
-      createdAt: now,
-      updatedAt: now,
-    };
-    dispatch({ type: "SET_PROFILE", profile });
-    router.push("/persona");
+    setSubmitting(true);
+    setSubmitError(null);
+    try {
+      const profile = await submitIntake(answers);
+      dispatch({ type: "SET_PROFILE", profile });
+      router.push("/persona");
+    } catch {
+      setSubmitError("Couldn't save that — check your connection and try again.");
+      setSubmitting(false);
+    }
   }
 
   return (
@@ -186,10 +176,20 @@ export default function IntakePage() {
       </main>
 
       <footer className="px-margin-mobile pb-lg pt-md">
+        {submitError && (
+          <p role="alert" className="mb-sm text-center font-label-sm text-label-sm text-error">
+            {submitError}
+          </p>
+        )}
         {step === 3 ? (
-          <Button variant="cta" className="h-14 w-full text-[20px]" disabled={!canAdvance} onClick={handleNext}>
-            Confirm
-            <Icon name="check_circle" filled />
+          <Button
+            variant="cta"
+            className="h-14 w-full text-[20px]"
+            disabled={!canAdvance || submitting}
+            onClick={handleNext}
+          >
+            {submitting ? "Saving..." : "Confirm"}
+            {!submitting && <Icon name="check_circle" filled />}
           </Button>
         ) : (
           <>

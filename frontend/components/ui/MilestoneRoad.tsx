@@ -16,11 +16,22 @@ import type { Milestone } from "@/lib/types";
 // Simplified to a single-column vertical layout — the reference design's
 // left/right zig-zag only works for exactly 3 fixed milestones and breaks
 // for goals with a different milestone count.
-export function MilestoneRoad({ milestones }: { milestones: Milestone[] }) {
+//
+// `onCompleteMilestone` (card O2.4): when provided, the currently-active
+// ("in_progress") node becomes tappable to mark it done — the one milestone
+// action the Goal Milestone Path screen needs to expose.
+export function MilestoneRoad({
+  milestones,
+  onCompleteMilestone,
+}: {
+  milestones: Milestone[];
+  onCompleteMilestone?: (milestoneId: string) => void;
+}) {
   return (
     <ol className="flex flex-col">
       {milestones.map((m, i) => {
         const isLast = i === milestones.length - 1;
+        const isActionable = m.status === "in_progress" && !!onCompleteMilestone;
         const nodeClasses =
           m.status === "done"
             ? "bg-secondary text-on-secondary border-2 border-secondary"
@@ -43,15 +54,25 @@ export function MilestoneRoad({ milestones }: { milestones: Milestone[] }) {
             <div className={`z-10 flex h-10 w-10 shrink-0 items-center justify-center rounded-full font-headline-lg-mobile text-[16px] ${nodeClasses}`}>
               {m.status === "done" ? "✓" : i + 1}
             </div>
-            <div className="pt-1.5">
-              <p
-                className={`font-title-md text-title-md leading-tight ${
-                  m.status === "in_progress" ? "text-primary" : "text-on-surface"
-                }`}
-              >
-                {m.title}
-              </p>
-              <p className="text-xs text-on-surface-variant">{statusLabel[m.status]}</p>
+            <div className="flex flex-1 items-center justify-between pt-1.5">
+              <div>
+                <p
+                  className={`font-title-md text-title-md leading-tight ${
+                    m.status === "in_progress" ? "text-primary" : "text-on-surface"
+                  }`}
+                >
+                  {m.title}
+                </p>
+                <p className="text-xs text-on-surface-variant">{statusLabel[m.status]}</p>
+              </div>
+              {isActionable && (
+                <button
+                  onClick={() => onCompleteMilestone(m.id)}
+                  className="tap-target shrink-0 rounded-full bg-primary px-sm py-xs font-label-sm text-label-sm text-on-primary transition-transform active:scale-95"
+                >
+                  Mark done
+                </button>
+              )}
             </div>
           </li>
         );
