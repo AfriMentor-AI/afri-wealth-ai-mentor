@@ -22,7 +22,10 @@ class ConversationCreate(BaseModel):
 
 
 class PersonaBindRequest(BaseModel):
-    """Body for PATCH /api/v1/chat/sessions/{id}/persona (internal, called by persona-prompt-service)."""
+    """Body for PATCH /api/v1/chat/sessions/{id}/persona.
+
+    Internal — called by persona-prompt-service.
+    """
     persona_id: str
 
 

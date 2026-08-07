@@ -3,7 +3,6 @@ from __future__ import annotations
 
 from unittest.mock import MagicMock, patch
 
-import pytest
 from fastapi.testclient import TestClient
 
 from app.main import app
@@ -30,7 +29,8 @@ def test_list_personas_returns_all():
 def test_list_personas_shape():
     r = client.get("/api/v1/personas")
     p = r.json()[0]
-    for field in ("id", "slug", "display_name", "tagline", "sector_tags", "template_file", "is_base"):
+    for field in ("id", "slug", "display_name", "tagline", "sector_tags", "template_file",
+                   "is_base"):
         assert field in p
 
 

@@ -3,8 +3,6 @@
 Exposes persona catalogue, session binding, audio preview stub, and
 rendered system-prompt endpoint consumed by chat-orchestration-service.
 """
-import os
-
 from fastapi import FastAPI
 
 from .config import get_settings
