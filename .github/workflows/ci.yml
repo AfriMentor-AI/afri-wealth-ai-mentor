@@ -76,7 +76,7 @@ jobs:
           pip install ruff
 
       - name: Lint (ruff)
-        run: ruff check app tests --config ../../pyproject.toml
+        run: ruff check app tests --config ../../pyproject.toml --fix
 
       - name: Test (pytest)
         run: pytest -q

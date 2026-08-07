@@ -1,0 +1,36 @@
+# CODEOWNERS — auto-assigns reviewers per ADR-0001 §3 ownership table.
+# GitHub requires at least one owner's approval before a PR can merge
+# (branch protection: require_code_owner_reviews = true).
+#
+# Format: <pattern>  <@github-handle or @org/team>
+# Patterns are matched top-to-bottom; last match wins.
+# Replace handles with real GitHub usernames before enabling code-owner reviews.
+
+# ── Platform spine (Olusegun) ────────────────────────────────────────────────
+services/api-gateway/                    @Vik2ry
+services/auth-user-service/              @Vik2ry
+services/intake-profiling-service/       @Vik2ry
+services/goals-milestones-service/       @Vik2ry
+
+# ── Chat path (Daniel) ───────────────────────────────────────────────────────
+services/chat-orchestration-service/     @amt-danielboateng
+services/persona-prompt-service/         @amt-danielboateng
+services/voice-service/                  @amt-danielboateng
+
+# ── Knowledge & evaluation (Chukwuebuka) ────────────────────────────────────
+services/rag-corpus-service/             @Ebukatek
+services/research-evaluation-service/   @Ebukatek
+
+# ── Engagement & UI (Grace) ─────────────────────────────────────────────────
+services/progress-gamification-service/ @kagajugrace
+services/insight-library-service/       @kagajugrace
+services/feedback-service/              @kagajugrace
+services/notification-service/          @kagajugrace
+frontend/                                @kagajugrace
+apps/                                    @kagajugrace
+
+# ── Shared infra / docs — any lead can review ───────────────────────────────
+infra/                                   @Vik2ry @amt-danielboateng
+docs/                                    @Vik2ry @amt-danielboateng @Ebukatek @kagajugrace
+.github/                                 @amt-danielboateng
+scripts/                                 @amt-danielboateng
