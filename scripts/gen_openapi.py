@@ -573,6 +573,351 @@ def intake_spec() -> dict:
     return spec
 
 
+def goals_spec() -> dict:
+    spec = base(
+        "Goals & Milestones Service",
+        "goals-milestones-service",
+        8006,
+        "Goals CRUD, milestone state machine (card O2.3), and tagged commitments "
+        "pipeline (card D2.3). Reflects the implemented v1 API.",
+    )
+    schemas = spec["components"]["schemas"]
+    schemas["GoalCreate"] = {
+        "type": "object",
+        "required": ["title"],
+        "properties": {
+            "title": {"type": "string", "minLength": 1, "maxLength": 255},
+            "description": {"type": ["string", "null"]},
+            "deadline": {"type": ["string", "null"], "format": "date"},
+        },
+    }
+    schemas["GoalUpdate"] = {
+        "type": "object",
+        "properties": {
+            "title": {"type": ["string", "null"], "minLength": 1, "maxLength": 255},
+            "description": {"type": ["string", "null"]},
+            "deadline": {"type": ["string", "null"], "format": "date"},
+        },
+    }
+    schemas["GoalResponse"] = {
+        "type": "object",
+        "required": [
+            "id", "user_id", "title", "status", "progress_pct", "created_at", "updated_at",
+        ],
+        "properties": {
+            "id": {"type": "string"},
+            "user_id": {"type": "string"},
+            "title": {"type": "string"},
+            "description": {"type": ["string", "null"]},
+            "status": {"type": "string", "enum": ["active", "completed", "abandoned"]},
+            "deadline": {"type": ["string", "null"], "format": "date"},
+            "progress_pct": {
+                "type": "integer",
+                "description": "Server-computed % of this goal's milestones with status 'done'.",
+            },
+            "created_at": {"type": "string", "format": "date-time"},
+            "updated_at": {"type": "string", "format": "date-time"},
+        },
+    }
+    schemas["MilestoneStatus"] = {
+        "type": "string",
+        "enum": ["done", "in_progress", "blocked", "upcoming"],
+    }
+    schemas["MilestoneCreate"] = {
+        "type": "object",
+        "required": ["title"],
+        "properties": {
+            "title": {"type": "string", "minLength": 1, "maxLength": 160},
+            "status": {"$ref": "#/components/schemas/MilestoneStatus"},
+            "order": {"type": "integer", "minimum": 0},
+        },
+    }
+    schemas["MilestoneUpdate"] = {
+        "type": "object",
+        "properties": {
+            "title": {"type": ["string", "null"], "minLength": 1, "maxLength": 160},
+            "status": {"$ref": "#/components/schemas/MilestoneStatus"},
+            "order": {"type": "integer", "minimum": 0},
+        },
+    }
+    schemas["MilestoneResponse"] = {
+        "type": "object",
+        "required": ["id", "goal_id", "title", "status", "order", "created_at", "updated_at"],
+        "properties": {
+            "id": {"type": "string"},
+            "goal_id": {"type": "string"},
+            "title": {"type": "string"},
+            "status": {"$ref": "#/components/schemas/MilestoneStatus"},
+            "order": {"type": "integer"},
+            "created_at": {"type": "string", "format": "date-time"},
+            "updated_at": {"type": "string", "format": "date-time"},
+        },
+    }
+    schemas["CommitmentCreate"] = {
+        "type": "object",
+        "required": ["user_id", "conversation_id", "message_id", "content"],
+        "properties": {
+            "user_id": {"type": "string"},
+            "conversation_id": {"type": "string"},
+            "message_id": {"type": "string"},
+            "content": {"type": "string", "minLength": 1, "maxLength": 2000},
+        },
+    }
+    schemas["CommitmentResponse"] = {
+        "type": "object",
+        "required": [
+            "id", "goal_id", "user_id", "conversation_id", "message_id", "content", "created_at",
+        ],
+        "properties": {
+            "id": {"type": "string"},
+            "goal_id": {"type": "string"},
+            "user_id": {"type": "string"},
+            "conversation_id": {"type": "string"},
+            "message_id": {"type": "string"},
+            "content": {"type": "string"},
+            "created_at": {"type": "string", "format": "date-time"},
+        },
+    }
+
+    unauth_401 = {
+        "description": "missing/invalid X-User-Id",
+        "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Error"}}},
+    }
+    not_found_404 = {
+        "description": "resource not found (or not owned by the caller)",
+        "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Error"}}},
+    }
+    goal_response = {
+        "200": {
+            "description": "goal",
+            "content": {
+                "application/json": {"schema": {"$ref": "#/components/schemas/GoalResponse"}}
+            },
+        },
+        "401": unauth_401,
+        "404": not_found_404,
+    }
+    milestone_response = {
+        "200": {
+            "description": "milestone",
+            "content": {
+                "application/json": {"schema": {"$ref": "#/components/schemas/MilestoneResponse"}}
+            },
+        },
+        "401": unauth_401,
+        "404": not_found_404,
+    }
+
+    spec["tags"] = [{"name": "goals"}, {"name": "milestones"}, {"name": "meta"}]
+    spec["paths"].update(
+        {
+            "/api/v1/goals": {
+                "post": {
+                    "tags": ["goals"],
+                    "summary": "Create a goal",
+                    "requestBody": {
+                        "required": True,
+                        "content": {
+                            "application/json": {
+                                "schema": {"$ref": "#/components/schemas/GoalCreate"}
+                            }
+                        },
+                    },
+                    "responses": {
+                        "201": goal_response["200"],
+                        "401": unauth_401,
+                    },
+                },
+                "get": {
+                    "tags": ["goals"],
+                    "summary": "List the caller's active goals",
+                    "responses": {
+                        "200": {
+                            "description": "goals",
+                            "content": {
+                                "application/json": {
+                                    "schema": {
+                                        "type": "array",
+                                        "items": {"$ref": "#/components/schemas/GoalResponse"},
+                                    }
+                                }
+                            },
+                        },
+                        "401": unauth_401,
+                    },
+                },
+            },
+            "/api/v1/goals/{id}": {
+                "get": {
+                    "tags": ["goals"],
+                    "summary": "Get a goal",
+                    "parameters": ID_PARAM,
+                    "responses": goal_response,
+                },
+                "patch": {
+                    "tags": ["goals"],
+                    "summary": "Partially update a goal",
+                    "parameters": ID_PARAM,
+                    "requestBody": {
+                        "required": True,
+                        "content": {
+                            "application/json": {
+                                "schema": {"$ref": "#/components/schemas/GoalUpdate"}
+                            }
+                        },
+                    },
+                    "responses": goal_response,
+                },
+                "delete": {
+                    "tags": ["goals"],
+                    "summary": "Delete a goal (cascades its milestones and commitments)",
+                    "parameters": ID_PARAM,
+                    "responses": {
+                        "204": {"description": "deleted"},
+                        "401": unauth_401,
+                        "404": not_found_404,
+                    },
+                },
+            },
+            "/api/v1/goals/{id}/milestones": {
+                "post": {
+                    "tags": ["milestones"],
+                    "summary": "Add a milestone to a goal",
+                    "parameters": ID_PARAM,
+                    "requestBody": {
+                        "required": True,
+                        "content": {
+                            "application/json": {
+                                "schema": {"$ref": "#/components/schemas/MilestoneCreate"}
+                            }
+                        },
+                    },
+                    "responses": {
+                        "201": milestone_response["200"],
+                        "401": unauth_401,
+                        "404": not_found_404,
+                    },
+                },
+                "get": {
+                    "tags": ["milestones"],
+                    "summary": "List a goal's milestones in display order",
+                    "parameters": ID_PARAM,
+                    "responses": {
+                        "200": {
+                            "description": "milestones",
+                            "content": {
+                                "application/json": {
+                                    "schema": {
+                                        "type": "array",
+                                        "items": {"$ref": "#/components/schemas/MilestoneResponse"},
+                                    }
+                                }
+                            },
+                        },
+                        "401": unauth_401,
+                        "404": not_found_404,
+                    },
+                },
+            },
+            "/api/v1/milestones/{id}": {
+                "patch": {
+                    "tags": ["milestones"],
+                    "summary": "Update a milestone (title, status, order)",
+                    "parameters": ID_PARAM,
+                    "requestBody": {
+                        "required": True,
+                        "content": {
+                            "application/json": {
+                                "schema": {"$ref": "#/components/schemas/MilestoneUpdate"}
+                            }
+                        },
+                    },
+                    "responses": milestone_response,
+                },
+                "delete": {
+                    "tags": ["milestones"],
+                    "summary": "Delete a milestone",
+                    "parameters": ID_PARAM,
+                    "responses": {
+                        "204": {"description": "deleted"},
+                        "401": unauth_401,
+                        "404": not_found_404,
+                    },
+                },
+            },
+            "/api/v1/milestones/{id}/complete": {
+                "post": {
+                    "tags": ["milestones"],
+                    "summary": "Mark a milestone done",
+                    "parameters": ID_PARAM,
+                    "responses": milestone_response,
+                },
+            },
+            "/api/v1/goals/{id}/commitments": {
+                "post": {
+                    "tags": ["goals"],
+                    "summary": "Persist a tagged commitment (internal — chat-orchestration)",
+                    "description": "Called by chat-orchestration-service when the user confirms "
+                    "'Yes, Tag It'. No X-User-Id gate — internal network call.",
+                    "parameters": ID_PARAM,
+                    "requestBody": {
+                        "required": True,
+                        "content": {
+                            "application/json": {
+                                "schema": {"$ref": "#/components/schemas/CommitmentCreate"}
+                            }
+                        },
+                    },
+                    "responses": {
+                        "201": {
+                            "description": "commitment",
+                            "content": {
+                                "application/json": {
+                                    "schema": {
+                                        "$ref": "#/components/schemas/CommitmentResponse"
+                                    }
+                                }
+                            },
+                        },
+                        "404": not_found_404,
+                        "409": {
+                            "description": "message already tagged as a commitment",
+                            "content": {
+                                "application/json": {
+                                    "schema": {"$ref": "#/components/schemas/Error"}
+                                }
+                            },
+                        },
+                    },
+                },
+                "get": {
+                    "tags": ["goals"],
+                    "summary": "List a goal's tagged commitments",
+                    "parameters": ID_PARAM,
+                    "responses": {
+                        "200": {
+                            "description": "commitments",
+                            "content": {
+                                "application/json": {
+                                    "schema": {
+                                        "type": "array",
+                                        "items": {
+                                            "$ref": "#/components/schemas/CommitmentResponse"
+                                        },
+                                    }
+                                }
+                            },
+                        },
+                        "401": unauth_401,
+                        "404": not_found_404,
+                    },
+                },
+            },
+        }
+    )
+    return spec
+
+
 def gateway_spec() -> dict:
     spec = base(
         "API Gateway",
@@ -625,18 +970,6 @@ SERVICES: dict[str, tuple] = {
             ("delete", "/api/v1/rag/documents/{id}", "rag", "Delete a document", False),
             ("get", "/api/v1/rag/stats", "rag", "Corpus index-health statistics", False),
             ("post", "/api/v1/rag/query", "rag", "Retrieve relevant chunks", True),
-        ],
-    ),
-    "goals-milestones-service": (
-        "Goals & Milestones Service", 8006,
-        "Goals & milestones CRUD and milestone state machine. Publishes goal.* events.",
-        [
-            ("post", "/api/v1/goals", "goals", "Create a goal", True),
-            ("get", "/api/v1/goals", "goals", "List goals", False),
-            ("get", "/api/v1/goals/{id}", "goals", "Get a goal", False),
-            ("patch", "/api/v1/goals/{id}", "goals", "Update a goal", True),
-            ("post", "/api/v1/goals/{id}/milestones", "goals", "Add a milestone", True),
-            ("post", "/api/v1/milestones/{id}/complete", "goals", "Complete a milestone", False),
         ],
     ),
     "progress-gamification-service": (
@@ -716,6 +1049,7 @@ def main() -> None:
         ("api-gateway", gateway_spec()),
         ("auth-user-service", auth_spec()),
         ("intake-profiling-service", intake_spec()),
+        ("goals-milestones-service", goals_spec()),
     ]:
         path = OUT / f"{name}.yaml"
         path.write_text(yaml.safe_dump(spec, sort_keys=False, width=100), encoding="utf-8")

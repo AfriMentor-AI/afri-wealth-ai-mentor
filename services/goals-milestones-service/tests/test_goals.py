@@ -76,6 +76,66 @@ def test_get_goal_wrong_user(client, goal_id):
     assert r.status_code == 404
 
 
+def test_get_goal_includes_progress_pct(client, goal_id):
+    r = client.get(f"/api/v1/goals/{goal_id}", headers=USER_HEADERS)
+    assert r.json()["progress_pct"] == 0
+
+
+def test_create_goal_with_deadline(client):
+    r = client.post(
+        "/api/v1/goals",
+        json={"title": "Start a Poultry Business", "deadline": "2026-12-01"},
+        headers=USER_HEADERS,
+    )
+    assert r.status_code == 201
+    assert r.json()["deadline"] == "2026-12-01"
+
+
+def test_update_goal_partial(client, goal_id):
+    r = client.patch(
+        f"/api/v1/goals/{goal_id}", json={"deadline": "2026-11-15"}, headers=USER_HEADERS
+    )
+    assert r.status_code == 200
+    body = r.json()
+    assert body["deadline"] == "2026-11-15"
+    assert body["title"] == "Save ₦500k"  # untouched
+
+
+def test_update_goal_ignores_explicit_null_title(client, goal_id):
+    """title is NOT NULL — an explicit `"title": null` must not crash the request."""
+    r = client.patch(f"/api/v1/goals/{goal_id}", json={"title": None}, headers=USER_HEADERS)
+    assert r.status_code == 200
+    assert r.json()["title"] == "Save ₦500k"
+
+
+def test_update_goal_requires_ownership(client, goal_id):
+    r = client.patch(
+        f"/api/v1/goals/{goal_id}", json={"title": "Hijacked"}, headers=OTHER_HEADERS
+    )
+    assert r.status_code == 404
+
+
+def test_delete_goal(client, goal_id):
+    r = client.delete(f"/api/v1/goals/{goal_id}", headers=USER_HEADERS)
+    assert r.status_code == 204
+    r2 = client.get(f"/api/v1/goals/{goal_id}", headers=USER_HEADERS)
+    assert r2.status_code == 404
+
+
+def test_delete_goal_requires_ownership(client, goal_id):
+    r = client.delete(f"/api/v1/goals/{goal_id}", headers=OTHER_HEADERS)
+    assert r.status_code == 404
+
+
+def test_delete_goal_cascades_milestones(client, goal_id):
+    client.post(
+        f"/api/v1/goals/{goal_id}/milestones", json={"title": "Step 1"}, headers=USER_HEADERS
+    )
+    client.delete(f"/api/v1/goals/{goal_id}", headers=USER_HEADERS)
+    r = client.get(f"/api/v1/goals/{goal_id}/milestones", headers=USER_HEADERS)
+    assert r.status_code == 404
+
+
 # ── Tagged Commitments ────────────────────────────────────────────────────────
 
 def _commitment_payload(message_id: str = "msg-001") -> dict:
