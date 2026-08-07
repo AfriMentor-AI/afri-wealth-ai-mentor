@@ -11,3 +11,9 @@ cryptography==44.0.0
 passlib[bcrypt]==1.7.4
 bcrypt==4.2.1
 starlette==0.41.3
+prometheus-fastapi-instrumentator==7.0.0
+opentelemetry-sdk==1.29.0
+opentelemetry-exporter-otlp-proto-grpc==1.29.0
+opentelemetry-instrumentation-fastapi==0.50b0
+opentelemetry-instrumentation-httpx==0.50b0
+opentelemetry-instrumentation-sqlalchemy==0.50b0

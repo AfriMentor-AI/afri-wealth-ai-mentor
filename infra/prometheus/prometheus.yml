@@ -1,0 +1,55 @@
+# Prometheus scrape config (card O2.5, docs/observability.md).
+#
+# One job per service: the job label then equals the service name, which is what
+# the Grafana "per-service latency & error rate" dashboard filters on.
+# Every service exposes /metrics via prometheus-fastapi-instrumentator (see
+# scripts/gen_observability.py). Targets are the compose service DNS names.
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: prometheus
+    static_configs:
+      - targets: ["localhost:9090"]
+
+  - job_name: api-gateway
+    static_configs:
+      - targets: ["api-gateway:8000"]
+  - job_name: auth-user-service
+    static_configs:
+      - targets: ["auth-user-service:8001"]
+  - job_name: intake-profiling-service
+    static_configs:
+      - targets: ["intake-profiling-service:8002"]
+  - job_name: chat-orchestration-service
+    static_configs:
+      - targets: ["chat-orchestration-service:8003"]
+  - job_name: persona-prompt-service
+    static_configs:
+      - targets: ["persona-prompt-service:8004"]
+  - job_name: rag-corpus-service
+    static_configs:
+      - targets: ["rag-corpus-service:8005"]
+  - job_name: goals-milestones-service
+    static_configs:
+      - targets: ["goals-milestones-service:8006"]
+  - job_name: progress-gamification-service
+    static_configs:
+      - targets: ["progress-gamification-service:8007"]
+  - job_name: insight-library-service
+    static_configs:
+      - targets: ["insight-library-service:8008"]
+  - job_name: feedback-service
+    static_configs:
+      - targets: ["feedback-service:8009"]
+  - job_name: research-evaluation-service
+    static_configs:
+      - targets: ["research-evaluation-service:8010"]
+  - job_name: voice-service
+    static_configs:
+      - targets: ["voice-service:8011"]
+  - job_name: notification-service
+    static_configs:
+      - targets: ["notification-service:8012"]

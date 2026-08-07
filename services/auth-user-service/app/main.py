@@ -8,6 +8,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 
 from .database import init_db
+from .observability import instrument
 from .routers import auth_router
 
 SERVICE_NAME = "auth-user-service"
@@ -26,6 +27,8 @@ app = FastAPI(
     description="Authentication, JWT issuance/refresh, and user profiles.",
     lifespan=lifespan,
 )
+
+instrument(app, SERVICE_NAME)
 
 app.include_router(auth_router)
 

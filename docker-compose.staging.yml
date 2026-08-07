@@ -34,5 +34,42 @@ services:
     volumes:
       - ./infra/keys:/run/secrets:ro
 
+  # --------------------------------------------------------- observability (O2.5)
+  # Same stack as dev but no host ports; the Grafana admin password comes from the
+  # environment (`GF_SECURITY_ADMIN_PASSWORD`) instead of a hard-coded dev default.
+  prometheus:
+    ports: !reset []
+    volumes:
+      - ./infra/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - promdata_staging:/prometheus
+
+  loki:
+    ports: !reset []
+    volumes:
+      - ./infra/loki/local-config.yaml:/etc/loki/local-config.yaml:ro
+      - lokidata_staging:/loki
+
+  promtail:
+    volumes:
+      - ./infra/promtail/config.yml:/etc/promtail/config.yml:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+
+  grafana:
+    ports: !reset []
+    environment:
+      APP_ENV: staging
+      GF_SECURITY_ADMIN_USER: ${GF_SECURITY_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GF_SECURITY_ADMIN_PASSWORD:?set GF_SECURITY_ADMIN_PASSWORD}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    volumes:
+      - ./infra/grafana/provisioning:/etc/grafana/provisioning:ro
+      - grafanadata_staging:/var/lib/grafana
+
+  jaeger:
+    ports: !reset []
+
 volumes:
   pgdata_staging:
+  promdata_staging:
+  lokidata_staging:
+  grafanadata_staging:

@@ -20,6 +20,14 @@ Only services with a real v1 are in the staging overlay so far: `api-gateway` an
 `auth-user-service` (plus their `postgres`/`redis` dependencies). Add a service's block
 to `docker-compose.staging.yml` as it ships its v1.
 
+The observability stack (Prometheus, Loki, Grafana, Jaeger, Promtail — card O2.5) also
+runs in staging, with no host ports exposed. Grafana's admin credentials come from the
+environment, not the dev defaults:
+
+```bash
+export GF_SECURITY_ADMIN_PASSWORD='a-long-random-value'
+```
+
 ## RS256 keys
 
 Staging uses a real, persistent JWT signing key instead of the dev fallback (a fresh
