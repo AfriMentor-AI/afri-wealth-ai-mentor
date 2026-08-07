@@ -12,6 +12,7 @@ from fastapi import FastAPI
 from .config import get_settings
 from .database import init_db
 from .routers.goals import router as goals_router
+from .routers.milestones import router as milestones_router
 
 settings = get_settings()
 
@@ -33,6 +34,7 @@ app = FastAPI(
 )
 
 app.include_router(goals_router)
+app.include_router(milestones_router)
 
 
 @app.get("/health", tags=["meta"])
