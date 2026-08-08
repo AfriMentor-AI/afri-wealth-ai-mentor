@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Icon } from "@/components/Icon";
-import { fetchCommitmentsByGoal, fetchGoalById, fetchMilestonesByGoal } from "@/lib/api";
+import { completeMilestone, fetchCommitmentsByGoal, fetchGoalById, fetchMilestonesByGoal } from "@/lib/api";
 import type { Commitment, Goal, Milestone } from "@/lib/types";
 import { MilestoneRoad } from "@/components/ui/MilestoneRoad";
 import { Skeleton } from "@/components/ui/Skeleton";
@@ -25,6 +25,16 @@ export default function GoalMilestonePathPage({ params }: { params: { goalId: st
     fetchMilestonesByGoal(params.goalId).then(setMilestones);
     fetchCommitmentsByGoal(params.goalId).then(setCommitments);
   }, [params.goalId]);
+
+  async function handleCompleteMilestone(milestoneId: string) {
+    await completeMilestone(milestoneId);
+    const [refreshedGoal, refreshedMilestones] = await Promise.all([
+      fetchGoalById(params.goalId),
+      fetchMilestonesByGoal(params.goalId),
+    ]);
+    setGoal(refreshedGoal);
+    setMilestones(refreshedMilestones);
+  }
 
   return (
     <div className="min-h-full bg-surface">
@@ -50,14 +60,20 @@ export default function GoalMilestonePathPage({ params }: { params: { goalId: st
           <>
             <p className="font-label-sm text-label-sm uppercase text-on-surface-variant">Active Goal</p>
             <h2 className="font-headline-lg-mobile text-headline-lg-mobile mt-xs text-on-background">
-              {goal.id === "goal-business-launch" ? "Start a Poultry Business" : goal.title}
+              {goal.title}
             </h2>
-            <p className="mt-xs font-body-md text-body-md text-on-surface-variant">
-              Your journey to financial independence in Kumasi.
-            </p>
+            {goal.deadline && (
+              <p className="mt-xs font-body-md text-body-md text-on-surface-variant">
+                Target: {new Date(goal.deadline).toLocaleDateString(undefined, { year: "numeric", month: "long", day: "numeric" })}
+              </p>
+            )}
 
             <div className="mt-xl">
-              {milestones === null ? <Skeleton className="h-64 w-full" /> : <MilestoneRoad milestones={milestones} />}
+              {milestones === null ? (
+                <Skeleton className="h-64 w-full" />
+              ) : (
+                <MilestoneRoad milestones={milestones} onCompleteMilestone={handleCompleteMilestone} />
+              )}
             </div>
 
             <section className="mt-xl">

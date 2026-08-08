@@ -1,33 +1,59 @@
-"""Goals Milestones Service — AfriMentor AI microservice stub.
+"""Goals & Milestones Service — AfriMentor AI (card D2.3).
 
-Generated for card O1.2. Real implementation lands in later sprints.
-Health endpoint is live so docker-compose health checks pass.
+Owns goals CRUD and tagged commitments. Receives commitment.tag_suggested
+events (via chat-orchestration-service's Tag It endpoint) and persists them
+as TaggedCommitment rows linked to the user's active goal, then emits
+commitment.created for downstream consumers (progress, notifications, research).
 """
-import os
+from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 
-SERVICE_NAME = "goals-milestones-service"
-SERVICE_VERSION = "0.1.0"
+from .config import get_settings
+from .database import init_db
+from .observability import instrument
+from .routers.goals import router as goals_router
+from .routers.milestones import router as milestones_router
+
+settings = get_settings()
+
+SERVICE_NAME = settings.service_name
+SERVICE_VERSION = "1.0.0"
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    init_db()
+    yield
+
 
 app = FastAPI(
-    title="AfriMentor AI — Goals Milestones Service",
+    title="AfriMentor AI — Goals & Milestones Service",
     version=SERVICE_VERSION,
-    description="Stub service. See docs/adr/0001-microservices-architecture.md",
+    description="Goals CRUD and tagged commitments pipeline (D2.3).",
+    lifespan=lifespan,
 )
+
+instrument(app, SERVICE_NAME)
+
+app.include_router(goals_router)
+app.include_router(milestones_router)
 
 
 @app.get("/health", tags=["meta"])
 def health() -> dict:
-    """Liveness/readiness probe used by docker-compose and the gateway."""
     return {
         "status": "healthy",
         "service": SERVICE_NAME,
         "version": SERVICE_VERSION,
-        "env": os.getenv("APP_ENV", "dev"),
+        "env": settings.env,
     }
 
 
 @app.get("/", tags=["meta"])
 def root() -> dict:
-    return {"service": SERVICE_NAME, "message": "Goals Milestones Service online", "docs": "/docs"}
+    return {
+        "service": SERVICE_NAME,
+        "message": "Goals & Milestones Service online",
+        "docs": "/docs",
+    }

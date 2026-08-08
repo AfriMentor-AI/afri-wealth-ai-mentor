@@ -1,9 +1,6 @@
 """C2.3 — Trait-fit metric end-to-end tests."""
 import json
-from pathlib import Path
-from unittest.mock import MagicMock, patch
-
-import pytest
+from unittest.mock import patch
 
 from app.metrics.profile import load_profile
 from app.metrics.schemas import ProbeResponse
@@ -15,7 +12,6 @@ from scripts.run_trait_fit import (
     load_probes,
     run_experiment,
 )
-
 
 # ── Unit tests (no DB needed) ─────────────────────────────────────────────────
 
@@ -66,6 +62,7 @@ def test_worst_trait_identified():
 
 def _make_in_memory_engine():
     from sqlalchemy import create_engine
+
     from app.models.audit import Base
     engine = create_engine("sqlite:///:memory:", connect_args={"check_same_thread": False})
     Base.metadata.create_all(bind=engine)
@@ -75,6 +72,7 @@ def _make_in_memory_engine():
 def test_run_experiment_stores_report(tmp_path):
     """Full end-to-end: run experiment, verify report stored, check output JSON."""
     from sqlalchemy.orm import sessionmaker
+
     from app.models.audit import ExperimentRun, ExperimentStatus, TraitFitReport
 
     engine = _make_in_memory_engine()
@@ -82,7 +80,10 @@ def test_run_experiment_stores_report(tmp_path):
 
     out_file = tmp_path / "report.json"
 
-    with patch("scripts.run_trait_fit.engine", engine),          patch("scripts.run_trait_fit.SessionLocal", Session):
+    with (
+        patch("scripts.run_trait_fit.engine", engine),
+        patch("scripts.run_trait_fit.SessionLocal", Session),
+    ):
         result = run_experiment(
             model_id="test-baseline",
             name="test-run-001",
@@ -131,7 +132,10 @@ def test_run_experiment_probe_cosine_in_range(tmp_path):
     engine = _make_in_memory_engine()
     Session = sessionmaker(bind=engine)
 
-    with patch("scripts.run_trait_fit.engine", engine),          patch("scripts.run_trait_fit.SessionLocal", Session):
+    with (
+        patch("scripts.run_trait_fit.engine", engine),
+        patch("scripts.run_trait_fit.SessionLocal", Session),
+    ):
         result = run_experiment(model_id="test", name="cosine-check", live=False)
 
     cosine = result["probe_trait_fit"]["cosine_similarity"]
@@ -140,12 +144,16 @@ def test_run_experiment_probe_cosine_in_range(tmp_path):
 
 def test_main_cli_runs_successfully(tmp_path):
     from sqlalchemy.orm import sessionmaker
+
     from scripts.run_trait_fit import main
     engine = _make_in_memory_engine()
     Session = sessionmaker(bind=engine)
     out = tmp_path / "cli_out.json"
 
-    with patch("scripts.run_trait_fit.engine", engine),          patch("scripts.run_trait_fit.SessionLocal", Session):
+    with (
+        patch("scripts.run_trait_fit.engine", engine),
+        patch("scripts.run_trait_fit.SessionLocal", Session),
+    ):
         ret = main(["--model-id", "cli-test", "--fixtures", "--out", str(out)])
 
     assert ret == 0

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Apply identical branch protection to main and develop (card O1.2).
+# Apply identical branch protection to main and develop (cards O1.2, D2.5).
 #
 # Usage:
 #   gh auth login                       # once, with a token that has 'repo' admin scope
@@ -29,7 +29,7 @@ read -r -d '' PAYLOAD <<'JSON' || true
   "enforce_admins": true,
   "required_pull_request_reviews": {
     "dismiss_stale_reviews": true,
-    "require_code_owner_reviews": false,
+    "require_code_owner_reviews": true,
     "required_approving_review_count": 1
   },
   "restrictions": null,

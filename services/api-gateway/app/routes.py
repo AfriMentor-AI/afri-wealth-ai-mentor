@@ -30,6 +30,8 @@ ROUTES: list[Route] = [
           protected=False, rate_limit=20),
     # protected capability services
     Route("/api/v1/intake", "INTAKE_SERVICE_URL", "http://localhost:8002"),
+    # Diagnostic profiles are served by intake-profiling-service too (card O2.2).
+    Route("/api/v1/profiles", "INTAKE_SERVICE_URL", "http://localhost:8002"),
     Route("/api/v1/chat", "CHAT_SERVICE_URL", "http://localhost:8003"),
     Route("/api/v1/personas", "PERSONA_SERVICE_URL", "http://localhost:8004"),
     Route("/api/v1/rag", "RAG_SERVICE_URL", "http://localhost:8005"),

@@ -1,0 +1,75 @@
+# Staging overlay (card O2.1) — layers on top of docker-compose.yml:
+#   docker compose -f docker-compose.yml -f docker-compose.staging.yml up -d --build <services>
+#
+# There is no cloud environment yet (see docs/deployment/staging.md for why); this
+# overlay is the interim "staging" — a longer-lived, production-shaped Docker Compose
+# stack (real migrations via Alembic, no host ports on datastores, named `-staging`
+# volumes so it never shares data with the dev stack). Only services that have shipped
+# a real v1 so far are listed; add a service's block here as it goes live.
+name: afrimentor-staging
+
+services:
+  postgres:
+    # `!reset` clears the base file's published ports (Compose just concatenates plain
+    # lists across -f files, so a bare `[]` here would be a no-op).
+    ports: !reset []
+    volumes:
+      - pgdata_staging:/var/lib/postgresql/data
+      - ./infra/postgres/init-databases.sh:/docker-entrypoint-initdb.d/init-databases.sh:ro
+
+  redis:
+    ports: !reset []
+
+  api-gateway:
+    environment:
+      APP_ENV: staging
+
+  auth-user-service:
+    environment:
+      APP_ENV: staging
+      # Real RS256 keypair for staging (never the dev in-process fallback). Mount via
+      # infra/keys/ (gitignored) or inject as secrets in a real CD pipeline later.
+      JWT_PRIVATE_KEY_PATH: /run/secrets/jwt_private_key.pem
+      JWT_PUBLIC_KEY_PATH: /run/secrets/jwt_public_key.pem
+    volumes:
+      - ./infra/keys:/run/secrets:ro
+
+  # --------------------------------------------------------- observability (O2.5)
+  # Same stack as dev but no host ports; the Grafana admin password comes from the
+  # environment (`GF_SECURITY_ADMIN_PASSWORD`) instead of a hard-coded dev default.
+  prometheus:
+    ports: !reset []
+    volumes:
+      - ./infra/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - promdata_staging:/prometheus
+
+  loki:
+    ports: !reset []
+    volumes:
+      - ./infra/loki/local-config.yaml:/etc/loki/local-config.yaml:ro
+      - lokidata_staging:/loki
+
+  promtail:
+    volumes:
+      - ./infra/promtail/config.yml:/etc/promtail/config.yml:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+
+  grafana:
+    ports: !reset []
+    environment:
+      APP_ENV: staging
+      GF_SECURITY_ADMIN_USER: ${GF_SECURITY_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GF_SECURITY_ADMIN_PASSWORD:?set GF_SECURITY_ADMIN_PASSWORD}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    volumes:
+      - ./infra/grafana/provisioning:/etc/grafana/provisioning:ro
+      - grafanadata_staging:/var/lib/grafana
+
+  jaeger:
+    ports: !reset []
+
+volumes:
+  pgdata_staging:
+  promdata_staging:
+  lokidata_staging:
+  grafanadata_staging:

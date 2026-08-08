@@ -1,9 +1,9 @@
 """Unit tests for the personality-consistency metric suite v0 (card C1.3)."""
 
 import json
-from pathlib import Path
 
 import pytest
+
 from app.metrics.consistency import (
     line_to_line,
     prompt_to_line,
@@ -11,7 +11,6 @@ from app.metrics.consistency import (
     score_consistency,
 )
 from app.metrics.profile import (
-    DEFAULT_PROFILE_PATH,
     LEVEL_VALUES,
     TargetProfile,
     TraitTarget,
@@ -29,7 +28,6 @@ from app.metrics.schemas import (
     ProbeResponse,
     Speaker,
     TraitFitResult,
-    TraitScore,
     Turn,
 )
 from app.metrics.scoring import (
@@ -37,7 +35,6 @@ from app.metrics.scoring import (
     SimilarityScorer,
     cosine,
     cosine_dense,
-    default_scorer,
     tokenize,
 )
 from app.metrics.trait_fit import (
@@ -238,9 +235,15 @@ def test_consistency_metrics():
         system_prompt="Provide structured financial guidance and active cashflow steps.",
         turns=[
             Turn(speaker=Speaker.user, text="How do I manage financial cashflow?"),
-            Turn(speaker=Speaker.mentor, text="First, audit financial cashflow and create structured guidance steps."),
+            Turn(
+                speaker=Speaker.mentor,
+                text="First, audit financial cashflow and create structured guidance steps.",
+            ),
             Turn(speaker=Speaker.user, text="What is step two for financial guidance?"),
-            Turn(speaker=Speaker.mentor, text="Second, allocate financial reserves and structured guidance steps."),
+            Turn(
+                speaker=Speaker.mentor,
+                text="Second, allocate financial reserves and structured guidance steps.",
+            ),
         ],
     )
 

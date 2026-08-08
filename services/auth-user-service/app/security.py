@@ -7,6 +7,8 @@ committed secrets (ADR-0001 §D5).
 from __future__ import annotations
 
 import datetime as dt
+import hashlib
+import secrets
 import uuid
 from functools import lru_cache
 
@@ -27,6 +29,17 @@ def hash_password(plain: str) -> str:
 
 def verify_password(plain: str, hashed: str) -> bool:
     return _pwd.verify(plain, hashed)
+
+
+# ------------------------------------------------------------ password reset tokens
+def generate_reset_token() -> tuple[str, str]:
+    """Return (raw_token, sha256_hash). Only the hash is ever persisted."""
+    raw = secrets.token_urlsafe(32)
+    return raw, hash_reset_token(raw)
+
+
+def hash_reset_token(raw: str) -> str:
+    return hashlib.sha256(raw.encode()).hexdigest()
 
 
 # ------------------------------------------------------------------------- keys

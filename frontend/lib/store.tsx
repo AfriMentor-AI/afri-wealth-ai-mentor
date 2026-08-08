@@ -24,7 +24,7 @@ interface AppState {
 type Action =
   | { type: "SET_THEME"; theme: ThemeName }
   | { type: "TOGGLE_THEME" }
-  | { type: "SET_PROFILE"; profile: Profile }
+  | { type: "SET_PROFILE"; profile: Profile | null }
   | { type: "SET_PERSONA"; persona: Persona }
   | { type: "SET_CHAT_MESSAGES"; messages: ChatMessage[] }
   | { type: "APPEND_CHAT_MESSAGE"; message: ChatMessage }

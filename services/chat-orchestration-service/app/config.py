@@ -21,6 +21,7 @@ class Settings(BaseModel):
     # Downstream service URLs (populated by docker-compose; empty = stub mode)
     persona_service_url: str = os.getenv("PERSONA_SERVICE_URL", "")
     rag_service_url: str = os.getenv("RAG_SERVICE_URL", "")
+    goals_service_url: str = os.getenv("GOALS_SERVICE_URL", "http://localhost:8006")
 
     # LLM — OpenAI-compatible (Groq / Together AI / local vLLM)
     llm_api_key: str = os.getenv("LLM_API_KEY", "")

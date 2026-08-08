@@ -12,6 +12,8 @@ from app.api.routes import router
 from app.db.session import Base, engine
 from app.models.document import Document  # noqa: F401
 
+from .observability import instrument
+
 logger = logging.getLogger(__name__)
 SERVICE_NAME = "rag-corpus-service"
 SERVICE_VERSION = "0.1.0"
@@ -21,6 +23,8 @@ app = FastAPI(
     version=SERVICE_VERSION,
     description="Corpus ingestion, chunking, embedding, vector retrieval. See ADR-0001.",
 )
+
+instrument(app, SERVICE_NAME)
 
 @app.on_event("startup")
 def create_tables():

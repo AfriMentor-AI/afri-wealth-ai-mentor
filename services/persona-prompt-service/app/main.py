@@ -1,34 +1,43 @@
-"""Persona Prompt Service — AfriMentor AI microservice (cards C1.4 & D1.3).
+"""Persona Prompt Service — AfriMentor AI (cards C1.4, D1.3 & D2.2).
 
-Publishes the machine-readable CHIOMA persona spec and prompt assembly endpoints.
+Exposes persona catalogue, session binding, audio preview stub, and
+rendered system-prompt endpoint consumed by chat-orchestration-service,
+plus the machine-readable CHIOMA persona spec and its assembled prompt.
 """
 
 from __future__ import annotations
 
-import os
 from fastapi import FastAPI, HTTPException
 
 from app.loader import PersonaProfileSpec, load_persona_profile
 from app.prompts import build_system_prompt
 
+from .config import get_settings
+from .observability import instrument
+from .routers.personas import router as personas_router
+
 SERVICE_NAME = "persona-prompt-service"
-SERVICE_VERSION = "0.1.0"
+SERVICE_VERSION = "1.0.0"
 
 app = FastAPI(
     title="AfriMentor AI — Persona Prompt Service",
     version=SERVICE_VERSION,
-    description="Manages versioned persona profile specifications and system prompt assembly.",
+    description="Persona catalogue, session binding, prompt rendering, and profile specs.",
 )
+
+instrument(app, SERVICE_NAME)
+
+app.include_router(personas_router)
 
 
 @app.get("/health", tags=["meta"])
 def health() -> dict:
-    """Liveness/readiness probe used by docker-compose and the gateway."""
+    settings = get_settings()
     return {
         "status": "healthy",
         "service": SERVICE_NAME,
         "version": SERVICE_VERSION,
-        "env": os.getenv("APP_ENV", "dev"),
+        "env": settings.env,
     }
 
 

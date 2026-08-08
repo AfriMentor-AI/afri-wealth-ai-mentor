@@ -192,6 +192,30 @@ def auth_spec() -> dict:
             },
         ]
     }
+    schemas["ProfileUpdateRequest"] = {"$ref": "#/components/schemas/ProfileFields"}
+    schemas["PasswordResetRequestSchema"] = {
+        "type": "object",
+        "required": ["email"],
+        "properties": {"email": {"type": "string", "format": "email"}},
+    }
+    schemas["PasswordResetRequestResponse"] = {
+        "type": "object",
+        "properties": {
+            "detail": {"type": "string"},
+            "reset_token": {
+                "type": ["string", "null"],
+                "description": "Only populated outside prod — no email provider is wired up yet.",
+            },
+        },
+    }
+    schemas["PasswordResetConfirmRequest"] = {
+        "type": "object",
+        "required": ["reset_token", "new_password"],
+        "properties": {
+            "reset_token": {"type": "string"},
+            "new_password": {"type": "string", "minLength": 8, "maxLength": 128},
+        },
+    }
 
     def token_op(summary, body_ref, code="200"):
         return {
@@ -268,6 +292,101 @@ def auth_spec() -> dict:
                             },
                         },
                     },
+                },
+                "patch": {
+                    "tags": ["auth"],
+                    "summary": "Partially update the authenticated user's profile",
+                    "requestBody": {
+                        "required": True,
+                        "content": {
+                            "application/json": {
+                                "schema": {"$ref": "#/components/schemas/ProfileUpdateRequest"}
+                            }
+                        },
+                    },
+                    "responses": {
+                        "200": {
+                            "description": "updated profile",
+                            "content": {
+                                "application/json": {
+                                    "schema": {"$ref": "#/components/schemas/UserResponse"}
+                                }
+                            },
+                        },
+                        "401": {
+                            "description": "unauthorized",
+                            "content": {
+                                "application/json": {"schema": {"$ref": "#/components/schemas/Error"}}
+                            },
+                        },
+                    },
+                },
+                "delete": {
+                    "tags": ["auth"],
+                    "summary": "Deactivate the authenticated user's account and revoke its sessions",
+                    "responses": {
+                        "204": {"description": "deactivated"},
+                        "401": {
+                            "description": "unauthorized",
+                            "content": {
+                                "application/json": {"schema": {"$ref": "#/components/schemas/Error"}}
+                            },
+                        },
+                    },
+                },
+            },
+            "/auth/password-reset/request": {
+                "post": {
+                    "tags": ["auth"],
+                    "summary": "Request a password-reset token",
+                    "security": [],
+                    "requestBody": {
+                        "required": True,
+                        "content": {
+                            "application/json": {
+                                "schema": {"$ref": "#/components/schemas/PasswordResetRequestSchema"}
+                            }
+                        },
+                    },
+                    "responses": {
+                        "200": {
+                            "description": (
+                                "Same response whether or not the email is registered, "
+                                "so this endpoint can't be used to enumerate accounts."
+                            ),
+                            "content": {
+                                "application/json": {
+                                    "schema": {
+                                        "$ref": "#/components/schemas/PasswordResetRequestResponse"
+                                    }
+                                }
+                            },
+                        }
+                    },
+                }
+            },
+            "/auth/password-reset/confirm": {
+                "post": {
+                    "tags": ["auth"],
+                    "summary": "Confirm a password reset with the issued token",
+                    "security": [],
+                    "requestBody": {
+                        "required": True,
+                        "content": {
+                            "application/json": {
+                                "schema": {"$ref": "#/components/schemas/PasswordResetConfirmRequest"}
+                            }
+                        },
+                    },
+                    "responses": {
+                        "204": {"description": "password changed, sessions revoked"},
+                        "400": {
+                            "description": "invalid or expired reset token",
+                            "content": {
+                                "application/json": {"schema": {"$ref": "#/components/schemas/Error"}}
+                            },
+                        },
+                    },
                 }
             },
             "/auth/.well-known/jwks": {
@@ -277,6 +396,522 @@ def auth_spec() -> dict:
                     "security": [],
                     "responses": {"200": {"description": "public key (PEM)"}},
                 }
+            },
+        }
+    )
+    return spec
+
+
+def intake_spec() -> dict:
+    spec = base(
+        "Intake Profiling Service",
+        "intake-profiling-service",
+        8002,
+        "Backs the 4-step Intake flow and exposes the resulting diagnostic profile. "
+        "Reflects the implemented v1 API (card O2.2).",
+    )
+    schemas = spec["components"]["schemas"]
+    schemas["IntakeStep"] = {
+        "type": "string",
+        "enum": ["sector", "education_time", "constraints", "confirm"],
+    }
+    schemas["AnswerSubmitRequest"] = {
+        "type": "object",
+        "required": ["step", "payload"],
+        "properties": {
+            "step": {"$ref": "#/components/schemas/IntakeStep"},
+            "payload": {
+                "type": "object",
+                "description": "Shape depends on `step`: sector={sector}, "
+                "education_time={education_level,time_available_per_week}, "
+                "constraints={constraints:[]}, confirm={name,business_name,location}.",
+            },
+        },
+    }
+    schemas["AnswerResponse"] = {
+        "type": "object",
+        "properties": {
+            "step": {"$ref": "#/components/schemas/IntakeStep"},
+            "payload": {"type": "object"},
+            "updated_at": {"type": "string", "format": "date-time"},
+        },
+    }
+    schemas["SessionResponse"] = {
+        "type": "object",
+        "properties": {
+            "id": {"type": "string"},
+            "user_id": {"type": "string"},
+            "status": {"type": "string", "enum": ["in_progress", "completed"]},
+            "started_at": {"type": "string", "format": "date-time"},
+            "completed_at": {"type": ["string", "null"], "format": "date-time"},
+            "answers": {"type": "array", "items": {"$ref": "#/components/schemas/AnswerResponse"}},
+        },
+    }
+    schemas["DiagnosticProfileResponse"] = {
+        "type": "object",
+        "properties": {
+            "user_id": {"type": "string"},
+            "name": {"type": "string"},
+            "business_name": {"type": "string"},
+            "location": {"type": "string"},
+            "sector": {"type": "string"},
+            "education_level": {"type": "string"},
+            "time_available_per_week": {"type": "string"},
+            "constraints": {"type": "array", "items": {"type": "string"}},
+            "persona_id": {"type": ["string", "null"]},
+            "created_at": {"type": "string", "format": "date-time"},
+            "updated_at": {"type": "string", "format": "date-time"},
+        },
+    }
+
+    spec["tags"] = [{"name": "intake"}, {"name": "profiles"}, {"name": "meta"}]
+    session_response = {
+        "200": {
+            "description": "session",
+            "content": {
+                "application/json": {"schema": {"$ref": "#/components/schemas/SessionResponse"}}
+            },
+        },
+        "401": {
+            "description": "missing X-User-Id",
+            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Error"}}},
+        },
+        "404": {
+            "description": "session not found (or not owned by the caller)",
+            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Error"}}},
+        },
+    }
+    spec["paths"].update(
+        {
+            "/api/v1/intake/sessions": {
+                "post": {
+                    "tags": ["intake"],
+                    "summary": "Start (or resume) the caller's intake session",
+                    "responses": {
+                        "201": session_response["200"],
+                        "200": {
+                            **session_response["200"],
+                            "description": "resumed an existing in-progress session",
+                        },
+                        "401": session_response["401"],
+                    },
+                }
+            },
+            "/api/v1/intake/sessions/{id}": {
+                "get": {
+                    "tags": ["intake"],
+                    "summary": "Get an intake session and its answers so far",
+                    "parameters": ID_PARAM,
+                    "responses": session_response,
+                }
+            },
+            "/api/v1/intake/sessions/{id}/answers": {
+                "post": {
+                    "tags": ["intake"],
+                    "summary": "Submit (or update) the answer for one intake step",
+                    "parameters": ID_PARAM,
+                    "requestBody": {
+                        "required": True,
+                        "content": {
+                            "application/json": {
+                                "schema": {"$ref": "#/components/schemas/AnswerSubmitRequest"}
+                            }
+                        },
+                    },
+                    "responses": {
+                        **session_response,
+                        "409": {"description": "session already completed"},
+                        "422": {"description": "payload doesn't match the shape for `step`"},
+                    },
+                }
+            },
+            "/api/v1/intake/sessions/{id}/complete": {
+                "post": {
+                    "tags": ["intake"],
+                    "summary": "Mark intake complete and build the diagnostic profile",
+                    "parameters": ID_PARAM,
+                    "responses": {
+                        **session_response,
+                        "400": {"description": "one or more required steps have no answer yet"},
+                        "409": {"description": "session already completed"},
+                    },
+                }
+            },
+            "/api/v1/profiles/{userId}/diagnostic": {
+                "get": {
+                    "tags": ["profiles"],
+                    "summary": "Get a user's diagnostic profile",
+                    "description": "Called via the gateway by the end user (X-User-Id must match "
+                    "userId) or service-to-service on the internal network (no X-User-Id, "
+                    "trusted) — e.g. by Chat Orchestration for personalization.",
+                    "parameters": [
+                        {
+                            "name": "userId",
+                            "in": "path",
+                            "required": True,
+                            "schema": {"type": "string"},
+                        }
+                    ],
+                    "responses": {
+                        "200": {
+                            "description": "diagnostic profile",
+                            "content": {
+                                "application/json": {
+                                    "schema": {
+                                        "$ref": "#/components/schemas/DiagnosticProfileResponse"
+                                    }
+                                }
+                            },
+                        },
+                        "403": {"description": "X-User-Id doesn't match userId"},
+                        "404": {"description": "no diagnostic profile for this user yet"},
+                    },
+                }
+            },
+        }
+    )
+    return spec
+
+
+def goals_spec() -> dict:
+    spec = base(
+        "Goals & Milestones Service",
+        "goals-milestones-service",
+        8006,
+        "Goals CRUD, milestone state machine (card O2.3), and tagged commitments "
+        "pipeline (card D2.3). Reflects the implemented v1 API.",
+    )
+    schemas = spec["components"]["schemas"]
+    schemas["GoalCreate"] = {
+        "type": "object",
+        "required": ["title"],
+        "properties": {
+            "title": {"type": "string", "minLength": 1, "maxLength": 255},
+            "description": {"type": ["string", "null"]},
+            "deadline": {"type": ["string", "null"], "format": "date"},
+        },
+    }
+    schemas["GoalUpdate"] = {
+        "type": "object",
+        "properties": {
+            "title": {"type": ["string", "null"], "minLength": 1, "maxLength": 255},
+            "description": {"type": ["string", "null"]},
+            "deadline": {"type": ["string", "null"], "format": "date"},
+        },
+    }
+    schemas["GoalResponse"] = {
+        "type": "object",
+        "required": [
+            "id", "user_id", "title", "status", "progress_pct", "created_at", "updated_at",
+        ],
+        "properties": {
+            "id": {"type": "string"},
+            "user_id": {"type": "string"},
+            "title": {"type": "string"},
+            "description": {"type": ["string", "null"]},
+            "status": {"type": "string", "enum": ["active", "completed", "abandoned"]},
+            "deadline": {"type": ["string", "null"], "format": "date"},
+            "progress_pct": {
+                "type": "integer",
+                "description": "Server-computed % of this goal's milestones with status 'done'.",
+            },
+            "created_at": {"type": "string", "format": "date-time"},
+            "updated_at": {"type": "string", "format": "date-time"},
+        },
+    }
+    schemas["MilestoneStatus"] = {
+        "type": "string",
+        "enum": ["done", "in_progress", "blocked", "upcoming"],
+    }
+    schemas["MilestoneCreate"] = {
+        "type": "object",
+        "required": ["title"],
+        "properties": {
+            "title": {"type": "string", "minLength": 1, "maxLength": 160},
+            "status": {"$ref": "#/components/schemas/MilestoneStatus"},
+            "order": {"type": "integer", "minimum": 0},
+        },
+    }
+    schemas["MilestoneUpdate"] = {
+        "type": "object",
+        "properties": {
+            "title": {"type": ["string", "null"], "minLength": 1, "maxLength": 160},
+            "status": {"$ref": "#/components/schemas/MilestoneStatus"},
+            "order": {"type": "integer", "minimum": 0},
+        },
+    }
+    schemas["MilestoneResponse"] = {
+        "type": "object",
+        "required": ["id", "goal_id", "title", "status", "order", "created_at", "updated_at"],
+        "properties": {
+            "id": {"type": "string"},
+            "goal_id": {"type": "string"},
+            "title": {"type": "string"},
+            "status": {"$ref": "#/components/schemas/MilestoneStatus"},
+            "order": {"type": "integer"},
+            "created_at": {"type": "string", "format": "date-time"},
+            "updated_at": {"type": "string", "format": "date-time"},
+        },
+    }
+    schemas["CommitmentCreate"] = {
+        "type": "object",
+        "required": ["user_id", "conversation_id", "message_id", "content"],
+        "properties": {
+            "user_id": {"type": "string"},
+            "conversation_id": {"type": "string"},
+            "message_id": {"type": "string"},
+            "content": {"type": "string", "minLength": 1, "maxLength": 2000},
+        },
+    }
+    schemas["CommitmentResponse"] = {
+        "type": "object",
+        "required": [
+            "id", "goal_id", "user_id", "conversation_id", "message_id", "content", "created_at",
+        ],
+        "properties": {
+            "id": {"type": "string"},
+            "goal_id": {"type": "string"},
+            "user_id": {"type": "string"},
+            "conversation_id": {"type": "string"},
+            "message_id": {"type": "string"},
+            "content": {"type": "string"},
+            "created_at": {"type": "string", "format": "date-time"},
+        },
+    }
+
+    unauth_401 = {
+        "description": "missing/invalid X-User-Id",
+        "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Error"}}},
+    }
+    not_found_404 = {
+        "description": "resource not found (or not owned by the caller)",
+        "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Error"}}},
+    }
+    goal_response = {
+        "200": {
+            "description": "goal",
+            "content": {
+                "application/json": {"schema": {"$ref": "#/components/schemas/GoalResponse"}}
+            },
+        },
+        "401": unauth_401,
+        "404": not_found_404,
+    }
+    milestone_response = {
+        "200": {
+            "description": "milestone",
+            "content": {
+                "application/json": {"schema": {"$ref": "#/components/schemas/MilestoneResponse"}}
+            },
+        },
+        "401": unauth_401,
+        "404": not_found_404,
+    }
+
+    spec["tags"] = [{"name": "goals"}, {"name": "milestones"}, {"name": "meta"}]
+    spec["paths"].update(
+        {
+            "/api/v1/goals": {
+                "post": {
+                    "tags": ["goals"],
+                    "summary": "Create a goal",
+                    "requestBody": {
+                        "required": True,
+                        "content": {
+                            "application/json": {
+                                "schema": {"$ref": "#/components/schemas/GoalCreate"}
+                            }
+                        },
+                    },
+                    "responses": {
+                        "201": goal_response["200"],
+                        "401": unauth_401,
+                    },
+                },
+                "get": {
+                    "tags": ["goals"],
+                    "summary": "List the caller's active goals",
+                    "responses": {
+                        "200": {
+                            "description": "goals",
+                            "content": {
+                                "application/json": {
+                                    "schema": {
+                                        "type": "array",
+                                        "items": {"$ref": "#/components/schemas/GoalResponse"},
+                                    }
+                                }
+                            },
+                        },
+                        "401": unauth_401,
+                    },
+                },
+            },
+            "/api/v1/goals/{id}": {
+                "get": {
+                    "tags": ["goals"],
+                    "summary": "Get a goal",
+                    "parameters": ID_PARAM,
+                    "responses": goal_response,
+                },
+                "patch": {
+                    "tags": ["goals"],
+                    "summary": "Partially update a goal",
+                    "parameters": ID_PARAM,
+                    "requestBody": {
+                        "required": True,
+                        "content": {
+                            "application/json": {
+                                "schema": {"$ref": "#/components/schemas/GoalUpdate"}
+                            }
+                        },
+                    },
+                    "responses": goal_response,
+                },
+                "delete": {
+                    "tags": ["goals"],
+                    "summary": "Delete a goal (cascades its milestones and commitments)",
+                    "parameters": ID_PARAM,
+                    "responses": {
+                        "204": {"description": "deleted"},
+                        "401": unauth_401,
+                        "404": not_found_404,
+                    },
+                },
+            },
+            "/api/v1/goals/{id}/milestones": {
+                "post": {
+                    "tags": ["milestones"],
+                    "summary": "Add a milestone to a goal",
+                    "parameters": ID_PARAM,
+                    "requestBody": {
+                        "required": True,
+                        "content": {
+                            "application/json": {
+                                "schema": {"$ref": "#/components/schemas/MilestoneCreate"}
+                            }
+                        },
+                    },
+                    "responses": {
+                        "201": milestone_response["200"],
+                        "401": unauth_401,
+                        "404": not_found_404,
+                    },
+                },
+                "get": {
+                    "tags": ["milestones"],
+                    "summary": "List a goal's milestones in display order",
+                    "parameters": ID_PARAM,
+                    "responses": {
+                        "200": {
+                            "description": "milestones",
+                            "content": {
+                                "application/json": {
+                                    "schema": {
+                                        "type": "array",
+                                        "items": {"$ref": "#/components/schemas/MilestoneResponse"},
+                                    }
+                                }
+                            },
+                        },
+                        "401": unauth_401,
+                        "404": not_found_404,
+                    },
+                },
+            },
+            "/api/v1/milestones/{id}": {
+                "patch": {
+                    "tags": ["milestones"],
+                    "summary": "Update a milestone (title, status, order)",
+                    "parameters": ID_PARAM,
+                    "requestBody": {
+                        "required": True,
+                        "content": {
+                            "application/json": {
+                                "schema": {"$ref": "#/components/schemas/MilestoneUpdate"}
+                            }
+                        },
+                    },
+                    "responses": milestone_response,
+                },
+                "delete": {
+                    "tags": ["milestones"],
+                    "summary": "Delete a milestone",
+                    "parameters": ID_PARAM,
+                    "responses": {
+                        "204": {"description": "deleted"},
+                        "401": unauth_401,
+                        "404": not_found_404,
+                    },
+                },
+            },
+            "/api/v1/milestones/{id}/complete": {
+                "post": {
+                    "tags": ["milestones"],
+                    "summary": "Mark a milestone done",
+                    "parameters": ID_PARAM,
+                    "responses": milestone_response,
+                },
+            },
+            "/api/v1/goals/{id}/commitments": {
+                "post": {
+                    "tags": ["goals"],
+                    "summary": "Persist a tagged commitment (internal — chat-orchestration)",
+                    "description": "Called by chat-orchestration-service when the user confirms "
+                    "'Yes, Tag It'. No X-User-Id gate — internal network call.",
+                    "parameters": ID_PARAM,
+                    "requestBody": {
+                        "required": True,
+                        "content": {
+                            "application/json": {
+                                "schema": {"$ref": "#/components/schemas/CommitmentCreate"}
+                            }
+                        },
+                    },
+                    "responses": {
+                        "201": {
+                            "description": "commitment",
+                            "content": {
+                                "application/json": {
+                                    "schema": {
+                                        "$ref": "#/components/schemas/CommitmentResponse"
+                                    }
+                                }
+                            },
+                        },
+                        "404": not_found_404,
+                        "409": {
+                            "description": "message already tagged as a commitment",
+                            "content": {
+                                "application/json": {
+                                    "schema": {"$ref": "#/components/schemas/Error"}
+                                }
+                            },
+                        },
+                    },
+                },
+                "get": {
+                    "tags": ["goals"],
+                    "summary": "List a goal's tagged commitments",
+                    "parameters": ID_PARAM,
+                    "responses": {
+                        "200": {
+                            "description": "commitments",
+                            "content": {
+                                "application/json": {
+                                    "schema": {
+                                        "type": "array",
+                                        "items": {
+                                            "$ref": "#/components/schemas/CommitmentResponse"
+                                        },
+                                    }
+                                }
+                            },
+                        },
+                        "401": unauth_401,
+                        "404": not_found_404,
+                    },
+                },
             },
         }
     )
@@ -306,16 +941,6 @@ def gateway_spec() -> dict:
 
 # service -> (title, port, description, [(method, path, tag, summary, has_body)])
 SERVICES: dict[str, tuple] = {
-    "intake-profiling-service": (
-        "Intake & Profiling Service", 8002,
-        "Guided intake flow that builds the initial user profile and financial context.",
-        [
-            ("post", "/api/v1/intake/sessions", "intake", "Start an intake session", True),
-            ("get", "/api/v1/intake/sessions/{id}", "intake", "Get an intake session", False),
-            ("post", "/api/v1/intake/sessions/{id}/answers", "intake", "Submit an answer", True),
-            ("post", "/api/v1/intake/sessions/{id}/complete", "intake", "Complete intake", False),
-        ],
-    ),
     "chat-orchestration-service": (
         "Chat Orchestration Service", 8003,
         "Orchestrates a mentor turn: persona + RAG context + history → LLM reply.",
@@ -345,18 +970,6 @@ SERVICES: dict[str, tuple] = {
             ("delete", "/api/v1/rag/documents/{id}", "rag", "Delete a document", False),
             ("get", "/api/v1/rag/stats", "rag", "Corpus index-health statistics", False),
             ("post", "/api/v1/rag/query", "rag", "Retrieve relevant chunks", True),
-        ],
-    ),
-    "goals-milestones-service": (
-        "Goals & Milestones Service", 8006,
-        "Goals & milestones CRUD and milestone state machine. Publishes goal.* events.",
-        [
-            ("post", "/api/v1/goals", "goals", "Create a goal", True),
-            ("get", "/api/v1/goals", "goals", "List goals", False),
-            ("get", "/api/v1/goals/{id}", "goals", "Get a goal", False),
-            ("patch", "/api/v1/goals/{id}", "goals", "Update a goal", True),
-            ("post", "/api/v1/goals/{id}/milestones", "goals", "Add a milestone", True),
-            ("post", "/api/v1/milestones/{id}/complete", "goals", "Complete a milestone", False),
         ],
     ),
     "progress-gamification-service": (
@@ -435,6 +1048,8 @@ def main() -> None:
     for name, spec in [
         ("api-gateway", gateway_spec()),
         ("auth-user-service", auth_spec()),
+        ("intake-profiling-service", intake_spec()),
+        ("goals-milestones-service", goals_spec()),
     ]:
         path = OUT / f"{name}.yaml"
         path.write_text(yaml.safe_dump(spec, sort_keys=False, width=100), encoding="utf-8")

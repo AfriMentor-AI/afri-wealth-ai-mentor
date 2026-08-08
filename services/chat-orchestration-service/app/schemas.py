@@ -21,6 +21,29 @@ class ConversationCreate(BaseModel):
     rag_collection: str | None = Field(default=None, description="Resolved in Sprint 3")
 
 
+class PersonaBindRequest(BaseModel):
+    """Body for PATCH /api/v1/chat/sessions/{id}/persona.
+
+    Internal — called by persona-prompt-service.
+    """
+    persona_id: str
+
+
+class TagItRequest(BaseModel):
+    """Body for POST /api/v1/chat/sessions/{id}/messages/{msg_id}/tag.
+
+    The frontend sends this when the user taps 'Yes, Tag It' on a commitment suggestion.
+    goal_id must be the active goal shown on the Goal Milestone Path screen.
+    """
+    goal_id: str
+
+
+class TagItResponse(BaseModel):
+    commitment_id: str
+    goal_id: str
+    message_id: str
+
+
 class ConversationResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
@@ -42,6 +65,14 @@ class MessageCreate(BaseModel):
     content: str = Field(min_length=1, max_length=4096)
 
 
+class Citation(BaseModel):
+    """A single source-pill shown under a mentor message.
+
+    ``label`` is the human-readable text, e.g. "TEF curriculum" or "AfriMentor corpus".
+    """
+    label: str
+
+
 class MessageResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
@@ -53,4 +84,5 @@ class MessageResponse(BaseModel):
     is_commitment_candidate: bool
     prompt_tokens: int
     completion_tokens: int
+    citations: list[Citation] = []
     created_at: dt.datetime

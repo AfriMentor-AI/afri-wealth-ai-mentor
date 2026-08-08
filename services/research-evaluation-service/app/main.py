@@ -31,6 +31,8 @@ import os
 
 from fastapi import FastAPI
 
+from .observability import instrument
+
 SERVICE_NAME = "research-evaluation-service"
 SERVICE_VERSION = "0.1.0"
 
@@ -39,6 +41,8 @@ app = FastAPI(
     version=SERVICE_VERSION,
     description="Stub service. See docs/adr/0001-microservices-architecture.md",
 )
+
+instrument(app, SERVICE_NAME)
 
 
 @app.get("/health", tags=["meta"])

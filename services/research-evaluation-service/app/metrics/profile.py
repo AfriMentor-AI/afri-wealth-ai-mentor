@@ -24,9 +24,16 @@ LEVEL_VALUES: dict[str, float] = {
     "VERY_HIGH": 0.95,
 }
 
-CANONICAL_PROFILE_PATH = Path(__file__).resolve().parents[3] / "persona-prompt-service" / "data" / "chioma_profile.v1.json"
+CANONICAL_PROFILE_PATH = (
+    Path(__file__).resolve().parents[3]
+    / "persona-prompt-service"
+    / "data"
+    / "chioma_profile.v1.json"
+)
 LOCAL_STANDIN_PATH = Path(__file__).resolve().parents[2] / "data" / "chioma_profile.v0.json"
-DEFAULT_PROFILE_PATH = CANONICAL_PROFILE_PATH if CANONICAL_PROFILE_PATH.is_file() else LOCAL_STANDIN_PATH
+DEFAULT_PROFILE_PATH = (
+    CANONICAL_PROFILE_PATH if CANONICAL_PROFILE_PATH.is_file() else LOCAL_STANDIN_PATH
+)
 
 
 class TraitTarget(BaseModel):

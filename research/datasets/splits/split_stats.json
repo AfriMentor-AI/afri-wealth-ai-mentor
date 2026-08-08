@@ -1,16 +1,16 @@
 {
   "sft_conversations": {
-    "train": 1,
-    "val": 0,
+    "train": 8,
+    "val": 1,
     "test": 1
   },
   "dpo_pairs": {
-    "train": 0,
+    "train": 2,
     "val": 0,
     "test": 1
   },
   "rlhf_preferences": {
-    "train": 0,
+    "train": 2,
     "val": 0,
     "test": 1
   }

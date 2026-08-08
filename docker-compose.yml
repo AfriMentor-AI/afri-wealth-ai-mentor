@@ -1,13 +1,21 @@
 # AfriMentor AI — local dev stack (card O1.2)
 # `docker compose up` boots all 13 service stubs + datastores with health checks.
 # Service boundaries & datastore ownership: docs/adr/0001-microservices-architecture.md
+# Observability (card O2.5): Prometheus + Grafana + Loki + Promtail + Jaeger — see docs/observability.md.
 name: afrimentor
 
 x-svc-defaults: &svc-defaults
   restart: unless-stopped
   networks: [afrimentor]
+  # Scraped by Promtail (infra/promtail/config.yml) so each service's JSON logs
+  # (with trace_id/span_id) land in Loki.
+  labels:
+    logging: promtail
   environment: &svc-env
     APP_ENV: dev
+    # OTLP/gRPC trace export — every service's app/observability.py reads this
+    # and, when set, exports traces to Jaeger (default off for bare `uvicorn` runs).
+    OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger:4317
 
 services:
   # ---------------------------------------------------------------- datastores
@@ -257,6 +265,75 @@ services:
       postgres: {condition: service_healthy}
       rabbitmq: {condition: service_healthy}
 
+  # --------------------------------------------------------- observability (O2.5)
+  # Scrape target for every service's /metrics (see infra/prometheus/prometheus.yml).
+  prometheus:
+    image: prom/prometheus:v2.53.0
+    ports: ["9090:9090"]
+    command: ["--config.file=/etc/prometheus/prometheus.yml"]
+    volumes:
+      - ./infra/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - promdata:/prometheus
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "localhost:9090/-/healthy"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks: [afrimentor]
+
+  loki:
+    image: grafana/loki:3.1.1
+    ports: ["3100:3100"]
+    command: ["-config.file=/etc/loki/local-config.yaml"]
+    volumes:
+      - ./infra/loki/local-config.yaml:/etc/loki/local-config.yaml:ro
+      - lokidata:/loki
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "localhost:3100/ready"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks: [afrimentor]
+
+  promtail:
+    image: grafana/promtail:3.1.1
+    command: ["-config.file=/etc/promtail/config.yml"]
+    volumes:
+      - ./infra/promtail/config.yml:/etc/promtail/config.yml:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    depends_on:
+      loki: {condition: service_healthy}
+    networks: [afrimentor]
+
+  grafana:
+    image: grafana/grafana:11.2.0
+    ports: ["3000:3000"]
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_SERVER_ROOT_URL: http://localhost:3000
+    volumes:
+      - ./infra/grafana/provisioning:/etc/grafana/provisioning:ro
+      - grafanadata:/var/lib/grafana
+    depends_on:
+      prometheus: {condition: service_started}
+      loki: {condition: service_started}
+    networks: [afrimentor]
+
+  # OTLP/gRPC receiver for service traces (collector_otlp.enabled default true).
+  jaeger:
+    image: jaegertracing/all-in-one:1.60
+    ports: ["16686:16686"]
+    environment:
+      COLLECTOR_OTLP_ENABLED: "true"
+    healthcheck:
+      test: ["CMD-SHELL", "wget --spider -q localhost:14269/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks: [afrimentor]
+
 networks:
   afrimentor:
     driver: bridge
@@ -266,3 +343,6 @@ volumes:
   chromadata:
   voicedata:
   mlflowdata:
+  promdata:
+  lokidata:
+  grafanadata:

@@ -15,9 +15,13 @@ from sqlalchemy.orm import Session
 from .. import security
 from ..config import get_settings
 from ..database import get_db
-from ..models import RefreshToken, User
+from ..models import PasswordResetToken, RefreshToken, User
 from ..schemas import (
     LoginRequest,
+    PasswordResetConfirmRequest,
+    PasswordResetRequestResponse,
+    PasswordResetRequestSchema,
+    ProfileUpdateRequest,
     RefreshRequest,
     SignupRequest,
     TokenResponse,
@@ -121,8 +125,8 @@ def _current_user(
     except jwt.PyJWTError as exc:
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "invalid access token") from exc
     user = db.get(User, claims["sub"])
-    if not user:
-        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "user not found")
+    if not user or not user.is_active:
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "user not found or disabled")
     return user
 
 
@@ -133,6 +137,99 @@ def me(
 ) -> User:
     user = _current_user(db, authorization)
     return _user_to_response(user)
+
+
+@router.patch("/me", response_model=UserResponse)
+def update_me(
+    payload: ProfileUpdateRequest,
+    authorization: str | None = Header(default=None),
+    db: Session = Depends(get_db),
+) -> User:
+    user = _current_user(db, authorization)
+    updates = payload.model_dump(exclude_unset=True)
+    for field, value in updates.items():
+        setattr(user, field, value.value if hasattr(value, "value") else value)
+    db.add(user)
+    db.commit()
+    db.refresh(user)
+    return _user_to_response(user)
+
+
+@router.delete("/me", status_code=status.HTTP_204_NO_CONTENT)
+def deactivate_me(
+    authorization: str | None = Header(default=None),
+    db: Session = Depends(get_db),
+) -> Response:
+    user = _current_user(db, authorization)
+    user.is_active = False
+    db.add(user)
+    # Revoke every outstanding refresh token so existing sessions can't keep renewing.
+    db.query(RefreshToken).filter(
+        RefreshToken.user_id == user.id, RefreshToken.revoked.is_(False)
+    ).update({"revoked": True})
+    db.commit()
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@router.post("/password-reset/request", response_model=PasswordResetRequestResponse)
+def request_password_reset(
+    payload: PasswordResetRequestSchema, db: Session = Depends(get_db)
+) -> PasswordResetRequestResponse:
+    user = db.scalar(select(User).where(User.email == payload.email))
+    reset_token: str | None = None
+    if user and user.is_active:
+        # A fresh request supersedes any earlier one, so a still-unexpired token from a
+        # prior request can't linger as a second valid way in.
+        db.query(PasswordResetToken).filter(
+            PasswordResetToken.user_id == user.id, PasswordResetToken.used.is_(False)
+        ).update({"used": True})
+        raw, token_hash = security.generate_reset_token()
+        expires_at = dt.datetime.now(tz=dt.UTC) + dt.timedelta(
+            seconds=settings.password_reset_ttl_seconds
+        )
+        db.add(
+            PasswordResetToken(user_id=user.id, token_hash=token_hash, expires_at=expires_at)
+        )
+        db.commit()
+        # NOTE: no email provider is wired up yet — delivery is a future integration.
+        # Outside prod we return the raw token directly so the flow is exercisable.
+        if settings.env != "prod":
+            reset_token = raw
+    # Same response whether or not the email is registered, so the endpoint can't be
+    # used to enumerate accounts.
+    return PasswordResetRequestResponse(reset_token=reset_token)
+
+
+@router.post("/password-reset/confirm", status_code=status.HTTP_204_NO_CONTENT)
+def confirm_password_reset(
+    payload: PasswordResetConfirmRequest, db: Session = Depends(get_db)
+) -> Response:
+    token_hash = security.hash_reset_token(payload.reset_token)
+    stored = db.scalar(
+        select(PasswordResetToken).where(PasswordResetToken.token_hash == token_hash)
+    )
+    now = dt.datetime.now(tz=dt.UTC)
+    # SQLite drops tzinfo on round-trip (dev/test); Postgres preserves it (staging/prod).
+    expires_at = stored.expires_at if stored else None
+    if expires_at is not None and expires_at.tzinfo is None:
+        expires_at = expires_at.replace(tzinfo=dt.UTC)
+    if not stored or stored.used or expires_at < now:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "invalid or expired reset token")
+
+    user = db.get(User, stored.user_id)
+    if not user or not user.is_active:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "invalid or expired reset token")
+
+    user.password_hash = security.hash_password(payload.new_password)
+    stored.used = True
+    db.add(user)
+    db.add(stored)
+    # A password reset invalidates every outstanding session, not just the token used.
+    db.query(RefreshToken).filter(
+        RefreshToken.user_id == user.id, RefreshToken.revoked.is_(False)
+    ).update({"revoked": True})
+    db.commit()
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 def _user_to_response(user: User) -> UserResponse:

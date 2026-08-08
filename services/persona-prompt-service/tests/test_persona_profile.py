@@ -1,10 +1,13 @@
 """Unit tests for Persona Prompt Service & C1.4 profile spec."""
 
-import json
-from pathlib import Path
 from fastapi.testclient import TestClient
 
-from app.loader import CANONICAL_PROFILE_PATH, SCHEMA_PATH, PersonaProfileSpec, load_persona_profile
+from app.loader import (
+    CANONICAL_PROFILE_PATH,
+    SCHEMA_PATH,
+    PersonaProfileSpec,
+    load_persona_profile,
+)
 from app.main import app
 from app.prompts import build_system_prompt
 

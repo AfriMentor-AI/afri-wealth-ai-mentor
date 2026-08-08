@@ -12,6 +12,7 @@ from fastapi import FastAPI
 
 from .config import get_settings
 from .database import init_db
+from .observability import instrument
 from .routers.chat import router as chat_router
 
 settings = get_settings()
@@ -35,6 +36,8 @@ app = FastAPI(
     ),
     lifespan=lifespan,
 )
+
+instrument(app, SERVICE_NAME)
 
 app.include_router(chat_router)
 

@@ -33,7 +33,9 @@ TEST_CONFIG = LLMConfig(api_key="test-key", model="test-model", max_retries=2)
 def _completion(text: str, finish_reason: str = "stop") -> dict:
     """Minimal OpenAI-compatible chat-completions payload."""
     return {
-        "choices": [{"message": {"role": "assistant", "content": text}, "finish_reason": finish_reason}],
+        "choices": [
+            {"message": {"role": "assistant", "content": text}, "finish_reason": finish_reason}
+        ],
         "usage": {"prompt_tokens": 10, "completion_tokens": 20},
     }
 
@@ -104,7 +106,10 @@ def test_local_prompt_contains_every_trait_behaviour():
 def test_fetch_prompt_prefers_persona_service():
     profile = load_profile()
 
-    with patch("app.llm.httpx.get", lambda url, timeout: _persona_response(url, version=profile.profile_version)):
+    with patch(
+        "app.llm.httpx.get",
+        lambda url, timeout: _persona_response(url, version=profile.profile_version),
+    ):
         prompt, provenance = fetch_system_prompt(profile, persona_service_url="http://persona:8004")
 
     assert "You are CHIOMA" in prompt
@@ -128,8 +133,13 @@ def test_fetch_prompt_warns_on_profile_version_mismatch(caplog):
     """Prompting with one profile version and scoring against another is silent drift."""
     profile = load_profile()
 
-    with patch("app.llm.httpx.get", lambda url, timeout: _persona_response(url, version="v99-divergent")), \
-         caplog.at_level("WARNING"):
+    with (
+        patch(
+            "app.llm.httpx.get",
+            lambda url, timeout: _persona_response(url, version="v99-divergent"),
+        ),
+        caplog.at_level("WARNING"),
+    ):
         _, provenance = fetch_system_prompt(profile, persona_service_url="http://persona:8004")
 
     assert "v99-divergent" in provenance
@@ -166,7 +176,9 @@ def test_administer_probe_sends_persona_prompt_and_question():
 def test_administer_probe_flags_truncated_answer():
     """finish_reason=length means trailing trait markers were cut off."""
     def handler(request):
-        return httpx.Response(200, json=_completion("I hold her to the com", finish_reason="length"))
+        return httpx.Response(
+            200, json=_completion("I hold her to the com", finish_reason="length")
+        )
 
     with _client_returning(handler) as client:
         result = administer_probe("Q?", "prompt", TEST_CONFIG, client=client)
@@ -178,7 +190,10 @@ def test_administer_probe_rejects_empty_answer():
     def handler(request):
         return httpx.Response(200, json=_completion("   "))
 
-    with _client_returning(handler) as client, pytest.raises(ProbeAdministrationError, match="empty answer"):
+    with (
+        _client_returning(handler) as client,
+        pytest.raises(ProbeAdministrationError, match="empty answer"),
+    ):
         administer_probe("Q?", "prompt", TEST_CONFIG, client=client)
 
 
@@ -186,7 +201,10 @@ def test_administer_probe_rejects_malformed_payload():
     def handler(request):
         return httpx.Response(200, json={"unexpected": "shape"})
 
-    with _client_returning(handler) as client, pytest.raises(ProbeAdministrationError, match="malformed"):
+    with (
+        _client_returning(handler) as client,
+        pytest.raises(ProbeAdministrationError, match="malformed"),
+    ):
         administer_probe("Q?", "prompt", TEST_CONFIG, client=client)
 
 
@@ -265,6 +283,7 @@ def test_administered_probe_converts_to_scorable_response():
 def _in_memory_session():
     from sqlalchemy import create_engine
     from sqlalchemy.orm import sessionmaker
+
     from app.models.audit import Base
 
     engine = create_engine("sqlite:///:memory:", connect_args={"check_same_thread": False})
