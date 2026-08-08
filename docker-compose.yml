@@ -67,9 +67,13 @@ services:
       RABBITMQ_DEFAULT_PASS: afrimentor
     ports: ["5672:5672", "15672:15672"]
     healthcheck:
+      # rabbitmq-diagnostics spins up an Erlang CLI node per run, so it's heavy.
+      # Under the stack-wide CPU crunch it routinely blew past a 15s timeout and
+      # got marked unhealthy even though `ping` succeeds — give it room (30s) and
+      # run it half as often (30s interval) so the check doesn't add to the load.
       test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
-      interval: 15s
-      timeout: 15s
+      interval: 30s
+      timeout: 30s
       retries: 5
       start_period: 300s
     volumes:
