@@ -34,7 +34,7 @@ jobs:
           EVENT_NAME: ${{ github.event_name }}
           REF: ${{ github.ref }}
         run: |
-          set -uo pipefail
+          set -euo pipefail
           ALL='["api-gateway","auth-user-service","intake-profiling-service","chat-orchestration-service","persona-prompt-service","rag-corpus-service","goals-milestones-service","progress-gamification-service","insight-library-service","feedback-service","research-evaluation-service","voice-service","notification-service"]'
 
           if [ "$EVENT_NAME" = "pull_request" ]; then
@@ -57,7 +57,15 @@ jobs:
             exit 0
           fi
 
-          CHANGED=$(printf '%s\n' "$FILES" | cut -d/ -f2 | sort -u | grep -v '^$')
+          # No pipeline that can exit non-zero on "no matches" here: steps run under
+          # `bash -e`, so a filtering grep would abort the job on a PR that touches
+          # no service — the same silent-failure shape this job is meant to avoid.
+          if [ -z "$FILES" ]; then
+            CHANGED=""
+          else
+            CHANGED=$(printf '%s\n' "$FILES" | cut -d/ -f2 | sort -u)
+          fi
+
           if [ -z "$CHANGED" ]; then
             echo "No service directories touched."
             echo "services=[]" >> "$GITHUB_OUTPUT"
