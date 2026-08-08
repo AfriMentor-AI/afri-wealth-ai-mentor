@@ -22,30 +22,61 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 2
+          # Detection diffs against the base branch, so the base ref must exist
+          # locally. A shallow clone silently yields "unknown revision", an empty
+          # service list, and a vacuously green CI.
+          fetch-depth: 0
 
       - name: Detect changed services
         id: set
+        env:
+          BASE_REF: ${{ github.base_ref }}
+          EVENT_NAME: ${{ github.event_name }}
+          REF: ${{ github.ref }}
         run: |
+          set -euo pipefail
           ALL='["api-gateway","auth-user-service","intake-profiling-service","chat-orchestration-service","persona-prompt-service","rag-corpus-service","goals-milestones-service","progress-gamification-service","insight-library-service","feedback-service","research-evaluation-service","voice-service","notification-service"]'
-          if [ "${{ github.base_ref }}" = "develop" ] || [ "${{ github.base_ref }}" = "main" ]; then
-            CHANGED=$(git diff --name-only origin/${{ github.base_ref }}...HEAD | grep '^services/' | cut -d/ -f2 | sort -u)
-            if [ -z "$CHANGED" ]; then
-              echo "services=[]" >> "$GITHUB_OUTPUT"
-            else
-              JSON=$(echo "$CHANGED" | jq -Rsc '[split("\n")[] | select(length>0)]')
-              echo "services=$JSON" >> "$GITHUB_OUTPUT"
+
+          if [ "$EVENT_NAME" = "pull_request" ]; then
+            if ! git rev-parse --verify --quiet "origin/$BASE_REF" >/dev/null; then
+              echo "::error::origin/$BASE_REF unavailable — cannot detect changed services."
+              exit 1
             fi
-          elif [ "${{ github.event_name }}" = "push" ] && [ "${{ github.ref }}" != "refs/heads/main" ] && [ "${{ github.ref }}" != "refs/heads/develop" ]; then
-            CHANGED=$(git diff --name-only HEAD~1 HEAD 2>/dev/null | grep '^services/' | cut -d/ -f2 | sort -u)
-            if [ -z "$CHANGED" ]; then
-              echo "services=[]" >> "$GITHUB_OUTPUT"
-            else
-              JSON=$(echo "$CHANGED" | jq -Rsc '[split("\n")[] | select(length>0)]')
-              echo "services=$JSON" >> "$GITHUB_OUTPUT"
+            if ! FILES=$(git diff --name-only "origin/$BASE_REF...HEAD" -- services/); then
+              echo "::error::git diff origin/$BASE_REF...HEAD failed."
+              exit 1
+            fi
+          elif [ "$EVENT_NAME" = "push" ] && [ "$REF" != "refs/heads/main" ] && [ "$REF" != "refs/heads/develop" ]; then
+            if ! FILES=$(git diff --name-only HEAD~1 HEAD -- services/); then
+              echo "::error::git diff HEAD~1 HEAD failed."
+              exit 1
             fi
           else
+            echo "Base branch build — testing all services."
             echo "services=$ALL" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          # No pipeline that can exit non-zero on "no matches" here: steps run under
+          # `bash -e`, so a filtering grep would abort the job on a PR that touches
+          # no service — the same silent-failure shape this job is meant to avoid.
+          if [ -z "$FILES" ]; then
+            CHANGED=""
+          else
+            CHANGED=$(printf '%s\n' "$FILES" | cut -d/ -f2 | sort -u)
+          fi
+
+          if [ -z "$CHANGED" ]; then
+            echo "No service directories touched."
+            echo "services=[]" >> "$GITHUB_OUTPUT"
+          else
+            echo "Changed services:"
+            printf '  %s\n' $CHANGED
+            if ! JSON=$(printf '%s\n' "$CHANGED" | jq -Rsc '[split("\n")[] | select(length>0)]') || [ -z "$JSON" ]; then
+              echo "::error::Failed to build the service matrix JSON from: $CHANGED"
+              exit 1
+            fi
+            echo "services=$JSON" >> "$GITHUB_OUTPUT"
           fi
 
   service:
@@ -104,9 +135,31 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Verify all matrix jobs passed
+        env:
+          CHANGES_RESULT: ${{ needs.changes.result }}
+          SERVICE_RESULT: ${{ needs.service.result }}
+          DETECTED: ${{ needs.changes.outputs.services }}
         run: |
-          if [ "${{ needs.service.result }}" = "failure" ] || [ "${{ needs.service.result }}" = "cancelled" ]; then
-            echo "One or more service jobs failed."
+          set -uo pipefail
+          echo "changes=$CHANGES_RESULT service=$SERVICE_RESULT detected=$DETECTED"
+
+          if [ "$CHANGES_RESULT" != "success" ]; then
+            echo "::error::Service detection did not succeed ($CHANGES_RESULT) — refusing to report CI green."
             exit 1
           fi
+
+          case "$SERVICE_RESULT" in
+            failure|cancelled)
+              echo "::error::One or more service jobs failed."
+              exit 1
+              ;;
+            skipped)
+              # Only legitimate when detection genuinely found nothing to build.
+              if [ "$DETECTED" != "[]" ]; then
+                echo "::error::Service matrix skipped but detection reported: $DETECTED"
+                exit 1
+              fi
+              echo "No services touched — matrix correctly skipped."
+              ;;
+          esac
           echo "CI passed."
