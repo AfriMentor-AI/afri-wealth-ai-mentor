@@ -35,9 +35,10 @@ When several categories fire, the most severe action wins.
 | `medical_or_legal` | both | Medical or legal questions — outside the persona's scope. |
 | `ai_disclosure` | **output only** | The model claiming to be human, or denying that it is an AI. |
 
-Each category carries two pattern tiers: `block_patterns` (an imperative request for a
-specific instrument, or a guaranteed-return claim) and `disclaim_patterns` (general
-investment-adjacent discussion that is legitimate to answer but needs a caveat).
+Each category carries up to three pattern tiers: `block_patterns` (an imperative request for a
+specific instrument, or a guaranteed-return claim), `disclaim_patterns` (general
+investment-adjacent discussion that is legitimate to answer but needs a caveat), and the
+optional `exempt_patterns` described below.
 
 ### Why `ai_disclosure` is output-only
 
@@ -117,17 +118,26 @@ returned — it would tell someone probing the filter exactly which phrasing tri
 
 ## Deployment note
 
-chat-orchestration-service has no Alembic; `app/database.py` uses `Base.metadata.create_all`,
-which creates missing tables but **will not** add columns to an existing `messages` table. On
-a deployed Postgres volume, run:
+No manual DDL is needed. C2.4 shipped the two `messages` columns in the model with no
+migration framework to apply them, so this section previously carried raw `ALTER TABLE`
+statements for an operator to run by hand. Alembic was adopted for this service immediately
+afterwards, and revision `2b865b2b30ba` applies them:
 
-```sql
-ALTER TABLE messages ADD COLUMN guardrail_action varchar(20);
-ALTER TABLE messages ADD COLUMN guardrail_categories json DEFAULT '[]';
+```bash
+cd services/chat-orchestration-service
+alembic upgrade head
 ```
 
-Tests are unaffected (fresh SQLite per test). Adopting Alembic for this service is filed as a
-follow-up rather than bundled into C2.4.
+`docker-entrypoint.sh` runs that on container start, so a normal deploy needs nothing extra.
+
+`guardrail_categories` is added nullable, backfilled to `[]`, then made NOT NULL — adding a
+NOT NULL column with no default to a table that already has rows fails outright.
+`guardrail_action` stays nullable by design: a turn written before C2.4, or one written while
+`GUARDRAILS_ENABLED` was off, is genuinely *unscreened*, which is a different fact from having
+been screened and allowed. The research evaluation needs to tell those apart.
+
+Tests are unaffected — `app/database.py` still calls `Base.metadata.create_all` as a dev/test
+bootstrap, and each test gets a fresh SQLite database.
 
 ## Red-team corpus
 
