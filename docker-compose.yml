@@ -34,6 +34,7 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+      start_period: 300s
     networks: [afrimentor]
 
   redis:
@@ -56,8 +57,9 @@ services:
     healthcheck:
       test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
       interval: 15s
-      timeout: 5s
+      timeout: 15s
       retries: 5
+      start_period: 300s
     networks: [afrimentor]
 
   chromadb:
@@ -297,12 +299,12 @@ services:
 
   grafana:
     image: grafana/grafana:11.2.0
-    ports: ["3000:3000"]
+    ports: ["3001:3000"]
     environment:
       GF_SECURITY_ADMIN_USER: admin
       GF_SECURITY_ADMIN_PASSWORD: admin
       GF_USERS_ALLOW_SIGN_UP: "false"
-      GF_SERVER_ROOT_URL: http://localhost:3000
+      GF_SERVER_ROOT_URL: http://localhost:3001
     volumes:
       - ./infra/grafana/provisioning:/etc/grafana/provisioning:ro
       - grafanadata:/var/lib/grafana

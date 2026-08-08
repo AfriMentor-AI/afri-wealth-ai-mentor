@@ -1,7 +1,7 @@
 # MLflow tracking server for AfriMentor AI research workspace (card D1.4)
 FROM python:3.12-slim
 
-ENV PIP_NO_CACHE_DIR=1
+ENV PIP_NO_CACHE_DIR=1 PIP_DEFAULT_TIMEOUT=120 PIP_RETRIES=10
 RUN pip install mlflow==2.19.0 psycopg2-binary==2.9.10
 
 RUN useradd --create-home --uid 10001 mlflow
