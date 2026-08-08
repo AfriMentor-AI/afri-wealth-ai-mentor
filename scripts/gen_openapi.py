@@ -958,6 +958,8 @@ SERVICES: dict[str, tuple] = {
             ("get", "/api/v1/personas", "personas", "List personas", False),
             ("get", "/api/v1/personas/{id}", "personas", "Get a persona", False),
             ("post", "/api/v1/personas/select", "personas", "Select a persona for a user", True),
+            ("get", "/personas/chioma", "personas", "Get the CHIOMA persona profile spec", False),
+            ("get", "/personas/chioma/prompt", "personas", "Render the CHIOMA system prompt", False),
         ],
     ),
     "rag-corpus-service": (
