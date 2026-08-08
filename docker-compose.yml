@@ -219,6 +219,16 @@ services:
       <<: *svc-env
       DATABASE_URL: postgresql+psycopg://afrimentor:afrimentor@postgres:5432/svc_research
       RABBITMQ_URL: amqp://afrimentor:afrimentor@rabbitmq:5672/
+      # Probe administration (card C2.3). Same LLM_* vars as chat-orchestration so
+      # the baseline measures the model users actually talk to. Temperature is
+      # pinned to 0 here — a baseline other runs are compared against must not
+      # carry sampling noise.
+      PERSONA_SERVICE_URL: http://persona-prompt-service:8004
+      LLM_API_KEY: ${LLM_API_KEY}
+      LLM_BASE_URL: ${LLM_BASE_URL:-https://api.groq.com/openai/v1}
+      LLM_MODEL: ${LLM_MODEL:-Qwen/Qwen2.5-7B-Instruct}
+      PROBE_TEMPERATURE: ${PROBE_TEMPERATURE:-0.0}
+      PROBE_MAX_TOKENS: ${PROBE_MAX_TOKENS:-512}
     depends_on:
       postgres: {condition: service_healthy}
       rabbitmq: {condition: service_healthy}
