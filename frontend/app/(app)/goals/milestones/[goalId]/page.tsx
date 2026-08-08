@@ -2,21 +2,53 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import Image from "next/image";
 import { Icon } from "@/components/Icon";
-import { completeMilestone, fetchCommitmentsByGoal, fetchGoalById, fetchMilestonesByGoal } from "@/lib/api";
+import {
+  completeMilestone,
+  fetchCommitmentsByGoal,
+  fetchGoalById,
+  fetchMilestonesByGoal,
+} from "@/lib/api";
 import type { Commitment, Goal, Milestone } from "@/lib/types";
 import { MilestoneRoad } from "@/components/ui/MilestoneRoad";
 import { Skeleton } from "@/components/ui/Skeleton";
 
-const commitmentStyles: Record<string, { icon: string; badge: string; card: string; label: string }> = {
-  done: { icon: "check_circle", badge: "bg-secondary-container text-on-secondary-container", card: "border-outline-variant bg-surface-container-low", label: "Done" },
-  in_progress: { icon: "pending", badge: "bg-primary-container text-on-primary-container", card: "border-outline-variant bg-surface-container-low", label: "In Progress" },
-  blocked: { icon: "block", badge: "bg-error-container text-on-error-container", card: "border-error/40 bg-error-container/20", label: "Blocked" },
+const commitmentStyles: Record<
+  string,
+  {
+    icon: string;
+    badge: string;
+    card: string;
+    label: string;
+  }
+> = {
+  done: {
+    icon: "check_circle",
+    badge: "bg-secondary-container text-on-secondary-container",
+    card: "border-outline-variant bg-surface-container-low",
+    label: "Done",
+  },
+  in_progress: {
+    icon: "pending",
+    badge: "bg-primary-container text-on-primary-container",
+    card: "border-outline-variant bg-surface-container-low",
+    label: "In Progress",
+  },
+  blocked: {
+    icon: "block",
+    badge: "bg-error-container text-on-error-container",
+    card: "border-error/40 bg-error-container/20",
+    label: "Blocked",
+  },
 };
 
-export default function GoalMilestonePathPage({ params }: { params: { goalId: string } }) {
+export default function GoalMilestonePathPage({
+  params,
+}: {
+  params: { goalId: string };
+}) {
   const router = useRouter();
+
   const [goal, setGoal] = useState<Goal | null | undefined>(null);
   const [milestones, setMilestones] = useState<Milestone[] | null>(null);
   const [commitments, setCommitments] = useState<Commitment[] | null>(null);
@@ -29,29 +61,30 @@ export default function GoalMilestonePathPage({ params }: { params: { goalId: st
 
   async function handleCompleteMilestone(milestoneId: string) {
     await completeMilestone(milestoneId);
+
     const [refreshedGoal, refreshedMilestones] = await Promise.all([
       fetchGoalById(params.goalId),
       fetchMilestonesByGoal(params.goalId),
     ]);
+
     setGoal(refreshedGoal);
     setMilestones(refreshedMilestones);
   }
 
   return (
-    <div className="min-h-full bg-surface">
-      <header className="flex items-center justify-between px-margin-mobile py-md">
-        <div className="flex items-center gap-sm">
-          <button onClick={() => router.back()} aria-label="Go back" className="tap-target flex items-center justify-center rounded-full text-primary">
-            <Icon name="arrow_back" />
-          </button>
-          <h1 className="font-headline-lg-mobile text-[18px] leading-none text-primary">AfriMentor AI</h1>
-        </div>
-        <div className="flex items-center gap-sm">
-          <ThemeToggle />
-          <div className="relative h-9 w-9 shrink-0 overflow-hidden rounded-full border-2 border-primary">
-            <Image src="/images/chioma-avatar.png" alt="Chioma" fill className="object-cover" />
-          </div>
-        </div>
+    <div className="min-h-screen">
+      <header className="flex items-center gap-sm px-margin-mobile py-md">
+        <button
+          onClick={() => router.back()}
+          aria-label="Go back"
+          className="tap-target flex items-center justify-center rounded-full text-primary"
+        >
+          <Icon name="arrow_back" />
+        </button>
+
+        <span className="font-title-md text-title-md">
+          AfriMentor AI
+        </span>
       </header>
 
       <main className="px-margin-mobile pb-24">
@@ -61,16 +94,27 @@ export default function GoalMilestonePathPage({ params }: { params: { goalId: st
             <Skeleton className="h-64 w-full" />
           </div>
         ) : goal === undefined ? (
-          <p className="font-body-md text-on-surface-variant">This goal couldn&rsquo;t be found.</p>
+          <p className="font-body-md text-on-surface-variant">
+            This goal couldn&rsquo;t be found.
+          </p>
         ) : (
           <>
-            <p className="font-label-sm text-label-sm uppercase text-on-surface-variant">Active Goal</p>
+            <p className="font-label-sm text-label-sm uppercase text-on-surface-variant">
+              Active Goal
+            </p>
+
             <h2 className="font-headline-lg-mobile text-headline-lg-mobile mt-xs text-on-background">
               {goal.title}
             </h2>
+
             {goal.deadline && (
               <p className="mt-xs font-body-md text-body-md text-on-surface-variant">
-                Target: {new Date(goal.deadline).toLocaleDateString(undefined, { year: "numeric", month: "long", day: "numeric" })}
+                Target:{" "}
+                {new Date(goal.deadline).toLocaleDateString(undefined, {
+                  year: "numeric",
+                  month: "long",
+                  day: "numeric",
+                })}
               </p>
             )}
 
@@ -78,34 +122,73 @@ export default function GoalMilestonePathPage({ params }: { params: { goalId: st
               {milestones === null ? (
                 <Skeleton className="h-64 w-full" />
               ) : (
-                <MilestoneRoad milestones={milestones} onCompleteMilestone={handleCompleteMilestone} />
+                <MilestoneRoad
+                  milestones={milestones}
+                  onCompleteMilestone={handleCompleteMilestone}
+                />
               )}
             </div>
 
             <section className="mt-xl">
-              <h3 className="font-title-md text-title-md mb-md text-on-surface">Tagged Commitments</h3>
+              <h3 className="font-title-md text-title-md mb-md text-on-surface">
+                Tagged Commitments
+              </h3>
+
               <div className="flex flex-col gap-sm">
                 {commitments === null
-                  ? Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-16 w-full rounded" />)
+                  ? Array.from({ length: 3 }).map((_, i) => (
+                      <Skeleton
+                        key={i}
+                        className="h-16 w-full rounded"
+                      />
+                    ))
                   : commitments.map((c) => {
                       const style = commitmentStyles[c.status];
+
+                      if (!style) {
+                        return null;
+                      }
+
                       return (
-                        <div key={c.id} className={`rounded border p-md ${style.card}`}>
+                        <div
+                          key={c.id}
+                          className={`rounded border p-md ${style.card}`}
+                        >
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-sm">
-                              <Icon name={style.icon} filled={c.status !== "blocked"} className={c.status === "blocked" ? "text-error" : "text-secondary"} />
-                              <span className="font-body-md text-body-md text-on-surface">{c.title}</span>
+                              <Icon
+                                name={style.icon}
+                                filled={c.status !== "blocked"}
+                                className={
+                                  c.status === "blocked"
+                                    ? "text-error"
+                                    : "text-secondary"
+                                }
+                              />
+
+                              <span className="font-body-md text-body-md text-on-surface">
+                                {c.title}
+                              </span>
                             </div>
-                            <span className={`rounded-full px-sm py-xs font-label-sm text-[11px] font-bold ${style.badge}`}>
+
+                            <span
+                              className={`rounded-full px-sm py-xs font-label-sm text-[11px] font-bold ${style.badge}`}
+                            >
                               {style.label}
                             </span>
                           </div>
+
                           {c.status === "blocked" && c.mentorHelpNote && (
                             <>
                               <button className="tap-target mt-md flex w-full items-center justify-center gap-xs rounded-full bg-primary py-sm font-label-sm text-label-sm text-on-primary transition-transform active:scale-95">
-                                <Icon name="smart_toy" filled size={18} />
+                                <Icon
+                                  name="smart_toy"
+                                  filled
+                                  size={18}
+                                />
                                 CHIOMA CAN HELP
                               </button>
+
                               <p className="mt-xs text-center text-[12px] italic text-on-surface-variant">
                                 &ldquo;{c.mentorHelpNote}&rdquo;
                               </p>
