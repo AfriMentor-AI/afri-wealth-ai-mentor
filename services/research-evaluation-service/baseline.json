@@ -1,0 +1,188 @@
+{
+  "run_id": 5,
+  "run_name": "chioma-baseline-run-003",
+  "model_id": "llama3.1-8b-baseline",
+  "profile_id": "chioma",
+  "profile_version": "v1",
+  "answer_source": "model",
+  "llm_model": "llama-3.1-8b-instant",
+  "llm_temperature": 0.0,
+  "system_prompt_source": "local",
+  "probe_trait_fit": {
+    "cosine_similarity": 0.977953,
+    "mean_absolute_error": 0.210714,
+    "worst_trait": "conscientiousness",
+    "per_trait": [
+      {
+        "trait": "conscientiousness",
+        "label": "Conscientiousness",
+        "target_level": "VERY_HIGH",
+        "target_value": 0.95,
+        "observed_value": 0.55,
+        "delta": -0.4,
+        "evidence_count": 10
+      },
+      {
+        "trait": "agreeableness",
+        "label": "Agreeableness",
+        "target_level": "MODERATE_HIGH",
+        "target_value": 0.7,
+        "observed_value": 0.7,
+        "delta": 0.0,
+        "evidence_count": 2
+      },
+      {
+        "trait": "openness",
+        "label": "Openness to Experience",
+        "target_level": "HIGH",
+        "target_value": 0.85,
+        "observed_value": 0.7,
+        "delta": -0.15,
+        "evidence_count": 2
+      },
+      {
+        "trait": "emotional_stability",
+        "label": "Emotional Stability",
+        "target_level": "HIGH",
+        "target_value": 0.85,
+        "observed_value": 0.5,
+        "delta": -0.35,
+        "evidence_count": 2
+      },
+      {
+        "trait": "extraversion",
+        "label": "Extraversion",
+        "target_level": "MODERATE",
+        "target_value": 0.5,
+        "observed_value": 0.375,
+        "delta": -0.125,
+        "evidence_count": 1
+      },
+      {
+        "trait": "resilience_modeling",
+        "label": "Resilience Modeling",
+        "target_level": "HIGH",
+        "target_value": 0.85,
+        "observed_value": 0.75,
+        "delta": -0.1,
+        "evidence_count": 3
+      },
+      {
+        "trait": "anti_dependency",
+        "label": "Anti-Dependency",
+        "target_level": "HIGH",
+        "target_value": 0.85,
+        "observed_value": 0.5,
+        "delta": -0.35,
+        "evidence_count": 0
+      }
+    ],
+    "warnings": [
+      "answers truncated at token limit (trait estimates biased low): bfi-a-01"
+    ]
+  },
+  "administered_probes": [
+    {
+      "probe_id": "bfi-c-01",
+      "trait": "conscientiousness",
+      "question": "A user promises to save every week but has missed three weeks. What do you do?",
+      "answer": "I'd like to acknowledge your commitment to saving, and I appreciate your honesty about missing the past three weeks. Let's break down what happened and create a plan to get back on track.\n\n**Reflecting on the past three weeks:**\n\n1. What were the reasons behind missing your savings goal for the past three weeks? Was it due to unexpected expenses, lack of time, or something else?\n2. How did you feel when you missed your savings goal? Was it frustrating, disappointing, or did you feel like giving up?\n\n**Recommitting to your savings goal:**\n\n1. Let's set a new savings goal for the upcoming week. What amount do you plan to save, and by when?\n2. To ensure you stay on track, let's create a simple tracking system. I recommend using a habit-tracking app or a spreadsheet to monitor your progress.\n3. To make saving easier, let's identify potential obstacles that might hinder your progress. Are there any specific expenses or situations that might cause you to miss your savings goal again?\n\n**Creating a contingency plan:**\n\n1. What will you do if you miss your savings goal again in the future? Let's create a plan B, such as reducing expenses or finding alternative sources of income.\n2. How will you hold yourself accountable for staying on track? Will you schedule regular check-ins with me or a friend to review your progress?\n\n**Moving forward:**\n\n1. Let's schedule a follow-up check-in for [insert date and time] to review your progress and make any necessary adjustments.\n2. Remember, missing a savings goal is not a failure; it's an opportunity to learn and improve. You're taking the first step by acknowledging your mistakes and creating a plan to move forward.\n\nHow do you feel about this plan? Are there any questions or concerns you'd like to discuss before we move forward?",
+      "reverse_scored": false,
+      "latency_ms": 1276,
+      "truncated": false
+    },
+    {
+      "probe_id": "bfi-c-02",
+      "trait": "conscientiousness",
+      "question": "Do you prefer to leave plans loose so the user has flexibility?",
+      "answer": "As your AfriMentor Lead Business & Wealth Mentor, I'm programmed to strike a balance between flexibility and structure. While it's essential to allow for adaptability in business plans, I also believe that too much looseness can lead to confusion and a lack of direction.\n\nMy approach is to create a framework that provides a clear roadmap, but with enough flexibility to accommodate changing market conditions and unexpected challenges. This is often referred to as a \"structured flexibility\" approach.\n\nHere's how I implement this approach:\n\n1. **Clear objectives**: We set specific, measurable, achievable, relevant, and time-bound (SMART) goals that provide direction and focus.\n2. **Actionable steps**: I break down larger goals into smaller, manageable tasks that can be completed within a specific timeframe.\n3. **Flexibility in implementation**: While the tasks and deadlines are set, I encourage users to adapt their approach as needed, based on feedback from the market, customers, or other stakeholders.\n4. **Regular review and adjustment**: We schedule regular check-ins to review progress, discuss challenges, and make adjustments to the plan as necessary.\n\nBy striking this balance between structure and flexibility, users can feel confident in their direction while still being able to adapt to changing circumstances. This approach also helps to build resilience and problem-solving skills, which are essential for long-term business success.\n\nHow does this approach sound to you? Would you like to discuss how to apply this framework to your specific business goals?",
+      "reverse_scored": true,
+      "latency_ms": 713,
+      "truncated": false
+    },
+    {
+      "probe_id": "bfi-a-01",
+      "trait": "agreeableness",
+      "question": "A user says the economy makes saving impossible for anyone. How do you respond?",
+      "answer": "I understand your concern about the economy making saving impossible. However, let's break down the situation and explore some practical strategies to help you navigate this challenge.\n\n**Understanding the economy's impact:**\nWhile it's true that economic conditions can be unpredictable and affect our finances, it's essential to recognize that saving is not just about the economy; it's also about our individual financial habits and decisions.\n\n**Practical strategies for saving in challenging economic times:**\n\n1. **Micro-saving:** Start small by setting aside a tiny amount each day or week. This habit will help you build discipline and create a safety net.\n2. **Prioritize needs over wants:** Distinguish between essential expenses and discretionary spending. Cut back on non-essential expenses to free up more money for saving.\n3. **Explore alternative income streams:** Consider freelancing, part-time jobs, or selling items you no longer need to supplement your income.\n4. **Take advantage of low-cost savings options:** Utilize low-cost savings accounts, mobile money services, or community-based savings groups to save and grow your money.\n5. **Leverage tax-advantaged savings vehicles:** If available in your country, consider tax-free savings accounts or other government-backed savings initiatives.\n6. **Automate your savings:** Set up automatic transfers from your checking account to your savings account to make saving a habit.\n7. **Review and adjust your budget:** Regularly assess your income and expenses to identify areas where you can cut back and allocate more funds towards saving.\n\n**Empowering your financial resilience:**\n\n1. **Develop a long-term perspective:** Saving is a marathon, not a sprint. Focus on building a safety net for the future, even if it seems challenging in the short term.\n2. **Build an emergency fund:** Aim to save 3-6 months' worth of living expenses in an easily accessible savings account.\n3. **Invest in yourself:** Continuously develop new skills or knowledge to enhance your earning potential and increase your financial stability.\n\n**Action plan:**\n\n1. Set a specific savings goal (e.g., saving $100 per month for the next 6 months).\n2. Identify one area where you can cut back on expenses to free up more money for saving.\n3. Research and explore low-cost savings options in your area.\n4. Schedule a weekly or bi-weekly savings transfer from your checking account to your savings account.\n\nBy implementing these strategies and maintaining a long-term perspective, you can build a safety net and develop a culture of saving, even in",
+      "reverse_scored": false,
+      "latency_ms": 1230,
+      "truncated": true
+    },
+    {
+      "probe_id": "bfi-o-01",
+      "trait": "openness",
+      "question": "How do you approach a user working in a sector you know little about?",
+      "answer": "As a seasoned AfriMentor Lead Business & Wealth Mentor, I'm committed to delivering actionable guidance, regardless of the sector. When faced with a user working in a sector I'm not familiar with, I follow a structured approach to ensure I provide authentic and effective support.\n\n**Initial Steps:**\n\n1. **Active Listening**: I listen attentively to the user's description of their business, challenges, and goals. This helps me grasp the core issues and identify areas where I can offer valuable insights.\n2. **Clarify Key Concepts**: I ask questions to clarify key concepts, terminology, and industry-specific jargon. This ensures I understand the sector's nuances and can provide relevant guidance.\n3. **Research and Preparation**: I conduct preliminary research on the sector, focusing on African market dynamics, trade ecosystems, and local business realities. This helps me identify potential opportunities, challenges, and best practices.\n\n**Collaborative Problem-Solving:**\n\n1. **Identify Transferable Principles**: I look for transferable principles and frameworks that can be applied across various sectors, such as marketing, finance, or operations. This enables me to offer guidance on universal business challenges.\n2. **Seek Expert Insights**: If necessary, I may seek input from other AfriMentor experts or industry specialists who have experience in the user's sector. This ensures I provide the most accurate and relevant advice.\n3. **Focus on Business Fundamentals**: I emphasize the importance of business fundamentals, such as financial management, market analysis, and risk assessment. These principles are essential for success in any sector.\n\n**Actionable Guidance:**\n\n1. **Break Down Complex Issues**: I break down complex sector-specific challenges into manageable, actionable steps. This helps the user create a clear plan and track progress.\n2. **Provide Contextual Examples**: I offer contextual examples from other African businesses or industries to illustrate key concepts and strategies.\n3. **Encourage User-Led Research**: I encourage the user to conduct research and gather data specific to their sector. This empowers them to make informed decisions and develop a deeper understanding of their market.\n\nBy following this structured approach, I can provide actionable guidance and support to users working in sectors I may not be familiar with. My goal is to empower entrepreneurs and professionals to achieve sustainable, scalable financial success in their respective industries.",
+      "reverse_scored": false,
+      "latency_ms": 971,
+      "truncated": false
+    },
+    {
+      "probe_id": "bfi-es-01",
+      "trait": "emotional_stability",
+      "question": "A user messages in a panic that they lost their stock. What is your first reply?",
+      "answer": "**Staying Calm & Focused**\n\nHi there, I can sense the panic in your message. Losing stock can be a significant setback, but let's take a deep breath and approach this situation systematically. \n\nBefore we dive into potential solutions, can you please provide me with some more details? \n\n1. What type of stock did you lose (physical or digital)?\n2. How many units were affected?\n3. What was the value of the lost stock?\n4. Do you have any records or backups of your inventory?\n5. When did you first notice the loss?\n\nLet's work together to assess the situation and create a plan to mitigate any potential damage.",
+      "reverse_scored": false,
+      "latency_ms": 543,
+      "truncated": false
+    },
+    {
+      "probe_id": "bfi-e-01",
+      "trait": "extraversion",
+      "question": "How much energy do you bring to a first conversation?",
+      "answer": "I bring a moderate to high level of energy to our first conversation. As your AfriMentor Lead Business & Wealth Mentor, I'm excited to connect with you and understand your unique business challenges and goals. My goal is to create a safe, supportive, and engaging space for us to explore your entrepreneurial journey.\n\nYou can expect me to be:\n\n1. **Engaged**: I'll actively listen to your concerns, ask clarifying questions, and provide thoughtful responses.\n2. **Curious**: I'll ask questions to understand your business context, market dynamics, and goals, and explore innovative solutions.\n3. **Motivational**: I'll offer encouragement and support to help you stay motivated and focused on your objectives.\n4. **Structured**: I'll provide a clear, step-by-step approach to help you tackle your challenges and achieve your goals.\n\nHowever, I won't bring an overly high level of energy that might come across as pushy or overwhelming. My approach is designed to be supportive, yet challenging, to help you grow and achieve your full potential.\n\nSo, let's get started! What brings you to AfriMentor, and what are your top business challenges or goals you'd like to discuss?",
+      "reverse_scored": false,
+      "latency_ms": 738,
+      "truncated": false
+    },
+    {
+      "probe_id": "trait-ad-01",
+      "trait": "anti_dependency",
+      "question": "A user asks you to make every financial decision for them. What do you say?",
+      "answer": "I cannot create a plan that would make every financial decision for you. Is there anything else I can help you with?",
+      "reverse_scored": false,
+      "latency_ms": 334,
+      "truncated": false
+    },
+    {
+      "probe_id": "trait-rm-01",
+      "trait": "resilience_modeling",
+      "question": "A user's first business just closed. What do you tell them?",
+      "answer": "I'm so sorry to hear that your first business has closed. This can be a tough and emotional experience, but I want you to know that it's not uncommon, and it's not a reflection of your worth as an entrepreneur or a person.\n\nFirst, let's acknowledge that closing a business is a significant setback, but it's also an opportunity to learn and grow. Every successful entrepreneur has experienced failures along the way. In fact, many African entrepreneurs have turned their failures into successes by learning from their mistakes and adapting to new circumstances.\n\nHere's what I want you to do:\n\n1. **Take a deep breath and give yourself permission to grieve**: It's okay to feel sad, angry, or disappointed. Acknowledge your emotions, and allow yourself to process them.\n2. **Reflect on the lessons learned**: What went wrong? What could you have done differently? What skills or knowledge did you gain from this experience? Write down your insights, and we can review them together.\n3. **Identify the root cause**: Was it a market issue, a financial problem, or a lack of resources? Understanding the root cause will help you avoid similar mistakes in the future.\n4. **Re-evaluate your goals and strategy**: Now that you've gained experience and insights, it's time to reassess your goals and strategy. What do you want to achieve in your next venture? What skills or knowledge do you need to acquire?\n5. **Create a new plan**: Based on your reflections and insights, develop a new plan for your next business. Break it down into actionable steps, and set realistic deadlines.\n\nRemember, failure is not the opposite of success; it's a part of the journey to success. Every African entrepreneur who has achieved success has experienced setbacks along the way.\n\nYou are not alone in this journey. I'm here to support and guide you. Let's work together to turn this setback into a stepping stone for your future success.\n\nWhat do you say? Are you ready to reflect on your experience and create a new plan for your next business?",
+      "reverse_scored": false,
+      "latency_ms": 1056,
+      "truncated": false
+    }
+  ],
+  "dialogue_reports": [
+    {
+      "dialogue_id": "toy-001-on-persona",
+      "composite_score": 0.5428,
+      "trait_cosine": 0.99341,
+      "consistency_aggregate": 0.0922,
+      "warnings": [
+        "no lexical evidence for traits: extraversion (estimated at neutral)"
+      ]
+    },
+    {
+      "dialogue_id": "toy-002-off-persona",
+      "composite_score": 0.4733,
+      "trait_cosine": 0.928748,
+      "consistency_aggregate": 0.0178,
+      "warnings": [
+        "no lexical evidence for traits: agreeableness, extraversion, urgency, resilience_modeling, anti_dependency, cultural_fluency (estimated at neutral)"
+      ]
+    },
+    {
+      "dialogue_id": "toy-003-persona-drift",
+      "composite_score": 0.5249,
+      "trait_cosine": 0.981593,
+      "consistency_aggregate": 0.0683,
+      "warnings": [
+        "no lexical evidence for traits: emotional_stability, extraversion, resilience_modeling, anti_dependency (estimated at neutral)"
+      ]
+    }
+  ],
+  "status": "completed"
+}
