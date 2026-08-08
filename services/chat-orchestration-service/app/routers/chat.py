@@ -1,6 +1,8 @@
 """Chat router — /api/v1/chat/sessions and /api/v1/chat/sessions/{id}/messages."""
 from __future__ import annotations
 
+import logging
+
 import httpx
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
@@ -9,6 +11,15 @@ from ..config import get_settings
 from ..database import get_db
 from ..dependencies import get_current_user
 from ..events import emit_commitment_created, emit_commitment_tag_suggested
+from ..guardrails import (
+    ALLOWED,
+    GuardrailAction,
+    apply_disclaimer,
+    most_severe,
+    refusal_message,
+    screen_input,
+    screen_output,
+)
 from ..llm import chat_completion, is_commitment_candidate
 from ..models import Conversation, Message
 from ..schemas import (
@@ -20,6 +31,8 @@ from ..schemas import (
     TagItRequest,
     TagItResponse,
 )
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/v1/chat", tags=["chat"])
 
@@ -105,19 +118,62 @@ async def send_message(
     db.add(user_msg)
     db.flush()
 
-    # Call LLM (with RAG retrieval)
-    reply_text, prompt_tokens, completion_tokens, citations = await chat_completion(
-        history=conv.messages,
-        user_content=body.content,
-        persona_id=conv.persona_id,
-        rag_collection=conv.rag_collection,
-    )
+    guardrails_on = get_settings().guardrails_enabled
 
-    # Detect commitment from the user message — the commitment is expressed
-    # by the user, not the assistant. Chioma echoes it in third person which
-    # never matches user-voiced keywords. Sprint 4 replaces this with a
-    # structured LLM output field.
-    candidate = is_commitment_candidate(body.content)
+    # Pre-hook (card C2.4): screen the user's message before anything expensive.
+    # A block here means the query never reaches the RAG corpus or the LLM, which
+    # is what "blocks retrieval of high-risk advice" requires — cheaper than
+    # generating a reply and discarding it, and it leaves no unsafe text to leak.
+    input_decision = screen_input(body.content) if guardrails_on else ALLOWED
+
+    if input_decision.blocked:
+        logger.warning(
+            "guardrail blocked user input: conversation=%s categories=%s",
+            conv.id,
+            list(input_decision.categories),
+        )
+        reply_text = refusal_message(input_decision)
+        prompt_tokens = completion_tokens = 0
+        citations: list = []
+        decision = input_decision
+        # A refused turn must never become a tracked goal, even if the user
+        # phrased it as a commitment ("I will put my savings into crypto").
+        candidate = False
+    else:
+        # Call LLM (with RAG retrieval)
+        reply_text, prompt_tokens, completion_tokens, citations = await chat_completion(
+            history=conv.messages,
+            user_content=body.content,
+            persona_id=conv.persona_id,
+            rag_collection=conv.rag_collection,
+        )
+
+        # Post-hook: screen the reply. Catches the model volunteering a specific
+        # instrument in answer to an innocuous question — invisible to the pre-hook.
+        output_decision = screen_output(reply_text) if guardrails_on else ALLOWED
+        if output_decision.blocked:
+            logger.warning(
+                "guardrail blocked model output: conversation=%s categories=%s",
+                conv.id,
+                list(output_decision.categories),
+            )
+            reply_text = refusal_message(output_decision)
+            citations = []
+        else:
+            reply_text = apply_disclaimer(reply_text, output_decision)
+
+        # Input severity is considered too: a disclaim-tier input (general
+        # investment talk) still earns a disclaimer when the reply itself reads clean.
+        decision = most_severe(input_decision, output_decision)
+        if decision.action is GuardrailAction.disclaim:
+            reply_text = apply_disclaimer(reply_text, decision)
+
+        # Detect commitment from the user message — the commitment is expressed
+        # by the user, not the assistant. Chioma echoes it in third person which
+        # never matches user-voiced keywords. Sprint 4 replaces this with a
+        # structured LLM output field.
+        candidate = is_commitment_candidate(body.content) and not decision.blocked
+
     assistant_msg = Message(
         conversation_id=conv.id,
         role="assistant",
@@ -127,6 +183,8 @@ async def send_message(
         prompt_tokens=prompt_tokens,
         completion_tokens=completion_tokens,
         citations=citations,
+        guardrail_action=decision.action.value if guardrails_on else None,
+        guardrail_categories=list(decision.categories),
     )
     db.add(assistant_msg)
 
