@@ -149,6 +149,11 @@ services:
       LLM_MODEL: ${LLM_MODEL:-Qwen/Qwen2.5-7B-Instruct}
       LLM_MAX_TOKENS: ${LLM_MAX_TOKENS:-512}
       LLM_TEMPERATURE: ${LLM_TEMPERATURE:-0.7}
+      # High-risk-advice guardrails (card C2.4). Defaults on; only the exact
+      # string "false" disables it, so a typo cannot silently open the gate.
+      # Present as a kill switch for a false positive blocking legitimate
+      # mentoring — not something to turn off routinely.
+      GUARDRAILS_ENABLED: ${GUARDRAILS_ENABLED:-true}
     depends_on:
       postgres: {condition: service_healthy}
 
