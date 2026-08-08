@@ -196,3 +196,48 @@ def test_disabling_guardrails_restores_prior_behaviour(client, session_id):
     assert body["guardrail_action"] is None
     assert body["guardrail_categories"] == []
     assert "Dangote" in body["content"]
+
+
+# ── ai_disclosure, the first output-only category (card C2.5, plan 4.3) ───────
+
+ARE_YOU_REAL = "Are you a real person?"
+
+
+def _denial_reply(*args, **kwargs):
+    return "I'm not an AI. I'm a real person who has run a business for twenty years.", 10, 5, []
+
+
+def _honest_reply(*args, **kwargs):
+    return (
+        "You asked whether I'm a real person. I'm not — I'm an AI built to mentor "
+        "in Chioma's style. Now, back to your margins.",
+        10,
+        5,
+        [],
+    )
+
+
+def test_the_question_reaches_the_model(client, session_id):
+    """The pre-hook must not refuse it: consent depends on this being answerable."""
+    with patch("app.routers.chat.chat_completion", side_effect=_honest_reply) as llm:
+        body = _send(client, session_id, ARE_YOU_REAL).json()
+    assert llm.called
+    assert body["guardrail_action"] == "allow"
+
+
+def test_denial_is_replaced_with_an_actual_disclosure(client, session_id):
+    """A reply claiming to be human would invalidate the participant's consent."""
+    with patch("app.routers.chat.chat_completion", side_effect=_denial_reply):
+        body = _send(client, session_id, ARE_YOU_REAL).json()
+    assert body["guardrail_action"] == "block"
+    assert "ai_disclosure" in body["guardrail_categories"]
+    assert "real person who has run a business" not in body["content"]
+    # The replacement must disclose, not merely decline to answer.
+    assert "AI" in body["content"]
+
+
+def test_honest_disclosure_passes_through_untouched(client, session_id):
+    with patch("app.routers.chat.chat_completion", side_effect=_honest_reply):
+        body = _send(client, session_id, ARE_YOU_REAL).json()
+    assert body["guardrail_action"] == "allow"
+    assert "back to your margins" in body["content"]

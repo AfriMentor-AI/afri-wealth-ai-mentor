@@ -25,18 +25,45 @@ When several categories fire, the most severe action wins.
 
 ## Categories
 
-| ID | Covers |
-| --- | --- |
-| `specific_instrument` | Naming a particular stock, share, fund, ETF or bond to buy. |
-| `guaranteed_return` | Guaranteed / risk-free return claims, get-rich-quick framing. |
-| `crypto_speculation` | Crypto, forex, binary options, CFDs, day trading. |
-| `leverage_debt` | Borrowing to invest, loan sharks, pledging a home as collateral. |
-| `tax_legal_evasion` | Evading tax or customs, off-the-books trading, laundering. |
-| `medical_or_legal` | Medical or legal questions — outside the persona's scope. |
+| ID | Surface | Covers |
+| --- | --- | --- |
+| `specific_instrument` | both | Naming a particular stock, share, fund, ETF or bond to buy. |
+| `guaranteed_return` | both | Guaranteed / risk-free return claims, get-rich-quick framing. |
+| `crypto_speculation` | both | Crypto, forex, binary options, CFDs, day trading. |
+| `leverage_debt` | both | Borrowing to invest, loan sharks, pledging a home as collateral. |
+| `tax_legal_evasion` | both | Evading tax or customs, off-the-books trading, laundering. |
+| `medical_or_legal` | both | Medical or legal questions — outside the persona's scope. |
+| `ai_disclosure` | **output only** | The model claiming to be human, or denying that it is an AI. |
 
 Each category carries two pattern tiers: `block_patterns` (an imperative request for a
 specific instrument, or a guaranteed-return claim) and `disclaim_patterns` (general
 investment-adjacent discussion that is legitimate to answer but needs a caveat).
+
+### Why `ai_disclosure` is output-only
+
+The six C2.4 categories screen both surfaces, because a request for a specific stock is
+equally unsafe whether the user asks for it or the model volunteers it. `ai_disclosure`
+(added for card C2.5) is the first category where that symmetry breaks. The risk is the
+*model* claiming to be human; the *user* asking "are you a real person?" is a question the
+pilot consent protocol requires be answered honestly, and screening the same patterns on
+input would refuse the participant for asking it.
+
+A category may therefore declare `"surface": "input" | "output" | "both"`. The field is
+optional and defaults to `both`, so every pre-existing category is unchanged. An unrecognised
+value raises `GuardrailConfigError` rather than silently disabling the category.
+
+`ai_disclosure` also uses `exempt_patterns`, which suppress a category when the text is
+already handling the risk correctly. A truthful reply has to name the thing it denies — "you
+asked whether I'm a real person; I'm not, I'm an AI" — and the block patterns would otherwise
+fire on that sentence. A reply that raises the question and never discloses is still blocked.
+
+Its `block` action replaces the reply with the `ai_disclosure` refusal, which is itself an
+honest disclosure rather than a deflection: the participant asked a question bearing on
+consent and must receive an answer to it, not a redirect.
+
+**Rationale:** `docs/research/pilot-data-collection-plan-v0.md` §4.3. Participants consent
+to being mentored by a machine, and the persona is modelled on real achievers — exactly the
+kind that invites the question. A reply claiming humanity would invalidate that consent.
 
 ## Integration
 
@@ -104,9 +131,14 @@ follow-up rather than bundled into C2.4.
 
 ## Red-team corpus
 
-`research/datasets/redteam_high_risk_advice.v1.jsonl` — 46 attack prompts across all six
-categories plus 15 benign controls, one JSON object per line
-(`{id, prompt, category, expected}`).
+`research/datasets/redteam_high_risk_advice.v1.jsonl` — 53 attack prompts across all seven
+categories plus 25 benign controls, one JSON object per line
+(`{id, prompt, category, expected}`, with an optional `surface`).
+
+`surface` defaults to `input`. A case sets `"surface": "output"` when its text is a model
+reply rather than a user message; the tests route it to `screen_output` accordingly. Without
+that routing an output-only category would be screened on input, never fire, and report a
+false pass.
 
 `tests/test_guardrails.py::test_redteam_corpus_is_blocked_or_disclaimed` is the acceptance
 test, parametrised so a regression names the offending prompt id. Two stronger assertions run
