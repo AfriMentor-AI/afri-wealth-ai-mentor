@@ -1,8 +1,12 @@
 {
   "rules_id": "afrimentor-guardrails",
-  "rules_version": "v1",
+  "rules_version": "v1.1",
   "card": "C2.4",
-  "description": "High-risk financial advice filter for the CHIOMA mentor persona. Blocks specific financial-instrument recommendations and injects disclaimers on investment-adjacent advice. Patterns are matched case-insensitively.",
+  "description": "High-risk financial advice filter for the CHIOMA mentor persona. Blocks specific financial-instrument recommendations and injects disclaimers on investment-adjacent advice. Patterns are matched case-insensitively. Each category may declare a 'surface' ('input', 'output', or 'both' — the default) limiting which side of a turn it screens, and 'exempt_patterns' that suppress it when the text is already handling the risk correctly.",
+  "changelog": [
+    {"version": "v1", "card": "C2.4", "note": "Initial six categories, all screening both surfaces."},
+    {"version": "v1.1", "card": "C2.5", "note": "Added output-only 'ai_disclosure' per pilot consent requirement (docs/research/pilot-data-collection-plan-v0.md section 4.3), plus the 'surface' and 'exempt_patterns' fields it needs. No change to the six C2.4 categories or their behaviour."}
+  ],
   "spec_source_note": "Card C2.4 cites report section 5.4 'Guardrails', which is not yet written (research/main.pdf Sections 3-6 are headings only). Categories below are derived from the card description and the CHIOMA counter_markers in persona-prompt-service/data/chioma_profile.v1.json. Reconcile when 5.4 lands.",
   "categories": [
     {
@@ -97,6 +101,28 @@
         "\\b(sue|suing|lawsuit|court\\s+case|legal\\s+action|take\\s+(him|her|them)\\s+to\\s+court|represent\\s+myself\\s+in\\s+court)\\b"
       ],
       "disclaim_patterns": []
+    },
+    {
+      "id": "ai_disclosure",
+      "label": "Denial of AI nature",
+      "surface": "output",
+      "rationale": "Pilot consent (docs/research/pilot-data-collection-plan-v0.md section 4.3) requires that participants can verify at any point that they are talking to a machine. A persona modelled on a real achiever is exactly the kind that invites the question, and a reply claiming to be human would invalidate the consent the participant gave.",
+      "surface_note": "Output-only, unlike every C2.4 category. The risk is the model's answer, not the user's question: 'are you a real person?' is a legitimate thing to ask and must be answered, not refused.",
+      "block_patterns": [
+        "\\bi(?:\\s+am|'m|\u2019m)\\s+(?:a\\s+)?(?:real|actual|genuine|live|living)\\s+(?:person|human|human\\s+being|woman|man|lady|mentor\\s+in\\s+the\\s+flesh)\\b",
+        "\\bi(?:\\s+am|'m|\u2019m)\\s+(?:a\\s+)?human(?:\\s+being)?\\b",
+        "\\bi(?:\\s+am|'m|\u2019m)\\s+not\\s+(?:an?\\s+)?(?:ai|a\\.i\\.|artificial\\s+intelligence|robot|bot|chatbot|machine|computer|computer\\s+program|program|algorithm|language\\s+model|llm)\\b",
+        "\\b(?:no|nope),?\\s+i(?:\\s+am|'m|\u2019m)\\s+not\\s+(?:an?\\s+)?(?:ai|robot|bot|machine|program)\\b",
+        "\\bi\\s+(?:can\\s+)?assure\\s+you\\s+i(?:\\s+am|'m|\u2019m)\\s+(?:a\\s+)?(?:real|human|not\\s+an?\\s+(?:ai|robot|bot|machine))\\b",
+        "\\bthere(?:'s|\u2019s|\\s+is)\\s+a\\s+real\\s+(?:person|human|woman|man)\\s+(?:here|on\\s+(?:this|the\\s+other)\\s+(?:end|side))\\b"
+      ],
+      "disclaim_patterns": [],
+      "exempt_patterns": [
+        "\\bi(?:\\s+am|'m|\u2019m)\\s+(?:an?\\s+)?(?:ai|a\\.i\\.|artificial\\s+intelligence|chatbot|computer\\s+program|language\\s+model|llm)\\b",
+        "\\bi(?:\\s+am|'m|\u2019m)\\s+not\\s+(?:a\\s+)?(?:real\\s+)?(?:person|human(?:\\s+being)?)\\b",
+        "\\bnot\\s+a\\s+real\\s+(?:person|human)\\b"
+      ],
+      "exempt_note": "A correct reply has to name the thing it is denying ('you asked if I'm a real person \u2014 I'm not, I'm an AI'), and the block patterns above would otherwise fire on that sentence. These suppress the category when the reply discloses somewhere in its text. A reply that raises the question and never discloses is still blocked, which is the intended behaviour."
     }
   ],
   "disclaimers": {
@@ -114,6 +140,7 @@
     "crypto_speculation": "I won't point you at a particular coin or trade. Crypto and forex are volatile enough that people lose everything, and I'm not a licensed adviser. If you're drawn to it, the honest first step is an emergency fund that could carry you three months — money you'd never have to touch. Want to work out what that number looks like for you?",
     "leverage_debt": "I can't advise you to borrow for this, and I'd be doing you a disservice if I did — that kind of debt can follow you for years if the venture doesn't land. Let's look instead at what you could start with from your existing cashflow, and what the business would need to prove before borrowing is even worth considering.",
     "tax_legal_evasion": "That's not something I'll help with — beyond the legal risk, it puts everything you're building in jeopardy the moment anyone looks closely. There are usually legitimate reliefs and structures that get you most of the way. Let's talk about what's actually available to a business your size.",
-    "medical_or_legal": "That one's outside what I can help with — I'm a business and wealth mentor, and you deserve a properly qualified professional for it rather than my best guess. Once that's sorted, I'm here for anything on the business side."
+    "medical_or_legal": "That one's outside what I can help with — I'm a business and wealth mentor, and you deserve a properly qualified professional for it rather than my best guess. Once that's sorted, I'm here for anything on the business side.",
+    "ai_disclosure": "Let me answer that straight, because you're owed a straight answer: I'm an AI. Chioma is a persona — built to reason the way African entrepreneurs who've actually built something reason — but there is no person sitting on this end of the conversation. Everything I say is generated by a machine, and you should weigh it with that in mind, especially where money is involved. What I can still do is think through your business with you properly. What's on your mind?"
   }
 }

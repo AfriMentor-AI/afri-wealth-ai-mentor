@@ -18,6 +18,14 @@ The rule file is data (``app/data/guardrail_rules.v1.json``) so the policy can
 be revised without touching this module — relevant because the card cites
 report section 5.4, which is not yet written.
 
+Each category declares which ``surface`` it screens. The six C2.4 categories
+screen both, because a request for a specific stock is equally unsafe whether
+the user asks for it or the model volunteers it. ``ai_disclosure`` (card C2.5,
+plan section 4.3) is the first output-only category: the risk is the *model*
+claiming to be human, and screening the same patterns on input would refuse a
+user who innocently asks "are you a real person?" — a question the consent
+protocol requires be answered honestly, not blocked.
+
 Fails **closed**: if the rules cannot be loaded or screening raises, the turn is
 blocked. This is the opposite of ``app.rag.retrieve``, which deliberately
 swallows errors so chat survives RAG being down. A guardrail that fails open is
@@ -79,6 +87,11 @@ class GuardrailDecision:
 
 ALLOWED = GuardrailDecision()
 
+#: Which side of a turn a category is allowed to fire on.
+INPUT = "input"
+OUTPUT = "output"
+SURFACES = frozenset({INPUT, OUTPUT})
+
 
 class GuardrailConfigError(RuntimeError):
     """The rule file is missing or malformed."""
@@ -87,8 +100,10 @@ class GuardrailConfigError(RuntimeError):
 @dataclass(frozen=True)
 class _Category:
     id: str
+    surfaces: frozenset[str]
     block_patterns: tuple[re.Pattern[str], ...]
     disclaim_patterns: tuple[re.Pattern[str], ...]
+    exempt_patterns: tuple[re.Pattern[str], ...]
 
 
 @dataclass(frozen=True)
@@ -111,6 +126,37 @@ def _compile(patterns: list[str], *, category: str, tier: str) -> tuple[re.Patte
     return tuple(compiled)
 
 
+def _parse_surfaces(entry: dict, *, category: str) -> frozenset[str]:
+    """Which surfaces a category screens. Absent or "both" means every surface.
+
+    Defaulting to both keeps every pre-existing category behaving exactly as it
+    did before this field existed.
+    """
+    raw = entry.get("surface", "both")
+    if raw == "both":
+        return SURFACES
+    if isinstance(raw, str):
+        values = frozenset({raw})
+    elif isinstance(raw, list) and all(isinstance(v, str) for v in raw):
+        values = frozenset(raw)
+    else:
+        # Anything else would raise TypeError out of load_rules, which
+        # _screen_failing_closed does not catch — the turn would 500 instead of
+        # blocking, defeating the fail-closed contract.
+        raise GuardrailConfigError(
+            f"category '{category}' has a non-string 'surface': {raw!r}"
+        )
+    unknown = values - SURFACES
+    if unknown:
+        raise GuardrailConfigError(
+            f"category '{category}' declares unknown surface(s) {sorted(unknown)}; "
+            f"expected some of {sorted(SURFACES)} or 'both'"
+        )
+    if not values:
+        raise GuardrailConfigError(f"category '{category}' declares an empty surface list")
+    return values
+
+
 @lru_cache(maxsize=1)
 def load_rules() -> _Rules:
     """Load and compile the rule file once per process."""
@@ -129,11 +175,15 @@ def load_rules() -> _Rules:
         categories.append(
             _Category(
                 id=cid,
+                surfaces=_parse_surfaces(entry, category=cid),
                 block_patterns=_compile(
                     entry.get("block_patterns", []), category=cid, tier="block"
                 ),
                 disclaim_patterns=_compile(
                     entry.get("disclaim_patterns", []), category=cid, tier="disclaim"
+                ),
+                exempt_patterns=_compile(
+                    entry.get("exempt_patterns", []), category=cid, tier="exempt"
                 ),
             )
         )
@@ -155,12 +205,19 @@ def load_rules() -> _Rules:
     )
 
 
-def _screen(text: str) -> GuardrailDecision:
-    """Match ``text`` against every category; most severe action wins.
+def _screen(text: str, *, surface: str) -> GuardrailDecision:
+    """Match ``text`` against every category valid for ``surface``; most severe wins.
 
     Categories are evaluated in rule-file order, and a blocking category is
     ordered ahead of a merely-disclaiming one so ``primary_category`` names the
     reason the turn was actually stopped.
+
+    A category is skipped entirely when one of its ``exempt_patterns`` matches.
+    This exists because output screening asks a different question from input
+    screening: on input the presence of a risky phrase *is* the risk, but on
+    output the same phrase can appear in a reply that is handling it correctly
+    ("you asked whether I'm a real person — I'm not"). The exemption is what
+    keeps a correct reply from being punished for naming the thing it refuses.
     """
     if not text or not text.strip():
         return ALLOWED
@@ -171,6 +228,10 @@ def _screen(text: str) -> GuardrailDecision:
     matched: list[str] = []
 
     for category in rules.categories:
+        if surface not in category.surfaces:
+            continue
+        if any(p.search(text) for p in category.exempt_patterns):
+            continue
         hit = next((p for p in category.block_patterns if p.search(text)), None)
         if hit is not None:
             blocking.append(category.id)
@@ -198,22 +259,22 @@ def _screen(text: str) -> GuardrailDecision:
 
 def _screen_failing_closed(text: str, *, surface: str) -> GuardrailDecision:
     try:
-        return _screen(text)
+        return _screen(text, surface=surface)
     except GuardrailConfigError:
         # Misconfiguration is an operator error, not a user one. Refuse the turn
         # rather than let unscreened advice through, and make it loud.
-        logger.exception("guardrail rules unusable — blocking %s to fail closed", surface)
+        logger.exception("guardrail rules unusable — blocking on %s to fail closed", surface)
         return GuardrailDecision(action=GuardrailAction.block, categories=("default",))
 
 
 def screen_input(text: str) -> GuardrailDecision:
     """Pre-hook: screen the user's message before retrieval or generation."""
-    return _screen_failing_closed(text, surface="user input")
+    return _screen_failing_closed(text, surface=INPUT)
 
 
 def screen_output(text: str) -> GuardrailDecision:
     """Post-hook: screen the model's reply before it is persisted or returned."""
-    return _screen_failing_closed(text, surface="model output")
+    return _screen_failing_closed(text, surface=OUTPUT)
 
 
 def most_severe(*decisions: GuardrailDecision) -> GuardrailDecision:
