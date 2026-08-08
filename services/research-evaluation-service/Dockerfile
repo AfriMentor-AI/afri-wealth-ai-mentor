@@ -3,7 +3,8 @@
 # Stage 1 builds a self-contained venv; stage 2 ships only the venv + app code.
 
 FROM python:3.12-slim AS builder
-ENV PIP_NO_CACHE_DIR=1 PIP_DISABLE_PIP_VERSION_CHECK=1
+ENV PIP_NO_CACHE_DIR=1 PIP_DISABLE_PIP_VERSION_CHECK=1 \
+    PIP_DEFAULT_TIMEOUT=120 PIP_RETRIES=10
 WORKDIR /app
 # Isolated venv so we can copy the whole tree into the runtime stage verbatim.
 RUN python -m venv /opt/venv

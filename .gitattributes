@@ -1,0 +1,7 @@
+# Keep line endings deterministic across OSes.
+# Shell scripts and other files that run inside Linux containers MUST stay LF,
+# otherwise a CRLF shebang (`#!/bin/bash\r`) breaks with "bad interpreter".
+* text=auto eol=lf
+*.sh text eol=lf
+*.bat text eol=crlf
+*.ps1 text eol=crlf

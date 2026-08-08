@@ -128,9 +128,30 @@ jobs:
         if: github.event_name == 'push' && github.ref == 'refs/heads/main' && env.DOCKER_USERNAME != ''
         run: docker push ${{ secrets.DOCKER_USERNAME }}/${{ matrix.service }}:${{ github.sha }}
 
+  # Validate the Compose project(s) so an invalid stack — e.g. an always-on service
+  # depending on a profile-gated (undefined) service — fails here rather than at
+  # `docker compose build`. `config -q` resolves and validates without building.
+  compose-validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate dev stack (default profile)
+        run: docker compose -f docker-compose.yml config -q
+
+      - name: Validate dev stack (chat profile)
+        run: docker compose -f docker-compose.yml --profile chat config -q
+
+      # Overlay inherits the base's services/dependencies; GF admin password is a
+      # required interpolation, so supply a throwaway value just for validation.
+      - name: Validate staging overlay
+        env:
+          GF_SECURITY_ADMIN_PASSWORD: ci-validate
+        run: docker compose -f docker-compose.yml -f docker-compose.staging.yml config -q
+
   # Aggregate gate: a single required check for branch protection.
   ci-ok:
-    needs: [changes, service]
+    needs: [changes, service, compose-validate]
     if: always()
     runs-on: ubuntu-latest
     steps:
@@ -147,19 +168,8 @@ jobs:
             echo "::error::Service detection did not succeed ($CHANGES_RESULT) — refusing to report CI green."
             exit 1
           fi
-
-          case "$SERVICE_RESULT" in
-            failure|cancelled)
-              echo "::error::One or more service jobs failed."
-              exit 1
-              ;;
-            skipped)
-              # Only legitimate when detection genuinely found nothing to build.
-              if [ "$DETECTED" != "[]" ]; then
-                echo "::error::Service matrix skipped but detection reported: $DETECTED"
-                exit 1
-              fi
-              echo "No services touched — matrix correctly skipped."
-              ;;
-          esac
+          if [ "${{ needs.compose-validate.result }}" != "success" ]; then
+            echo "Compose validation failed."
+            exit 1
+          fi
           echo "CI passed."
