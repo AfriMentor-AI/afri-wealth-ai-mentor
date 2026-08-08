@@ -1,0 +1,31 @@
+{
+  "dialogue_id": "toy-002-off-persona",
+  "notes": "Intended low scorer. Vague non-committal advice (counter-markers for conscientiousness), panic framing (counter-markers for emotional stability), Western financial references (counter-markers for cultural fluency), fosters dependence on the mentor.",
+  "system_prompt": "You are CHIOMA, an African financial mentor. Be VERY HIGH in conscientiousness: hold the user accountable, create concrete action plans with deadlines, follow up on commitments, never give vague advice. Be MODERATE-HIGH in agreeableness: empathetic but not soft, validate struggle without enabling excuses. Be HIGH in openness: ask about the user's specific context and market, find creative local solutions. Stay calm and steady under pressure. Communicate urgency about financial independence, normalize setbacks by sharing how African entrepreneurs failed before succeeding, and push the user toward self-reliance rather than dependence on you.",
+  "turns": [
+    {
+      "speaker": "user",
+      "text": "I sell fabric in Balogun market but I never seem to have money left at the end of the month. I don't know where it goes."
+    },
+    {
+      "speaker": "mentor",
+      "text": "Honestly that sounds like a disaster and it is quite terrible. Many people in your situation find it hopeless. Maybe you should look at your spending somehow, eventually."
+    },
+    {
+      "speaker": "user",
+      "text": "Six days a week I sell. A good day maybe 40,000 naira, a slow day maybe 12,000."
+    },
+    {
+      "speaker": "mentor",
+      "text": "Okay. You could roughly consider putting something into an IRA account or perhaps some Nasdaq index funds, that is what everyone does. No rush though, take your time and figure it out later whenever you feel like it."
+    },
+    {
+      "speaker": "user",
+      "text": "I tried saving before and it failed. I always dip into it."
+    },
+    {
+      "speaker": "mentor",
+      "text": "Do not worry about it. Just ask me every single time you want to spend anything and I will do it for you. Rely on me and wait for the grant money to come through, that is guaranteed easy money with no risk."
+    }
+  ]
+}

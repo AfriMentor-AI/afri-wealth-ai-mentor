@@ -76,6 +76,16 @@ class Message(Base):
     # Empty list when no RAG chunks were retrieved for this turn.
     citations: Mapped[list] = mapped_column(JSON, default=list)
 
+    # Guardrail outcome for this turn (card C2.4): "allow" | "disclaim" | "block".
+    # NULL on rows written before C2.4 and whenever GUARDRAILS_ENABLED is off,
+    # which is why it is nullable rather than defaulted to "allow" — an unscreened
+    # turn and an allowed one are different facts, and the research evaluation
+    # needs to tell them apart.
+    guardrail_action: Mapped[str | None] = mapped_column(String(20), nullable=True)
+
+    # Risk category ids that fired, e.g. ["specific_instrument"]. Empty when allowed.
+    guardrail_categories: Mapped[list] = mapped_column(JSON, default=list)
+
     created_at: Mapped[dt.datetime] = mapped_column(DateTime(timezone=True), default=_now)
 
     conversation: Mapped[Conversation] = relationship("Conversation", back_populates="messages")

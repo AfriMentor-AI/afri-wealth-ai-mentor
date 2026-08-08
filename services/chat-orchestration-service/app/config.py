@@ -39,6 +39,12 @@ class Settings(BaseModel):
         "my goal is", "i'm going to", "i intend to",
     ]
 
+    # Guardrails (card C2.4). Defaults ON: an unset or misspelled env var must
+    # leave the high-risk-advice filter running, not silently disable it. Only
+    # the exact string "false" turns it off, so GUARDRAILS_ENABLED=0 or "no"
+    # will not accidentally open the gate.
+    guardrails_enabled: bool = os.getenv("GUARDRAILS_ENABLED", "true").strip().lower() != "false"
+
 
 @lru_cache
 def get_settings() -> Settings:
