@@ -9,7 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "axe-core": "^4.12.1",
+    "axe-core": "^4.13.0",
     "jsdom": "^30.0.1",
     "next": "14.2.35",
     "react": "18.3.1",

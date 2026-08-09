@@ -19,7 +19,7 @@
 // sync for POSTs) to keep this same guarantee. Flagging now so it's not
 // a surprise regression later.
 
-const CACHE_VERSION = "afrimentor-shell-v1";
+const CACHE_VERSION = "afrimentor-shell-v2";
 const OFFLINE_URL = "/offline.html";
 
 // Routes worth precaching as the app shell. Static Next.js build assets
@@ -42,6 +42,7 @@ const APP_SHELL_ROUTES = [
   "/manifest.json",
   "/icons/icon-192.png",
   "/icons/icon-512.png",
+  "/images/chioma-avatar.png",
   OFFLINE_URL,
 ];
 

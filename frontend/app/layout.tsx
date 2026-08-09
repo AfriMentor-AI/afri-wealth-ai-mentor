@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { AppStateProvider } from "@/lib/store";
 import { OfflineBanner } from "@/components/OfflineBanner";
+import { InstallBanner } from "@/components/InstallBanner";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -24,7 +25,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" data-theme="heritage">
+    <html lang="en" data-theme="heritage" suppressHydrationWarning>
       <head>
         {/* Runs before hydration so the correct theme is applied before
             first paint — without this, the page briefly flashes the
@@ -37,17 +38,27 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           }}
         />
         {/* Registers the service worker (app-shell caching + offline
-            fallback, see public/sw.js) as early as possible. Guarded for
-            browsers without SW support and wrapped so a registration
-            failure never breaks the page. */}
+            fallback, see public/sw.js) — PRODUCTION ONLY. Running a
+            caching service worker during `npm run dev` is a well-known
+            footgun: the browser's SW registration persists independently
+            of the dev server, so restarting `next dev` (or even editing
+            source files) does NOT clear it — you can end up debugging a
+            "fixed" bug that your browser is still silently serving the
+            old cached JS for. In dev mode this actively unregisters any
+            SW a previous production build may have left behind, so
+            npm run dev is always guaranteed to hit the real dev server. */}
         <script
           dangerouslySetInnerHTML={{
-            __html: `if("serviceWorker" in navigator){window.addEventListener("load",function(){navigator.serviceWorker.register("/sw.js").catch(function(e){console.warn("SW registration failed:",e);});});}`,
+            __html:
+              process.env.NODE_ENV === "production"
+                ? `if("serviceWorker" in navigator){window.addEventListener("load",function(){navigator.serviceWorker.register("/sw.js").catch(function(e){console.warn("SW registration failed:",e);});});}`
+                : `if("serviceWorker" in navigator){navigator.serviceWorker.getRegistrations().then(function(regs){regs.forEach(function(r){r.unregister();});});}`,
           }}
         />
       </head>
       <body className="font-body min-h-screen">
         <AppStateProvider>
+          <InstallBanner />
           <OfflineBanner />
           <div className="min-h-screen">{children}</div>
         </AppStateProvider>

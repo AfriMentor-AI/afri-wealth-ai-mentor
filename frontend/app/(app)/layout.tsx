@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import { usePathname } from "next/navigation";
+import Image from "next/image";
 import { BottomTabNav } from "@/components/BottomTabNav";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { FeedbackSurveyModal } from "@/components/FeedbackSurveyModal";
@@ -12,7 +13,7 @@ export default function AppShellLayout({ children }: { children: React.ReactNode
   const { chatMessages, profile } = useAppState();
   const dispatch = useAppDispatch();
   const pathname = usePathname();
-  const hasOwnHeader = pathname?.startsWith("/chat");
+  const hasOwnHeader = pathname?.startsWith("/chat") || pathname === "/goals/action";
 
   useEffect(() => {
     if (chatMessages.length === 0) {
@@ -36,7 +37,12 @@ export default function AppShellLayout({ children }: { children: React.ReactNode
       <div className="flex min-h-0 flex-1 flex-col">
         {!hasOwnHeader && (
           <header className="flex shrink-0 items-center justify-between px-margin-mobile py-md md:hidden">
-            <p className="font-title-md text-title-md text-on-surface">AfriMentor AI</p>
+            <div className="flex items-center gap-sm">
+              <div className="relative h-9 w-9 shrink-0 overflow-hidden rounded-full border-2 border-primary">
+                <Image src="/images/chioma-avatar.png" alt="Chioma" fill className="object-cover" />
+              </div>
+              <p className="font-title-md text-title-md text-on-surface">AfriMentor AI</p>
+            </div>
             <ThemeToggle />
           </header>
         )}

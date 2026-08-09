@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import { Icon } from "./Icon";
 import { useAppDispatch, useAppState } from "@/lib/store";
 import { submitFeedback } from "@/lib/api";
@@ -40,8 +41,8 @@ export function FeedbackSurveyModal() {
         <div className="relative overflow-hidden px-margin-mobile pb-xl pt-sm">
           <header className="mb-lg">
             <div className="mb-xs flex items-start justify-between">
-              <div className="flex h-12 w-12 items-center justify-center rounded-full border-2 border-primary bg-surface-container font-title-md text-title-md text-primary">
-                C
+              <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-full border-2 border-primary">
+                <Image src="/images/chioma-avatar.png" alt="Chioma" fill className="object-cover" />
               </div>
               <button
                 onClick={close}

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { Icon } from "@/components/Icon";
 import { completeMilestone, fetchCommitmentsByGoal, fetchGoalById, fetchMilestonesByGoal } from "@/lib/api";
 import type { Commitment, Goal, Milestone } from "@/lib/types";
@@ -45,7 +46,12 @@ export default function GoalMilestonePathPage({ params }: { params: { goalId: st
           </button>
           <h1 className="font-headline-lg-mobile text-[18px] leading-none text-primary">AfriMentor AI</h1>
         </div>
-        <Icon name="settings" className="text-on-surface-variant" />
+        <div className="flex items-center gap-sm">
+          <ThemeToggle />
+          <div className="relative h-9 w-9 shrink-0 overflow-hidden rounded-full border-2 border-primary">
+            <Image src="/images/chioma-avatar.png" alt="Chioma" fill className="object-cover" />
+          </div>
+        </div>
       </header>
 
       <main className="px-margin-mobile pb-24">

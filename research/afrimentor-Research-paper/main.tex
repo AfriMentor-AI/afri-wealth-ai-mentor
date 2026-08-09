@@ -1,0 +1,77 @@
+\documentclass[11pt]{article}
+
+% ---------------------------------------------------------------------------
+% AfriMentor AI — arXiv preprint scaffold (G1.6)
+% Not tied to a specific venue's style file (no acl.sty/neurips.sty assumed
+% available) — a clean, standard article-class preprint, which is what
+% arXiv itself expects as a baseline. Swap in a venue style later if the
+% team decides to target a specific workshop/conference.
+% ---------------------------------------------------------------------------
+
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
+\usepackage{natbib}
+\usepackage{graphicx}
+\usepackage{authblk}
+\usepackage{times}
+
+\title{AfriMentor AI: A Personality-Aligned, RLHF-Tuned Language Model Mentor for Low-Income African Youth Entrepreneurs}
+
+% Placeholder author block — confirm exact order, affiliations, and
+% corresponding-author designation with the team before submission.
+\author[1]{Grace}
+\author[1]{Olusegun}
+\author[1]{Daniel}
+\author[1]{Chukwuebuka}
+\affil[1]{AfriMentor AI Project}
+
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+% TODO (team): write after Sections 3-4 (Method/System, Evaluation) exist —
+% an abstract written before the results section is speculative by
+% definition. Placeholder left here so the document structure is complete
+% and compiles; do not submit with this section empty.
+This is a placeholder abstract. AfriMentor AI is a smartphone-first,
+voice-note-driven mentorship platform that pairs African micro-entrepreneurs
+with an AI mentor persona whose reasoning style is constrained to match a
+documented archetype of real African achievers, trained/aligned via
+personality-conditioned RLHF, and grounded in an Africa-authored knowledge
+corpus. \textbf{[Expand once Sections 3-4 exist; state the two research
+questions and headline findings explicitly.]}
+\end{abstract}
+
+\input{sections/introduction}
+\input{sections/related_work}
+
+% Not yet drafted — stubbed so \ref/\cite structure and the build stay
+% complete. See contract with the team on the 1-paper vs 2-paper decision
+% (docs/paper-scope-decision.md) before writing further, since it changes
+% how much lives under each of these.
+\section{Method}
+\label{sec:method}
+\textit{[Not yet drafted. Depends on Epic H (trait modeling) and Epic C
+(persona-constrained personas) reaching enough maturity to describe
+concretely — both are mid-sprint as of this draft.]}
+
+\section{Evaluation}
+\label{sec:evaluation}
+\textit{[Not yet drafted. Depends on the Persona Consistency Dashboard
+and pilot data existing.]}
+
+\section{Discussion \& Limitations}
+\label{sec:discussion}
+\textit{[Not yet drafted.]}
+
+\section{Conclusion}
+\label{sec:conclusion}
+\textit{[Not yet drafted.]}
+
+\bibliographystyle{plainnat}
+\bibliography{refs}
+
+\end{document}

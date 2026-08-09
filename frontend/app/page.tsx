@@ -1,10 +1,11 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { SankofaMotif } from "@/components/SankofaMotif";
-import { Icon } from "@/components/Icon";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { Button } from "@/components/ui/Button";
+import { Icon } from "@/components/Icon";
 
 export default function SplashPage() {
   const router = useRouter();
@@ -28,11 +29,18 @@ export default function SplashPage() {
           </p>
         </div>
 
-        <div className="relative mb-xl aspect-[4/5] max-h-[45vh] w-full overflow-hidden rounded border border-outline-variant/30 bg-gradient-to-br from-primary-container to-secondary-container shadow-sm">
-          <div className="absolute inset-0 z-10 bg-gradient-to-t from-primary/40 to-transparent" />
+        <div className="relative mb-xl aspect-[4/5] max-h-[45vh] w-full overflow-hidden rounded border border-outline-variant/30 shadow-sm">
+          <Image
+            src="/images/chioma-avatar.png"
+            alt="Chioma, your AI mentor, in her home"
+            fill
+            className="object-cover"
+            priority
+          />
+          <div className="absolute inset-0 z-10 bg-gradient-to-t from-black/50 to-transparent" />
           <div className="absolute bottom-md left-md right-md z-20">
-            <div className="rounded-lg border-l-4 border-primary bg-surface-bright/95 p-md shadow-lg backdrop-blur-sm">
-              <p className="font-body-lg text-body-lg leading-tight text-on-surface-variant">
+            <div className="rounded-lg border-l-4 border-primary bg-black/70 p-md shadow-lg backdrop-blur-sm">
+              <p className="font-body-lg text-body-lg leading-tight text-white">
                 &ldquo;Welcome, child. Let us build your legacy together.&rdquo;
               </p>
             </div>
