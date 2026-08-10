@@ -17,7 +17,8 @@ class Route:
     default_upstream: str
     protected: bool = True
     rate_limit: int | None = None  # per-window override; None = gateway default
-
+    strip_prefix: bool = False  # if true, remove /api/v1 before forwarding upstream
+    
     @property
     def upstream(self) -> str:
         return os.getenv(self.upstream_env, self.default_upstream)
@@ -27,7 +28,7 @@ class Route:
 ROUTES: list[Route] = [
     # public
     Route("/api/v1/auth", "AUTH_SERVICE_URL", "http://localhost:8001",
-          protected=False, rate_limit=20),
+          protected=False, rate_limit=20, strip_prefix=True),
     # protected capability services
     Route("/api/v1/intake", "INTAKE_SERVICE_URL", "http://localhost:8002"),
     # Diagnostic profiles are served by intake-profiling-service too (card O2.2).
