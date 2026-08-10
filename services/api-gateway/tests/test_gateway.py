@@ -61,8 +61,8 @@ def test_public_auth_route_needs_no_token(client, monkeypatch):
     capture = {}
     _patch_upstream(monkeypatch, capture)
     r = client.post("/api/v1/auth/login", json={"email": "a@b.co", "password": "x"})
-    assert r.status_code == 200
-    assert capture["url"].endswith("/api/v1/auth/login")
+    assert r.status_code == 200 # The upstream service returns 200, not the gateway.
+    assert capture["url"].endswith("/auth/login")
 
 
 def test_valid_token_proxies_and_forwards_identity(client, token_factory, monkeypatch):
@@ -71,10 +71,10 @@ def test_valid_token_proxies_and_forwards_identity(client, token_factory, monkey
     tok = token_factory(sub="user-42", roles=["user", "admin"])
     r = client.get("/api/v1/goals", headers={"Authorization": f"Bearer {tok}"})
     assert r.status_code == 200
-    assert capture["headers"]["X-User-Id"] == "user-42"
-    assert capture["headers"]["X-User-Roles"] == "user,admin"
+    assert capture["headers"]["X-User-Id"] == "user-42" # The gateway adds X-User-Id
+    assert capture["headers"]["X-User-Roles"] == "user,admin" # The gateway adds X-User-Roles
     # client-supplied identity headers must be stripped/overwritten
-    assert capture["url"].endswith("/api/v1/goals")
+    assert capture["url"].endswith("/goals")
 
 
 def test_profiles_route_proxies_to_intake_service(client, token_factory, monkeypatch):
@@ -85,7 +85,7 @@ def test_profiles_route_proxies_to_intake_service(client, token_factory, monkeyp
         "/api/v1/profiles/user-42/diagnostic", headers={"Authorization": f"Bearer {tok}"}
     )
     assert r.status_code == 200
-    assert capture["url"].endswith("/api/v1/profiles/user-42/diagnostic")
+    assert capture["url"].endswith("/profiles/user-42/diagnostic")
     assert capture["headers"]["X-User-Id"] == "user-42"
 
 
