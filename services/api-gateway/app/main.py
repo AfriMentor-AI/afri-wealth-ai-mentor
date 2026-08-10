@@ -32,6 +32,7 @@ instrument(app, SERVICE_NAME)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:3000", "http://localhost:3001"],
+    allow_origin_regex=r"^https://[a-z0-9-]+\.app\.github\.dev$",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -106,7 +107,8 @@ async def gateway(path: str, request: Request) -> Response:
         )
 
     # --- proxy to upstream ---
-    upstream_url = route.upstream + full_path
+    upstream_path = full_path[len("/api/v1") :] if route.strip_prefix else full_path
+    upstream_url = route.upstream + upstream_path
     fwd_headers = {
         k: v for k, v in request.headers.items() if k.lower() not in _STRIP_REQUEST_HEADERS
     }
