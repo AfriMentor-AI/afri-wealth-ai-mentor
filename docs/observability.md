@@ -52,7 +52,7 @@ docker compose up -d          # boots the stack + all services
 - Metrics: <http://localhost:9090> (Prometheus) or **Grafana → Explore → Prometheus**
 - Logs: **Grafana → Explore → Loki** (filter e.g. `{service="goals-milestones-service"}`)
 - Traces: <http://localhost:16686> (Jaeger UI)
-- Dashboard: <http://localhost:3001/d/afrimentor-services>
+- Dashboard: <http://localhost:3001/d/afrimentor-services> (Grafana uses 3001 so it doesn't clash with the Next.js dev server on 3000)
 
 Grafana login for dev is `admin`/`admin` (single-node dev only — staging overrides the
 password, see `docker-compose.staging.yml`).
