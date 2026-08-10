@@ -3,7 +3,8 @@
 # Stage 1 builds a self-contained venv; stage 2 ships only the venv + app code.
 
 FROM python:3.12-slim AS builder
-ENV PIP_NO_CACHE_DIR=1 PIP_DISABLE_PIP_VERSION_CHECK=1
+ENV PIP_NO_CACHE_DIR=1 PIP_DISABLE_PIP_VERSION_CHECK=1 \
+    PIP_DEFAULT_TIMEOUT=120 PIP_RETRIES=10
 WORKDIR /app
 # Isolated venv so we can copy the whole tree into the runtime stage verbatim.
 RUN python -m venv /opt/venv
@@ -19,6 +20,11 @@ RUN useradd --create-home --uid 10001 app
 WORKDIR /app
 COPY --from=builder /opt/venv /opt/venv
 COPY --chown=app:app app ./app
+# scripts/ and data/ carry the C2.3 probe instrument and toy dialogues. Without
+# them `docker compose exec … scripts/run_trait_fit.py` cannot run, and
+# load_profile() cannot resolve its bundled stand-in.
+COPY --chown=app:app scripts ./scripts
+COPY --chown=app:app data ./data
 # App owns its workdir so a standalone run (default SQLite) can write locally.
 RUN chown app:app /app
 USER app

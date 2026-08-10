@@ -73,6 +73,14 @@ class Citation(BaseModel):
     label: str
 
 
+class GuardrailAction(str, Enum):
+    """Guardrail outcome for a turn (card C2.4)."""
+
+    allow = "allow"
+    disclaim = "disclaim"
+    block = "block"
+
+
 class MessageResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
@@ -85,4 +93,11 @@ class MessageResponse(BaseModel):
     prompt_tokens: int
     completion_tokens: int
     citations: list[Citation] = []
+
+    # Guardrail outcome (card C2.4). None when the turn predates C2.4 or when
+    # GUARDRAILS_ENABLED is off. "disclaim" tells the client the disclaimer is
+    # already appended to ``content`` — it must not add a second one.
+    guardrail_action: GuardrailAction | None = None
+    guardrail_categories: list[str] = []
+
     created_at: dt.datetime

@@ -3,7 +3,8 @@
 # Stage 1 builds a self-contained venv; stage 2 ships only the venv + app code.
 
 FROM python:3.12-slim AS builder
-ENV PIP_NO_CACHE_DIR=1 PIP_DISABLE_PIP_VERSION_CHECK=1
+ENV PIP_NO_CACHE_DIR=1 PIP_DISABLE_PIP_VERSION_CHECK=1 \
+    PIP_DEFAULT_TIMEOUT=120 PIP_RETRIES=10
 WORKDIR /app
 # Isolated venv so we can copy the whole tree into the runtime stage verbatim.
 RUN python -m venv /opt/venv
@@ -19,8 +20,11 @@ RUN useradd --create-home --uid 10001 app
 WORKDIR /app
 COPY --from=builder /opt/venv /opt/venv
 COPY --chown=app:app app ./app
+COPY --chown=app:app alembic ./alembic
+COPY --chown=app:app alembic.ini ./alembic.ini
+COPY --chown=app:app docker-entrypoint.sh ./docker-entrypoint.sh
 # App owns its workdir so a standalone run (default SQLite) can write locally.
-RUN chown app:app /app
+RUN chown app:app /app && chmod +x docker-entrypoint.sh
 USER app
 
 EXPOSE 8003
@@ -28,4 +32,5 @@ HEALTHCHECK --interval=10s --timeout=3s --start-period=15s --retries=5 \
   CMD python -c "import urllib.request,sys; \
 sys.exit(0) if urllib.request.urlopen('http://localhost:8003/health').status==200 else sys.exit(1)"
 
+ENTRYPOINT ["./docker-entrypoint.sh"]
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8003"]

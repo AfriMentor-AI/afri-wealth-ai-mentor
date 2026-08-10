@@ -9,7 +9,7 @@
 ## 1. Start here: run it yourself before reading further
 
 ```bash
-cd afri-wealth-ai-mentor
+cd afrimentor-pwa
 npm install
 npm run dev
 ```

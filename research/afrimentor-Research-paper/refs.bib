@@ -1,0 +1,180 @@
+% ============================================================================
+% AfriMentor AI — Bibliography
+% ============================================================================
+% REWRITTEN (G1.6/G2.2 redo) directly from the team's two proposal
+% documents (Proposal_1__Personality_Aligned_RLHF... and
+% Proposal_2__LLM_Mentor_for_Low-Income_Youth...), which is the actual
+% authoritative source for these citations — not independent web search.
+%
+% IMPORTANT CORRECTION FROM THE PREVIOUS VERSION OF THIS FILE: several
+% entries in the prior draft were WRONG PAPERS that happened to share an
+% author surname and year with what the team's proposals actually cite —
+% e.g. the old "lee2024rlaif" was a real RLAIF-scaling paper, but
+% Proposal 1's actual "Lee et al. 2024" is a completely different paper
+% (the TRAIT personality testset). Same problem for the old park2024,
+% jiang2023, liu2025, and han2024 entries. All replaced below with the
+% papers the proposals actually name. This is exactly the failure mode
+% independent author+year guessing risks — now fixed by going to the
+% primary source (the team's own proposals) instead.
+%
+% Where a real arXiv ID was independently confirmed via search (not just
+% trusted from the proposal's own reference list), that's noted per entry.
+% Most Proposal-cited arXiv preprints don't have a confirmed ID here since
+% the proposals themselves only wrote "(arXiv preprint)" without one —
+% adding one for all 19 would need 19 separate verification searches;
+% the 5 most heavily-cited ones below were checked, the rest are cited
+% exactly as the team's own proposal documents give them.
+
+% ----------------------------------------------------------------------
+% Proposal 1 references
+% ----------------------------------------------------------------------
+
+% CONFIRMED — arXiv:2511.00222 (checked independently).
+@Misc{abdulhai2025personas,
+  title  = {Consistently Simulating Human Personas with Multi-Turn Reinforcement Learning},
+  author = {Abdulhai, Marwa and Cheng, Ryan and Clay, Donovan and Althoff, Tim and Levine, Sergey and Jaques, Natasha},
+  year   = {2025},
+  note   = {arXiv preprint},
+}
+
+% CONFIRMED — arXiv:2204.05862 (checked independently). Anthropic's
+% original RLHF paper.
+@Misc{bai2022helpful,
+  title  = {Training a Helpful and Harmless Assistant with Reinforcement Learning from Human Feedback},
+  author = {Bai, Yuntao and Jones, Andy and Ndousse, Kamal and Askell, Amanda and Chen, Anna and Dassarma, Nova and Drain, Dawn and Fort, Stanislav and Ganguli, Deep and Henighan, Tom and Joseph, Nicholas and Kadavath, Saurav and Kernion, Jackson and Conerly, Tom and El-Showk, Sheer and Elhage, Nelson and Hatfield-Dodds, Zac and Hernandez, Danny and Hume, Tristan and Johnston, Scott and Kravec, Shauna and Lovitt, Liane and Nanda, Neel and Olsson, Catherine and Amodei, Dario and Brown, Tom and Clark, Jack and McCandlish, Sam and Olah, Chris and Mann, Ben and Kaplan, Jared},
+  year   = {2022},
+  note   = {arXiv preprint arXiv:2204.05862},
+}
+
+@Article{chaudhari2024rlhf,
+  title   = {RLHF Deciphered: A Critical Analysis of Reinforcement Learning from Human Feedback for LLMs},
+  author  = {Chaudhari, Shreyas and Aggarwal, Pranjal and Murahari, Vishvak and Rajpurohit, Tanmay and Kalyan, Ashwin and Narasimhan, Karthik and Deshpande, Ameet and da Silva, Bruno Castro},
+  journal = {ACM Computing Surveys},
+  year    = {2024},
+}
+
+@Misc{chen2025personavectors,
+  title  = {Persona Vectors: Monitoring and Controlling Character Traits in Language Models},
+  author = {Chen, Runjin and Arditi, Andy and Sleight, Henry and Evans, Owain and Lindsey, Jack},
+  year   = {2025},
+  note   = {arXiv preprint},
+}
+
+@Misc{dai2023saferlhf,
+  title  = {Safe {RLHF}: Safe Reinforcement Learning from Human Feedback},
+  author = {Dai, Josef and Pan, Xuehai and Sun, Ruiyang and Ji, Jiaming and Xu, Xinbo and Liu, Mickel and Wang, Yizhou and Yang, Yaodong},
+  year   = {2023},
+  note   = {arXiv preprint},
+}
+
+@Misc{frisch2024agents,
+  title  = {{LLM} Agents in Interaction: Measuring Personality Consistency and Linguistic Alignment in Interacting Populations of Large Language Models},
+  author = {Frisch, Ivar and Giulianelli, Mario},
+  year   = {2024},
+  note   = {arXiv preprint},
+}
+
+@Misc{frising2025linear,
+  title  = {Linear Personality Probing and Steering in {LLM}s: A Big Five Study},
+  author = {Frising, Malte and Balcells, Daniel},
+  year   = {2025},
+  note   = {arXiv preprint},
+}
+
+% CONFIRMED — arXiv:2509.03730 (checked independently).
+@Misc{han2025illusion,
+  title  = {The Personality Illusion: Revealing Dissociation Between Self-Reports \& Behavior in {LLM}s},
+  author = {Han, Pengrui and Kocielnik, Rafal and Song, Peiyang and Debnath, Ramit and Mobbs, Dean and Anandkumar, Anima and Alvarez, R. Michael},
+  year   = {2025},
+  note   = {arXiv preprint arXiv:2509.03730},
+}
+
+% CONFIRMED — arXiv:2305.02547 (checked independently; originally posted
+% May 2023, matching the proposal's "2023" — some later citing papers use
+% "2024" for a revised/re-submitted version, but this is the same paper).
+@Misc{jiang2023personallm,
+  title  = {{PersonaLLM}: Investigating the Ability of Large Language Models to Express Personality Traits},
+  author = {Jiang, Hang and Zhang, Xiajie and Cao, Xubo and Breazeal, Cynthia and Roy, Deb and Kabbara, Jad},
+  year   = {2023},
+  note   = {arXiv preprint arXiv:2305.02547},
+}
+
+@Misc{ji2025pcl,
+  title  = {Enhancing Persona Consistency for {LLM}s' Role-Playing Using Persona-Aware Contrastive Learning},
+  author = {Ji, Ke and Lian, Yifan and Li, Lu and Gao, Jing and Li, Wei and Dai, Bin},
+  year   = {2025},
+  note   = {arXiv preprint},
+}
+
+@InProceedings{kose2025hallucination,
+  title     = {Persona Vectors in Controlling Hallucination of Small Large Language Models: A Safety-Oriented Analysis},
+  author    = {Kose, Utku and Uysal, Ismail},
+  booktitle = {2025 Cyber Awareness and Research Symposium (CARS)},
+  year      = {2025},
+}
+
+% CONFIRMED — arXiv:2406.14703 (checked independently). Later published
+% as NAACL Findings 2025; cited here per the proposal's "2024" (original
+% arXiv posting date).
+@Misc{lee2024trait,
+  title  = {Do {LLM}s Have Distinct and Consistent Personality? {TRAIT}: Personality Testset Designed for {LLM}s with Psychometrics},
+  author = {Lee, Seungbeen and Lim, Seungwon and Han, Seungju and Oh, Giyeong and Chae, Hyungjoo and Chung, Jiwan and Kim, Minju and Kwak, Beong-woo and Lee, Yeonsoo and Yu, Youngjae},
+  year   = {2024},
+  note   = {arXiv preprint arXiv:2406.14703},
+}
+
+@Misc{li2024big5chat,
+  title  = {{BIG5-CHAT}: Shaping {LLM} Personalities Through Training on Human-Grounded Data},
+  author = {Li, Wenkai and Liu, Jiarui and Liu, Andy and Zhou, Xuhui and Diab, Mona T. and Sap, Maarten},
+  year   = {2024},
+  note   = {arXiv preprint},
+}
+
+@Article{rahwan2019machine,
+  title   = {Machine Behaviour},
+  author  = {Rahwan, Iyad and Cebrian, Manuel and Obradovich, Nick and Bongard, Josh and Bonnefon, Jean-Fran\c{c}ois and Breazeal, Cynthia and Crandall, Jacob W. and Christakis, Nicholas A. and Couzin, Iain D. and Jackson, Matthew O. and others},
+  journal = {Nature},
+  volume  = {568},
+  number  = {7753},
+  pages   = {477--486},
+  year    = {2019},
+}
+
+@Misc{zhang2025mmrlhf,
+  title  = {{MM-RLHF}: The Next Step Forward in Multimodal {LLM} Alignment},
+  author = {Zhang, Yi and Yu, Tao and Tian, Haoyu and Fu, Chao and Li, Peiyan and Zeng, Jiabo and Tan, Tat-Peng and others},
+  year   = {2025},
+  note   = {arXiv preprint},
+}
+
+% ----------------------------------------------------------------------
+% Proposal 2 references
+% ----------------------------------------------------------------------
+
+@Article{liu2025lpitutor,
+  title   = {{LPITutor}: An {LLM} Based Personalized Intelligent Tutoring System Using {RAG} and Prompt Engineering},
+  author  = {Liu, Zhuoyang and Agrawal, Priya and Singhal, Shreya and Madaan, Vaibhav and Kumar, Manoj and Verma, Pawan Kumar},
+  journal = {PeerJ Computer Science},
+  year    = {2025},
+}
+
+@InProceedings{park2024tutoring,
+  title     = {Empowering Personalized Learning Through a Conversation-Based Tutoring System with Student Modeling},
+  author    = {Park, Minju and Kim, Sojung and Lee, Seyoung and Kwon, Sooyeon and Kim, Kyungsik},
+  booktitle = {Extended Abstracts of the CHI Conference on Human Factors in Computing Systems},
+  year      = {2024},
+}
+
+@Article{sharma2025review,
+  title   = {The Role of Large Language Models in Personalized Learning: A Systematic Review of Educational Impact},
+  author  = {Sharma, Shubham and Mittal, Priya and Kumar, Manish and Bhardwaj, Vikas},
+  journal = {Discover Sustainability},
+  year    = {2025},
+}
+
+@Article{grassucci2025strategic,
+  title   = {Beyond Answers: How Large Language Models Can Pursue Strategic Thinking in Education},
+  author  = {Grassucci, Eleonora and Grassucci, Giordano and Uncini, Aurelio and Comminiello, Danilo},
+  journal = {IEEE Signal Processing Magazine},
+  year    = {2025},
+}

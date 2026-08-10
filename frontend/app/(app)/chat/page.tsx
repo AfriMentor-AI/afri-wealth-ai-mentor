@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Image from "next/image";
 import { Icon } from "@/components/Icon";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { useAppDispatch, useAppState } from "@/lib/store";
@@ -54,11 +55,20 @@ export default function ChatPage() {
   return (
     <div className="flex h-full flex-col">
       <div className="flex shrink-0 items-center justify-between border-b border-outline-variant px-margin-mobile py-md">
-        <div>
-          <p className="font-title-md text-title-md text-primary">CHIOMA</p>
-          <p className="flex items-center gap-xs font-label-sm text-label-sm text-on-surface-variant">
-            <span className="h-1.5 w-1.5 rounded-full bg-secondary" /> online
-          </p>
+        <div className="flex items-center gap-sm">
+          <div className="relative h-11 w-11 shrink-0 overflow-hidden rounded-full border-2 border-primary">
+            <Image src="/images/chioma-avatar.png" alt="Chioma" fill className="object-cover" />
+            <span
+              aria-hidden
+              className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full border border-surface bg-secondary"
+            />
+          </div>
+          <div>
+            <p className="font-title-md text-title-md text-primary">CHIOMA</p>
+            <p className="flex items-center gap-xs font-label-sm text-label-sm text-on-surface-variant">
+              <span className="h-1.5 w-1.5 rounded-full bg-secondary" /> online
+            </p>
+          </div>
         </div>
         <ThemeToggle />
       </div>

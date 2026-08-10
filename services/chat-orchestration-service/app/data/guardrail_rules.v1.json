@@ -1,0 +1,146 @@
+{
+  "rules_id": "afrimentor-guardrails",
+  "rules_version": "v1.1",
+  "card": "C2.4",
+  "description": "High-risk financial advice filter for the CHIOMA mentor persona. Blocks specific financial-instrument recommendations and injects disclaimers on investment-adjacent advice. Patterns are matched case-insensitively. Each category may declare a 'surface' ('input', 'output', or 'both' — the default) limiting which side of a turn it screens, and 'exempt_patterns' that suppress it when the text is already handling the risk correctly.",
+  "changelog": [
+    {"version": "v1", "card": "C2.4", "note": "Initial six categories, all screening both surfaces."},
+    {"version": "v1.1", "card": "C2.5", "note": "Added output-only 'ai_disclosure' per pilot consent requirement (docs/research/pilot-data-collection-plan-v0.md section 4.3), plus the 'surface' and 'exempt_patterns' fields it needs. No change to the six C2.4 categories or their behaviour."}
+  ],
+  "spec_source_note": "Card C2.4 cites report section 5.4 'Guardrails', which is not yet written (research/main.pdf Sections 3-6 are headings only). Categories below are derived from the card description and the CHIOMA counter_markers in persona-prompt-service/data/chioma_profile.v1.json. Reconcile when 5.4 lands.",
+  "categories": [
+    {
+      "id": "specific_instrument",
+      "label": "Specific financial instrument recommendation",
+      "rationale": "Naming a particular stock, fund, or product to buy is investment advice the platform is not licensed to give, and the target users are least able to absorb a loss from it.",
+      "block_patterns": [
+        "\\b(which|what)\\b[^.?!]{0,40}\\b(stock|stocks|share|shares|fund|funds|etf|etfs|bond|bonds)\\b[^.?!]{0,40}\\b(buy|invest|put|choose|pick|recommend|get|go\\s+for)\\b",
+        "\\b(which|what)\\b[^.?!]{0,25}\\b(stock|share|fund|etf|bond)s?\\s+(should|do|would)\\s+(i|you)\\b",
+        "\\b(buy|invest\\s+in)\\b[^.?!]{0,30}\\b(stocks|shares|fund|funds|etf|etfs|bond|bonds)\\b",
+        "\\bput\\s+(my|all|everything|the)\\b[^.?!]{0,30}\\b(in|into)\\b[^.?!]{0,25}\\b(stock|shares|fund|etf|bond|market)\\b",
+        "\\b(should|shall)\\s+i\\s+(buy|sell|invest\\s+in)\\b",
+        "\\b(recommend|suggest|name|give\\s+me|tell\\s+me)\\b[^.?!]{0,40}\\b(stock|share|fund|etf|coin|token|investment)s?\\b[^.?!]{0,25}\\b(to\\s+buy|to\\s+invest|i\\s+should|that\\s+will)\\b",
+        "\\bwhere\\s+(should|do)\\s+i\\s+(put|invest)\\b[^.?!]{0,25}\\b(money|savings|capital|cash)\\b",
+        "\\b(name|give\\s+me|tell\\s+me|pick|suggest)\\b[^.?!]{0,30}\\b(one|a|any|some|specific|particular|exact)\\b[^.?!]{0,30}\\b(investment|stock|share|fund|etf|bond|coin)s?\\b",
+        "\\b(best|top|hottest|safest)\\b[^.?!]{0,25}\\b(stock|share|fund|etf|investment|coin)s?\\b[^.?!]{0,25}\\b(to\\s+buy|right\\s+now|this\\s+year|for\\s+me)\\b"
+      ],
+      "disclaim_patterns": [
+        "\\b(invest|investing|investment|investments|portfolio|diversify|diversification)\\b",
+        "\\b(stock\\s+market|mutual\\s+fund|index\\s+fund|treasury\\s+bill|t-bill|money\\s+market)\\b",
+        "\\b(return\\s+on\\s+investment|roi|capital\\s+gains?|dividends?)\\b"
+      ]
+    },
+    {
+      "id": "guaranteed_return",
+      "label": "Guaranteed or risk-free return claim",
+      "rationale": "Promises of guaranteed returns are the signature of both fraud and unlicensed advice. The persona must never make or endorse one.",
+      "block_patterns": [
+        "\\b(guarantee|guaranteed|guarantees|assured|risk[-\\s]free|no\\s+risk|zero\\s+risk|100%\\s+safe|can'?t\\s+lose|cannot\\s+lose|never\\s+lose)\\b[^.?!]{0,50}\\b(return|returns|profit|profits|money|income|gain|gains|invest|investment)\\b",
+        "\\b(return|returns|profit|profits|income|gains?|investment)\\b[^.?!]{0,40}\\b(guaranteed|assured|risk[-\\s]free|no\\s+risk|zero\\s+risk|can'?t\\s+lose)\\b",
+        "\\b(double|triple|10x|100x|multiply)\\b[^.?!]{0,30}\\b(my|your|the)?\\s*(money|capital|investment|savings|cash)\\b",
+        "\\b(get\\s+rich\\s+quick|quick\\s+money|make\\s+money\\s+fast|easy\\s+money)\\b"
+      ],
+      "disclaim_patterns": [
+        "\\b(high[-\\s]yield|high\\s+return|passive\\s+income)\\b"
+      ]
+    },
+    {
+      "id": "crypto_speculation",
+      "label": "Cryptocurrency, forex and speculative-asset advice",
+      "rationale": "Crypto and forex are heavily promoted to African youth entrepreneurs and are a common vector for total-loss outcomes. Naming a coin or trade to enter is out of scope.",
+      "block_patterns": [
+        "\\b(which|what|best|top)\\b[^.?!]{0,30}\\b(coin|coins|token|tokens|crypto|cryptocurrency|altcoin|memecoin)\\b",
+        "\\b(buy|buying|invest\\s+in|investing\\s+in|ape\\s+into|get\\s+into)\\b[^.?!]{0,30}\\b(bitcoin|btc|ethereum|eth|solana|doge|dogecoin|shiba|usdt|tether|altcoin|memecoin|nft|nfts|crypto|cryptocurrency)\\b",
+        "\\bput\\b[^.?!]{0,35}\\b(in|into)\\b[^.?!]{0,20}\\b(bitcoin|btc|ethereum|eth|solana|doge|dogecoin|shiba|usdt|tether|altcoin|memecoin|nft|nfts|crypto|cryptocurrency)\\b",
+        "\\b(bitcoin|ethereum|crypto|cryptocurrency)\\b[^.?!]{0,40}\\b(guaranteed|moons?|pumps?|10x|100x|get\\s+rich|double)\\b",
+        "\\b(forex|binary\\s+option|binary\\s+options|cfd|cfds|leverage\\s+trading|margin\\s+trading|day\\s+trading)\\b",
+        "\\bshould\\s+i\\s+(buy|trade|invest\\s+in)\\b[^.?!]{0,25}\\b(crypto|bitcoin|forex|nft)\\b"
+      ],
+      "disclaim_patterns": [
+        "\\b(bitcoin|ethereum|crypto|cryptocurrency|blockchain|trading)\\b"
+      ]
+    },
+    {
+      "id": "leverage_debt",
+      "label": "High-risk borrowing and leverage",
+      "rationale": "Advising a low-income entrepreneur to borrow against their home or use informal high-interest lenders to fund a venture can be catastrophic and irreversible.",
+      "block_patterns": [
+        "\\b(borrow|take\\s+out\\s+a\\s+loan|take\\s+a\\s+loan|get\\s+a\\s+loan)\\b[^.?!]{0,50}\\b(invest|investing|business|trade|trading|crypto|bitcoin|stock|stocks|shares|forex)\\b",
+        "\\b(loan\\s+shark|payday\\s+loan|informal\\s+lender|money\\s+lender|shylock)\\b",
+        "\\b(remortgage|re-mortgage|mortgage|sell\\s+my\\s+house|use\\s+my\\s+house|my\\s+land\\s+as\\s+collateral|as\\s+collateral|pledge\\s+my)\\b[^.?!]{0,50}\\b(invest|business|fund|start|capital|trade)\\b",
+        "\\b(borrow|loan)\\b[^.?!]{0,40}\\b(invest|crypto|forex|trade|stocks)\\b"
+      ],
+      "disclaim_patterns": [
+        "\\b(loan|loans|credit|interest\\s+rate|debt|borrowing|microfinance)\\b"
+      ]
+    },
+    {
+      "id": "tax_legal_evasion",
+      "label": "Tax evasion or regulatory circumvention",
+      "rationale": "The persona must not help users break the law, even when the user frames it as ordinary business practice.",
+      "block_patterns": [
+        "\\b(avoid|evade|dodge|escape|skip|not\\s+pay|without\\s+paying)\\b[^.?!]{0,30}\\b(tax|taxes|vat|customs|duty|duties|tariff)\\b",
+        "\\b(hide|conceal|under[-\\s]?report|underreport|falsify|cook)\\b[^.?!]{0,30}\\b(income|revenue|earnings|profit|profits|books|records|accounts|money)\\b",
+        "\\b(off\\s+the\\s+books|under\\s+the\\s+table|without\\s+(a\\s+)?(licence|license|permit|registration))\\b",
+        "\\b(smuggle|smuggling|bribe|bribing|kickback|launder|laundering|money\\s+laundering)\\b"
+      ],
+      "disclaim_patterns": [
+        "\\b(tax|taxes|vat|compliance|regulation|licence|license)\\b"
+      ]
+    },
+    {
+      "id": "medical_or_legal",
+      "label": "Medical or legal advice (out of persona scope)",
+      "rationale": "CHIOMA is a business and wealth mentor. Medical and legal questions need a qualified professional, and answering them would be out-of-persona per the profile's counter_markers.",
+      "block_patterns": [
+        "\\b(what|which|how\\s+much)\\b[^.?!]{0,30}\\b(medicine|medication|drug|drugs|dose|dosage|treatment|antibiotic)\\b",
+        "\\b(paracetamol|acetaminophen|ibuprofen|aspirin|amoxicillin|antibiotics?|painkillers?|chloroquine|insulin|codeine|tramadol)\\b",
+        "\\b(how\\s+much|how\\s+many|what\\s+dose)\\b[^.?!]{0,40}\\b(safe|to\\s+take|should\\s+i\\s+take|give\\s+(my|him|her|the))\\b",
+        "\\b(diagnose|diagnosis|symptoms?\\s+of|cure\\s+for)\\b",
+        "\\bshould\\s+i\\s+take\\b[^.?!]{0,30}\\b(medicine|medication|drug|drugs|pills?|tablets?)\\b",
+        "\\b(sue|suing|lawsuit|court\\s+case|legal\\s+action|take\\s+(him|her|them)\\s+to\\s+court|represent\\s+myself\\s+in\\s+court)\\b"
+      ],
+      "disclaim_patterns": []
+    },
+    {
+      "id": "ai_disclosure",
+      "label": "Denial of AI nature",
+      "surface": "output",
+      "rationale": "Pilot consent (docs/research/pilot-data-collection-plan-v0.md section 4.3) requires that participants can verify at any point that they are talking to a machine. A persona modelled on a real achiever is exactly the kind that invites the question, and a reply claiming to be human would invalidate the consent the participant gave.",
+      "surface_note": "Output-only, unlike every C2.4 category. The risk is the model's answer, not the user's question: 'are you a real person?' is a legitimate thing to ask and must be answered, not refused.",
+      "block_patterns": [
+        "\\bi(?:\\s+am|'m|\u2019m)\\s+(?:a\\s+)?(?:real|actual|genuine|live|living)\\s+(?:person|human|human\\s+being|woman|man|lady|mentor\\s+in\\s+the\\s+flesh)\\b",
+        "\\bi(?:\\s+am|'m|\u2019m)\\s+(?:a\\s+)?human(?:\\s+being)?\\b",
+        "\\bi(?:\\s+am|'m|\u2019m)\\s+not\\s+(?:an?\\s+)?(?:ai|a\\.i\\.|artificial\\s+intelligence|robot|bot|chatbot|machine|computer|computer\\s+program|program|algorithm|language\\s+model|llm)\\b",
+        "\\b(?:no|nope),?\\s+i(?:\\s+am|'m|\u2019m)\\s+not\\s+(?:an?\\s+)?(?:ai|robot|bot|machine|program)\\b",
+        "\\bi\\s+(?:can\\s+)?assure\\s+you\\s+i(?:\\s+am|'m|\u2019m)\\s+(?:a\\s+)?(?:real|human|not\\s+an?\\s+(?:ai|robot|bot|machine))\\b",
+        "\\bthere(?:'s|\u2019s|\\s+is)\\s+a\\s+real\\s+(?:person|human|woman|man)\\s+(?:here|on\\s+(?:this|the\\s+other)\\s+(?:end|side))\\b"
+      ],
+      "disclaim_patterns": [],
+      "exempt_patterns": [
+        "\\bi(?:\\s+am|'m|\u2019m)\\s+(?:an?\\s+)?(?:ai|a\\.i\\.|artificial\\s+intelligence|chatbot|computer\\s+program|language\\s+model|llm)\\b",
+        "\\bi(?:\\s+am|'m|\u2019m)\\s+not\\s+(?:a\\s+)?(?:real\\s+)?(?:person|human(?:\\s+being)?)\\b",
+        "\\bnot\\s+a\\s+real\\s+(?:person|human)\\b"
+      ],
+      "exempt_note": "A correct reply has to name the thing it is denying ('you asked if I'm a real person \u2014 I'm not, I'm an AI'), and the block patterns above would otherwise fire on that sentence. These suppress the category when the reply discloses somewhere in its text. A reply that raises the question and never discloses is still blocked, which is the intended behaviour."
+    }
+  ],
+  "disclaimers": {
+    "default": "A note: I'm your business mentor, not a licensed financial adviser. What I share is general education, not personalised investment advice — please talk to a licensed professional before committing your money.",
+    "specific_instrument": "A note: I'm your business mentor, not a licensed financial adviser. I can help you think through how investing works and what questions to ask, but I can't tell you which specific product to put your money in — that needs a licensed professional who knows your full situation.",
+    "crypto_speculation": "A note: crypto and forex are high-risk and can lose value very fast. I'm not a licensed financial adviser and I can't recommend specific coins or trades — never put in money you can't afford to lose entirely.",
+    "leverage_debt": "A note: borrowing to fund a business is a serious decision with real consequences if the venture doesn't work out. I'm not a licensed financial adviser — please review any loan terms with a professional before you sign.",
+    "guaranteed_return": "A note: no genuine investment can guarantee a return. Be very cautious of anyone who promises one — that is the most common shape a scam takes.",
+    "tax_legal_evasion": "A note: I can only help with approaches that keep you fully compliant with the law. For anything specific to your tax or regulatory position, please consult a qualified accountant."
+  },
+  "refusals": {
+    "default": "I hear what you're asking, but that's not something I can guide you on — I'm your business mentor, not a licensed financial adviser, and getting this wrong could cost you money you can't afford to lose. What I can do is help you build the ground underneath the decision: your cashflow, your margins, and an emergency buffer. Where would you like to start?",
+    "specific_instrument": "I'm not going to name a specific investment for you to put money into — that's licensed financial advice, and I'd be guessing at your full situation. What I can do is help you get investment-ready: steady cashflow, a buffer that covers a few months, and a clear picture of what you'd be investing from. Shall we look at your numbers first?",
+    "guaranteed_return": "I have to be straight with you: nothing legitimate guarantees a return. Anyone promising one is either mistaken or selling you something. Let's put that energy into the part of your income you can actually control — your pricing, your margins, and your costs. Which of those feels weakest right now?",
+    "crypto_speculation": "I won't point you at a particular coin or trade. Crypto and forex are volatile enough that people lose everything, and I'm not a licensed adviser. If you're drawn to it, the honest first step is an emergency fund that could carry you three months — money you'd never have to touch. Want to work out what that number looks like for you?",
+    "leverage_debt": "I can't advise you to borrow for this, and I'd be doing you a disservice if I did — that kind of debt can follow you for years if the venture doesn't land. Let's look instead at what you could start with from your existing cashflow, and what the business would need to prove before borrowing is even worth considering.",
+    "tax_legal_evasion": "That's not something I'll help with — beyond the legal risk, it puts everything you're building in jeopardy the moment anyone looks closely. There are usually legitimate reliefs and structures that get you most of the way. Let's talk about what's actually available to a business your size.",
+    "medical_or_legal": "That one's outside what I can help with — I'm a business and wealth mentor, and you deserve a properly qualified professional for it rather than my best guess. Once that's sorted, I'm here for anything on the business side.",
+    "ai_disclosure": "Let me answer that straight, because you're owed a straight answer: I'm an AI. Chioma is a persona — built to reason the way African entrepreneurs who've actually built something reason — but there is no person sitting on this end of the conversation. Everything I say is generated by a machine, and you should weigh it with that in mind, especially where money is involved. What I can still do is think through your business with you properly. What's on your mind?"
+  }
+}

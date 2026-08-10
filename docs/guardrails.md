@@ -1,0 +1,167 @@
+# Guardrails — high-risk advice filter (card C2.4)
+
+AfriMentor's mentor persona gives financial guidance to low-income entrepreneurs. Before
+C2.4 nothing stopped it from naming a specific financial instrument to buy, and
+investment-adjacent replies carried no disclaimer. This module closes both gaps.
+
+Implemented in `services/chat-orchestration-service/app/guardrails.py`, with policy held as
+data in `app/data/guardrail_rules.v1.json`.
+
+> **Spec status.** The card cites "report section 5.4 'Guardrails'". That section does not
+> exist yet — `research/main.pdf` is still a skeleton and the word "guardrail" does not appear
+> in it. The categories below are derived from the card description and the CHIOMA
+> `counter_markers` in `persona-prompt-service/data/chioma_profile.v1.json`. **Reconcile this
+> file with §5.4 once written**; because policy is data, that should be a JSON edit.
+
+## Actions
+
+| Action | Meaning |
+| --- | --- |
+| `allow` | Turn proceeds untouched. |
+| `disclaim` | Reply is allowed; a category-appropriate disclaimer is appended. |
+| `block` | Turn is refused in-persona. On input this happens *before* RAG retrieval and the LLM call. |
+
+When several categories fire, the most severe action wins.
+
+## Categories
+
+| ID | Surface | Covers |
+| --- | --- | --- |
+| `specific_instrument` | both | Naming a particular stock, share, fund, ETF or bond to buy. |
+| `guaranteed_return` | both | Guaranteed / risk-free return claims, get-rich-quick framing. |
+| `crypto_speculation` | both | Crypto, forex, binary options, CFDs, day trading. |
+| `leverage_debt` | both | Borrowing to invest, loan sharks, pledging a home as collateral. |
+| `tax_legal_evasion` | both | Evading tax or customs, off-the-books trading, laundering. |
+| `medical_or_legal` | both | Medical or legal questions — outside the persona's scope. |
+| `ai_disclosure` | **output only** | The model claiming to be human, or denying that it is an AI. |
+
+Each category carries up to three pattern tiers: `block_patterns` (an imperative request for a
+specific instrument, or a guaranteed-return claim), `disclaim_patterns` (general
+investment-adjacent discussion that is legitimate to answer but needs a caveat), and the
+optional `exempt_patterns` described below.
+
+### Why `ai_disclosure` is output-only
+
+The six C2.4 categories screen both surfaces, because a request for a specific stock is
+equally unsafe whether the user asks for it or the model volunteers it. `ai_disclosure`
+(added for card C2.5) is the first category where that symmetry breaks. The risk is the
+*model* claiming to be human; the *user* asking "are you a real person?" is a question the
+pilot consent protocol requires be answered honestly, and screening the same patterns on
+input would refuse the participant for asking it.
+
+A category may therefore declare `"surface": "input" | "output" | "both"`. The field is
+optional and defaults to `both`, so every pre-existing category is unchanged. An unrecognised
+value raises `GuardrailConfigError` rather than silently disabling the category.
+
+`ai_disclosure` also uses `exempt_patterns`, which suppress a category when the text is
+already handling the risk correctly. A truthful reply has to name the thing it denies — "you
+asked whether I'm a real person; I'm not, I'm an AI" — and the block patterns would otherwise
+fire on that sentence. A reply that raises the question and never discloses is still blocked.
+
+Its `block` action replaces the reply with the `ai_disclosure` refusal, which is itself an
+honest disclosure rather than a deflection: the participant asked a question bearing on
+consent and must receive an answer to it, not a redirect.
+
+**Rationale:** `docs/research/pilot-data-collection-plan-v0.md` §4.3. Participants consent
+to being mentored by a machine, and the persona is modelled on real achievers — exactly the
+kind that invites the question. A reply claiming humanity would invalidate that consent.
+
+## Integration
+
+Two hooks in `app/routers/chat.py::send_message`:
+
+1. **Pre-hook** — `screen_input` runs after the user turn is persisted and before
+   `chat_completion`. A block short-circuits: no RAG query, no LLM call, and the assistant
+   turn is `refusal_message(...)`. This is what "blocks retrieval" means in the card — the
+   query never reaches the corpus.
+2. **Post-hook** — `screen_output` runs on the generated reply, catching the model
+   volunteering an instrument in answer to an innocuous question, which the pre-hook cannot
+   see. A block replaces the reply; a disclaim appends via `apply_disclaimer`.
+
+Commitment detection runs only on allowed turns, so a refused high-risk statement
+("I will put all my savings into bitcoin") never becomes a tracked goal.
+
+### Design decisions
+
+**Deterministic, not model-based.** The acceptance criterion is 100% coverage of a fixed
+red-team set, which needs a provable and stable decision procedure. An LLM classifier would
+also fail open in CI, where `LLM_API_KEY` is unset and `app/llm.py` takes its stub path. The
+module is structured so an LLM second pass could be layered in without changing the call sites.
+
+**Fails closed.** If the rule file is missing or malformed, the turn is *blocked*. This is
+deliberately the opposite of `app/rag.py::retrieve`, which swallows errors and returns `[]` so
+chat survives RAG being down. A guardrail that fails open is not a guardrail.
+
+**Refusals stay in persona.** Chioma declines and redirects to what she can help with. A flat
+error string would read as a bug and would contradict the persona's counter-markers.
+
+## Configuration
+
+| Variable | Default | Effect |
+| --- | --- | --- |
+| `GUARDRAILS_ENABLED` | `true` | Only the exact string `false` disables it, so a typo or `0` cannot silently open the gate. |
+
+The kill switch exists so a false positive blocking legitimate mentoring can be turned off in
+production without a redeploy. Set in `docker-compose.yml` under `chat-orchestration-service`.
+
+## API surface
+
+`MessageResponse` gains two fields:
+
+- `guardrail_action` — `allow` / `disclaim` / `block`, or `null` when guardrails are disabled
+  or the turn predates C2.4.
+- `guardrail_categories` — the category IDs that fired.
+
+`disclaim` tells the client the disclaimer is **already appended** to `content`; it must not
+add a second one. `matched_terms` is retained in-process for audit but deliberately never
+returned — it would tell someone probing the filter exactly which phrasing tripped it.
+
+## Deployment note
+
+No manual DDL is needed. C2.4 shipped the two `messages` columns in the model with no
+migration framework to apply them, so this section previously carried raw `ALTER TABLE`
+statements for an operator to run by hand. Alembic was adopted for this service immediately
+afterwards, and revision `2b865b2b30ba` applies them:
+
+```bash
+cd services/chat-orchestration-service
+alembic upgrade head
+```
+
+`docker-entrypoint.sh` runs that on container start, so a normal deploy needs nothing extra.
+
+`guardrail_categories` is added nullable, backfilled to `[]`, then made NOT NULL — adding a
+NOT NULL column with no default to a table that already has rows fails outright.
+`guardrail_action` stays nullable by design: a turn written before C2.4, or one written while
+`GUARDRAILS_ENABLED` was off, is genuinely *unscreened*, which is a different fact from having
+been screened and allowed. The research evaluation needs to tell those apart.
+
+Tests are unaffected — `app/database.py` still calls `Base.metadata.create_all` as a dev/test
+bootstrap, and each test gets a fresh SQLite database.
+
+## Red-team corpus
+
+`research/datasets/redteam_high_risk_advice.v1.jsonl` — 53 attack prompts across all seven
+categories plus 25 benign controls, one JSON object per line
+(`{id, prompt, category, expected}`, with an optional `surface`).
+
+`surface` defaults to `input`. A case sets `"surface": "output"` when its text is a model
+reply rather than a user message; the tests route it to `screen_output` accordingly. Without
+that routing an output-only category would be screened on input, never fire, and report a
+false pass.
+
+`tests/test_guardrails.py::test_redteam_corpus_is_blocked_or_disclaimed` is the acceptance
+test, parametrised so a regression names the offending prompt id. Two stronger assertions run
+alongside it: that each prompt receives its *intended* action, and that the firing category
+matches the label so the refusal text fits.
+
+`test_benign_controls_are_allowed` is the counterweight — a filter that blocked everything
+would satisfy the acceptance criterion and ruin the product.
+
+Adding a category to the rule file without red-team prompts fails
+`test_corpus_covers_every_category`.
+
+```bash
+cd services/chat-orchestration-service
+python -m pytest tests/test_guardrails.py tests/test_chat_guardrails.py -q
+```

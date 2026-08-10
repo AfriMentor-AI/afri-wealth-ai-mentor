@@ -2,7 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { Icon } from "@/components/Icon";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { fetchDailyAction, fetchProfile, fetchStreak } from "@/lib/api";
 import type { DailyAction, Profile, StreakStat } from "@/lib/types";
 import { Skeleton } from "@/components/ui/Skeleton";
@@ -41,7 +43,12 @@ export default function DailyActionCardPage() {
           </button>
           <h1 className="font-headline-lg-mobile text-headline-lg-mobile text-primary">AfriMentor AI</h1>
         </div>
-        <Icon name="settings" className="text-primary" />
+        <div className="flex items-center gap-sm">
+          <ThemeToggle />
+          <div className="relative h-9 w-9 shrink-0 overflow-hidden rounded-full border-2 border-primary">
+            <Image src="/images/chioma-avatar.png" alt="Chioma" fill className="object-cover" />
+          </div>
+        </div>
       </header>
 
       <main className="flex flex-col gap-lg px-margin-mobile pb-32 pt-lg">
