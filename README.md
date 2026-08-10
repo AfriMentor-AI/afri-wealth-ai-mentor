@@ -29,7 +29,7 @@ docker compose ps              # wait for all containers to report "healthy"
 - Services: ports 8001–8012 (see `docker-compose.yml`)
 - RabbitMQ management UI: http://localhost:15672 (afrimentor / afrimentor)
 - API docs site: `docs/api/` (see [docs/api/README.md](docs/api/README.md))
-- Observability: Prometheus :9090, Grafana :3000 (admin/admin), Loki :3100, Jaeger :16686 — see [docs/observability.md](docs/observability.md)
+- Observability: Prometheus :9090, Grafana :3001 (admin/admin), Loki :3100, Jaeger :16686 — see [docs/observability.md](docs/observability.md)
 
 ## Repository layout
 

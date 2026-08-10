@@ -6,7 +6,7 @@ network as the services, so the whole thing boots with `docker compose up`.
 | Component | Ports (dev) | What it does |
 |---|---|---|
 | Prometheus | `9090` | Scrapes every service's `GET /metrics` (see `infra/prometheus/prometheus.yml`) |
-| Grafana | `3000` | Dashboards + alerting. Login `admin`/`admin` (dev), `admin`/`$GF_SECURITY_ADMIN_PASSWORD` (staging) |
+| Grafana | `3001` | Dashboards + alerting. Login `admin`/`admin` (dev), `admin`/`$GF_SECURITY_ADMIN_PASSWORD` (staging) |
 | Loki | `3100` | Centralised log store |
 | Promtail | (internal) | Ships container stdout → Loki, only for containers labelled `logging=promtail` |
 | Jaeger | `16686` | Trace store + UI; services export OTLP/gRPC to `jaeger:4317` |
@@ -52,7 +52,7 @@ docker compose up -d          # boots the stack + all services
 - Metrics: <http://localhost:9090> (Prometheus) or **Grafana → Explore → Prometheus**
 - Logs: **Grafana → Explore → Loki** (filter e.g. `{service="goals-milestones-service"}`)
 - Traces: <http://localhost:16686> (Jaeger UI)
-- Dashboard: <http://localhost:3000/d/afrimentor-services>
+- Dashboard: <http://localhost:3001/d/afrimentor-services> (Grafana uses 3001 so it doesn't clash with the Next.js dev server on 3000)
 
 Grafana login for dev is `admin`/`admin` (single-node dev only — staging overrides the
 password, see `docker-compose.staging.yml`).
