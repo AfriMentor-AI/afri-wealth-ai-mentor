@@ -5,7 +5,6 @@
 
 import {
   mockBadges,
-  mockChatMessages,
   mockDailyAction,
   mockInsights,
   mockPersonas,
@@ -30,13 +29,6 @@ import type {
   StreakStat,
   User,
 } from "./types";
-
-// Simulated latency so loading/skeleton states are real and tested,
-// not skipped because mock data resolves instantly.
-const LATENCY_MS = 250;
-function resolveAfterLatency<T>(value: T): Promise<T> {
-  return new Promise((resolve) => setTimeout(() => resolve(value), LATENCY_MS));
-}
 
 async function parseOrThrow(res: Response, action: string): Promise<unknown> {
   if (!res.ok) throw new Error(`${action} failed: ${res.status}`);
@@ -154,8 +146,81 @@ export async function submitIntake(answers: IntakeAnswers): Promise<Profile> {
 
 /** GET /api/v1/personas */
 export async function fetchPersonas(): Promise<Persona[]> {
-  return resolveAfterLatency(mockPersonas);
+  // This is a simplified mock. The real endpoint will have more sophisticated
+  // recommendation logic based on the user's profile.
+  const res = await apiFetch("/api/v1/personas");
+  return (await parseOrThrow(res, "fetch personas")) as Persona[];
 }
+
+// ---------------------------------------------------------------------------
+// Chat (live — chat-orchestration-service via the gateway)
+// ---------------------------------------------------------------------------
+
+// DTO for a message from the backend, which has a different shape than the
+// frontend's ChatMessage type.
+interface MessageDto {
+  id: string;
+  conversation_id: string;
+  role: "user" | "assistant";
+  content: string;
+  is_commitment_candidate: boolean;
+  citations: Array<{ label: string }>;
+  created_at: string;
+}
+
+function toChatMessage(dto: MessageDto, userId: string, personaId?: string): ChatMessage {
+  return {
+    id: dto.id,
+    userId,
+    personaId,
+    sender: dto.role === "assistant" ? "mentor" : "user",
+    text: dto.content,
+    citations: dto.citations,
+    isCommitmentCandidate: dto.is_commitment_candidate,
+    createdAt: dto.created_at,
+  };
+}
+
+/** POST /api/v1/chat/sessions */
+export async function startChatSession(personaId: string): Promise<string> {
+  const res = await apiFetch("/api/v1/chat/sessions", {
+    method: "POST",
+    body: JSON.stringify({ persona_id: personaId }),
+  });
+  const session = (await parseOrThrow(res, "start chat session")) as { id: string };
+  return session.id;
+}
+
+/** GET /api/v1/chat/sessions/{sessionId}/messages */
+export async function fetchChatMessages(sessionId: string): Promise<ChatMessage[]> {
+  const userId = await getCurrentUserId();
+  const res = await apiFetch(`/api/v1/chat/sessions/${sessionId}/messages`);
+  const dtos = (await parseOrThrow(res, "fetch chat messages")) as MessageDto[];
+  // personaId is not on the message DTO, so we can't map it here.
+  // The UI will have to associate the persona with the session.
+  return dtos.map((dto) => toChatMessage(dto, userId));
+}
+
+/** POST /api/v1/chat/sessions/{sessionId}/messages */
+export async function sendMessage(sessionId: string, content: string): Promise<ChatMessage> {
+  const userId = await getCurrentUserId();
+  const res = await apiFetch(`/api/v1/chat/sessions/${sessionId}/messages`, {
+    method: "POST",
+    body: JSON.stringify({ content }),
+  });
+  const dto = (await parseOrThrow(res, "send message")) as MessageDto;
+  return toChatMessage(dto, userId);
+}
+
+/** POST /api/v1/chat/sessions/{sessionId}/messages/{messageId}/tag */
+export async function tagCommitment(sessionId: string, messageId: string, goalId: string): Promise<Commitment> {
+  const res = await apiFetch(`/api/v1/chat/sessions/${sessionId}/messages/${messageId}/tag`, {
+    method: "POST",
+    body: JSON.stringify({ goal_id: goalId }),
+  });
+  return (await parseOrThrow(res, "tag commitment")) as Commitment;
+}
+
 
 // ---------------------------------------------------------------------------
 // Goals, Milestones & Commitments (live — goals-milestones-service via the gateway)
@@ -280,22 +345,17 @@ export async function fetchCommitmentsByGoal(goalId: string): Promise<Commitment
 
 /** GET /daily-action/today */
 export async function fetchDailyAction(): Promise<DailyAction> {
-  return resolveAfterLatency(mockDailyAction);
-}
-
-/** GET /chat/messages */
-export async function fetchChatMessages(): Promise<ChatMessage[]> {
-  return resolveAfterLatency(mockChatMessages);
+  return Promise.resolve(mockDailyAction);
 }
 
 /** GET /insights */
 export async function fetchInsights(): Promise<InsightItem[]> {
-  return resolveAfterLatency(mockInsights);
+  return Promise.resolve(mockInsights);
 }
 
 /** GET /progress/streak */
 export async function fetchStreak(): Promise<StreakStat> {
-  return resolveAfterLatency(mockStreak);
+  return Promise.resolve(mockStreak);
 }
 
 /** POST /feedback */
@@ -310,7 +370,7 @@ export async function submitFeedback(input: { npsScore: number; comment?: string
   // Real endpoint persists this server-side; mock just logs it so it's
   // visible that a real, contract-shaped object was actually built.
   console.info("[mock] submitted FeedbackSurvey:", survey);
-  return resolveAfterLatency(survey);
+  return Promise.resolve(survey);
 }
 
 /** GET /progress/badges — joins the Badge catalog against this user's
@@ -320,5 +380,5 @@ export async function fetchBadges(): Promise<BadgeWithStatus[]> {
     const userBadge = mockUserBadges.find((ub) => ub.badgeId === badge.id);
     return { ...badge, earnedAt: userBadge?.earnedAt ?? null };
   });
-  return resolveAfterLatency(joined);
+  return Promise.resolve(joined);
 }

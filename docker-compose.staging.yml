@@ -34,6 +34,23 @@ services:
     volumes:
       - ./infra/keys:/run/secrets:ro
 
+  chat-orchestration-service:
+    environment:
+      APP_ENV: staging
+
+  persona-prompt-service:
+    environment:
+      APP_ENV: staging
+
+  rag-corpus-service:
+    environment:
+      APP_ENV: staging
+
+  chromadb:
+    ports: !reset []
+    volumes:
+      - chromadata_staging:/chroma/chroma
+
   # --------------------------------------------------------- observability (O2.5)
   # Same stack as dev but no host ports; the Grafana admin password comes from the
   # environment (`GF_SECURITY_ADMIN_PASSWORD`) instead of a hard-coded dev default.
@@ -73,3 +90,4 @@ volumes:
   promdata_staging:
   lokidata_staging:
   grafanadata_staging:
+  chromadata_staging:

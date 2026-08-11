@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Icon } from "@/components/Icon";
 import { ThemeToggle } from "@/components/ThemeToggle";
-import { fetchPersonas } from "@/lib/api";
+import { fetchPersonas, startChatSession } from "@/lib/api";
 import type { Persona } from "@/lib/types";
 import { useAppDispatch } from "@/lib/store";
 import { Skeleton } from "@/components/ui/Skeleton";
@@ -27,9 +27,16 @@ export default function PersonaSelectionPage() {
     fetchPersonas().then(setPersonas);
   }, []);
 
-  function choose(persona: Persona) {
+  async function choose(persona: Persona) {
     dispatch({ type: "SET_PERSONA", persona });
-    router.push("/chat");
+    try {
+      const sessionId = await startChatSession(persona.id);
+      dispatch({ type: "SET_CHAT_SESSION_ID", sessionId });
+      router.push("/chat");
+    } catch (error) {
+      console.error("Failed to start chat session:", error);
+      // Optionally, show an error message to the user
+    }
   }
 
   return (
