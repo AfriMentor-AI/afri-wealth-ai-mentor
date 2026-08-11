@@ -18,7 +18,7 @@ class Route:
     protected: bool = True
     rate_limit: int | None = None  # per-window override; None = gateway default
     strip_prefix: bool = False  # if true, remove /api/v1 before forwarding upstream
-
+    
     @property
     def upstream(self) -> str:
         return os.getenv(self.upstream_env, self.default_upstream)

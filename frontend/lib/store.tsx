@@ -15,6 +15,8 @@ interface AppState {
   selectedPersona: Persona | null;
   chatMessages: ChatMessage[];
   chatDraft: string;
+  chatSessionId: string | null;
+  activeGoalId: string | null; // New: Tracks the goal the user is currently viewing/acting on
   feedbackModalOpen: boolean;
   dailyActionDone: boolean;
   libraryFavorites: Set<string>;
@@ -29,6 +31,8 @@ type Action =
   | { type: "SET_CHAT_MESSAGES"; messages: ChatMessage[] }
   | { type: "APPEND_CHAT_MESSAGE"; message: ChatMessage }
   | { type: "SET_CHAT_DRAFT"; draft: string }
+  | { type: "SET_CHAT_SESSION_ID"; sessionId: string }
+  | { type: "SET_ACTIVE_GOAL_ID"; goalId: string | null } // New: Set the currently active goal
   | { type: "OPEN_FEEDBACK_MODAL" }
   | { type: "CLOSE_FEEDBACK_MODAL" }
   | { type: "MARK_DAILY_ACTION_DONE" }
@@ -41,6 +45,8 @@ const initialState: AppState = {
   selectedPersona: null,
   chatMessages: [],
   chatDraft: "",
+  chatSessionId: null,
+  activeGoalId: null, // Initialize new state property
   feedbackModalOpen: false,
   dailyActionDone: false,
   libraryFavorites: new Set(),
@@ -63,6 +69,10 @@ function reducer(state: AppState, action: Action): AppState {
       return { ...state, chatMessages: [...state.chatMessages, action.message] };
     case "SET_CHAT_DRAFT":
       return { ...state, chatDraft: action.draft };
+    case "SET_CHAT_SESSION_ID":
+      return { ...state, chatSessionId: action.sessionId };
+    case "SET_ACTIVE_GOAL_ID":
+      return { ...state, activeGoalId: action.goalId }; // Handle new action
     case "OPEN_FEEDBACK_MODAL":
       return { ...state, feedbackModalOpen: true };
     case "CLOSE_FEEDBACK_MODAL":

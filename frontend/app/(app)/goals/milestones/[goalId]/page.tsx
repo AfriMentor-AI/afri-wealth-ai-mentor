@@ -13,6 +13,8 @@ import type { Commitment, Goal, Milestone } from "@/lib/types";
 import { MilestoneRoad } from "@/components/ui/MilestoneRoad";
 import { Skeleton } from "@/components/ui/Skeleton";
 
+import { useAppDispatch } from "@/lib/store";
+
 const commitmentStyles: Record<
   string,
   {
@@ -48,16 +50,18 @@ export default function GoalMilestonePathPage({
   params: { goalId: string };
 }) {
   const router = useRouter();
+  const dispatch = useAppDispatch();
 
   const [goal, setGoal] = useState<Goal | null | undefined>(null);
   const [milestones, setMilestones] = useState<Milestone[] | null>(null);
   const [commitments, setCommitments] = useState<Commitment[] | null>(null);
 
   useEffect(() => {
+    dispatch({ type: "SET_ACTIVE_GOAL_ID", goalId: params.goalId });
     fetchGoalById(params.goalId).then(setGoal);
     fetchMilestonesByGoal(params.goalId).then(setMilestones);
     fetchCommitmentsByGoal(params.goalId).then(setCommitments);
-  }, [params.goalId]);
+  }, [params.goalId, dispatch]);
 
   async function handleCompleteMilestone(milestoneId: string) {
     await completeMilestone(milestoneId);

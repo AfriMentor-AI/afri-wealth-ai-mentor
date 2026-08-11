@@ -5,6 +5,7 @@ import Image from "next/image";
 import { Icon } from "@/components/Icon";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { useAppDispatch, useAppState } from "@/lib/store";
+import { fetchChatMessages, sendMessage, tagCommitment } from "@/lib/api";
 import type { ChatMessage } from "@/lib/types";
 
 function formatTime(iso: string) {
@@ -12,18 +13,27 @@ function formatTime(iso: string) {
 }
 
 export default function ChatPage() {
-  const { chatMessages, chatDraft, profile } = useAppState();
+  const { chatMessages, chatDraft, profile, chatSessionId, activeGoalId } = useAppState();
   const dispatch = useAppDispatch();
   const [isRecording, setIsRecording] = useState(false);
   const [commitmentTagged, setCommitmentTagged] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    if (chatSessionId && chatMessages.length === 0) {
+      fetchChatMessages(chatSessionId).then((messages) => {
+        dispatch({ type: "SET_CHAT_MESSAGES", messages });
+      });
+    }
+  }, [chatSessionId, chatMessages.length, dispatch]);
+
+  useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [chatMessages.length]);
 
-  function send() {
-    if (!chatDraft.trim()) return;
+  async function send() {
+    if (!chatDraft.trim() || !chatSessionId) return;
+
     const userMessage: ChatMessage = {
       id: `local-${Date.now()}`,
       userId: profile?.userId ?? "local-user",
@@ -34,20 +44,33 @@ export default function ChatPage() {
     dispatch({ type: "APPEND_CHAT_MESSAGE", message: userMessage });
     dispatch({ type: "SET_CHAT_DRAFT", draft: "" });
 
-    // Swap point: replace with a real call to the persona-conditioned
-    // chat endpoint (Epic C) once it exists.
-    setTimeout(() => {
-      dispatch({
-        type: "APPEND_CHAT_MESSAGE",
-        message: {
-          id: `local-${Date.now() + 1}`,
-          userId: profile?.userId ?? "local-user",
-          sender: "mentor",
-          text: "Got it — let's break that down into one thing you can actually do today.",
-          createdAt: new Date().toISOString(),
-        },
-      });
-    }, 600);
+    try {
+      const assistantMessage = await sendMessage(chatSessionId, userMessage.text);
+      dispatch({ type: "APPEND_CHAT_MESSAGE", message: assistantMessage });
+    } catch (error) {
+      console.error("Failed to send message:", error);
+      // Optional: show error message in UI, maybe as a special chat message
+    }
+  }
+
+  async function handleTagCommitment() {
+    if (!chatSessionId || !activeGoalId || chatMessages.length === 0) {
+      // Maybe show a notification to the user that they need to select a goal first.
+      console.error("Cannot tag commitment without a session, active goal, and a message.");
+      return;
+    }
+    const lastMessage = chatMessages[chatMessages.length - 1];
+    if (lastMessage.sender !== "mentor" || !lastMessage.isCommitmentCandidate) {
+      return;
+    }
+
+    try {
+      await tagCommitment(chatSessionId, lastMessage.id, activeGoalId);
+      setCommitmentTagged(true);
+    } catch (error) {
+      console.error("Failed to tag commitment:", error);
+      // Optional: show an error message to the user
+    }
   }
 
   const lastIsMentor = chatMessages.length > 0 && chatMessages[chatMessages.length - 1].sender === "mentor";
@@ -85,10 +108,10 @@ export default function ChatPage() {
                 }`}
               >
                 <p className="font-body-md">{m.text}</p>
-                {m.sourceCitation && (
+                {m.citations && m.citations.length > 0 && (
                   <div className="mt-sm inline-flex items-center gap-xs rounded-full border border-outline-variant bg-surface-container-highest px-sm py-xs">
                     <Icon name="auto_stories" size={16} />
-                    <span className="font-label-sm text-[11px] text-on-surface-variant">{m.sourceCitation}</span>
+                    <span className="font-label-sm text-[11px] text-on-surface-variant">{m.citations[0].label}</span>
                   </div>
                 )}
               </div>
@@ -96,7 +119,7 @@ export default function ChatPage() {
             </div>
           ))}
 
-          {lastIsMentor && !commitmentTagged && chatMessages.length >= 3 && (
+          {lastIsMentor && chatMessages[chatMessages.length - 1].isCommitmentCandidate && !commitmentTagged && (
             <div className="flex items-center justify-between gap-md rounded border border-secondary bg-secondary-container p-md">
               <div className="flex items-center gap-sm">
                 <Icon name="workspace_premium" filled className="text-secondary" />
@@ -105,7 +128,7 @@ export default function ChatPage() {
                 </span>
               </div>
               <button
-                onClick={() => setCommitmentTagged(true)}
+                onClick={handleTagCommitment}
                 className="tap-target rounded-full bg-secondary px-md py-sm font-label-sm text-label-sm text-on-secondary transition-transform active:scale-95"
               >
                 Yes, Tag It
