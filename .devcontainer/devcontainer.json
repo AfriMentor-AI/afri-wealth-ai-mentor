@@ -15,9 +15,6 @@
   "shutdownAction": "stopCompose",
   "postCreateCommand": "echo 'Devcontainer ready. To start optional services run: .devcontainer/start-services.sh'",
   "postStartCommand": "echo 'Core services started (postgres, redis, rabbitmq, auth-user-service, api-gateway).'",
-  "features": {
-    "ghcr.io/devcontainers/features/docker-cli": "latest"
-  },
   "customizations": {
     "vscode": {
       "extensions": [
