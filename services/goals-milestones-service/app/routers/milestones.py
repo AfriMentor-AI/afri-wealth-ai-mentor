@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, Response, status
 from sqlalchemy.orm import Session
 
 from ..database import get_db
+from ..events import emit_milestone_completed
 from ..models import Milestone
 from ..schemas import MilestoneResponse, MilestoneUpdate
 from .goals import _get_owned_goal, _get_user
@@ -28,6 +29,7 @@ def update_milestone(
     db: Session = Depends(get_db),
 ) -> Milestone:
     milestone = _get_owned_milestone(db, milestone_id, user_id)
+    was_done = milestone.status == "done"
     updates = body.model_dump(exclude_unset=True)
     # title/status/order are all NOT NULL — an explicit null for any of them is
     # meaningless, so treat it the same as omitted rather than crashing the DB
@@ -40,6 +42,13 @@ def update_milestone(
     db.add(milestone)
     db.commit()
     db.refresh(milestone)
+    if milestone.status == "done" and not was_done:
+        emit_milestone_completed(
+            milestone_id=milestone.id,
+            goal_id=milestone.goal_id,
+            user_id=user_id,
+            title=milestone.title,
+        )
     return milestone
 
 
@@ -50,10 +59,18 @@ def complete_milestone(
     db: Session = Depends(get_db),
 ) -> Milestone:
     milestone = _get_owned_milestone(db, milestone_id, user_id)
+    was_done = milestone.status == "done"
     milestone.status = "done"
     db.add(milestone)
     db.commit()
     db.refresh(milestone)
+    if not was_done:
+        emit_milestone_completed(
+            milestone_id=milestone.id,
+            goal_id=milestone.goal_id,
+            user_id=user_id,
+            title=milestone.title,
+        )
     return milestone
 
 

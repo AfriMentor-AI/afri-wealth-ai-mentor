@@ -1303,6 +1303,166 @@ def insight_spec() -> dict:
 
 
 
+def feedback_spec() -> dict:
+    spec = base(
+        "Feedback Service",
+        "feedback-service",
+        8009,
+        "NPS-style feedback capture, milestone-triggered survey prompts, and "
+        "free-text/voice-note storage (card O3.3). Consumes `milestone.completed` "
+        "(emitted by goals-milestones-service) to auto-create a pending prompt.",
+    )
+    spec["components"]["responses"] = {
+        "Unauthorized": {
+            "description": "unauthorized",
+            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Error"}}},
+        }
+    }
+    schemas = spec["components"]["schemas"]
+    schemas["FeedbackSubmit"] = {
+        "type": "object",
+        "required": ["nps_score"],
+        "properties": {
+            "nps_score": {"type": "integer", "minimum": 1, "maximum": 10},
+            "comment": {"type": ["string", "null"]},
+            "voice_note_url": {"type": ["string", "null"]},
+            "trigger": {"type": "string", "default": "manual"},
+            "context_ref": {"type": ["string", "null"]},
+        },
+    }
+    schemas["FeedbackSurvey"] = {
+        "type": "object",
+        "required": ["id", "user_id", "nps_score", "trigger", "submitted_at"],
+        "properties": {
+            "id": {"type": "string"},
+            "user_id": {"type": "string"},
+            "nps_score": {"type": "integer"},
+            "comment": {"type": ["string", "null"]},
+            "voice_note_url": {"type": ["string", "null"]},
+            "trigger": {"type": "string"},
+            "context_ref": {"type": ["string", "null"]},
+            "submitted_at": {"type": "string", "format": "date-time"},
+        },
+    }
+    schemas["FeedbackPrompt"] = {
+        "type": "object",
+        "required": ["id", "user_id", "trigger", "created_at"],
+        "properties": {
+            "id": {"type": "string"},
+            "user_id": {"type": "string"},
+            "trigger": {"type": "string"},
+            "context_ref": {"type": ["string", "null"]},
+            "created_at": {"type": "string", "format": "date-time"},
+        },
+    }
+
+    unauthorized = {"$ref": "#/components/responses/Unauthorized"}
+    spec["tags"] = [{"name": "feedback"}, {"name": "meta"}]
+    spec["paths"].update(
+        {
+            "/api/v1/feedback": {
+                "post": {
+                    "tags": ["feedback"],
+                    "summary": "Submit feedback",
+                    "description": "If trigger/context_ref matches an open FeedbackPrompt "
+                    "for this user, it is marked fulfilled.",
+                    "requestBody": {
+                        "required": True,
+                        "content": {
+                            "application/json": {
+                                "schema": {"$ref": "#/components/schemas/FeedbackSubmit"}
+                            }
+                        },
+                    },
+                    "responses": {
+                        "201": {
+                            "description": "submitted",
+                            "content": {
+                                "application/json": {
+                                    "schema": {"$ref": "#/components/schemas/FeedbackSurvey"}
+                                }
+                            },
+                        },
+                        "401": unauthorized,
+                    },
+                },
+                "get": {
+                    "tags": ["feedback"],
+                    "summary": "List the current user's feedback submissions",
+                    "responses": {
+                        "200": {
+                            "description": "success",
+                            "content": {
+                                "application/json": {
+                                    "schema": {
+                                        "type": "array",
+                                        "items": {"$ref": "#/components/schemas/FeedbackSurvey"},
+                                    }
+                                }
+                            },
+                        },
+                        "401": unauthorized,
+                    },
+                },
+            },
+            "/api/v1/feedback/pending": {
+                "get": {
+                    "tags": ["feedback"],
+                    "summary": "List open survey prompts for the current user",
+                    "description": "A client polls this to decide whether to pop the "
+                    "Feedback Survey modal — the backend half of \"fires automatically on "
+                    "a milestone-completion event\".",
+                    "responses": {
+                        "200": {
+                            "description": "success",
+                            "content": {
+                                "application/json": {
+                                    "schema": {
+                                        "type": "array",
+                                        "items": {"$ref": "#/components/schemas/FeedbackPrompt"},
+                                    }
+                                }
+                            },
+                        },
+                        "401": unauthorized,
+                    },
+                }
+            },
+            "/api/v1/feedback/surveys/{id}": {
+                "get": {
+                    "tags": ["feedback"],
+                    "summary": "Get one feedback submission (owner only)",
+                    "parameters": [
+                        {
+                            "name": "id",
+                            "in": "path",
+                            "required": True,
+                            "schema": {"type": "string"},
+                        }
+                    ],
+                    "responses": {
+                        "200": {
+                            "description": "success",
+                            "content": {
+                                "application/json": {
+                                    "schema": {"$ref": "#/components/schemas/FeedbackSurvey"}
+                                }
+                            },
+                        },
+                        "401": unauthorized,
+                        "404": {"description": "not found"},
+                    },
+                }
+            },
+        }
+    )
+    return spec
+
+
+
+
+
+
 def gateway_spec() -> dict:
     spec = base(
         "API Gateway",
@@ -1359,14 +1519,6 @@ SERVICES: dict[str, tuple] = {
             ("post", "/api/v1/rag/query", "rag", "Retrieve relevant chunks", True),
         ],
     ),
-    "feedback-service": (
-        "Feedback Service", 8009,
-        "Post-session surveys, thumbs, and free-text feedback capture.",
-        [
-            ("post", "/api/v1/feedback", "feedback", "Submit feedback", True),
-            ("get", "/api/v1/feedback/surveys/{id}", "feedback", "Get a survey definition", False),
-        ],
-    ),
     "research-evaluation-service": (
         "Research & Evaluation Service", 8010,
         "Session auditing, quality scoring, and drift detection for the research console.",
@@ -1420,6 +1572,7 @@ def main() -> None:
         ("goals-milestones-service", goals_spec()),
         ("progress-gamification-service", progress_spec()),
         ("insight-library-service", insight_spec()),
+        ("feedback-service", feedback_spec()),
     ]:
         path = OUT / f"{name}.yaml"
         path.write_text(yaml.safe_dump(spec, sort_keys=False, width=100), encoding="utf-8")
