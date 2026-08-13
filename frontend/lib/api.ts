@@ -236,8 +236,12 @@ export async function submitIntake(intake: Partial<Profile> | Record<string, unk
   return resolveAfterLatency(profile);
 }
 
-export async function startChatSession(personaId?: string): Promise<ChatMessage[]> {
-  // Return a short seed conversation appropriate for the persona.
-  const seed: ChatMessage[] = mockChatMessages.slice(0, 3).map((m) => ({ ...m, personaId }));
-  return resolveAfterLatency(seed);
+// Starts a new chat session and returns its session id. The UI can then
+// call fetchChatMessages(sessionId) or fetchChatMessages() to seed the
+// conversation from mock data.
+export async function startChatSession(personaId?: string): Promise<string> {
+  // In a real backend this would create a session and return its id. Here
+  // produce a deterministic-ish mock id that encodes the persona if present.
+  const sessionId = personaId ? `session-${personaId}-${Date.now()}` : `session-${Date.now()}`;
+  return resolveAfterLatency(sessionId);
 }
