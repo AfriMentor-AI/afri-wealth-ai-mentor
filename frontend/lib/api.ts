@@ -7,7 +7,6 @@ import {
   mockBadges,
   mockDailyAction,
   mockInsights,
-  mockPersonas,
   mockStreak,
   mockUser,
   mockUserBadges,
