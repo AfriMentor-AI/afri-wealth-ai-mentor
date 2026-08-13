@@ -160,12 +160,16 @@ export interface ChatMessage {
   personaId?: ID;
   sender: ChatSender;
   text: string;
-  /** Human-readable citation into the Epic A RAG corpus, e.g. "Based on
-   * TEF curriculum". A future iteration may replace this with a
-   * structured `{ documentId, chunkId }` reference once Epic A's
-   * retrieval logging (US-A4) is wired up — flagging now so it's not a
-   * surprise breaking change later. */
-  sourceCitation?: string;
+  /**
+   * Structured list of citations into the RAG corpus, allowing for multiple
+   * sources. The UI may choose to display only the first or most relevant one.
+   */
+  citations?: Array<{ label: string }>;
+  /**
+   * True if the user's message was flagged as a potential commitment,
+   * prompting the "Tag It" UI.
+   */
+  isCommitmentCandidate?: boolean;
   createdAt: ISODateTime;
 }
 
