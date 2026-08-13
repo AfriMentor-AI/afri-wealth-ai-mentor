@@ -196,6 +196,7 @@ def test_bind_persona_updates_session(client, session_id):
     r = client.patch(
         f"/api/v1/chat/sessions/{session_id}/persona",
         json={"persona_id": _MARKET_QUEEN_ID},
+        headers=USER_HEADERS,
     )
     assert r.status_code == 200
     assert r.json()["persona_id"] == _MARKET_QUEEN_ID
@@ -205,6 +206,7 @@ def test_bind_persona_persists(client, session_id):
     client.patch(
         f"/api/v1/chat/sessions/{session_id}/persona",
         json={"persona_id": _MARKET_QUEEN_ID},
+        headers=USER_HEADERS,
     )
     r = client.get(f"/api/v1/chat/sessions/{session_id}", headers=USER_HEADERS)
     assert r.json()["persona_id"] == _MARKET_QUEEN_ID
@@ -214,8 +216,32 @@ def test_bind_persona_unknown_session(client):
     r = client.patch(
         "/api/v1/chat/sessions/does-not-exist/persona",
         json={"persona_id": _MARKET_QUEEN_ID},
+        headers=USER_HEADERS,
     )
     assert r.status_code == 404
+
+
+def test_bind_persona_requires_identity(client, session_id):
+    r = client.patch(
+        f"/api/v1/chat/sessions/{session_id}/persona",
+        json={"persona_id": _MARKET_QUEEN_ID},
+    )
+    assert r.status_code == 422
+
+
+def test_bind_persona_wrong_user_cannot_rebind_session(client, session_id):
+    """Card O3.5 — regression test for the IDOR this session's security pass fixed:
+    another authenticated user must not be able to rebind someone else's session."""
+    r = client.patch(
+        f"/api/v1/chat/sessions/{session_id}/persona",
+        json={"persona_id": _MARKET_QUEEN_ID},
+        headers={"X-User-Id": "other-user"},
+    )
+    assert r.status_code == 404
+
+    # And the original session is untouched.
+    original = client.get(f"/api/v1/chat/sessions/{session_id}", headers=USER_HEADERS).json()
+    assert original["persona_id"] is None
 
 
 def test_send_message_uses_bound_persona(client, session_id):
@@ -223,6 +249,7 @@ def test_send_message_uses_bound_persona(client, session_id):
     client.patch(
         f"/api/v1/chat/sessions/{session_id}/persona",
         json={"persona_id": _MARKET_QUEEN_ID},
+        headers=USER_HEADERS,
     )
     captured = {}
 

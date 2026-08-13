@@ -23,7 +23,8 @@ from app.models.document import Document, DocumentOrigin, DocumentStatus
 from app.services import telemetry
 
 client = TestClient(app)
-AUTH = {"X-User-Id": "user-test-123"}
+AUTH = {"X-User-Id": "user-test-123", "X-User-Roles": "admin"}
+NON_ADMIN_AUTH = {"X-User-Id": "user-test-456"}
 
 # doc_id, title, author, sector, market, content_type, status, chunks, bytes
 SEED = [
@@ -107,12 +108,33 @@ def stub_chroma(monkeypatch):
 
 # ── Auth ──────────────────────────────────────────────────────────────────────
 
-def test_export_csv_missing_auth_returns_422():
-    assert client.get("/api/v1/rag/documents/export.csv").status_code == 422
+def test_export_csv_missing_auth_returns_403():
+    # Card O3.5: now admin-gated — with zero headers the role check rejects
+    # before the still-missing required X-User-Id is reported, so 403 not 422.
+    assert client.get("/api/v1/rag/documents/export.csv").status_code == 403
 
 
-def test_stats_missing_auth_returns_422():
-    assert client.get("/api/v1/rag/stats").status_code == 422
+def test_stats_missing_auth_returns_403():
+    assert client.get("/api/v1/rag/stats").status_code == 403
+
+
+# Card O3.5: these admin-catalogue endpoints used to accept any authenticated
+# user (no X-User-Roles check) — a non-admin could list/export/see stats on
+# the shared corpus.
+
+def test_list_requires_admin_role(db_session):
+    r = client.get("/api/v1/rag/documents", headers=NON_ADMIN_AUTH)
+    assert r.status_code == 403
+
+
+def test_export_csv_requires_admin_role(db_session):
+    r = client.get("/api/v1/rag/documents/export.csv", headers=NON_ADMIN_AUTH)
+    assert r.status_code == 403
+
+
+def test_stats_requires_admin_role(db_session, stub_chroma):
+    r = client.get("/api/v1/rag/stats", headers=NON_ADMIN_AUTH)
+    assert r.status_code == 403
 
 
 # ── Listing + filters ─────────────────────────────────────────────────────────
