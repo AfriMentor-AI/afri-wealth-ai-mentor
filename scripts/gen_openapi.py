@@ -945,7 +945,7 @@ def notification_spec() -> dict:
             "title": {"type": "string"},
             "body": {"type": "string"},
             "created_at": {"type": "string", "format": "date-time"},
-            "read_at": {"type": "string", "format": "date-time", "nullable": True},
+            "read_at": {"type": ["string", "null"], "format": "date-time"},
             "delivered_at": {"type": "string", "format": "date-time"},
         },
     }
@@ -954,7 +954,7 @@ def notification_spec() -> dict:
         "required": ["user_id"],
         "properties": {
             "user_id": {"type": "string"},
-            "action_title": {"type": "string", "nullable": True},
+            "action_title": {"type": ["string", "null"]},
         },
     }
     schemas["StreakAtRiskTrigger"] = {

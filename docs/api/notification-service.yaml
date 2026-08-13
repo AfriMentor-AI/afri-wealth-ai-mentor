@@ -185,9 +185,10 @@ components:
           type: string
           format: date-time
         read_at:
-          type: string
+          type:
+          - string
+          - 'null'
           format: date-time
-          nullable: true
         delivered_at:
           type: string
           format: date-time
@@ -199,8 +200,9 @@ components:
         user_id:
           type: string
         action_title:
-          type: string
-          nullable: true
+          type:
+          - string
+          - 'null'
     StreakAtRiskTrigger:
       type: object
       required:
