@@ -214,19 +214,22 @@ export async function createGoal(input: { title: string; deadline?: string }): P
 // Accept a flexible intake shape (often the UI passes a lightweight
 // IntakeAnswers object). Use a permissive parameter type so callers that
 // omit userId/personaId still type-check during build; the mock will fill
-// defaults for missing fields.
-export async function submitIntake(intake: Partial<Profile> | Record<string, any>): Promise<Profile> {
+// defaults for missing fields. Use `unknown` instead of `any` to satisfy
+// the linter and narrow safely below.
+export async function submitIntake(intake: Partial<Profile> | Record<string, unknown>): Promise<Profile> {
   const now = new Date().toISOString();
+  const i = intake as Partial<Profile>;
+
   const profile: Profile = {
-    userId: intake.userId ?? (typeof intake.userId === "string" ? intake.userId : "local-user"),
-    name: (intake as any).name ?? "",
-    businessName: (intake as any).businessName ?? "",
-    location: (intake as any).location ?? "",
-    sector: (intake as any).sector ?? "",
-    educationLevel: (intake as any).educationLevel ?? "",
-    timeAvailablePerWeek: (intake as any).timeAvailablePerWeek ?? "",
-    constraints: (intake as any).constraints ?? [],
-    personaId: (intake as any).personaId ?? null,
+    userId: i.userId ?? "local-user",
+    name: i.name ?? "",
+    businessName: i.businessName ?? "",
+    location: i.location ?? "",
+    sector: i.sector ?? "",
+    educationLevel: i.educationLevel ?? "",
+    timeAvailablePerWeek: i.timeAvailablePerWeek ?? "",
+    constraints: (i.constraints as string[]) ?? [],
+    personaId: i.personaId ?? null,
     createdAt: now,
     updatedAt: now,
   };
