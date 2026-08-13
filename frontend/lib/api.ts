@@ -89,6 +89,7 @@ export async function fetchDailyAction(): Promise<DailyAction> {
 // and to match call sites that may pass an argument. Keeping it optional so
 // existing calls with no args continue to work.
 export async function fetchChatMessages(_opts?: unknown): Promise<ChatMessage[]> {
+  console.info("[mock] fetchChatMessages options:", _opts);
   return resolveAfterLatency(mockChatMessages);
 }
 
