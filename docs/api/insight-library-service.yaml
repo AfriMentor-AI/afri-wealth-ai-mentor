@@ -1,8 +1,10 @@
 openapi: 3.1.0
 info:
-  title: "AfriMentor AI \u2014 Insight Library Service"
+  title: "AfriMentor AI — Insight Library Service"
   version: 1.0.0
-  description: Curated insight articles/cards, categories and bookmarks.
+  description: >
+    Curated insight articles/audio (card O3.2): catalog, search/filter, and
+    per-user favorites/bookmarks.
 servers:
 - url: http://localhost:8000
   description: via API gateway
@@ -16,8 +18,7 @@ tags:
 paths:
   /health:
     get:
-      tags:
-      - meta
+      tags: [meta]
       summary: Liveness/readiness probe
       security: []
       responses:
@@ -25,115 +26,138 @@ paths:
           description: healthy
           content:
             application/json:
-              schema:
-                $ref: '#/components/schemas/Health'
+              schema: { $ref: '#/components/schemas/Health' }
   /api/v1/insights:
     get:
-      tags:
-      - insights
+      tags: [insights]
       summary: List insights
+      parameters:
+      - name: search
+        in: query
+        schema: { type: string }
+        description: Matches title or summary (case-insensitive substring).
+      - name: category
+        in: query
+        schema: { type: string }
+      - name: is_audio
+        in: query
+        schema: { type: boolean }
       responses:
         '200':
           description: success
           content:
             application/json:
               schema:
-                type: object
-        '401':
-          description: unauthorized
+                type: array
+                items: { $ref: '#/components/schemas/InsightItem' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+    post:
+      tags: [insights]
+      summary: Create a catalog entry (admin role required)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/InsightItemCreate' }
+      responses:
+        '201':
+          description: created
           content:
             application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-      description: 'TODO: request/response bodies finalised in later sprint.'
+              schema: { $ref: '#/components/schemas/InsightItem' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { description: admin role required }
   /api/v1/insights/{id}:
     get:
-      tags:
-      - insights
+      tags: [insights]
       summary: Get an insight
-      responses:
-        '200':
-          description: success
-          content:
-            application/json:
-              schema:
-                type: object
-        '401':
-          description: unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-      description: 'TODO: request/response bodies finalised in later sprint.'
       parameters: &id001
       - name: id
         in: path
         required: true
-        schema:
-          type: string
-  /api/v1/insights/{id}/bookmark:
-    post:
-      tags:
-      - insights
-      summary: Bookmark an insight
+        schema: { type: string }
       responses:
         '200':
           description: success
           content:
             application/json:
-              schema:
-                type: object
-        '401':
-          description: unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-      description: 'TODO: request/response bodies finalised in later sprint.'
+              schema: { $ref: '#/components/schemas/InsightItem' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { description: not found }
+  /api/v1/insights/{id}/bookmark:
+    post:
+      tags: [insights]
+      summary: Bookmark an insight (idempotent)
+      responses:
+        '204': { description: bookmarked }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { description: not found }
+      parameters: *id001
+    delete:
+      tags: [insights]
+      summary: Remove a bookmark (idempotent)
+      responses:
+        '204': { description: removed }
+        '401': { $ref: '#/components/responses/Unauthorized' }
       parameters: *id001
   /api/v1/insights/bookmarks:
     get:
-      tags:
-      - insights
-      summary: List bookmarks
+      tags: [insights]
+      summary: List the current user's bookmarked insights
       responses:
         '200':
           description: success
           content:
             application/json:
               schema:
-                type: object
-        '401':
-          description: unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-      description: 'TODO: request/response bodies finalised in later sprint.'
+                type: array
+                items: { $ref: '#/components/schemas/InsightItem' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
 components:
   securitySchemes:
     bearerAuth:
       type: http
       scheme: bearer
       bearerFormat: JWT
+  responses:
+    Unauthorized:
+      description: unauthorized
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
   schemas:
     Health:
       type: object
       properties:
-        status:
-          type: string
-          example: healthy
-        service:
-          type: string
-        version:
-          type: string
-      required:
-      - status
-      - service
+        status: { type: string, example: healthy }
+        service: { type: string }
+        version: { type: string }
+      required: [status, service]
     Error:
       type: object
       properties:
-        detail:
-          type: string
-      required:
-      - detail
+        detail: { type: string }
+      required: [detail]
+    InsightItemCreate:
+      type: object
+      properties:
+        title: { type: string }
+        summary: { type: string }
+        category: { type: string }
+        duration_minutes: { type: integer }
+        is_audio: { type: boolean, default: false }
+        media_url: { type: string, nullable: true }
+      required: [title, summary, category, duration_minutes]
+    InsightItem:
+      type: object
+      properties:
+        id: { type: string }
+        title: { type: string }
+        summary: { type: string }
+        category: { type: string }
+        duration_minutes: { type: integer }
+        is_audio: { type: boolean }
+        media_url: { type: string, nullable: true }
+        created_at: { type: string, format: date-time }
+        is_favorited: { type: boolean }
+      required: [id, title, summary, category, duration_minutes, is_audio, created_at, is_favorited]
