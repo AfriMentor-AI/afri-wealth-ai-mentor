@@ -1463,6 +1463,193 @@ def feedback_spec() -> dict:
 
 
 
+def notification_spec() -> dict:
+    spec = base(
+        "Notification Service",
+        "notification-service",
+        8012,
+        "Daily-action reminders and streak-at-risk alerts (card O3.4). v0 scaffold: "
+        "delivery is stubbed/logged, not sent to a real push provider — the "
+        "`/trigger/*` endpoints are the event contract a later push integration "
+        "builds on.",
+    )
+    spec["components"]["responses"] = {
+        "Unauthorized": {
+            "description": "unauthorized",
+            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Error"}}},
+        }
+    }
+    schemas = spec["components"]["schemas"]
+    schemas["Notification"] = {
+        "type": "object",
+        "required": ["id", "user_id", "kind", "title", "body", "created_at", "delivered_at"],
+        "properties": {
+            "id": {"type": "string"},
+            "user_id": {"type": "string"},
+            "kind": {"type": "string", "enum": ["daily_action_reminder", "streak_at_risk"]},
+            "title": {"type": "string"},
+            "body": {"type": "string"},
+            "created_at": {"type": "string", "format": "date-time"},
+            "read_at": {"type": ["string", "null"], "format": "date-time"},
+            "delivered_at": {"type": "string", "format": "date-time"},
+        },
+    }
+    schemas["DailyActionReminderTrigger"] = {
+        "type": "object",
+        "required": ["user_id"],
+        "properties": {
+            "user_id": {"type": "string"},
+            "action_title": {"type": ["string", "null"]},
+        },
+    }
+    schemas["StreakAtRiskTrigger"] = {
+        "type": "object",
+        "required": ["user_id", "current_streak_days"],
+        "properties": {
+            "user_id": {"type": "string"},
+            "current_streak_days": {"type": "integer", "minimum": 1},
+        },
+    }
+    schemas["SweepResult"] = {
+        "type": "object",
+        "required": ["users_checked", "notifications_created"],
+        "properties": {
+            "users_checked": {"type": "integer"},
+            "notifications_created": {"type": "integer"},
+        },
+    }
+
+    unauthorized = {"$ref": "#/components/responses/Unauthorized"}
+    notification_schema = {"$ref": "#/components/schemas/Notification"}
+    spec["tags"] = [{"name": "notifications"}, {"name": "meta"}]
+    spec["paths"].update(
+        {
+            "/api/v1/notifications": {
+                "get": {
+                    "tags": ["notifications"],
+                    "summary": "List notifications for the current user",
+                    "responses": {
+                        "200": {
+                            "description": "success",
+                            "content": {
+                                "application/json": {
+                                    "schema": {"type": "array", "items": notification_schema}
+                                }
+                            },
+                        },
+                        "401": unauthorized,
+                    },
+                }
+            },
+            "/api/v1/notifications/{id}/read": {
+                "post": {
+                    "tags": ["notifications"],
+                    "summary": "Mark one notification as read (owner only)",
+                    "parameters": [
+                        {
+                            "name": "id",
+                            "in": "path",
+                            "required": True,
+                            "schema": {"type": "string"},
+                        }
+                    ],
+                    "responses": {
+                        "200": {
+                            "description": "success",
+                            "content": {"application/json": {"schema": notification_schema}},
+                        },
+                        "401": unauthorized,
+                        "404": {"description": "not found"},
+                    },
+                }
+            },
+            "/api/v1/notifications/read-all": {
+                "post": {
+                    "tags": ["notifications"],
+                    "summary": "Mark all of the current user's notifications as read",
+                    "responses": {
+                        "200": {
+                            "description": "success",
+                            "content": {
+                                "application/json": {
+                                    "schema": {"type": "array", "items": notification_schema}
+                                }
+                            },
+                        },
+                        "401": unauthorized,
+                    },
+                }
+            },
+            "/api/v1/notifications/trigger/daily-action-reminder": {
+                "post": {
+                    "tags": ["notifications"],
+                    "summary": "Internal — create a daily-action reminder for a user",
+                    "security": [],
+                    "requestBody": {
+                        "required": True,
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/DailyActionReminderTrigger"
+                                }
+                            }
+                        },
+                    },
+                    "responses": {
+                        "201": {
+                            "description": "created",
+                            "content": {"application/json": {"schema": notification_schema}},
+                        }
+                    },
+                }
+            },
+            "/api/v1/notifications/trigger/streak-at-risk": {
+                "post": {
+                    "tags": ["notifications"],
+                    "summary": "Internal — create a streak-at-risk alert for a user",
+                    "security": [],
+                    "requestBody": {
+                        "required": True,
+                        "content": {
+                            "application/json": {
+                                "schema": {"$ref": "#/components/schemas/StreakAtRiskTrigger"}
+                            }
+                        },
+                    },
+                    "responses": {
+                        "201": {
+                            "description": "created",
+                            "content": {"application/json": {"schema": notification_schema}},
+                        }
+                    },
+                }
+            },
+            "/api/v1/notifications/sweep": {
+                "post": {
+                    "tags": ["notifications"],
+                    "summary": "Internal — run the streak-at-risk sweep synchronously",
+                    "description": "Same logic the background scheduler runs on a timer; "
+                    "exposed for deterministic ops/test triggering.",
+                    "security": [],
+                    "responses": {
+                        "200": {
+                            "description": "success",
+                            "content": {
+                                "application/json": {
+                                    "schema": {"$ref": "#/components/schemas/SweepResult"}
+                                }
+                            },
+                        }
+                    },
+                }
+            },
+        }
+    )
+    return spec
+
+
+
+
 def gateway_spec() -> dict:
     spec = base(
         "API Gateway",
@@ -1536,15 +1723,6 @@ SERVICES: dict[str, tuple] = {
             ("post", "/api/v1/voice/synthesize", "voice", "Synthesize speech from text", True),
         ],
     ),
-    "notification-service": (
-        "Notification Service", 8012,
-        "Push/in-app/email notifications. Reacts to domain events.",
-        [
-            ("get", "/api/v1/notifications", "notifications", "List notifications", False),
-            ("post", "/api/v1/notifications/{id}/read", "notifications", "Mark as read", False),
-            ("post", "/api/v1/notifications/read-all", "notifications", "Mark all as read", False),
-        ],
-    ),
 }
 
 
@@ -1573,6 +1751,7 @@ def main() -> None:
         ("progress-gamification-service", progress_spec()),
         ("insight-library-service", insight_spec()),
         ("feedback-service", feedback_spec()),
+        ("notification-service", notification_spec()),
     ]:
         path = OUT / f"{name}.yaml"
         path.write_text(yaml.safe_dump(spec, sort_keys=False, width=100), encoding="utf-8")
