@@ -1,11 +1,10 @@
 openapi: 3.1.0
 info:
-  title: "AfriMentor AI — Feedback Service"
+  title: "AfriMentor AI \u2014 Feedback Service"
   version: 1.0.0
-  description: >
-    NPS-style feedback capture, milestone-triggered survey prompts, and
-    free-text/voice-note storage (card O3.3). Consumes `milestone.completed`
-    (emitted by goals-milestones-service) to auto-create a pending prompt.
+  description: NPS-style feedback capture, milestone-triggered survey prompts, and free-text/voice-note
+    storage (card O3.3). Consumes `milestone.completed` (emitted by goals-milestones-service) to auto-create
+    a pending prompt.
 servers:
 - url: http://localhost:8000
   description: via API gateway
@@ -19,7 +18,8 @@ tags:
 paths:
   /health:
     get:
-      tags: [meta]
+      tags:
+      - meta
       summary: Liveness/readiness probe
       security: []
       responses:
@@ -27,28 +27,32 @@ paths:
           description: healthy
           content:
             application/json:
-              schema: { $ref: '#/components/schemas/Health' }
+              schema:
+                $ref: '#/components/schemas/Health'
   /api/v1/feedback:
     post:
-      tags: [feedback]
+      tags:
+      - feedback
       summary: Submit feedback
-      description: >
-        If trigger/context_ref matches an open FeedbackPrompt for this user, it
-        is marked fulfilled.
+      description: If trigger/context_ref matches an open FeedbackPrompt for this user, it is marked fulfilled.
       requestBody:
         required: true
         content:
           application/json:
-            schema: { $ref: '#/components/schemas/FeedbackSubmit' }
+            schema:
+              $ref: '#/components/schemas/FeedbackSubmit'
       responses:
         '201':
           description: submitted
           content:
             application/json:
-              schema: { $ref: '#/components/schemas/FeedbackSurvey' }
-        '401': { $ref: '#/components/responses/Unauthorized' }
+              schema:
+                $ref: '#/components/schemas/FeedbackSurvey'
+        '401': &id001
+          $ref: '#/components/responses/Unauthorized'
     get:
-      tags: [feedback]
+      tags:
+      - feedback
       summary: List the current user's feedback submissions
       responses:
         '200':
@@ -57,15 +61,16 @@ paths:
             application/json:
               schema:
                 type: array
-                items: { $ref: '#/components/schemas/FeedbackSurvey' }
-        '401': { $ref: '#/components/responses/Unauthorized' }
+                items:
+                  $ref: '#/components/schemas/FeedbackSurvey'
+        '401': *id001
   /api/v1/feedback/pending:
     get:
-      tags: [feedback]
+      tags:
+      - feedback
       summary: List open survey prompts for the current user
-      description: >
-        A client polls this to decide whether to pop the Feedback Survey modal —
-        the backend half of "fires automatically on a milestone-completion event".
+      description: "A client polls this to decide whether to pop the Feedback Survey modal \u2014 the\
+        \ backend half of \"fires automatically on a milestone-completion event\"."
       responses:
         '200':
           description: success
@@ -73,77 +78,131 @@ paths:
             application/json:
               schema:
                 type: array
-                items: { $ref: '#/components/schemas/FeedbackPrompt' }
-        '401': { $ref: '#/components/responses/Unauthorized' }
+                items:
+                  $ref: '#/components/schemas/FeedbackPrompt'
+        '401': *id001
   /api/v1/feedback/surveys/{id}:
     get:
-      tags: [feedback]
+      tags:
+      - feedback
       summary: Get one feedback submission (owner only)
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
       responses:
         '200':
           description: success
           content:
             application/json:
-              schema: { $ref: '#/components/schemas/FeedbackSurvey' }
-        '401': { $ref: '#/components/responses/Unauthorized' }
-        '404': { description: not found }
-      parameters:
-      - name: id
-        in: path
-        required: true
-        schema: { type: string }
+              schema:
+                $ref: '#/components/schemas/FeedbackSurvey'
+        '401': *id001
+        '404':
+          description: not found
 components:
   securitySchemes:
     bearerAuth:
       type: http
       scheme: bearer
       bearerFormat: JWT
+  schemas:
+    Health:
+      type: object
+      properties:
+        status:
+          type: string
+          example: healthy
+        service:
+          type: string
+        version:
+          type: string
+      required:
+      - status
+      - service
+    Error:
+      type: object
+      properties:
+        detail:
+          type: string
+      required:
+      - detail
+    FeedbackSubmit:
+      type: object
+      required:
+      - nps_score
+      properties:
+        nps_score:
+          type: integer
+          minimum: 1
+          maximum: 10
+        comment:
+          type: string
+          nullable: true
+        voice_note_url:
+          type: string
+          nullable: true
+        trigger:
+          type: string
+          default: manual
+        context_ref:
+          type: string
+          nullable: true
+    FeedbackSurvey:
+      type: object
+      required:
+      - id
+      - user_id
+      - nps_score
+      - trigger
+      - submitted_at
+      properties:
+        id:
+          type: string
+        user_id:
+          type: string
+        nps_score:
+          type: integer
+        comment:
+          type: string
+          nullable: true
+        voice_note_url:
+          type: string
+          nullable: true
+        trigger:
+          type: string
+        context_ref:
+          type: string
+          nullable: true
+        submitted_at:
+          type: string
+          format: date-time
+    FeedbackPrompt:
+      type: object
+      required:
+      - id
+      - user_id
+      - trigger
+      - created_at
+      properties:
+        id:
+          type: string
+        user_id:
+          type: string
+        trigger:
+          type: string
+        context_ref:
+          type: string
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
   responses:
     Unauthorized:
       description: unauthorized
       content:
         application/json:
-          schema: { $ref: '#/components/schemas/Error' }
-  schemas:
-    Health:
-      type: object
-      properties:
-        status: { type: string, example: healthy }
-        service: { type: string }
-        version: { type: string }
-      required: [status, service]
-    Error:
-      type: object
-      properties:
-        detail: { type: string }
-      required: [detail]
-    FeedbackSubmit:
-      type: object
-      properties:
-        nps_score: { type: integer, minimum: 1, maximum: 10 }
-        comment: { type: string, nullable: true }
-        voice_note_url: { type: string, nullable: true }
-        trigger: { type: string, default: manual }
-        context_ref: { type: string, nullable: true }
-      required: [nps_score]
-    FeedbackSurvey:
-      type: object
-      properties:
-        id: { type: string }
-        user_id: { type: string }
-        nps_score: { type: integer }
-        comment: { type: string, nullable: true }
-        voice_note_url: { type: string, nullable: true }
-        trigger: { type: string }
-        context_ref: { type: string, nullable: true }
-        submitted_at: { type: string, format: date-time }
-      required: [id, user_id, nps_score, trigger, submitted_at]
-    FeedbackPrompt:
-      type: object
-      properties:
-        id: { type: string }
-        user_id: { type: string }
-        trigger: { type: string }
-        context_ref: { type: string, nullable: true }
-        created_at: { type: string, format: date-time }
-      required: [id, user_id, trigger, created_at]
+          schema:
+            $ref: '#/components/schemas/Error'
