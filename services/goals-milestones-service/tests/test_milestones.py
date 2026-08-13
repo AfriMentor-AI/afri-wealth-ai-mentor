@@ -1,6 +1,8 @@
 """Milestone tests (card O2.3 — extends the D2.3 goals-milestones-service)."""
 from __future__ import annotations
 
+from unittest.mock import patch
+
 import pytest
 from fastapi.testclient import TestClient
 
@@ -157,3 +159,52 @@ def test_unknown_milestone_404(client):
         "/api/v1/milestones/does-not-exist", json={"status": "done"}, headers=USER_HEADERS
     )
     assert r.status_code == 404
+
+
+# ── milestone.completed emission (card O3.3) ─────────────────────────────────
+
+def test_complete_milestone_emits_event(client, goal_id):
+    m = client.post(
+        f"/api/v1/goals/{goal_id}/milestones", json={"title": "Legal Readiness"},
+        headers=USER_HEADERS,
+    ).json()
+    with patch("app.routers.milestones.emit_milestone_completed") as mock_emit:
+        r = client.post(f"/api/v1/milestones/{m['id']}/complete", headers=USER_HEADERS)
+    assert r.status_code == 200
+    mock_emit.assert_called_once_with(
+        milestone_id=m["id"], goal_id=goal_id, user_id="user-abc", title="Legal Readiness"
+    )
+
+
+def test_completing_already_done_milestone_does_not_re_emit(client, goal_id):
+    m = client.post(
+        f"/api/v1/goals/{goal_id}/milestones", json={"title": "Legal Readiness"},
+        headers=USER_HEADERS,
+    ).json()
+    client.post(f"/api/v1/milestones/{m['id']}/complete", headers=USER_HEADERS)
+
+    with patch("app.routers.milestones.emit_milestone_completed") as mock_emit:
+        client.post(f"/api/v1/milestones/{m['id']}/complete", headers=USER_HEADERS)
+    mock_emit.assert_not_called()
+
+
+def test_update_milestone_status_to_done_emits_event(client, goal_id):
+    m = client.post(
+        f"/api/v1/goals/{goal_id}/milestones", json={"title": "Legal Readiness"},
+        headers=USER_HEADERS,
+    ).json()
+    with patch("app.routers.milestones.emit_milestone_completed") as mock_emit:
+        client.patch(f"/api/v1/milestones/{m['id']}", json={"status": "done"}, headers=USER_HEADERS)
+    mock_emit.assert_called_once()
+
+
+def test_update_milestone_status_to_blocked_does_not_emit(client, goal_id):
+    m = client.post(
+        f"/api/v1/goals/{goal_id}/milestones", json={"title": "Legal Readiness"},
+        headers=USER_HEADERS,
+    ).json()
+    with patch("app.routers.milestones.emit_milestone_completed") as mock_emit:
+        client.patch(
+            f"/api/v1/milestones/{m['id']}", json={"status": "blocked"}, headers=USER_HEADERS
+        )
+    mock_emit.assert_not_called()
