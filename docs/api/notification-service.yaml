@@ -1,12 +1,10 @@
 openapi: 3.1.0
 info:
-  title: "AfriMentor AI — Notification Service"
+  title: "AfriMentor AI \u2014 Notification Service"
   version: 1.0.0
-  description: >
-    Daily-action reminders and streak-at-risk alerts (card O3.4). v0 scaffold:
-    delivery is stubbed/logged, not sent to a real push provider — the
-    `/trigger/*` endpoints are the event contract a later push integration
-    builds on.
+  description: "Daily-action reminders and streak-at-risk alerts (card O3.4). v0 scaffold: delivery is\
+    \ stubbed/logged, not sent to a real push provider \u2014 the `/trigger/*` endpoints are the event\
+    \ contract a later push integration builds on."
 servers:
 - url: http://localhost:8000
   description: via API gateway
@@ -20,7 +18,8 @@ tags:
 paths:
   /health:
     get:
-      tags: [meta]
+      tags:
+      - meta
       summary: Liveness/readiness probe
       security: []
       responses:
@@ -28,10 +27,12 @@ paths:
           description: healthy
           content:
             application/json:
-              schema: { $ref: '#/components/schemas/Health' }
+              schema:
+                $ref: '#/components/schemas/Health'
   /api/v1/notifications:
     get:
-      tags: [notifications]
+      tags:
+      - notifications
       summary: List notifications for the current user
       responses:
         '200':
@@ -40,28 +41,34 @@ paths:
             application/json:
               schema:
                 type: array
-                items: { $ref: '#/components/schemas/Notification' }
-        '401': { $ref: '#/components/responses/Unauthorized' }
+                items: &id001
+                  $ref: '#/components/schemas/Notification'
+        '401': &id002
+          $ref: '#/components/responses/Unauthorized'
   /api/v1/notifications/{id}/read:
     post:
-      tags: [notifications]
+      tags:
+      - notifications
       summary: Mark one notification as read (owner only)
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
       responses:
         '200':
           description: success
           content:
             application/json:
-              schema: { $ref: '#/components/schemas/Notification' }
-        '401': { $ref: '#/components/responses/Unauthorized' }
-        '404': { description: not found }
-      parameters:
-      - name: id
-        in: path
-        required: true
-        schema: { type: string }
+              schema: *id001
+        '401': *id002
+        '404':
+          description: not found
   /api/v1/notifications/read-all:
     post:
-      tags: [notifications]
+      tags:
+      - notifications
       summary: Mark all of the current user's notifications as read
       responses:
         '200':
@@ -70,106 +77,155 @@ paths:
             application/json:
               schema:
                 type: array
-                items: { $ref: '#/components/schemas/Notification' }
-        '401': { $ref: '#/components/responses/Unauthorized' }
+                items: *id001
+        '401': *id002
   /api/v1/notifications/trigger/daily-action-reminder:
     post:
-      tags: [notifications]
-      summary: Internal — create a daily-action reminder for a user
+      tags:
+      - notifications
+      summary: "Internal \u2014 create a daily-action reminder for a user"
       security: []
       requestBody:
         required: true
         content:
           application/json:
-            schema: { $ref: '#/components/schemas/DailyActionReminderTrigger' }
+            schema:
+              $ref: '#/components/schemas/DailyActionReminderTrigger'
       responses:
         '201':
           description: created
           content:
             application/json:
-              schema: { $ref: '#/components/schemas/Notification' }
+              schema: *id001
   /api/v1/notifications/trigger/streak-at-risk:
     post:
-      tags: [notifications]
-      summary: Internal — create a streak-at-risk alert for a user
+      tags:
+      - notifications
+      summary: "Internal \u2014 create a streak-at-risk alert for a user"
       security: []
       requestBody:
         required: true
         content:
           application/json:
-            schema: { $ref: '#/components/schemas/StreakAtRiskTrigger' }
+            schema:
+              $ref: '#/components/schemas/StreakAtRiskTrigger'
       responses:
         '201':
           description: created
           content:
             application/json:
-              schema: { $ref: '#/components/schemas/Notification' }
+              schema: *id001
   /api/v1/notifications/sweep:
     post:
-      tags: [notifications]
-      summary: Internal — run the streak-at-risk sweep synchronously
-      description: >
-        Same logic the background scheduler runs on a timer; exposed for
-        deterministic ops/test triggering.
+      tags:
+      - notifications
+      summary: "Internal \u2014 run the streak-at-risk sweep synchronously"
+      description: Same logic the background scheduler runs on a timer; exposed for deterministic ops/test
+        triggering.
       security: []
       responses:
         '200':
           description: success
           content:
             application/json:
-              schema: { $ref: '#/components/schemas/SweepResult' }
+              schema:
+                $ref: '#/components/schemas/SweepResult'
 components:
   securitySchemes:
     bearerAuth:
       type: http
       scheme: bearer
       bearerFormat: JWT
+  schemas:
+    Health:
+      type: object
+      properties:
+        status:
+          type: string
+          example: healthy
+        service:
+          type: string
+        version:
+          type: string
+      required:
+      - status
+      - service
+    Error:
+      type: object
+      properties:
+        detail:
+          type: string
+      required:
+      - detail
+    Notification:
+      type: object
+      required:
+      - id
+      - user_id
+      - kind
+      - title
+      - body
+      - created_at
+      - delivered_at
+      properties:
+        id:
+          type: string
+        user_id:
+          type: string
+        kind:
+          type: string
+          enum:
+          - daily_action_reminder
+          - streak_at_risk
+        title:
+          type: string
+        body:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        read_at:
+          type: string
+          format: date-time
+          nullable: true
+        delivered_at:
+          type: string
+          format: date-time
+    DailyActionReminderTrigger:
+      type: object
+      required:
+      - user_id
+      properties:
+        user_id:
+          type: string
+        action_title:
+          type: string
+          nullable: true
+    StreakAtRiskTrigger:
+      type: object
+      required:
+      - user_id
+      - current_streak_days
+      properties:
+        user_id:
+          type: string
+        current_streak_days:
+          type: integer
+          minimum: 1
+    SweepResult:
+      type: object
+      required:
+      - users_checked
+      - notifications_created
+      properties:
+        users_checked:
+          type: integer
+        notifications_created:
+          type: integer
   responses:
     Unauthorized:
       description: unauthorized
       content:
         application/json:
-          schema: { $ref: '#/components/schemas/Error' }
-  schemas:
-    Health:
-      type: object
-      properties:
-        status: { type: string, example: healthy }
-        service: { type: string }
-        version: { type: string }
-      required: [status, service]
-    Error:
-      type: object
-      properties:
-        detail: { type: string }
-      required: [detail]
-    Notification:
-      type: object
-      properties:
-        id: { type: string }
-        user_id: { type: string }
-        kind: { type: string, enum: [daily_action_reminder, streak_at_risk] }
-        title: { type: string }
-        body: { type: string }
-        created_at: { type: string, format: date-time }
-        read_at: { type: string, format: date-time, nullable: true }
-        delivered_at: { type: string, format: date-time }
-      required: [id, user_id, kind, title, body, created_at, delivered_at]
-    DailyActionReminderTrigger:
-      type: object
-      properties:
-        user_id: { type: string }
-        action_title: { type: string, nullable: true }
-      required: [user_id]
-    StreakAtRiskTrigger:
-      type: object
-      properties:
-        user_id: { type: string }
-        current_streak_days: { type: integer, minimum: 1 }
-      required: [user_id, current_streak_days]
-    SweepResult:
-      type: object
-      properties:
-        users_checked: { type: integer }
-        notifications_created: { type: integer }
-      required: [users_checked, notifications_created]
+          schema:
+            $ref: '#/components/schemas/Error'
