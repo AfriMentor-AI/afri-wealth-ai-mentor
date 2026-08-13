@@ -1,34 +1,50 @@
-"""Progress Gamification Service — AfriMentor AI microservice stub.
+"""Progress Gamification Service — AfriMentor AI (card O3.1).
 
-Generated for card O1.2. Real implementation lands in later sprints.
-Health endpoint is live so docker-compose health checks pass.
+Owns streaks, the action heatmap, and badge/achievement awarding. Reacts to
+activity recorded via POST /api/v1/progress/actions (called by chat-orchestration's
+daily-action completion flow and other action sources) and emits `badge.earned` for
+downstream consumers (notification-service, research-evaluation-service).
 """
-import os
+from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 
+from .config import get_settings
+from .database import init_db
 from .observability import instrument
+from .routers.progress import router as progress_router
 
-SERVICE_NAME = "progress-gamification-service"
-SERVICE_VERSION = "0.1.0"
+settings = get_settings()
+
+SERVICE_NAME = settings.service_name
+SERVICE_VERSION = "1.0.0"
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    init_db()
+    yield
+
 
 app = FastAPI(
     title="AfriMentor AI — Progress Gamification Service",
     version=SERVICE_VERSION,
-    description="Stub service. See docs/adr/0001-microservices-architecture.md",
+    description="Streaks, action heatmap, and badge/achievement logic (O3.1).",
+    lifespan=lifespan,
 )
 
 instrument(app, SERVICE_NAME)
 
+app.include_router(progress_router)
+
 
 @app.get("/health", tags=["meta"])
 def health() -> dict:
-    """Liveness/readiness probe used by docker-compose and the gateway."""
     return {
         "status": "healthy",
         "service": SERVICE_NAME,
         "version": SERVICE_VERSION,
-        "env": os.getenv("APP_ENV", "dev"),
+        "env": settings.env,
     }
 
 
