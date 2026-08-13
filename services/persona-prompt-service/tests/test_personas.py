@@ -12,6 +12,7 @@ client = TestClient(app)
 _CHIOMA_ID = "00000000-0000-0000-0000-000000000001"
 _MARKET_QUEEN_ID = "00000000-0000-0000-0000-000000000002"
 _UNKNOWN_ID = "00000000-0000-0000-0000-000000000099"
+USER_HEADERS = {"X-User-Id": "user-abc"}
 
 
 # ── List ──────────────────────────────────────────────────────────────────────
@@ -47,6 +48,7 @@ def test_select_persona_calls_chat_service():
         r = client.post(
             f"/api/v1/personas/{_MARKET_QUEEN_ID}/select",
             json={"session_id": "sess-123"},
+            headers=USER_HEADERS,
         )
     assert r.status_code == 200
     body = r.json()
@@ -57,12 +59,25 @@ def test_select_persona_calls_chat_service():
     call_url = mock_patch.call_args.args[0]
     assert "sess-123" in call_url
     assert mock_patch.call_args.kwargs["json"] == {"persona_id": _MARKET_QUEEN_ID}
+    # Card O3.5: identity must be forwarded so chat-orchestration-service can
+    # verify session ownership — without this, select_persona would let any
+    # authenticated user rebind another user's chat session (fixed IDOR).
+    assert mock_patch.call_args.kwargs["headers"] == {"X-User-Id": "user-abc"}
+
+
+def test_select_persona_requires_identity():
+    r = client.post(
+        f"/api/v1/personas/{_MARKET_QUEEN_ID}/select",
+        json={"session_id": "sess-123"},
+    )
+    assert r.status_code == 422
 
 
 def test_select_unknown_persona_returns_404():
     r = client.post(
         f"/api/v1/personas/{_UNKNOWN_ID}/select",
         json={"session_id": "sess-123"},
+        headers=USER_HEADERS,
     )
     assert r.status_code == 404
 
@@ -77,6 +92,7 @@ def test_select_persona_chat_service_unreachable():
         r = client.post(
             f"/api/v1/personas/{_MARKET_QUEEN_ID}/select",
             json={"session_id": "sess-123"},
+            headers=USER_HEADERS,
         )
     assert r.status_code == 503
 
