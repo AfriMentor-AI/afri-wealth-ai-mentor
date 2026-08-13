@@ -918,6 +918,219 @@ def goals_spec() -> dict:
     return spec
 
 
+def progress_spec() -> dict:
+    spec = base(
+        "Progress & Gamification Service",
+        "progress-gamification-service",
+        8007,
+        "Streaks, action heatmap, and badge/achievement logic (card O3.1). Reacts to "
+        "activity recorded via POST /api/v1/progress/actions and emits `badge.earned`.",
+    )
+    schemas = spec["components"]["schemas"]
+    schemas["ActionKind"] = {
+        "type": "string",
+        "enum": ["daily_action", "insight_completed", "savings_goal_met"],
+    }
+    schemas["ActionCreate"] = {
+        "type": "object",
+        "required": ["kind"],
+        "properties": {
+            "kind": {"$ref": "#/components/schemas/ActionKind"},
+            "occurred_on": {
+                "type": ["string", "null"],
+                "format": "date",
+                "description": "Defaults to today (server clock) when omitted.",
+            },
+        },
+    }
+    schemas["StreakStat"] = {
+        "type": "object",
+        "required": [
+            "user_id", "current_streak_days", "longest_streak_days",
+            "actions_completed_total", "updated_at",
+        ],
+        "properties": {
+            "user_id": {"type": "string"},
+            "current_streak_days": {"type": "integer"},
+            "longest_streak_days": {"type": "integer"},
+            "actions_completed_total": {"type": "integer"},
+            "updated_at": {"type": "string", "format": "date-time"},
+        },
+    }
+    schemas["BadgeAward"] = {
+        "type": "object",
+        "required": ["badge_id", "label"],
+        "properties": {"badge_id": {"type": "string"}, "label": {"type": "string"}},
+    }
+    schemas["ActionRecordResponse"] = {
+        "type": "object",
+        "required": ["streak", "newly_earned_badges"],
+        "properties": {
+            "streak": {"$ref": "#/components/schemas/StreakStat"},
+            "newly_earned_badges": {
+                "type": "array",
+                "items": {"$ref": "#/components/schemas/BadgeAward"},
+            },
+        },
+    }
+    schemas["HeatmapDay"] = {
+        "type": "object",
+        "required": ["date", "count"],
+        "properties": {
+            "date": {"type": "string", "format": "date"},
+            "count": {"type": "integer"},
+        },
+    }
+    schemas["BadgeWithStatus"] = {
+        "type": "object",
+        "required": ["id", "label", "description", "icon_name", "earned_at"],
+        "properties": {
+            "id": {"type": "string"},
+            "label": {"type": "string"},
+            "description": {"type": "string"},
+            "icon_name": {"type": "string"},
+            "earned_at": {"type": ["string", "null"], "format": "date-time"},
+        },
+    }
+    schemas["ProgressSummary"] = {
+        "type": "object",
+        "required": ["streak", "heatmap", "badges"],
+        "properties": {
+            "streak": {"$ref": "#/components/schemas/StreakStat"},
+            "heatmap": {"type": "array", "items": {"$ref": "#/components/schemas/HeatmapDay"}},
+            "badges": {"type": "array", "items": {"$ref": "#/components/schemas/BadgeWithStatus"}},
+        },
+    }
+    schemas["WeeklySummaryShare"] = {
+        "type": "object",
+        "required": [
+            "user_id", "week_start", "week_end", "actions_this_week",
+            "current_streak_days", "badges_earned_this_week", "share_text",
+        ],
+        "properties": {
+            "user_id": {"type": "string"},
+            "week_start": {"type": "string", "format": "date"},
+            "week_end": {"type": "string", "format": "date"},
+            "actions_this_week": {"type": "integer"},
+            "current_streak_days": {"type": "integer"},
+            "badges_earned_this_week": {"type": "array", "items": {"type": "string"}},
+            "share_text": {"type": "string"},
+        },
+    }
+
+    unauth_401 = {
+        "description": "unauthorized",
+        "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Error"}}},
+    }
+    spec["tags"] = [{"name": "progress"}, {"name": "meta"}]
+    spec["paths"].update(
+        {
+            "/api/v1/progress": {
+                "get": {
+                    "tags": ["progress"],
+                    "summary": "Get the user's progress summary (streak + heatmap + badges)",
+                    "responses": {
+                        "200": {
+                            "description": "success",
+                            "content": {
+                                "application/json": {
+                                    "schema": {"$ref": "#/components/schemas/ProgressSummary"}
+                                }
+                            },
+                        },
+                        "401": unauth_401,
+                    },
+                }
+            },
+            "/api/v1/progress/streak": {
+                "get": {
+                    "tags": ["progress"],
+                    "summary": "Get current streak",
+                    "responses": {
+                        "200": {
+                            "description": "success",
+                            "content": {
+                                "application/json": {
+                                    "schema": {"$ref": "#/components/schemas/StreakStat"}
+                                }
+                            },
+                        },
+                        "401": unauth_401,
+                    },
+                }
+            },
+            "/api/v1/progress/badges": {
+                "get": {
+                    "tags": ["progress"],
+                    "summary": "List badge catalog with earned/locked status",
+                    "responses": {
+                        "200": {
+                            "description": "success",
+                            "content": {
+                                "application/json": {
+                                    "schema": {
+                                        "type": "array",
+                                        "items": {"$ref": "#/components/schemas/BadgeWithStatus"},
+                                    }
+                                }
+                            },
+                        },
+                        "401": unauth_401,
+                    },
+                }
+            },
+            "/api/v1/progress/actions": {
+                "post": {
+                    "tags": ["progress"],
+                    "summary": "Record one completed action for a day",
+                    "description": "Recording the same (day, kind) twice is a no-op, not an "
+                    "error. Recomputes the streak and re-evaluates badge triggers, awarding "
+                    "any newly-earned ones.",
+                    "requestBody": {
+                        "required": True,
+                        "content": {
+                            "application/json": {
+                                "schema": {"$ref": "#/components/schemas/ActionCreate"}
+                            }
+                        },
+                    },
+                    "responses": {
+                        "201": {
+                            "description": "recorded",
+                            "content": {
+                                "application/json": {
+                                    "schema": {
+                                        "$ref": "#/components/schemas/ActionRecordResponse"
+                                    }
+                                }
+                            },
+                        },
+                        "401": unauth_401,
+                    },
+                }
+            },
+            "/api/v1/progress/summary/share": {
+                "post": {
+                    "tags": ["progress"],
+                    "summary": "Build a shareable weekly-summary payload",
+                    "responses": {
+                        "200": {
+                            "description": "success",
+                            "content": {
+                                "application/json": {
+                                    "schema": {"$ref": "#/components/schemas/WeeklySummaryShare"}
+                                }
+                            },
+                        },
+                        "401": unauth_401,
+                    },
+                }
+            },
+        }
+    )
+    return spec
+
+
 def gateway_spec() -> dict:
     spec = base(
         "API Gateway",
@@ -972,15 +1185,6 @@ SERVICES: dict[str, tuple] = {
             ("delete", "/api/v1/rag/documents/{id}", "rag", "Delete a document", False),
             ("get", "/api/v1/rag/stats", "rag", "Corpus index-health statistics", False),
             ("post", "/api/v1/rag/query", "rag", "Retrieve relevant chunks", True),
-        ],
-    ),
-    "progress-gamification-service": (
-        "Progress & Gamification Service", 8007,
-        "XP, streaks, badges and levels. Reacts to milestone/session events.",
-        [
-            ("get", "/api/v1/progress", "progress", "Get the user's progress summary", False),
-            ("get", "/api/v1/progress/badges", "progress", "List earned badges", False),
-            ("get", "/api/v1/progress/streak", "progress", "Get current streak", False),
         ],
     ),
     "insight-library-service": (
@@ -1052,6 +1256,7 @@ def main() -> None:
         ("auth-user-service", auth_spec()),
         ("intake-profiling-service", intake_spec()),
         ("goals-milestones-service", goals_spec()),
+        ("progress-gamification-service", progress_spec()),
     ]:
         path = OUT / f"{name}.yaml"
         path.write_text(yaml.safe_dump(spec, sort_keys=False, width=100), encoding="utf-8")
