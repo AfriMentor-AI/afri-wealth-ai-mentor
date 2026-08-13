@@ -128,19 +128,35 @@ export async function fetchBadges(): Promise<BadgeWithStatus[]> {
   return resolveAfterLatency(joined);
 }
 
+
 // ---------------------------------------------------------------------------
 // Additional mock POST/command operations used by the UI. These are simple
 // stubs that return contract-shaped objects so pages/components importing
 // them can build. When the real backend exists, replace with fetch() calls.
 // ---------------------------------------------------------------------------
 
-export async function sendMessage(input: { text: string; personaId?: string }): Promise<ChatMessage> {
+export async function sendMessage(chatSessionId: string, text: string): Promise<ChatMessage>;
+export async function sendMessage(input: { text: string; personaId?: string }): Promise<ChatMessage>;
+export async function sendMessage(a: string | { text: string; personaId?: string }, b?: string): Promise<ChatMessage> {
+  let personaId: string | undefined;
+  let messageText: string;
+  if (typeof a === "string") {
+    // Called as sendMessage(chatSessionId, text)
+    messageText = b ?? "";
+    // chatSessionId is available as `a` if needed for more realistic mocks
+    personaId = undefined;
+  } else {
+    // Called as sendMessage({ text, personaId })
+    messageText = a.text;
+    personaId = a.personaId;
+  }
+
   const msg: ChatMessage = {
     id: `msg-${Date.now()}`,
     userId: mockUser.id,
     sender: "mentor",
-    text: `(mock reply) Received: ${input.text}`,
-    personaId: input.personaId,
+    text: `(mock reply) Received: ${messageText}`,
+    personaId: personaId,
     createdAt: new Date().toISOString(),
   };
   return resolveAfterLatency(msg);
