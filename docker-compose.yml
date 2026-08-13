@@ -350,9 +350,12 @@ services:
       <<: *svc-env
       DATABASE_URL: postgresql+psycopg://afrimentor:afrimentor@postgres:5432/svc_notify
       RABBITMQ_URL: amqp://afrimentor:afrimentor@rabbitmq:5672/
+      # Streak-at-risk sweep (card O3.4) calls this to read a user's streak.
+      PROGRESS_SERVICE_URL: http://progress-gamification-service:8007
     depends_on:
       postgres: {condition: service_healthy}
       rabbitmq: {condition: service_healthy}
+      progress-gamification-service: {condition: service_healthy}
     healthcheck:
       test: ["CMD-SHELL", "python -c \"import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8012/health').status==200 else 1)\""]
       <<: *hc
