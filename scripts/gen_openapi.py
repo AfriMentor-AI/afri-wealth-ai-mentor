@@ -939,10 +939,10 @@ def feedback_spec() -> dict:
         "required": ["nps_score"],
         "properties": {
             "nps_score": {"type": "integer", "minimum": 1, "maximum": 10},
-            "comment": {"type": "string", "nullable": True},
-            "voice_note_url": {"type": "string", "nullable": True},
+            "comment": {"type": ["string", "null"]},
+            "voice_note_url": {"type": ["string", "null"]},
             "trigger": {"type": "string", "default": "manual"},
-            "context_ref": {"type": "string", "nullable": True},
+            "context_ref": {"type": ["string", "null"]},
         },
     }
     schemas["FeedbackSurvey"] = {
@@ -952,10 +952,10 @@ def feedback_spec() -> dict:
             "id": {"type": "string"},
             "user_id": {"type": "string"},
             "nps_score": {"type": "integer"},
-            "comment": {"type": "string", "nullable": True},
-            "voice_note_url": {"type": "string", "nullable": True},
+            "comment": {"type": ["string", "null"]},
+            "voice_note_url": {"type": ["string", "null"]},
             "trigger": {"type": "string"},
-            "context_ref": {"type": "string", "nullable": True},
+            "context_ref": {"type": ["string", "null"]},
             "submitted_at": {"type": "string", "format": "date-time"},
         },
     }
@@ -966,7 +966,7 @@ def feedback_spec() -> dict:
             "id": {"type": "string"},
             "user_id": {"type": "string"},
             "trigger": {"type": "string"},
-            "context_ref": {"type": "string", "nullable": True},
+            "context_ref": {"type": ["string", "null"]},
             "created_at": {"type": "string", "format": "date-time"},
         },
     }

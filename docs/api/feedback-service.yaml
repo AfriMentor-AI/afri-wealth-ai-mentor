@@ -139,17 +139,20 @@ components:
           minimum: 1
           maximum: 10
         comment:
-          type: string
-          nullable: true
+          type:
+          - string
+          - 'null'
         voice_note_url:
-          type: string
-          nullable: true
+          type:
+          - string
+          - 'null'
         trigger:
           type: string
           default: manual
         context_ref:
-          type: string
-          nullable: true
+          type:
+          - string
+          - 'null'
     FeedbackSurvey:
       type: object
       required:
@@ -166,16 +169,19 @@ components:
         nps_score:
           type: integer
         comment:
-          type: string
-          nullable: true
+          type:
+          - string
+          - 'null'
         voice_note_url:
-          type: string
-          nullable: true
+          type:
+          - string
+          - 'null'
         trigger:
           type: string
         context_ref:
-          type: string
-          nullable: true
+          type:
+          - string
+          - 'null'
         submitted_at:
           type: string
           format: date-time
@@ -194,8 +200,9 @@ components:
         trigger:
           type: string
         context_ref:
-          type: string
-          nullable: true
+          type:
+          - string
+          - 'null'
         created_at:
           type: string
           format: date-time
