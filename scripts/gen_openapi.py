@@ -942,7 +942,7 @@ def insight_spec() -> dict:
             "category": {"type": "string"},
             "duration_minutes": {"type": "integer"},
             "is_audio": {"type": "boolean", "default": False},
-            "media_url": {"type": "string", "nullable": True},
+            "media_url": {"type": ["string", "null"]},
         },
     }
     schemas["InsightItem"] = {
@@ -958,7 +958,7 @@ def insight_spec() -> dict:
             "category": {"type": "string"},
             "duration_minutes": {"type": "integer"},
             "is_audio": {"type": "boolean"},
-            "media_url": {"type": "string", "nullable": True},
+            "media_url": {"type": ["string", "null"]},
             "created_at": {"type": "string", "format": "date-time"},
             "is_favorited": {"type": "boolean"},
         },

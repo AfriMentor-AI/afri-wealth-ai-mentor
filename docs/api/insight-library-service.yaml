@@ -181,8 +181,9 @@ components:
           type: boolean
           default: false
         media_url:
-          type: string
-          nullable: true
+          type:
+          - string
+          - 'null'
     InsightItem:
       type: object
       required:
@@ -208,8 +209,9 @@ components:
         is_audio:
           type: boolean
         media_url:
-          type: string
-          nullable: true
+          type:
+          - string
+          - 'null'
         created_at:
           type: string
           format: date-time
