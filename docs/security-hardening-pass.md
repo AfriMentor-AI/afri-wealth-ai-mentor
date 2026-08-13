@@ -120,6 +120,17 @@ in the Groq dashboard. This is a credential-rotation action outside what a PR ca
 fix — flagging here so it's visibly a checklist item, not silently resolved by the
 `.env.example` edit alone.
 
+**Self-correction:** an independent review pass on this PR's own diff (before
+merge) found that the *first* version of `scan-secrets.sh` would not have caught
+the leak above — its placeholder filter matched against the whole grep line, not
+the matched secret token, so a real key with `your-` glued directly onto it (the
+exact disguise pattern that caused the original leak) got excluded by the `your-`
+placeholder rule despite containing live key material. Confirmed empirically
+(the original leaked line piped through the old filter came back "clean") and
+fixed by matching the placeholder filter against the extracted token only,
+re-verified against both the original leaked line (now flagged) and the genuine
+placeholder in `research/README.md` (still correctly excluded).
+
 **Clean:** no AWS keys, no committed PEM/private-key blocks, no other
 provider-prefixed tokens found. `.gitignore` correctly excludes `.env`/`.env.*` while
 allowlisting `.env.example`; `git ls-files | grep -E '\.env$'` returns nothing (only
