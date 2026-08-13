@@ -1,10 +1,29 @@
 from __future__ import annotations
 
-import sys
-from pathlib import Path
+import pytest
+from fastapi.testclient import TestClient
 
-SERVICE_ROOT = Path(__file__).resolve().parents[1]
-SERVICE_ROOT_STR = str(SERVICE_ROOT)
+from app.database import Base, SessionLocal, engine, get_db
+from app.main import app
 
-if SERVICE_ROOT_STR not in sys.path:
-    sys.path.insert(0, SERVICE_ROOT_STR)
+
+@pytest.fixture(autouse=True)
+def fresh_db():
+    Base.metadata.create_all(bind=engine)
+    yield
+    Base.metadata.drop_all(bind=engine)
+
+
+@pytest.fixture
+def client(fresh_db):
+    def _override_db():
+        db = SessionLocal()
+        try:
+            yield db
+        finally:
+            db.close()
+
+    app.dependency_overrides[get_db] = _override_db
+    with TestClient(app) as c:
+        yield c
+    app.dependency_overrides.clear()
