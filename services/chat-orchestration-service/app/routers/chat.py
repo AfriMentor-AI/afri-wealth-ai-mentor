@@ -72,15 +72,20 @@ def get_session(
 def bind_persona(
     session_id: str,
     body: PersonaBindRequest,
+    user_id: str = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> Conversation:
     """Bind a persona to an existing session (called by persona-prompt-service on 'Select Mentor').
 
-    No user-auth header required — this is an internal service-to-service call
-    routed inside the private network (ADR-0001 §D5).
+    Card O3.5: this used to skip the ownership check on the theory that it's an
+    internal service-to-service call — but persona-prompt-service's
+    `POST /personas/{id}/select` (the only caller) is itself reachable through the
+    gateway's protected `/api/v1/personas` prefix with a caller-supplied
+    `session_id`, so without this check any authenticated user could rebind
+    another user's chat session to an arbitrary persona.
     """
     conv = db.get(Conversation, session_id)
-    if not conv:
+    if not conv or conv.user_id != user_id:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Session not found")
     conv.persona_id = body.persona_id
     db.commit()

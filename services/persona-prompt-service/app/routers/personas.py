@@ -5,7 +5,7 @@ from pathlib import Path
 
 import httpx
 import yaml
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, Header, HTTPException, status
 
 from ..config import get_settings
 from ..renderer import render_persona_prompt
@@ -44,18 +44,37 @@ def list_personas() -> list[PersonaMeta]:
     response_model=SelectPersonaResponse,
     status_code=status.HTTP_200_OK,
 )
-def select_persona(persona_id: str, body: SelectPersonaRequest) -> SelectPersonaResponse:
+def select_persona(
+    persona_id: str,
+    body: SelectPersonaRequest,
+    x_user_id: str = Header(..., alias="X-User-Id"),
+) -> SelectPersonaResponse:
     """Bind a persona to a chat session.
 
     Calls PATCH /api/v1/chat/sessions/{session_id}/persona on chat-orchestration-service
     so subsequent LLM turns use the matching prompt template from D1.3.
+
+    Card O3.5: requires and forwards X-User-Id so chat-orchestration-service can
+    verify the caller owns `body.session_id` — this endpoint is reachable through
+    the gateway's protected `/api/v1/personas` prefix with an attacker-controllable
+    session_id, so skipping identity here would let any authenticated user rebind
+    another user's session.
     """
+    if not x_user_id:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Missing identity header"
+        )
     persona = _find_persona(persona_id)
     settings = get_settings()
 
     url = f"{settings.chat_service_url}/api/v1/chat/sessions/{body.session_id}/persona"
     try:
-        resp = httpx.patch(url, json={"persona_id": persona_id}, timeout=5.0)
+        resp = httpx.patch(
+            url,
+            json={"persona_id": persona_id},
+            headers={"X-User-Id": x_user_id},
+            timeout=5.0,
+        )
         resp.raise_for_status()
     except httpx.HTTPStatusError as exc:
         raise HTTPException(
