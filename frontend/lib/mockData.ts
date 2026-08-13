@@ -172,7 +172,6 @@ export const mockChatMessages: ChatMessage[] = [
     personaId: "rural-hustler",
     sender: "mentor",
     text: "To grow your plantain business, consistency in your savings is just as important as your daily turnover. Have you thought about setting aside 10% of every sale before restocking?",
-    sourceCitation: "Based on TEF curriculum",
     createdAt: "2026-07-28T09:15:00Z",
   },
   {
