@@ -1,360 +1,105 @@
 // Single point of contact between UI components and data.
-// Auth, Intake and Goals & Milestones are live (card O2.4) — everything else here
-// still resolves from mockData until its backend ships. No component should ever
-// import mockData directly.
+// Every function here currently resolves from mockData. When the backend
+// (Epic O/D services) is live, only THIS file changes — swap each function's
+// body for a fetch() against the real API using the G1.3 contract
+// (contract/openapi.yaml documents the intended real endpoint per
+// function below). No component should ever import mockData directly.
 
 import {
   mockBadges,
+  mockChatMessages,
+  mockCommitments,
   mockDailyAction,
+  mockGoals,
   mockInsights,
+  mockMilestones,
+  mockPersonas,
+  mockProfile,
   mockStreak,
   mockUser,
   mockUserBadges,
 } from "./mockData";
-import { apiFetch, getCurrentUserId } from "./session";
 import type {
   BadgeWithStatus,
   ChatMessage,
   Commitment,
-  CommitmentStatus,
   DailyAction,
   FeedbackSurvey,
   Goal,
   InsightItem,
   Milestone,
-  MilestoneStatus,
   Persona,
   Profile,
   StreakStat,
   User,
 } from "./types";
 
-async function parseOrThrow(res: Response, action: string): Promise<unknown> {
-  if (!res.ok) throw new Error(`${action} failed: ${res.status}`);
-  return res.status === 204 ? null : res.json();
+// Simulated latency so loading/skeleton states are real and tested,
+// not skipped because mock data resolves instantly.
+const LATENCY_MS = 250;
+function resolveAfterLatency<T>(value: T): Promise<T> {
+  return new Promise((resolve) => setTimeout(() => resolve(value), LATENCY_MS));
 }
 
-// ---------------------------------------------------------------------------
-// Auth & User (live — auth-user-service via the gateway)
-// ---------------------------------------------------------------------------
-
-/** GET /api/v1/auth/me */
+/** GET /users/me */
 export async function fetchCurrentUser(): Promise<User> {
-  const res = await apiFetch("/api/v1/auth/me");
-  const dto = (await parseOrThrow(res, "fetch current user")) as {
-    id: string;
-    email: string;
-    created_at: string;
-  };
-  return { id: dto.id, email: dto.email, createdAt: dto.created_at };
+  return resolveAfterLatency(mockUser);
 }
 
-// ---------------------------------------------------------------------------
-// Intake & Profiling (live — intake-profiling-service via the gateway)
-// ---------------------------------------------------------------------------
-
-interface DiagnosticProfileDto {
-  user_id: string;
-  name: string;
-  business_name: string;
-  location: string;
-  sector: string;
-  education_level: string;
-  time_available_per_week: string;
-  constraints: string[];
-  persona_id: string | null;
-  created_at: string;
-  updated_at: string;
+/** GET /users/me/profile */
+export async function fetchProfile(): Promise<Profile> {
+  return resolveAfterLatency(mockProfile);
 }
 
-function toProfile(dto: DiagnosticProfileDto): Profile {
-  return {
-    userId: dto.user_id,
-    name: dto.name,
-    businessName: dto.business_name,
-    location: dto.location,
-    sector: dto.sector,
-    educationLevel: dto.education_level,
-    timeAvailablePerWeek: dto.time_available_per_week,
-    constraints: dto.constraints,
-    personaId: dto.persona_id,
-    createdAt: dto.created_at,
-    updatedAt: dto.updated_at,
-  };
-}
-
-/** GET /api/v1/profiles/{userId}/diagnostic — null until Intake has been completed. */
-export async function fetchProfile(): Promise<Profile | null> {
-  const userId = await getCurrentUserId();
-  const res = await apiFetch(`/api/v1/profiles/${userId}/diagnostic`);
-  if (res.status === 404) return null;
-  const dto = (await parseOrThrow(res, "fetch diagnostic profile")) as DiagnosticProfileDto;
-  return toProfile(dto);
-}
-
-export interface IntakeAnswers {
-  sector: string;
-  educationLevel: string;
-  timeAvailablePerWeek: string;
-  constraints: string[];
-  name: string;
-  businessName: string;
-  location: string;
-}
-
-/** Drives the full 4-step intake flow — start a session, submit each step's
- * answer, then complete it — and returns the resulting diagnostic profile.
- * POST /api/v1/intake/sessions, .../answers (x4), .../complete */
-export async function submitIntake(answers: IntakeAnswers): Promise<Profile> {
-  const sessionRes = await apiFetch("/api/v1/intake/sessions", { method: "POST" });
-  const session = (await parseOrThrow(sessionRes, "start intake session")) as { id: string };
-
-  const steps: Array<{ step: string; payload: Record<string, unknown> }> = [
-    { step: "sector", payload: { sector: answers.sector } },
-    {
-      step: "education_time",
-      payload: {
-        education_level: answers.educationLevel,
-        time_available_per_week: answers.timeAvailablePerWeek,
-      },
-    },
-    { step: "constraints", payload: { constraints: answers.constraints } },
-    {
-      step: "confirm",
-      payload: { name: answers.name, business_name: answers.businessName, location: answers.location },
-    },
-  ];
-  for (const { step, payload } of steps) {
-    const res = await apiFetch(`/api/v1/intake/sessions/${session.id}/answers`, {
-      method: "POST",
-      body: JSON.stringify({ step, payload }),
-    });
-    await parseOrThrow(res, `submit intake step "${step}"`);
-  }
-
-  const completeRes = await apiFetch(`/api/v1/intake/sessions/${session.id}/complete`, {
-    method: "POST",
-  });
-  await parseOrThrow(completeRes, "complete intake session");
-
-  const userId = await getCurrentUserId();
-  const profileRes = await apiFetch(`/api/v1/profiles/${userId}/diagnostic`);
-  const dto = (await parseOrThrow(profileRes, "fetch diagnostic profile")) as DiagnosticProfileDto;
-  return toProfile(dto);
-}
-
-/** GET /api/v1/personas */
+/** GET /personas */
 export async function fetchPersonas(): Promise<Persona[]> {
-  // This is a simplified mock. The real endpoint will have more sophisticated
-  // recommendation logic based on the user's profile.
-  const res = await apiFetch("/api/v1/personas");
-  return (await parseOrThrow(res, "fetch personas")) as Persona[];
+  return resolveAfterLatency(mockPersonas);
 }
 
-// ---------------------------------------------------------------------------
-// Chat (live — chat-orchestration-service via the gateway)
-// ---------------------------------------------------------------------------
-
-// DTO for a message from the backend, which has a different shape than the
-// frontend's ChatMessage type.
-interface MessageDto {
-  id: string;
-  conversation_id: string;
-  role: "user" | "assistant";
-  content: string;
-  is_commitment_candidate: boolean;
-  citations: Array<{ label: string }>;
-  created_at: string;
-}
-
-function toChatMessage(dto: MessageDto, userId: string, personaId?: string): ChatMessage {
-  return {
-    id: dto.id,
-    userId,
-    personaId,
-    sender: dto.role === "assistant" ? "mentor" : "user",
-    text: dto.content,
-    citations: dto.citations,
-    isCommitmentCandidate: dto.is_commitment_candidate,
-    createdAt: dto.created_at,
-  };
-}
-
-/** POST /api/v1/chat/sessions */
-export async function startChatSession(personaId: string): Promise<string> {
-  const res = await apiFetch("/api/v1/chat/sessions", {
-    method: "POST",
-    body: JSON.stringify({ persona_id: personaId }),
-  });
-  const session = (await parseOrThrow(res, "start chat session")) as { id: string };
-  return session.id;
-}
-
-/** GET /api/v1/chat/sessions/{sessionId}/messages */
-export async function fetchChatMessages(sessionId: string): Promise<ChatMessage[]> {
-  const userId = await getCurrentUserId();
-  const res = await apiFetch(`/api/v1/chat/sessions/${sessionId}/messages`);
-  const dtos = (await parseOrThrow(res, "fetch chat messages")) as MessageDto[];
-  // personaId is not on the message DTO, so we can't map it here.
-  // The UI will have to associate the persona with the session.
-  return dtos.map((dto) => toChatMessage(dto, userId));
-}
-
-/** POST /api/v1/chat/sessions/{sessionId}/messages */
-export async function sendMessage(sessionId: string, content: string): Promise<ChatMessage> {
-  const userId = await getCurrentUserId();
-  const res = await apiFetch(`/api/v1/chat/sessions/${sessionId}/messages`, {
-    method: "POST",
-    body: JSON.stringify({ content }),
-  });
-  const dto = (await parseOrThrow(res, "send message")) as MessageDto;
-  return toChatMessage(dto, userId);
-}
-
-/** POST /api/v1/chat/sessions/{sessionId}/messages/{messageId}/tag */
-export async function tagCommitment(sessionId: string, messageId: string, goalId: string): Promise<Commitment> {
-  const res = await apiFetch(`/api/v1/chat/sessions/${sessionId}/messages/${messageId}/tag`, {
-    method: "POST",
-    body: JSON.stringify({ goal_id: goalId }),
-  });
-  return (await parseOrThrow(res, "tag commitment")) as Commitment;
-}
-
-
-// ---------------------------------------------------------------------------
-// Goals, Milestones & Commitments (live — goals-milestones-service via the gateway)
-// ---------------------------------------------------------------------------
-
-interface GoalDto {
-  id: string;
-  user_id: string;
-  title: string;
-  deadline: string | null;
-  progress_pct: number;
-  created_at: string;
-  updated_at: string;
-}
-
-function toGoal(dto: GoalDto): Goal {
-  return {
-    id: dto.id,
-    userId: dto.user_id,
-    title: dto.title,
-    progressPct: dto.progress_pct,
-    deadline: dto.deadline ?? undefined,
-    createdAt: dto.created_at,
-    updatedAt: dto.updated_at,
-  };
-}
-
-interface MilestoneDto {
-  id: string;
-  goal_id: string;
-  title: string;
-  status: MilestoneStatus;
-  order: number;
-  created_at: string;
-  updated_at: string;
-}
-
-function toMilestone(dto: MilestoneDto): Milestone {
-  return {
-    id: dto.id,
-    goalId: dto.goal_id,
-    title: dto.title,
-    status: dto.status,
-    order: dto.order,
-    createdAt: dto.created_at,
-    updatedAt: dto.updated_at,
-  };
-}
-
-interface CommitmentDto {
-  id: string;
-  goal_id: string;
-  title: string;
-  status: CommitmentStatus;
-  mentor_help_note: string | null;
-  source_chat_message_id: string | null;
-  created_at: string;
-  updated_at: string;
-}
-
-function toCommitment(dto: CommitmentDto): Commitment {
-  return {
-    id: dto.id,
-    goalId: dto.goal_id,
-    title: dto.title,
-    status: dto.status,
-    mentorHelpNote: dto.mentor_help_note ?? undefined,
-    sourceChatMessageId: dto.source_chat_message_id ?? undefined,
-    createdAt: dto.created_at,
-    updatedAt: dto.updated_at,
-  };
-}
-
-/** GET /api/v1/goals */
+/** GET /goals */
 export async function fetchGoals(): Promise<Goal[]> {
-  const res = await apiFetch("/api/v1/goals");
-  const dtos = (await parseOrThrow(res, "fetch goals")) as GoalDto[];
-  return dtos.map(toGoal);
+  return resolveAfterLatency(mockGoals);
 }
 
-/** GET /api/v1/goals/{goalId} */
+/** GET /goals/{goalId} */
 export async function fetchGoalById(goalId: string): Promise<Goal | undefined> {
-  const res = await apiFetch(`/api/v1/goals/${goalId}`);
-  if (res.status === 404) return undefined;
-  const dto = (await parseOrThrow(res, "fetch goal")) as GoalDto;
-  return toGoal(dto);
+  return resolveAfterLatency(mockGoals.find((g) => g.id === goalId));
 }
 
-/** POST /api/v1/goals */
-export async function createGoal(input: { title: string; deadline?: string }): Promise<Goal> {
-  const res = await apiFetch("/api/v1/goals", {
-    method: "POST",
-    body: JSON.stringify({ title: input.title, deadline: input.deadline ?? null }),
-  });
-  const dto = (await parseOrThrow(res, "create goal")) as GoalDto;
-  return toGoal(dto);
-}
-
-/** GET /api/v1/goals/{goalId}/milestones — Milestone is normalized (its own
+/** GET /goals/{goalId}/milestones — Milestone is normalized (its own
  * collection keyed by goalId) per the contract, not nested inside Goal. */
 export async function fetchMilestonesByGoal(goalId: string): Promise<Milestone[]> {
-  const res = await apiFetch(`/api/v1/goals/${goalId}/milestones`);
-  if (res.status === 404) return [];
-  const dtos = (await parseOrThrow(res, "fetch milestones")) as MilestoneDto[];
-  return dtos.map(toMilestone).sort((a, b) => a.order - b.order);
+  return resolveAfterLatency(
+    mockMilestones.filter((m) => m.goalId === goalId).sort((a, b) => a.order - b.order)
+  );
 }
 
-/** POST /api/v1/milestones/{milestoneId}/complete */
-export async function completeMilestone(milestoneId: string): Promise<Milestone> {
-  const res = await apiFetch(`/api/v1/milestones/${milestoneId}/complete`, { method: "POST" });
-  const dto = (await parseOrThrow(res, "complete milestone")) as MilestoneDto;
-  return toMilestone(dto);
-}
-
-/** GET /api/v1/goals/{goalId}/commitments */
+/** GET /goals/{goalId}/commitments */
 export async function fetchCommitmentsByGoal(goalId: string): Promise<Commitment[]> {
-  const res = await apiFetch(`/api/v1/goals/${goalId}/commitments`);
-  if (res.status === 404) return [];
-  const dtos = (await parseOrThrow(res, "fetch commitments")) as CommitmentDto[];
-  return dtos.map(toCommitment);
+  return resolveAfterLatency(mockCommitments.filter((c) => c.goalId === goalId));
 }
 
 /** GET /daily-action/today */
 export async function fetchDailyAction(): Promise<DailyAction> {
-  return Promise.resolve(mockDailyAction);
+  return resolveAfterLatency(mockDailyAction);
+}
+
+/** GET /chat/messages */
+// Accepts an optional options parameter to support future filtering/pagination
+// and to match call sites that may pass an argument. Keeping it optional so
+// existing calls with no args continue to work.
+export async function fetchChatMessages(_opts?: unknown): Promise<ChatMessage[]> {
+  return resolveAfterLatency(mockChatMessages);
 }
 
 /** GET /insights */
 export async function fetchInsights(): Promise<InsightItem[]> {
-  return Promise.resolve(mockInsights);
+  return resolveAfterLatency(mockInsights);
 }
 
 /** GET /progress/streak */
 export async function fetchStreak(): Promise<StreakStat> {
-  return Promise.resolve(mockStreak);
+  return resolveAfterLatency(mockStreak);
 }
 
 /** POST /feedback */
@@ -369,7 +114,7 @@ export async function submitFeedback(input: { npsScore: number; comment?: string
   // Real endpoint persists this server-side; mock just logs it so it's
   // visible that a real, contract-shaped object was actually built.
   console.info("[mock] submitted FeedbackSurvey:", survey);
-  return Promise.resolve(survey);
+  return resolveAfterLatency(survey);
 }
 
 /** GET /progress/badges — joins the Badge catalog against this user's
@@ -379,5 +124,5 @@ export async function fetchBadges(): Promise<BadgeWithStatus[]> {
     const userBadge = mockUserBadges.find((ub) => ub.badgeId === badge.id);
     return { ...badge, earnedAt: userBadge?.earnedAt ?? null };
   });
-  return Promise.resolve(joined);
+  return resolveAfterLatency(joined);
 }
