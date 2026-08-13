@@ -918,6 +918,176 @@ def goals_spec() -> dict:
     return spec
 
 
+def insight_spec() -> dict:
+    spec = base(
+        "Insight Library Service",
+        "insight-library-service",
+        8008,
+        "Curated insight articles/audio (card O3.2): catalog, search/filter, and "
+        "per-user favorites/bookmarks.",
+    )
+    spec["components"]["responses"] = {
+        "Unauthorized": {
+            "description": "unauthorized",
+            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Error"}}},
+        }
+    }
+    schemas = spec["components"]["schemas"]
+    schemas["InsightItemCreate"] = {
+        "type": "object",
+        "required": ["title", "summary", "category", "duration_minutes"],
+        "properties": {
+            "title": {"type": "string"},
+            "summary": {"type": "string"},
+            "category": {"type": "string"},
+            "duration_minutes": {"type": "integer"},
+            "is_audio": {"type": "boolean", "default": False},
+            "media_url": {"type": "string", "nullable": True},
+        },
+    }
+    schemas["InsightItem"] = {
+        "type": "object",
+        "required": [
+            "id", "title", "summary", "category", "duration_minutes",
+            "is_audio", "created_at", "is_favorited",
+        ],
+        "properties": {
+            "id": {"type": "string"},
+            "title": {"type": "string"},
+            "summary": {"type": "string"},
+            "category": {"type": "string"},
+            "duration_minutes": {"type": "integer"},
+            "is_audio": {"type": "boolean"},
+            "media_url": {"type": "string", "nullable": True},
+            "created_at": {"type": "string", "format": "date-time"},
+            "is_favorited": {"type": "boolean"},
+        },
+    }
+
+    unauthorized = {"$ref": "#/components/responses/Unauthorized"}
+    id_param = [{"name": "id", "in": "path", "required": True, "schema": {"type": "string"}}]
+    spec["tags"] = [{"name": "insights"}, {"name": "meta"}]
+    spec["paths"].update(
+        {
+            "/api/v1/insights": {
+                "get": {
+                    "tags": ["insights"],
+                    "summary": "List insights",
+                    "parameters": [
+                        {
+                            "name": "search",
+                            "in": "query",
+                            "schema": {"type": "string"},
+                            "description": "Matches title or summary (case-insensitive substring).",
+                        },
+                        {"name": "category", "in": "query", "schema": {"type": "string"}},
+                        {"name": "is_audio", "in": "query", "schema": {"type": "boolean"}},
+                    ],
+                    "responses": {
+                        "200": {
+                            "description": "success",
+                            "content": {
+                                "application/json": {
+                                    "schema": {
+                                        "type": "array",
+                                        "items": {"$ref": "#/components/schemas/InsightItem"},
+                                    }
+                                }
+                            },
+                        },
+                        "401": unauthorized,
+                    },
+                },
+                "post": {
+                    "tags": ["insights"],
+                    "summary": "Create a catalog entry (admin role required)",
+                    "requestBody": {
+                        "required": True,
+                        "content": {
+                            "application/json": {
+                                "schema": {"$ref": "#/components/schemas/InsightItemCreate"}
+                            }
+                        },
+                    },
+                    "responses": {
+                        "201": {
+                            "description": "created",
+                            "content": {
+                                "application/json": {
+                                    "schema": {"$ref": "#/components/schemas/InsightItem"}
+                                }
+                            },
+                        },
+                        "401": unauthorized,
+                        "403": {"description": "admin role required"},
+                    },
+                },
+            },
+            "/api/v1/insights/{id}": {
+                "get": {
+                    "tags": ["insights"],
+                    "summary": "Get an insight",
+                    "parameters": id_param,
+                    "responses": {
+                        "200": {
+                            "description": "success",
+                            "content": {
+                                "application/json": {
+                                    "schema": {"$ref": "#/components/schemas/InsightItem"}
+                                }
+                            },
+                        },
+                        "401": unauthorized,
+                        "404": {"description": "not found"},
+                    },
+                }
+            },
+            "/api/v1/insights/{id}/bookmark": {
+                "post": {
+                    "tags": ["insights"],
+                    "summary": "Bookmark an insight (idempotent)",
+                    "parameters": id_param,
+                    "responses": {
+                        "204": {"description": "bookmarked"},
+                        "401": unauthorized,
+                        "404": {"description": "not found"},
+                    },
+                },
+                "delete": {
+                    "tags": ["insights"],
+                    "summary": "Remove a bookmark (idempotent)",
+                    "parameters": id_param,
+                    "responses": {
+                        "204": {"description": "removed"},
+                        "401": unauthorized,
+                    },
+                },
+            },
+            "/api/v1/insights/bookmarks": {
+                "get": {
+                    "tags": ["insights"],
+                    "summary": "List the current user's bookmarked insights",
+                    "responses": {
+                        "200": {
+                            "description": "success",
+                            "content": {
+                                "application/json": {
+                                    "schema": {
+                                        "type": "array",
+                                        "items": {"$ref": "#/components/schemas/InsightItem"},
+                                    }
+                                }
+                            },
+                        },
+                        "401": unauthorized,
+                    },
+                }
+            },
+        }
+    )
+    return spec
+
+
 def gateway_spec() -> dict:
     spec = base(
         "API Gateway",
@@ -983,16 +1153,6 @@ SERVICES: dict[str, tuple] = {
             ("get", "/api/v1/progress/streak", "progress", "Get current streak", False),
         ],
     ),
-    "insight-library-service": (
-        "Insight Library Service", 8008,
-        "Curated insight articles/cards, categories and bookmarks.",
-        [
-            ("get", "/api/v1/insights", "insights", "List insights", False),
-            ("get", "/api/v1/insights/{id}", "insights", "Get an insight", False),
-            ("post", "/api/v1/insights/{id}/bookmark", "insights", "Bookmark an insight", False),
-            ("get", "/api/v1/insights/bookmarks", "insights", "List bookmarks", False),
-        ],
-    ),
     "feedback-service": (
         "Feedback Service", 8009,
         "Post-session surveys, thumbs, and free-text feedback capture.",
@@ -1052,6 +1212,7 @@ def main() -> None:
         ("auth-user-service", auth_spec()),
         ("intake-profiling-service", intake_spec()),
         ("goals-milestones-service", goals_spec()),
+        ("insight-library-service", insight_spec()),
     ]:
         path = OUT / f"{name}.yaml"
         path.write_text(yaml.safe_dump(spec, sort_keys=False, width=100), encoding="utf-8")
