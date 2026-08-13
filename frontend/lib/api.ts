@@ -89,7 +89,6 @@ export async function fetchDailyAction(): Promise<DailyAction> {
 // and to match call sites that may pass an argument. Keeping it optional so
 // existing calls with no args continue to work.
 export async function fetchChatMessages(_opts?: unknown): Promise<ChatMessage[]> {
-  console.info("[mock] fetchChatMessages opts:", _opts);
   return resolveAfterLatency(mockChatMessages);
 }
 
@@ -126,4 +125,70 @@ export async function fetchBadges(): Promise<BadgeWithStatus[]> {
     return { ...badge, earnedAt: userBadge?.earnedAt ?? null };
   });
   return resolveAfterLatency(joined);
+}
+
+// ---------------------------------------------------------------------------
+// Additional mock POST/command operations used by the UI. These are simple
+// stubs that return contract-shaped objects so pages/components importing
+// them can build. When the real backend exists, replace with fetch() calls.
+// ---------------------------------------------------------------------------
+
+export async function sendMessage(input: { text: string; personaId?: string }): Promise<ChatMessage> {
+  const msg: ChatMessage = {
+    id: `msg-${Date.now()}`,
+    userId: mockUser.id,
+    sender: "mentor",
+    text: `(mock reply) Received: ${input.text}`,
+    personaId: input.personaId,
+    createdAt: new Date().toISOString(),
+  };
+  return resolveAfterLatency(msg);
+}
+
+export async function tagCommitment(chatMessageId: string): Promise<Commitment> {
+  const commitment: Commitment = {
+    id: `commit-${Date.now()}`,
+    goalId: mockGoals[0]?.id ?? "",
+    title: `Tagged from message ${chatMessageId}`,
+    status: "in_progress",
+    sourceChatMessageId: chatMessageId,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  };
+  return resolveAfterLatency(commitment);
+}
+
+export async function completeMilestone(milestoneId: string): Promise<Milestone | undefined> {
+  const m = mockMilestones.find((mm) => mm.id === milestoneId);
+  if (!m) return resolveAfterLatency(undefined);
+  const updated: Milestone = { ...m, status: "done", updatedAt: new Date().toISOString() };
+  return resolveAfterLatency(updated);
+}
+
+export async function createGoal(input: { title: string; deadline?: string }): Promise<Goal> {
+  const goal: Goal = {
+    id: `goal-${Date.now()}`,
+    userId: mockUser.id,
+    title: input.title,
+    progressPct: 0,
+    deadline: input.deadline,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  };
+  return resolveAfterLatency(goal);
+}
+
+export async function submitIntake(intake: Omit<Profile, "createdAt" | "updatedAt">): Promise<Profile> {
+  const profile: Profile = {
+    ...intake,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  };
+  return resolveAfterLatency(profile);
+}
+
+export async function startChatSession(personaId?: string): Promise<ChatMessage[]> {
+  // Return a short seed conversation appropriate for the persona.
+  const seed: ChatMessage[] = mockChatMessages.slice(0, 3).map((m) => ({ ...m, personaId }));
+  return resolveAfterLatency(seed);
 }
