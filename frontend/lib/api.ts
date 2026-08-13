@@ -211,11 +211,24 @@ export async function createGoal(input: { title: string; deadline?: string }): P
   return resolveAfterLatency(goal);
 }
 
-export async function submitIntake(intake: Omit<Profile, "createdAt" | "updatedAt">): Promise<Profile> {
+// Accept a flexible intake shape (often the UI passes a lightweight
+// IntakeAnswers object). Use a permissive parameter type so callers that
+// omit userId/personaId still type-check during build; the mock will fill
+// defaults for missing fields.
+export async function submitIntake(intake: Partial<Profile> | Record<string, any>): Promise<Profile> {
+  const now = new Date().toISOString();
   const profile: Profile = {
-    ...intake,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
+    userId: intake.userId ?? (typeof intake.userId === "string" ? intake.userId : "local-user"),
+    name: (intake as any).name ?? "",
+    businessName: (intake as any).businessName ?? "",
+    location: (intake as any).location ?? "",
+    sector: (intake as any).sector ?? "",
+    educationLevel: (intake as any).educationLevel ?? "",
+    timeAvailablePerWeek: (intake as any).timeAvailablePerWeek ?? "",
+    constraints: (intake as any).constraints ?? [],
+    personaId: (intake as any).personaId ?? null,
+    createdAt: now,
+    updatedAt: now,
   };
   return resolveAfterLatency(profile);
 }
