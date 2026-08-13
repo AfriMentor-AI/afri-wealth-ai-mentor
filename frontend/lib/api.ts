@@ -162,10 +162,26 @@ export async function sendMessage(a: string | { text: string; personaId?: string
   return resolveAfterLatency(msg);
 }
 
-export async function tagCommitment(chatMessageId: string): Promise<Commitment> {
+export async function tagCommitment(chatSessionId: string, chatMessageId: string, goalId?: string): Promise<Commitment>;
+export async function tagCommitment(chatMessageId: string): Promise<Commitment>;
+export async function tagCommitment(a: string, b?: string, c?: string): Promise<Commitment> {
+  // Support two call shapes:
+  // - tagCommitment(chatMessageId)
+  // - tagCommitment(chatSessionId, chatMessageId, goalId?)
+  let chatMessageId: string;
+  let goalId: string | undefined;
+  if (b === undefined) {
+    // called as tagCommitment(chatMessageId)
+    chatMessageId = a;
+  } else {
+    // called as tagCommitment(chatSessionId, chatMessageId, goalId?)
+    chatMessageId = b;
+    goalId = c;
+  }
+
   const commitment: Commitment = {
     id: `commit-${Date.now()}`,
-    goalId: mockGoals[0]?.id ?? "",
+    goalId: goalId ?? mockGoals[0]?.id ?? "",
     title: `Tagged from message ${chatMessageId}`,
     status: "in_progress",
     sourceChatMessageId: chatMessageId,
