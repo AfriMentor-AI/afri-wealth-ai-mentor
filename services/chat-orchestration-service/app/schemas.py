@@ -101,3 +101,23 @@ class MessageResponse(BaseModel):
     guardrail_categories: list[str] = []
 
     created_at: dt.datetime
+
+
+# ── Daily Action ──────────────────────────────────────────────────────────────
+
+class DailyActionCreate(BaseModel):
+    user_id: str
+    action_text: str
+
+class DailyActionUpdate(BaseModel):
+    is_completed: bool
+
+class DailyActionResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: str
+    user_id: str
+    action_text: str
+    is_completed: bool
+    created_at: dt.datetime
+

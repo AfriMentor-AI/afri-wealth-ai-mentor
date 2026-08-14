@@ -14,6 +14,10 @@ from .config import get_settings
 from .database import init_db
 from .observability import instrument
 from .routers.chat import router as chat_router
+from .routers.daily_actions import router as daily_actions_router
+from .scheduler import scheduler, setup_scheduler
+from .jobs import generate_daily_actions_job
+
 
 settings = get_settings()
 
@@ -37,9 +41,16 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+# Add the job to the scheduler
+scheduler.add_job(generate_daily_actions_job, "cron", hour=8, minute=0) # Run daily at 8am
+
+# Setup scheduler events
+setup_scheduler(app)
+
 instrument(app, SERVICE_NAME)
 
 app.include_router(chat_router)
+app.include_router(daily_actions_router, prefix="/api/v1", tags=["daily-actions"])
 
 
 @app.get("/health", tags=["meta"])
