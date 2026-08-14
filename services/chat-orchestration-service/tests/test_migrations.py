@@ -142,7 +142,7 @@ def test_downgrade_restores_the_previous_schema(tmp_path):
     """A migration that cannot be undone is a migration nobody dares deploy."""
     db = tmp_path / "roundtrip.db"
     run_alembic(db, "upgrade", "head")
-    run_alembic(db, "downgrade", "-1")
+    run_alembic(db, "downgrade", INITIAL_REVISION)
 
     columns = table_columns(db, "messages")
     assert "guardrail_action" not in columns

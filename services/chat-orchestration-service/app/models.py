@@ -89,3 +89,13 @@ class Message(Base):
     created_at: Mapped[dt.datetime] = mapped_column(DateTime(timezone=True), default=_now)
 
     conversation: Mapped[Conversation] = relationship("Conversation", back_populates="messages")
+
+
+class DailyAction(Base):
+    __tablename__ = "daily_actions"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
+    user_id: Mapped[str] = mapped_column(String(36), index=True, nullable=False)
+    action_text: Mapped[str] = mapped_column(Text, nullable=False)
+    is_completed: Mapped[bool] = mapped_column(Integer, default=0)
+    created_at: Mapped[dt.datetime] = mapped_column(DateTime(timezone=True), default=_now)
