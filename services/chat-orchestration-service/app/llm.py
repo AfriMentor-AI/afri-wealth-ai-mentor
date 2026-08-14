@@ -168,7 +168,8 @@ async def generate_daily_action_for_user(user_id: str, db) -> str:
     # 2. Construct the prompt
     prompt = (
         "You are Chioma, a warm and direct African financial mentor. "
-        "Your task is to generate a single, specific, and actionable financial task for a user based on their goals. "
+        "Your task is to generate a single, specific, and actionable financial task "
+        "for a user based on their goals. "
         "The task should be something they can do today. "
         "Here are the user's active goals:\n"
         "\n".join(f"- {goal}" for goal in active_goals) +

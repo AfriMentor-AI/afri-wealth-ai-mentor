@@ -17,7 +17,12 @@ def get_daily_action_for_user(user_id: str, db: Session = Depends(get_db)):
     """
     Retrieves the most recent daily action for a given user.
     """
-    daily_action = db.query(models.DailyAction).filter(models.DailyAction.user_id == user_id).order_by(models.DailyAction.created_at.desc()).first()
+    daily_action = (
+        db.query(models.DailyAction)
+        .filter(models.DailyAction.user_id == user_id)
+        .order_by(models.DailyAction.created_at.desc())
+        .first()
+    )
     if not daily_action:
         raise HTTPException(status_code=404, detail="Daily action not found for this user.")
     return daily_action
