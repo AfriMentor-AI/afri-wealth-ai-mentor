@@ -12,6 +12,177 @@ function formatTime(iso: string) {
   return new Date(iso).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 }
 
+type MentorBlock =
+  | { type: "paragraph"; lines: string[] }
+  | { type: "table"; headers: string[]; rows: string[][] };
+
+function normalizeTableCells(line: string) {
+  const cells = line.split("|").map((cell) => cell.trim());
+  if (cells[0] === "") cells.shift();
+  if (cells.at(-1) === "") cells.pop();
+  return cells;
+}
+
+function isMarkdownTableDivider(line: string) {
+  const segments = normalizeTableCells(line);
+  return segments.length > 1 && segments.every((segment) => /^:?-{3,}:?$/.test(segment));
+}
+
+function isTableRow(line: string) {
+  const pipeCount = (line.match(/\|/g) ?? []).length;
+  return pipeCount >= 2;
+}
+
+function isComputationLine(line: string) {
+  const trimmed = line.trim();
+  if (!trimmed) return false;
+  const hasDigits = /\d/.test(trimmed);
+  const hasMathPattern = /=|\d\s*[-%*+/]\s*\d|\b(total|sum|avg|average|difference|profit|loss)\b/i.test(trimmed);
+  return hasDigits && hasMathPattern;
+}
+
+function parseTableBlock(lines: string[], startIndex: number) {
+  const currentLine = lines[startIndex];
+  const nextLine = lines[startIndex + 1] ?? "";
+
+  if (!isTableRow(currentLine) || !isMarkdownTableDivider(nextLine)) {
+    return null;
+  }
+
+  const headers = normalizeTableCells(currentLine);
+  const rows: string[][] = [];
+  let index = startIndex + 2;
+
+  while (index < lines.length && lines[index].trim() && isTableRow(lines[index])) {
+    rows.push(normalizeTableCells(lines[index]));
+    index += 1;
+  }
+
+  if (headers.length === 0 || rows.length === 0) {
+    return null;
+  }
+
+  return {
+    block: { type: "table" as const, headers, rows },
+    nextIndex: index,
+  };
+}
+
+function collectParagraphLines(lines: string[], startIndex: number) {
+  const paragraphLines: string[] = [];
+  let index = startIndex;
+
+  while (index < lines.length && lines[index].trim()) {
+    paragraphLines.push(lines[index]);
+    index += 1;
+  }
+
+  return { paragraphLines, nextIndex: index };
+}
+
+function parseMentorBlocks(content: string): MentorBlock[] {
+  const lines = content.split("\n");
+  const blocks: MentorBlock[] = [];
+  let i = 0;
+
+  while (i < lines.length) {
+    const line = lines[i];
+
+    if (!line.trim()) {
+      i += 1;
+      continue;
+    }
+
+    const tableResult = parseTableBlock(lines, i);
+    if (tableResult) {
+      blocks.push(tableResult.block);
+      i = tableResult.nextIndex;
+      continue;
+    }
+
+    const paragraphResult = collectParagraphLines(lines, i);
+    blocks.push({ type: "paragraph", lines: paragraphResult.paragraphLines });
+    i = paragraphResult.nextIndex;
+  }
+
+  return blocks;
+}
+
+function MentorMessageContent({ content }: Readonly<{ content: string }>) {
+  const blocks = parseMentorBlocks(content);
+
+  return (
+    <div className="space-y-sm">
+      {blocks.map((block, blockIndex) => {
+        const blockKey = `${block.type}-${blockIndex}-${
+          block.type === "table" ? block.headers.join("|") : block.lines.join("|")
+        }`;
+
+        if (block.type === "table") {
+          return (
+            <div
+              key={blockKey}
+              className="overflow-x-auto rounded-lg border border-outline-variant bg-surface-container-high p-xs"
+            >
+              <table className="min-w-full border-separate border-spacing-0 text-left">
+                <thead>
+                  <tr>
+                    {block.headers.map((header, headerIndex) => (
+                      <th
+                        key={`${header}-${headerIndex}`}
+                        className="border-b border-outline-variant bg-surface-container px-sm py-xs font-label-sm text-[11px] uppercase tracking-wide text-on-surface-variant"
+                      >
+                        {header}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {block.rows.map((row, rowIndex) => (
+                    <tr key={`row-${blockIndex}-${rowIndex}`}>
+                      {block.headers.map((_, colIndex) => (
+                        <td
+                          key={`cell-${blockIndex}-${rowIndex}-${colIndex}`}
+                          className="border-b border-outline-variant/70 px-sm py-xs font-body-md text-body-md text-on-surface"
+                        >
+                          {row[colIndex] ?? "-"}
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          );
+        }
+
+        return (
+          <div key={blockKey} className="space-y-xs">
+            {block.lines.map((line, lineIndex) => {
+              if (isComputationLine(line)) {
+                return (
+                  <div
+                    key={`calc-${blockIndex}-${lineIndex}`}
+                    className="rounded-md border border-secondary/40 bg-secondary-container px-sm py-xs font-code text-[12px] text-on-secondary-container"
+                  >
+                    {line}
+                  </div>
+                );
+              }
+
+              return (
+                <p key={`line-${blockIndex}-${lineIndex}`} className="font-body-md whitespace-pre-line">
+                  {line}
+                </p>
+              );
+            })}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 export default function ChatPage() {
   const { chatMessages, chatDraft, profile, chatSessionId, activeGoalId } = useAppState();
   const dispatch = useAppDispatch();
@@ -107,7 +278,11 @@ export default function ChatPage() {
                     : "rounded rounded-tl-none border border-outline-variant bg-surface-container-low text-on-surface shadow-sm"
                 }`}
               >
-                <p className="font-body-md whitespace-pre-line">{m.content}</p>
+                {m.sender === "mentor" ? (
+                  <MentorMessageContent content={m.content} />
+                ) : (
+                  <p className="font-body-md whitespace-pre-line">{m.content}</p>
+                )}
                 {m.citations && m.citations.length > 0 && (
                   <div className="mt-sm inline-flex items-center gap-xs rounded-full border border-outline-variant bg-surface-container-highest px-sm py-xs">
                     <Icon name="auto_stories" size={16} />
@@ -128,6 +303,7 @@ export default function ChatPage() {
                 </span>
               </div>
               <button
+                type="button"
                 onClick={handleTagCommitment}
                 className="tap-target rounded-full bg-secondary px-md py-sm font-label-sm text-label-sm text-on-secondary transition-transform active:scale-95"
               >
@@ -139,10 +315,15 @@ export default function ChatPage() {
       </div>
 
       <div className="flex shrink-0 items-center gap-sm border-t border-outline-variant px-margin-mobile py-sm">
-        <button aria-label="Attach a file" className="tap-target flex items-center justify-center rounded-full text-on-surface-variant hover:bg-surface-container-low">
+        <button
+          type="button"
+          aria-label="Attach a file"
+          className="tap-target flex items-center justify-center rounded-full text-on-surface-variant hover:bg-surface-container-low"
+        >
           <Icon name="attach_file" />
         </button>
         <button
+          type="button"
           aria-label={isRecording ? "Stop recording voice note" : "Record a voice note"}
           onClick={() => setIsRecording((r) => !r)}
           className={`tap-target flex items-center justify-center rounded-full ${
@@ -159,6 +340,7 @@ export default function ChatPage() {
           className="flex-1 rounded-full border border-outline-variant bg-surface-container-lowest px-md py-sm font-body-md text-body-md text-on-surface outline-none focus-visible:outline-primary"
         />
         <button
+          type="button"
           aria-label="Send message"
           onClick={send}
           disabled={!chatDraft.trim()}
