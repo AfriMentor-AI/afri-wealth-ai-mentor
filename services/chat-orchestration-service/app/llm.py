@@ -137,20 +137,28 @@ async def chat_completion(
         return stub, len(messages) * 10, 20, citations
 
     client = get_llm_client()
-    response = await client.chat.completions.create(
-        model=settings.llm_model,
-        messages=messages,  # type: ignore[arg-type]
-        max_tokens=settings.llm_max_tokens,
-        temperature=settings.llm_temperature,
-    )
-    choice = response.choices[0]
-    usage = response.usage
-    return (
-        choice.message.content or "",
-        usage.prompt_tokens if usage else 0,
-        usage.completion_tokens if usage else 0,
-        citations,
-    )
+    try:
+        response = await client.chat.completions.create(
+            model=settings.llm_model,
+            messages=messages,  # type: ignore[arg-type]
+            max_tokens=settings.llm_max_tokens,
+            temperature=settings.llm_temperature,
+        )
+        choice = response.choices[0]
+        usage = response.usage
+        return (
+            choice.message.content or "",
+            usage.prompt_tokens if usage else 0,
+            usage.completion_tokens if usage else 0,
+            citations,
+        )
+    except Exception as e:
+        logger.warning(f"LLM call failed, falling back to stub: {e!r}")
+        stub = (
+            "I'm sorry, I'm having trouble connecting to my brain right now. "
+            "Please try again in a moment. (LLM unavailable)"
+        )
+        return stub, len(messages) * 10, 20, citations
 
 
 async def generate_daily_action_for_user(user_id: str, db) -> str:
