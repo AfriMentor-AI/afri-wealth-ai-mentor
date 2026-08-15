@@ -107,7 +107,7 @@ export default function ChatPage() {
                     : "rounded rounded-tl-none border border-outline-variant bg-surface-container-low text-on-surface shadow-sm"
                 }`}
               >
-                <p className="font-body-md">{m.text}</p>
+                <p className="font-body-md whitespace-pre-line">{m.text}</p>
                 {m.citations && m.citations.length > 0 && (
                   <div className="mt-sm inline-flex items-center gap-xs rounded-full border border-outline-variant bg-surface-container-highest px-sm py-xs">
                     <Icon name="auto_stories" size={16} />
