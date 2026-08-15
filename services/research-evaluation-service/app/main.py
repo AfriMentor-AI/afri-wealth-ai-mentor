@@ -28,10 +28,15 @@ The connection between them:
 ─────────────────────────────────────────────────────────────────────────────
 """
 import os
+from datetime import date, timedelta
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Depends, Query
+from sqlalchemy.orm import Session
+from sqlalchemy import func, select
 
 from .observability import instrument
+from .db.session import engine, get_db
+from .models import Base, SessionMetric
 
 SERVICE_NAME = "research-evaluation-service"
 SERVICE_VERSION = "0.1.0"
@@ -43,6 +48,12 @@ app = FastAPI(
 )
 
 instrument(app, SERVICE_NAME)
+
+# Initialize database tables on startup
+@app.on_event("startup")
+def startup():
+    """Create all tables at startup."""
+    Base.metadata.create_all(bind=engine)
 
 
 @app.get("/health", tags=["meta"])
@@ -62,4 +73,144 @@ def root() -> dict:
         "service": SERVICE_NAME,
         "message": "Research Evaluation Service online",
         "docs": "/docs",
+    }
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Session Metrics Endpoints (card C3.5)
+# ─────────────────────────────────────────────────────────────────────────────
+
+
+@app.get("/api/v1/metrics/sessions", tags=["metrics"])
+def get_session_metrics(
+    start_date: date | None = Query(None, description="Filter from this date (inclusive)"),
+    end_date: date | None = Query(None, description="Filter to this date (inclusive)"),
+    db: Session = Depends(get_db),
+) -> dict:
+    """Get aggregated anonymized session metrics for pilot evaluation.
+    
+    Returns the three required measures:
+      - Sessions per day
+      - Average session length
+      - Time on-task (average message count)
+    
+    All user identifiers are anonymized via SHA256 hash.
+    """
+    query = db.query(SessionMetric)
+    
+    # Apply date filters
+    if start_date:
+        query = query.filter(SessionMetric.session_date >= start_date)
+    if end_date:
+        query = query.filter(SessionMetric.session_date <= end_date)
+    
+    metrics = query.all()
+    
+    if not metrics:
+        return {
+            "period": {
+                "start_date": start_date.isoformat() if start_date else None,
+                "end_date": end_date.isoformat() if end_date else None,
+            },
+            "sessions_count": 0,
+            "sessions_per_day": 0.0,
+            "average_session_length_seconds": 0.0,
+            "average_time_on_task_messages": 0.0,
+        }
+    
+    # Calculate aggregate metrics
+    total_sessions = len(metrics)
+    total_duration = sum(m.session_duration_seconds for m in metrics)
+    total_messages = sum(m.message_count for m in metrics)
+    
+    # Get unique days
+    unique_days = len(set(m.session_date for m in metrics))
+    
+    sessions_per_day = total_sessions / unique_days if unique_days > 0 else 0.0
+    avg_session_length = total_duration / total_sessions if total_sessions > 0 else 0.0
+    avg_time_on_task = total_messages / total_sessions if total_sessions > 0 else 0.0
+    
+    return {
+        "period": {
+            "start_date": start_date.isoformat() if start_date else None,
+            "end_date": end_date.isoformat() if end_date else None,
+        },
+        "sessions_count": total_sessions,
+        "sessions_per_day": round(sessions_per_day, 2),
+        "average_session_length_seconds": round(avg_session_length, 2),
+        "average_time_on_task_messages": round(avg_time_on_task, 2),
+        "notes": "All user identifiers are anonymized via SHA256 hash.",
+    }
+
+
+@app.get("/api/v1/metrics/sessions/daily", tags=["metrics"])
+def get_daily_session_metrics(
+    start_date: date | None = Query(None, description="Filter from this date (inclusive)"),
+    end_date: date | None = Query(None, description="Filter to this date (inclusive)"),
+    db: Session = Depends(get_db),
+) -> dict:
+    """Get daily session metrics breakdown.
+    
+    Returns per-day statistics for:
+      - Session count
+      - Average session length
+      - Average time on-task
+    """
+    query = db.query(SessionMetric)
+    
+    # Apply date filters
+    if start_date:
+        query = query.filter(SessionMetric.session_date >= start_date)
+    if end_date:
+        query = query.filter(SessionMetric.session_date <= end_date)
+    
+    metrics = query.all()
+    
+    if not metrics:
+        return {
+            "period": {
+                "start_date": start_date.isoformat() if start_date else None,
+                "end_date": end_date.isoformat() if end_date else None,
+            },
+            "daily_metrics": [],
+        }
+    
+    # Group by date
+    daily_data = {}
+    for metric in metrics:
+        if metric.session_date not in daily_data:
+            daily_data[metric.session_date] = {
+                "sessions": 0,
+                "total_duration": 0,
+                "total_messages": 0,
+            }
+        daily_data[metric.session_date]["sessions"] += 1
+        daily_data[metric.session_date]["total_duration"] += metric.session_duration_seconds
+        daily_data[metric.session_date]["total_messages"] += metric.message_count
+    
+    # Format for response
+    daily_metrics = []
+    for session_date in sorted(daily_data.keys()):
+        data = daily_data[session_date]
+        session_count = data["sessions"]
+        total_duration = data["total_duration"]
+        total_messages = data["total_messages"]
+        
+        daily_metrics.append({
+            "date": session_date.isoformat(),
+            "session_count": session_count,
+            "average_session_length_seconds": round(
+                total_duration / session_count if session_count > 0 else 0.0, 2
+            ),
+            "average_time_on_task_messages": round(
+                total_messages / session_count if session_count > 0 else 0.0, 2
+            ),
+        })
+    
+    return {
+        "period": {
+            "start_date": start_date.isoformat() if start_date else None,
+            "end_date": end_date.isoformat() if end_date else None,
+        },
+        "daily_metrics": daily_metrics,
     }

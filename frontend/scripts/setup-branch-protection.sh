@@ -3,9 +3,15 @@
 #
 # Usage:
 #   gh auth login                       # once, with a token that has 'repo' admin scope
-#   OWNER=your-org REPO=afri-wealth-ai-mentor bash scripts/setup-branch-protection.sh
+#   bash scripts/setup-branch-protection.sh                    # AfriMentor-AI/afri-wealth-ai-mentor
+#   OWNER=other-org REPO=other-repo bash scripts/setup-branch-protection.sh   # override
 #
 # Idempotent: re-running just re-applies the same ruleset. Requires the GitHub CLI (gh).
+#
+# NOTE: protected branches are a paid feature for private repos. While the AfriMentor-AI
+# org is on the Free plan this script will fail with:
+#   403 Upgrade to GitHub Pro or make this repository public to enable this feature.
+# See CONTRIBUTING.md §4 "Branch protection".
 #
 # Protection applied to each branch:
 #   - No direct pushes; changes land via PR only.
@@ -15,8 +21,8 @@
 #   - Enforce the rules for admins too.
 set -euo pipefail
 
-OWNER="${OWNER:?set OWNER=<github-org-or-user>}"
-REPO="${REPO:?set REPO=<repo-name>}"
+OWNER="${OWNER:-AfriMentor-AI}"
+REPO="${REPO:-afri-wealth-ai-mentor}"
 BRANCHES=("main" "develop")
 
 # Required status check contexts. `ci-ok` is the aggregate gate in .github/workflows/ci.yml.

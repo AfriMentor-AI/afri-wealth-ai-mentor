@@ -4,7 +4,12 @@
 #
 # Format: <pattern>  <@github-handle or @org/team>
 # Patterns are matched top-to-bottom; last match wins.
-# Replace handles with real GitHub usernames before enabling code-owner reviews.
+#
+# Handles below are the real GitHub accounts of the four area leads, all admins on
+# AfriMentor-AI/afri-wealth-ai-mentor. The org has no teams yet; if teams are created,
+# swap these for @AfriMentor-AI/<team-slug> so ownership survives personnel changes.
+# Code-owner review cannot be *enforced* until the org leaves the Free plan
+# (see CONTRIBUTING.md §4 "Branch protection").
 
 # ── Platform spine (Olusegun) ────────────────────────────────────────────────
 services/api-gateway/                    @Vik2ry
