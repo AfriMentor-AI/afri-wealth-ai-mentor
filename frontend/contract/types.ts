@@ -159,7 +159,7 @@ export interface ChatMessage {
    * for sender: "user" messages. */
   personaId?: ID;
   sender: ChatSender;
-  text: string;
+  content: string;
   /**
    * Structured list of citations into the RAG corpus, allowing for multiple
    * sources. The UI may choose to display only the first or most relevant one.

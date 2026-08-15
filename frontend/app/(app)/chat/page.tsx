@@ -38,14 +38,14 @@ export default function ChatPage() {
       id: `local-${Date.now()}`,
       userId: profile?.userId ?? "local-user",
       sender: "user",
-      text: chatDraft.trim(),
+      content: chatDraft.trim(),
       createdAt: new Date().toISOString(),
     };
     dispatch({ type: "APPEND_CHAT_MESSAGE", message: userMessage });
     dispatch({ type: "SET_CHAT_DRAFT", draft: "" });
 
     try {
-      const assistantMessage = await sendMessage(chatSessionId, userMessage.text);
+      const assistantMessage = await sendMessage(chatSessionId, userMessage.content);
       dispatch({ type: "APPEND_CHAT_MESSAGE", message: assistantMessage });
     } catch (error) {
       console.error("Failed to send message:", error);
@@ -107,7 +107,7 @@ export default function ChatPage() {
                     : "rounded rounded-tl-none border border-outline-variant bg-surface-container-low text-on-surface shadow-sm"
                 }`}
               >
-                <p className="font-body-md whitespace-pre-line">{m.text}</p>
+                <p className="font-body-md whitespace-pre-line">{m.content}</p>
                 {m.citations && m.citations.length > 0 && (
                   <div className="mt-sm inline-flex items-center gap-xs rounded-full border border-outline-variant bg-surface-container-highest px-sm py-xs">
                     <Icon name="auto_stories" size={16} />
