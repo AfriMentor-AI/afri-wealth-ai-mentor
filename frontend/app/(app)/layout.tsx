@@ -10,20 +10,20 @@ import { useAppDispatch, useAppState } from "@/lib/store";
 import { fetchChatMessages, fetchProfile } from "@/lib/api";
 
 export default function AppShellLayout({ children }: { children: React.ReactNode }) {
-  const { chatMessages, profile } = useAppState();
+  const { chatMessages, profile, chatSessionId } = useAppState();
   const dispatch = useAppDispatch();
   const pathname = usePathname();
   const hasOwnHeader = pathname?.startsWith("/chat") || pathname === "/goals/action";
 
   useEffect(() => {
-    if (chatMessages.length === 0) {
-      fetchChatMessages().then((messages) => dispatch({ type: "SET_CHAT_MESSAGES", messages }));
+    if (chatSessionId && chatMessages.length === 0) {
+      fetchChatMessages(chatSessionId).then((messages) => dispatch({ type: "SET_CHAT_MESSAGES", messages }));
     }
     if (!profile) {
       fetchProfile().then((p) => dispatch({ type: "SET_PROFILE", profile: p }));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [chatSessionId]);
 
   // Fixed-viewport flex shell — no `fixed`/`calc(100vh-Nrem)` positioning
   // anywhere. Nav is a normal flex sibling (bottom row on mobile, left

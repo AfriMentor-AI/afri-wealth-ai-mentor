@@ -3,8 +3,23 @@
 // from mock to real APIs without breaking the app.
 export * from "./mockApi";
 
+import { mockChatMessages } from "./mockData";
 import { apiFetch, getCurrentUserId } from "./session";
 import type { ChatMessage, Commitment } from "./types";
+
+async function fetchJsonWithFallback<T>(path: string, fallback: T, init: RequestInit = {}): Promise<T> {
+  try {
+    const res = await apiFetch(path, init);
+    if (!res.ok) {
+      console.warn(`[api] ${path} failed with ${res.status}; using mock fallback`, res);
+      return fallback;
+    }
+    return (await res.json()) as T;
+  } catch (error) {
+    console.warn(`[api] ${path} unavailable; using mock fallback`, error);
+    return fallback;
+  }
+}
 
 /**
  * GET /v1/chat/sessions/{sessionId}/messages
@@ -12,15 +27,14 @@ import type { ChatMessage, Commitment } from "./types";
  * The real endpoint will eventually need a session ID. For now, we allow
  * callers to omit it to fetch a default/global firehose of messages.
  */
-export async function fetchChatMessages(opts?: { sessionId?: string }): Promise<ChatMessage[]> {
-  const sessionId = opts?.sessionId;
-  const path = sessionId ? `/api/v1/chat/sessions/${sessionId}/messages` : "/api/v1/chat/messages";
-  const res = await apiFetch(path);
-  if (!res.ok) {
-    console.error("fetchChatMessages failed", res);
+export async function fetchChatMessages(opts?: { sessionId?: string } | string): Promise<ChatMessage[]> {
+  const sessionId = typeof opts === "string" ? opts : opts?.sessionId;
+  if (!sessionId) {
     return [];
   }
-  return (await res.json()) as ChatMessage[];
+
+  const path = `/api/v1/chat/sessions/${sessionId}/messages`;
+  return fetchJsonWithFallback(path, mockChatMessages);
 }
 
 /**
