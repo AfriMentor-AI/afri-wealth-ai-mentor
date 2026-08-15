@@ -167,15 +167,18 @@ export async function getCurrentUserId(): Promise<string> {
 /** fetch() against the gateway with the device session's bearer token attached,
  * transparently refreshing once and retrying on a 401. */
 export async function apiFetch(path: string, init: RequestInit = {}): Promise<Response> {
-  const attempt = async (accessToken: string) =>
-    fetch(`${API_BASE}${path}`, {
+  const attempt = async (accessToken: string) => {
+    const userId = await getCurrentUserId();
+    return fetch(`${API_BASE}${path}`, {
       ...init,
       headers: {
         ...(init.body ? { "Content-Type": "application/json" } : {}),
         ...init.headers,
         Authorization: `Bearer ${accessToken}`,
+        "X-User-Id": userId,
       },
     });
+  };
 
   const token = await ensureAccessToken();
   let res = await attempt(token);
