@@ -5,6 +5,10 @@ users through intake, goal-setting, and day-to-day financial decisions, backed b
 retrieval-augmented generation over a curated corpus — mobile-first and optimised for
 low-end devices.
 
+Repository: **[AfriMentor-AI/afri-wealth-ai-mentor](https://github.com/AfriMentor-AI/afri-wealth-ai-mentor)**
+· Organisation: **[AfriMentor-AI](https://github.com/AfriMentor-AI)**
+· Default branch: `develop`
+
 ## Architecture
 
 13 backend microservices behind a single API gateway, decomposed by business capability.
@@ -21,6 +25,8 @@ Frontend / Admin ─► api-gateway ─► 12 capability services
 ## Quick start
 
 ```bash
+git clone https://github.com/AfriMentor-AI/afri-wealth-ai-mentor.git
+cd afri-wealth-ai-mentor
 docker compose up --build      # boots all 13 services + Postgres + Redis + RabbitMQ + ChromaDB
 docker compose ps              # wait for all containers to report "healthy"
 ```
