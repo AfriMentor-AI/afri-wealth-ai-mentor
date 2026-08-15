@@ -111,7 +111,11 @@ class TestSessionMetricModel:
         # Should be approximately now
         from datetime import timezone as tz
         now = datetime.now(tz.utc)
-        rec = saved.recorded_at.replace(tzinfo=tz.utc) if saved.recorded_at.tzinfo is None else saved.recorded_at
+        rec = (
+            saved.recorded_at.replace(tzinfo=tz.utc)
+            if saved.recorded_at.tzinfo is None
+            else saved.recorded_at
+        )
         assert abs((now - rec).total_seconds()) < 10
     
     def test_multiple_sessions_same_user_same_day(self, db: Session):
