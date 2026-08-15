@@ -12,7 +12,25 @@
  * for a real login/signup flow — flagging here in case that gets revisited.
  */
 
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000";
+function resolveApiBase(): string {
+  const configured = process.env.NEXT_PUBLIC_API_BASE_URL?.trim();
+  if (configured) return configured;
+
+  // In Codespaces, the frontend and gateway are usually exposed on different
+  // forwarded ports under the same host slug. Derive the 8000 gateway URL from
+  // the current app host so browser fetches stay reachable over HTTPS.
+  if (typeof window !== "undefined") {
+    const host = window.location.host;
+    if (host.endsWith(".app.github.dev")) {
+      const gatewayHost = host.replace(/-\d+\.app\.github\.dev$/, "-8000.app.github.dev");
+      return `${window.location.protocol}//${gatewayHost}`;
+    }
+  }
+
+  return "http://localhost:8000";
+}
+
+const API_BASE = resolveApiBase();
 
 const ACCESS_TOKEN_KEY = "afrimentor-access-token";
 const REFRESH_TOKEN_KEY = "afrimentor-refresh-token";
@@ -167,15 +185,18 @@ export async function getCurrentUserId(): Promise<string> {
 /** fetch() against the gateway with the device session's bearer token attached,
  * transparently refreshing once and retrying on a 401. */
 export async function apiFetch(path: string, init: RequestInit = {}): Promise<Response> {
-  const attempt = async (accessToken: string) =>
-    fetch(`${API_BASE}${path}`, {
+  const attempt = async (accessToken: string) => {
+    const userId = await getCurrentUserId();
+    return fetch(`${API_BASE}${path}`, {
       ...init,
       headers: {
         ...(init.body ? { "Content-Type": "application/json" } : {}),
         ...init.headers,
         Authorization: `Bearer ${accessToken}`,
+        "X-User-Id": userId,
       },
     });
+  };
 
   const token = await ensureAccessToken();
   let res = await attempt(token);

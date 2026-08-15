@@ -7,7 +7,6 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "AfriMentor AI",
   description: "A financial mentorship companion for African entrepreneurs.",
-  manifest: "/manifest.json",
   icons: {
     icon: [
       { url: "/icons/icon-192.png", sizes: "192x192", type: "image/png" },
@@ -27,6 +26,15 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" data-theme="heritage" suppressHydrationWarning>
       <head>
+        <link
+          rel="manifest"
+          href="/manifest.json"
+          crossOrigin="use-credentials"
+        />
+        <link
+          rel="stylesheet"
+          href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200"
+        />
         {/* Runs before hydration so the correct theme is applied before
             first paint — without this, the page briefly flashes the
             default "heritage" theme even for users who chose "nocturnal",
@@ -56,7 +64,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           }}
         />
       </head>
-      <body className="font-body min-h-screen">
+      <body className="font-body min-h-screen" suppressHydrationWarning>
         <AppStateProvider>
           <InstallBanner />
           <OfflineBanner />

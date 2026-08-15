@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { Fragment, useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { Icon } from "@/components/Icon";
 import { ThemeToggle } from "@/components/ThemeToggle";
@@ -10,6 +10,279 @@ import type { ChatMessage } from "@/lib/types";
 
 function formatTime(iso: string) {
   return new Date(iso).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+}
+
+type MentorBlock =
+  | { type: "paragraph"; lines: string[] }
+  | { type: "table"; headers: string[]; rows: string[][] };
+
+function normalizeInlineText(value: string) {
+  return value.replaceAll("`", "").trim();
+}
+
+function parseInlineStrong(text: string) {
+  const parts: Array<{ text: string; strong: boolean }> = [];
+  const pattern = /\*\*(.+?)\*\*/g;
+  let lastIndex = 0;
+  let match = pattern.exec(text);
+
+  while (match) {
+    if (match.index > lastIndex) {
+      parts.push({ text: normalizeInlineText(text.slice(lastIndex, match.index)), strong: false });
+    }
+    parts.push({ text: normalizeInlineText(match[1]), strong: true });
+    lastIndex = match.index + match[0].length;
+    match = pattern.exec(text);
+  }
+
+  if (lastIndex < text.length) {
+    parts.push({ text: normalizeInlineText(text.slice(lastIndex)), strong: false });
+  }
+
+  return parts.filter((part) => part.text.length > 0);
+}
+
+function renderInlineText(text: string) {
+  const parts = parseInlineStrong(text);
+  if (parts.length === 0) return normalizeInlineText(text);
+
+  return parts.map((part, index) =>
+    part.strong ? (
+      <strong key={`${part.text}-${index}`} className="font-semibold text-on-surface">
+        {part.text}
+      </strong>
+    ) : (
+      <Fragment key={`${part.text}-${index}`}>{part.text}</Fragment>
+    )
+  );
+}
+
+function parseHeading(line: string) {
+  const match = line.match(/^(#{1,6})\s+(.+)$/);
+  if (!match) return null;
+  return {
+    level: match[1].length,
+    text: normalizeInlineText(match[2]),
+  };
+}
+
+function parseListItem(line: string) {
+  const numbered = line.match(/^(\d+)\.\s+(.+)$/);
+  if (numbered) {
+    return {
+      kind: "numbered" as const,
+      marker: `${numbered[1]}.`,
+      text: normalizeInlineText(numbered[2]),
+    };
+  }
+
+  const bulleted = line.match(/^[-*]\s+(.+)$/);
+  if (bulleted) {
+    return {
+      kind: "bulleted" as const,
+      marker: "•",
+      text: normalizeInlineText(bulleted[1]),
+    };
+  }
+
+  return null;
+}
+
+function isMarkdownDivider(line: string) {
+  return /^\s*([-*_]\s*){3,}$/.test(line.trim());
+}
+
+function normalizeTableCells(line: string) {
+  const cells = line.split("|").map((cell) => cell.trim());
+  if (cells[0] === "") cells.shift();
+  if (cells.at(-1) === "") cells.pop();
+  return cells;
+}
+
+function isMarkdownTableDivider(line: string) {
+  const segments = normalizeTableCells(line);
+  return segments.length > 1 && segments.every((segment) => /^:?-{3,}:?$/.test(segment));
+}
+
+function isTableRow(line: string) {
+  const pipeCount = (line.match(/\|/g) ?? []).length;
+  return pipeCount >= 2;
+}
+
+function isComputationLine(line: string) {
+  const trimmed = line.trim();
+  if (!trimmed) return false;
+  const hasDigits = /\d/.test(trimmed);
+  const hasMathPattern = /=|\d\s*[-%*+/]\s*\d|\b(total|sum|avg|average|difference|profit|loss)\b/i.test(trimmed);
+  return hasDigits && hasMathPattern;
+}
+
+function parseTableBlock(lines: string[], startIndex: number) {
+  const currentLine = lines[startIndex];
+  const nextLine = lines[startIndex + 1] ?? "";
+
+  if (!isTableRow(currentLine) || !isMarkdownTableDivider(nextLine)) {
+    return null;
+  }
+
+  const headers = normalizeTableCells(currentLine);
+  const rows: string[][] = [];
+  let index = startIndex + 2;
+
+  while (index < lines.length && lines[index].trim() && isTableRow(lines[index])) {
+    rows.push(normalizeTableCells(lines[index]));
+    index += 1;
+  }
+
+  if (headers.length === 0 || rows.length === 0) {
+    return null;
+  }
+
+  return {
+    block: { type: "table" as const, headers, rows },
+    nextIndex: index,
+  };
+}
+
+function collectParagraphLines(lines: string[], startIndex: number) {
+  const paragraphLines: string[] = [];
+  let index = startIndex;
+
+  while (index < lines.length && lines[index].trim()) {
+    paragraphLines.push(lines[index]);
+    index += 1;
+  }
+
+  return { paragraphLines, nextIndex: index };
+}
+
+function parseMentorBlocks(content: string): MentorBlock[] {
+  const lines = content.split("\n");
+  const blocks: MentorBlock[] = [];
+  let i = 0;
+
+  while (i < lines.length) {
+    const line = lines[i];
+
+    if (!line.trim()) {
+      i += 1;
+      continue;
+    }
+
+    const tableResult = parseTableBlock(lines, i);
+    if (tableResult) {
+      blocks.push(tableResult.block);
+      i = tableResult.nextIndex;
+      continue;
+    }
+
+    const paragraphResult = collectParagraphLines(lines, i);
+    blocks.push({ type: "paragraph", lines: paragraphResult.paragraphLines });
+    i = paragraphResult.nextIndex;
+  }
+
+  return blocks;
+}
+
+function MentorMessageContent({ content }: Readonly<{ content: string }>) {
+  const blocks = parseMentorBlocks(content);
+
+  return (
+    <div className="space-y-sm">
+      {blocks.map((block, blockIndex) => {
+        const blockKey = `${block.type}-${blockIndex}-${
+          block.type === "table" ? block.headers.join("|") : block.lines.join("|")
+        }`;
+
+        if (block.type === "table") {
+          return (
+            <div
+              key={blockKey}
+              className="overflow-x-auto rounded-lg border border-outline-variant bg-surface-container-high p-xs"
+            >
+              <table className="min-w-full border-separate border-spacing-0 text-left">
+                <thead>
+                  <tr>
+                    {block.headers.map((header, headerIndex) => (
+                      <th
+                        key={`${header}-${headerIndex}`}
+                        className="border-b border-outline-variant bg-surface-container px-sm py-xs font-label-sm text-[11px] uppercase tracking-wide text-on-surface-variant"
+                      >
+                        {renderInlineText(header)}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {block.rows.map((row, rowIndex) => (
+                    <tr key={`row-${blockIndex}-${rowIndex}`}>
+                      {block.headers.map((_, colIndex) => (
+                        <td
+                          key={`cell-${blockIndex}-${rowIndex}-${colIndex}`}
+                          className="border-b border-outline-variant/70 px-sm py-xs font-body-md text-body-md text-on-surface"
+                        >
+                          {renderInlineText(row[colIndex] ?? "-")}
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          );
+        }
+
+        return (
+          <div key={blockKey} className="space-y-xs">
+            {block.lines.map((line, lineIndex) => {
+              const heading = parseHeading(line);
+              if (heading) {
+                return (
+                  <p
+                    key={`heading-${blockIndex}-${lineIndex}`}
+                    className={`font-title-md text-on-surface ${heading.level <= 2 ? "text-[16px] font-semibold" : "text-[14px] font-semibold"}`}
+                  >
+                    {renderInlineText(heading.text)}
+                  </p>
+                );
+              }
+
+              if (isMarkdownDivider(line)) {
+                return <div key={`divider-${blockIndex}-${lineIndex}`} className="my-xs border-b border-outline-variant/70" />;
+              }
+
+              const listItem = parseListItem(line);
+              if (listItem) {
+                return (
+                  <div key={`list-${blockIndex}-${lineIndex}`} className="flex items-start gap-xs rounded-md bg-surface-container px-sm py-xs">
+                    <span className="mt-[1px] min-w-[22px] font-label-sm text-[12px] text-secondary">{listItem.marker}</span>
+                    <p className="font-body-md text-body-md text-on-surface">{renderInlineText(listItem.text)}</p>
+                  </div>
+                );
+              }
+
+              if (isComputationLine(line)) {
+                return (
+                  <div
+                    key={`calc-${blockIndex}-${lineIndex}`}
+                    className="rounded-md border border-secondary/40 bg-secondary-container px-sm py-xs font-code text-[12px] text-on-secondary-container"
+                  >
+                    {renderInlineText(line)}
+                  </div>
+                );
+              }
+
+              return (
+                <p key={`line-${blockIndex}-${lineIndex}`} className="font-body-md whitespace-pre-line">
+                  {renderInlineText(line)}
+                </p>
+              );
+            })}
+          </div>
+        );
+      })}
+    </div>
+  );
 }
 
 export default function ChatPage() {
@@ -38,14 +311,14 @@ export default function ChatPage() {
       id: `local-${Date.now()}`,
       userId: profile?.userId ?? "local-user",
       sender: "user",
-      text: chatDraft.trim(),
-      createdAt: new Date().toISOString(),
+      content: chatDraft.trim(),
+      created_at: new Date().toISOString(),
     };
     dispatch({ type: "APPEND_CHAT_MESSAGE", message: userMessage });
     dispatch({ type: "SET_CHAT_DRAFT", draft: "" });
 
     try {
-      const assistantMessage = await sendMessage(chatSessionId, userMessage.text);
+      const assistantMessage = await sendMessage(chatSessionId, userMessage.content);
       dispatch({ type: "APPEND_CHAT_MESSAGE", message: assistantMessage });
     } catch (error) {
       console.error("Failed to send message:", error);
@@ -60,7 +333,7 @@ export default function ChatPage() {
       return;
     }
     const lastMessage = chatMessages[chatMessages.length - 1];
-    if (lastMessage.sender !== "mentor" || !lastMessage.isCommitmentCandidate) {
+    if (lastMessage.sender !== "mentor" || !lastMessage.is_commitment_candidate) {
       return;
     }
 
@@ -107,7 +380,11 @@ export default function ChatPage() {
                     : "rounded rounded-tl-none border border-outline-variant bg-surface-container-low text-on-surface shadow-sm"
                 }`}
               >
-                <p className="font-body-md">{m.text}</p>
+                {m.sender === "mentor" ? (
+                  <MentorMessageContent content={m.content} />
+                ) : (
+                  <p className="font-body-md whitespace-pre-line">{m.content}</p>
+                )}
                 {m.citations && m.citations.length > 0 && (
                   <div className="mt-sm inline-flex items-center gap-xs rounded-full border border-outline-variant bg-surface-container-highest px-sm py-xs">
                     <Icon name="auto_stories" size={16} />
@@ -115,11 +392,11 @@ export default function ChatPage() {
                   </div>
                 )}
               </div>
-              <span className="mt-xs font-label-sm text-[10px] text-on-surface-variant">{formatTime(m.createdAt)}</span>
+              <span className="mt-xs font-label-sm text-[10px] text-on-surface-variant">{formatTime(m.created_at)}</span>
             </div>
           ))}
 
-          {lastIsMentor && chatMessages[chatMessages.length - 1].isCommitmentCandidate && !commitmentTagged && (
+          {lastIsMentor && chatMessages[chatMessages.length - 1].is_commitment_candidate && !commitmentTagged && (
             <div className="flex items-center justify-between gap-md rounded border border-secondary bg-secondary-container p-md">
               <div className="flex items-center gap-sm">
                 <Icon name="workspace_premium" filled className="text-secondary" />
@@ -128,6 +405,7 @@ export default function ChatPage() {
                 </span>
               </div>
               <button
+                type="button"
                 onClick={handleTagCommitment}
                 className="tap-target rounded-full bg-secondary px-md py-sm font-label-sm text-label-sm text-on-secondary transition-transform active:scale-95"
               >
@@ -139,10 +417,15 @@ export default function ChatPage() {
       </div>
 
       <div className="flex shrink-0 items-center gap-sm border-t border-outline-variant px-margin-mobile py-sm">
-        <button aria-label="Attach a file" className="tap-target flex items-center justify-center rounded-full text-on-surface-variant hover:bg-surface-container-low">
+        <button
+          type="button"
+          aria-label="Attach a file"
+          className="tap-target flex items-center justify-center rounded-full text-on-surface-variant hover:bg-surface-container-low"
+        >
           <Icon name="attach_file" />
         </button>
         <button
+          type="button"
           aria-label={isRecording ? "Stop recording voice note" : "Record a voice note"}
           onClick={() => setIsRecording((r) => !r)}
           className={`tap-target flex items-center justify-center rounded-full ${
@@ -159,6 +442,7 @@ export default function ChatPage() {
           className="flex-1 rounded-full border border-outline-variant bg-surface-container-lowest px-md py-sm font-body-md text-body-md text-on-surface outline-none focus-visible:outline-primary"
         />
         <button
+          type="button"
           aria-label="Send message"
           onClick={send}
           disabled={!chatDraft.trim()}
