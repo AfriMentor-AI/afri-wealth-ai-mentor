@@ -144,21 +144,24 @@ async def chat_completion(
             max_tokens=settings.llm_max_tokens,
             temperature=settings.llm_temperature,
         )
-        choice = response.choices[0]
-        usage = response.usage
+    except Exception as exc:  # pragma: no cover - exercised via integration tests with bad creds
+        logger.warning("LLM request failed; falling back to stub reply: %s", exc)
         return (
-            choice.message.content or "",
-            usage.prompt_tokens if usage else 0,
-            usage.completion_tokens if usage else 0,
+            "I hear you! Let's work through this together. "
+            "(LLM unavailable — using safe fallback response.)",
+            len(messages) * 10,
+            20,
             citations,
         )
-    except Exception as e:
-        logger.warning(f"LLM call failed, falling back to stub: {e!r}")
-        stub = (
-            "I'm sorry, I'm having trouble connecting to my brain right now. "
-            "Please try again in a moment. (LLM unavailable)"
-        )
-        return stub, len(messages) * 10, 20, citations
+
+    choice = response.choices[0]
+    usage = response.usage
+    return (
+        choice.message.content or "",
+        usage.prompt_tokens if usage else 0,
+        usage.completion_tokens if usage else 0,
+        citations,
+    )
 
 
 async def generate_daily_action_for_user(user_id: str, db) -> str:
@@ -196,12 +199,17 @@ async def generate_daily_action_for_user(user_id: str, db) -> str:
         return stub
 
     client = get_llm_client()
-    response = await client.chat.completions.create(
-        model=settings.llm_model,
-        messages=messages,  # type: ignore[arg-type]
-        max_tokens=100,
-        temperature=settings.llm_temperature,
-    )
+    try:
+        response = await client.chat.completions.create(
+            model=settings.llm_model,
+            messages=messages,  # type: ignore[arg-type]
+            max_tokens=100,
+            temperature=settings.llm_temperature,
+        )
+    except Exception as exc:  # pragma: no cover - provider-auth errors are handled here
+        logger.warning("Daily action LLM request failed; using fallback action: %s", exc)
+        return "Set aside 10% of your income for savings today. (LLM fallback)"
+
     choice = response.choices[0]
     return choice.message.content or ""
 
