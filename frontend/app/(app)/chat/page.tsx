@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { Fragment, useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { Icon } from "@/components/Icon";
 import { ThemeToggle } from "@/components/ThemeToggle";
@@ -15,6 +15,82 @@ function formatTime(iso: string) {
 type MentorBlock =
   | { type: "paragraph"; lines: string[] }
   | { type: "table"; headers: string[]; rows: string[][] };
+
+function normalizeInlineText(value: string) {
+  return value.replaceAll("`", "").trim();
+}
+
+function parseInlineStrong(text: string) {
+  const parts: Array<{ text: string; strong: boolean }> = [];
+  const pattern = /\*\*(.+?)\*\*/g;
+  let lastIndex = 0;
+  let match = pattern.exec(text);
+
+  while (match) {
+    if (match.index > lastIndex) {
+      parts.push({ text: normalizeInlineText(text.slice(lastIndex, match.index)), strong: false });
+    }
+    parts.push({ text: normalizeInlineText(match[1]), strong: true });
+    lastIndex = match.index + match[0].length;
+    match = pattern.exec(text);
+  }
+
+  if (lastIndex < text.length) {
+    parts.push({ text: normalizeInlineText(text.slice(lastIndex)), strong: false });
+  }
+
+  return parts.filter((part) => part.text.length > 0);
+}
+
+function renderInlineText(text: string) {
+  const parts = parseInlineStrong(text);
+  if (parts.length === 0) return normalizeInlineText(text);
+
+  return parts.map((part, index) =>
+    part.strong ? (
+      <strong key={`${part.text}-${index}`} className="font-semibold text-on-surface">
+        {part.text}
+      </strong>
+    ) : (
+      <Fragment key={`${part.text}-${index}`}>{part.text}</Fragment>
+    )
+  );
+}
+
+function parseHeading(line: string) {
+  const match = line.match(/^(#{1,6})\s+(.+)$/);
+  if (!match) return null;
+  return {
+    level: match[1].length,
+    text: normalizeInlineText(match[2]),
+  };
+}
+
+function parseListItem(line: string) {
+  const numbered = line.match(/^(\d+)\.\s+(.+)$/);
+  if (numbered) {
+    return {
+      kind: "numbered" as const,
+      marker: `${numbered[1]}.`,
+      text: normalizeInlineText(numbered[2]),
+    };
+  }
+
+  const bulleted = line.match(/^[-*]\s+(.+)$/);
+  if (bulleted) {
+    return {
+      kind: "bulleted" as const,
+      marker: "•",
+      text: normalizeInlineText(bulleted[1]),
+    };
+  }
+
+  return null;
+}
+
+function isMarkdownDivider(line: string) {
+  return /^\s*([-*_]\s*){3,}$/.test(line.trim());
+}
 
 function normalizeTableCells(line: string) {
   const cells = line.split("|").map((cell) => cell.trim());
@@ -132,7 +208,7 @@ function MentorMessageContent({ content }: Readonly<{ content: string }>) {
                         key={`${header}-${headerIndex}`}
                         className="border-b border-outline-variant bg-surface-container px-sm py-xs font-label-sm text-[11px] uppercase tracking-wide text-on-surface-variant"
                       >
-                        {header}
+                        {renderInlineText(header)}
                       </th>
                     ))}
                   </tr>
@@ -145,7 +221,7 @@ function MentorMessageContent({ content }: Readonly<{ content: string }>) {
                           key={`cell-${blockIndex}-${rowIndex}-${colIndex}`}
                           className="border-b border-outline-variant/70 px-sm py-xs font-body-md text-body-md text-on-surface"
                         >
-                          {row[colIndex] ?? "-"}
+                          {renderInlineText(row[colIndex] ?? "-")}
                         </td>
                       ))}
                     </tr>
@@ -159,20 +235,46 @@ function MentorMessageContent({ content }: Readonly<{ content: string }>) {
         return (
           <div key={blockKey} className="space-y-xs">
             {block.lines.map((line, lineIndex) => {
+              const heading = parseHeading(line);
+              if (heading) {
+                return (
+                  <p
+                    key={`heading-${blockIndex}-${lineIndex}`}
+                    className={`font-title-md text-on-surface ${heading.level <= 2 ? "text-[16px] font-semibold" : "text-[14px] font-semibold"}`}
+                  >
+                    {renderInlineText(heading.text)}
+                  </p>
+                );
+              }
+
+              if (isMarkdownDivider(line)) {
+                return <div key={`divider-${blockIndex}-${lineIndex}`} className="my-xs border-b border-outline-variant/70" />;
+              }
+
+              const listItem = parseListItem(line);
+              if (listItem) {
+                return (
+                  <div key={`list-${blockIndex}-${lineIndex}`} className="flex items-start gap-xs rounded-md bg-surface-container px-sm py-xs">
+                    <span className="mt-[1px] min-w-[22px] font-label-sm text-[12px] text-secondary">{listItem.marker}</span>
+                    <p className="font-body-md text-body-md text-on-surface">{renderInlineText(listItem.text)}</p>
+                  </div>
+                );
+              }
+
               if (isComputationLine(line)) {
                 return (
                   <div
                     key={`calc-${blockIndex}-${lineIndex}`}
                     className="rounded-md border border-secondary/40 bg-secondary-container px-sm py-xs font-code text-[12px] text-on-secondary-container"
                   >
-                    {line}
+                    {renderInlineText(line)}
                   </div>
                 );
               }
 
               return (
                 <p key={`line-${blockIndex}-${lineIndex}`} className="font-body-md whitespace-pre-line">
-                  {line}
+                  {renderInlineText(line)}
                 </p>
               );
             })}
