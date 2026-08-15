@@ -169,8 +169,8 @@ export interface ChatMessage {
    * True if the user's message was flagged as a potential commitment,
    * prompting the "Tag It" UI.
    */
-  isCommitmentCandidate?: boolean;
-  createdAt: ISODateTime;
+  is_commitment_candidate?: boolean;
+  created_at: ISODateTime;
 }
 
 // ---------------------------------------------------------------------------

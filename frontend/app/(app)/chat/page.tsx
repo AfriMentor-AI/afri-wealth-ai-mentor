@@ -39,7 +39,7 @@ export default function ChatPage() {
       userId: profile?.userId ?? "local-user",
       sender: "user",
       content: chatDraft.trim(),
-      createdAt: new Date().toISOString(),
+      created_at: new Date().toISOString(),
     };
     dispatch({ type: "APPEND_CHAT_MESSAGE", message: userMessage });
     dispatch({ type: "SET_CHAT_DRAFT", draft: "" });
@@ -60,7 +60,7 @@ export default function ChatPage() {
       return;
     }
     const lastMessage = chatMessages[chatMessages.length - 1];
-    if (lastMessage.sender !== "mentor" || !lastMessage.isCommitmentCandidate) {
+    if (lastMessage.sender !== "mentor" || !lastMessage.is_commitment_candidate) {
       return;
     }
 
@@ -115,11 +115,11 @@ export default function ChatPage() {
                   </div>
                 )}
               </div>
-              <span className="mt-xs font-label-sm text-[10px] text-on-surface-variant">{formatTime(m.createdAt)}</span>
+              <span className="mt-xs font-label-sm text-[10px] text-on-surface-variant">{formatTime(m.created_at)}</span>
             </div>
           ))}
 
-          {lastIsMentor && chatMessages[chatMessages.length - 1].isCommitmentCandidate && !commitmentTagged && (
+          {lastIsMentor && chatMessages[chatMessages.length - 1].is_commitment_candidate && !commitmentTagged && (
             <div className="flex items-center justify-between gap-md rounded border border-secondary bg-secondary-container p-md">
               <div className="flex items-center gap-sm">
                 <Icon name="workspace_premium" filled className="text-secondary" />
