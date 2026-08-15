@@ -2,7 +2,9 @@ openapi: 3.1.0
 info:
   title: "AfriMentor AI \u2014 Notification Service"
   version: 1.0.0
-  description: Push/in-app/email notifications. Reacts to domain events.
+  description: "Daily-action reminders and streak-at-risk alerts (card O3.4). v0 scaffold: delivery is\
+    \ stubbed/logged, not sent to a real push provider \u2014 the `/trigger/*` endpoints are the event\
+    \ contract a later push integration builds on."
 servers:
 - url: http://localhost:8000
   description: via API gateway
@@ -31,65 +33,103 @@ paths:
     get:
       tags:
       - notifications
-      summary: List notifications
+      summary: List notifications for the current user
       responses:
         '200':
           description: success
           content:
             application/json:
               schema:
-                type: object
-        '401':
-          description: unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-      description: 'TODO: request/response bodies finalised in later sprint.'
+                type: array
+                items: &id001
+                  $ref: '#/components/schemas/Notification'
+        '401': &id002
+          $ref: '#/components/responses/Unauthorized'
   /api/v1/notifications/{id}/read:
     post:
       tags:
       - notifications
-      summary: Mark as read
-      responses:
-        '200':
-          description: success
-          content:
-            application/json:
-              schema:
-                type: object
-        '401':
-          description: unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-      description: 'TODO: request/response bodies finalised in later sprint.'
+      summary: Mark one notification as read (owner only)
       parameters:
       - name: id
         in: path
         required: true
         schema:
           type: string
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema: *id001
+        '401': *id002
+        '404':
+          description: not found
   /api/v1/notifications/read-all:
     post:
       tags:
       - notifications
-      summary: Mark all as read
+      summary: Mark all of the current user's notifications as read
       responses:
         '200':
           description: success
           content:
             application/json:
               schema:
-                type: object
-        '401':
-          description: unauthorized
+                type: array
+                items: *id001
+        '401': *id002
+  /api/v1/notifications/trigger/daily-action-reminder:
+    post:
+      tags:
+      - notifications
+      summary: "Internal \u2014 create a daily-action reminder for a user"
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DailyActionReminderTrigger'
+      responses:
+        '201':
+          description: created
+          content:
+            application/json:
+              schema: *id001
+  /api/v1/notifications/trigger/streak-at-risk:
+    post:
+      tags:
+      - notifications
+      summary: "Internal \u2014 create a streak-at-risk alert for a user"
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StreakAtRiskTrigger'
+      responses:
+        '201':
+          description: created
+          content:
+            application/json:
+              schema: *id001
+  /api/v1/notifications/sweep:
+    post:
+      tags:
+      - notifications
+      summary: "Internal \u2014 run the streak-at-risk sweep synchronously"
+      description: Same logic the background scheduler runs on a timer; exposed for deterministic ops/test
+        triggering.
+      security: []
+      responses:
+        '200':
+          description: success
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
-      description: 'TODO: request/response bodies finalised in later sprint.'
+                $ref: '#/components/schemas/SweepResult'
 components:
   securitySchemes:
     bearerAuth:
@@ -117,3 +157,77 @@ components:
           type: string
       required:
       - detail
+    Notification:
+      type: object
+      required:
+      - id
+      - user_id
+      - kind
+      - title
+      - body
+      - created_at
+      - delivered_at
+      properties:
+        id:
+          type: string
+        user_id:
+          type: string
+        kind:
+          type: string
+          enum:
+          - daily_action_reminder
+          - streak_at_risk
+        title:
+          type: string
+        body:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        read_at:
+          type:
+          - string
+          - 'null'
+          format: date-time
+        delivered_at:
+          type: string
+          format: date-time
+    DailyActionReminderTrigger:
+      type: object
+      required:
+      - user_id
+      properties:
+        user_id:
+          type: string
+        action_title:
+          type:
+          - string
+          - 'null'
+    StreakAtRiskTrigger:
+      type: object
+      required:
+      - user_id
+      - current_streak_days
+      properties:
+        user_id:
+          type: string
+        current_streak_days:
+          type: integer
+          minimum: 1
+    SweepResult:
+      type: object
+      required:
+      - users_checked
+      - notifications_created
+      properties:
+        users_checked:
+          type: integer
+        notifications_created:
+          type: integer
+  responses:
+    Unauthorized:
+      description: unauthorized
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'

@@ -49,6 +49,31 @@ def _envelope(event: str, actor: str, data: dict) -> dict:
     }
 
 
+def emit_milestone_completed(
+    *,
+    milestone_id: str,
+    goal_id: str,
+    user_id: str,
+    title: str,
+) -> None:
+    """Emit `milestone.completed` when a milestone's status transitions to "done".
+
+    Consumed by: feedback-service (card O3.3 — triggers a pending feedback survey
+    prompt), progress-gamification-service, research-evaluation-service.
+    """
+    payload = _envelope(
+        event="milestone.completed",
+        actor=user_id,
+        data={
+            "milestone_id": milestone_id,
+            "goal_id": goal_id,
+            "user_id": user_id,
+            "title": title,
+        },
+    )
+    _publish("milestone.completed", payload)
+
+
 def emit_commitment_created(
     *,
     commitment_id: str,

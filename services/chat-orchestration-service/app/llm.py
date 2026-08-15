@@ -151,3 +151,49 @@ async def chat_completion(
         usage.completion_tokens if usage else 0,
         citations,
     )
+
+
+async def generate_daily_action_for_user(user_id: str, db) -> str:
+    """
+    Generates a personalized daily action for a user.
+    """
+    logger.info(f"Generating daily action for user {user_id}...")
+
+    # TODO: Replace this placeholder with an actual HTTP request to the goals-milestones-service
+    # 1. Fetch user's active goals from the goals-milestones-service
+    #    (This is a placeholder, actual implementation will make an HTTP request)
+    active_goals = ["Save money for a new car", "Invest in the stock market"]
+    logger.info(f"User {user_id} has active goals: {active_goals}")
+
+    # 2. Construct the prompt
+    prompt = (
+        "You are Chioma, a warm and direct African financial mentor. "
+        "Your task is to generate a single, specific, and actionable financial task "
+        "for a user based on their goals. "
+        "The task should be something they can do today. "
+        "Here are the user's active goals:\n"
+        "\n".join(f"- {goal}" for goal in active_goals) +
+        "\n\n"
+        "Generate a single, specific, and actionable financial task for the user."
+        "The response should be just the task itself, without any preamble."
+        "For example: 'Set aside 10% of your income for savings today.'"
+    )
+
+    messages = [{"role": "system", "content": prompt}]
+
+    # 3. Call the LLM
+    if not settings.llm_api_key:
+        logger.debug("LLM_API_KEY not set — returning stub reply")
+        stub = "Set aside 10% of your income for savings today. (LLM stub)"
+        return stub
+
+    client = get_llm_client()
+    response = await client.chat.completions.create(
+        model=settings.llm_model,
+        messages=messages,  # type: ignore[arg-type]
+        max_tokens=100,
+        temperature=settings.llm_temperature,
+    )
+    choice = response.choices[0]
+    return choice.message.content or ""
+

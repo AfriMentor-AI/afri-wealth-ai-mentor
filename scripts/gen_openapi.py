@@ -918,6 +918,738 @@ def goals_spec() -> dict:
     return spec
 
 
+def progress_spec() -> dict:
+    spec = base(
+        "Progress & Gamification Service",
+        "progress-gamification-service",
+        8007,
+        "Streaks, action heatmap, and badge/achievement logic (card O3.1). Reacts to "
+        "activity recorded via POST /api/v1/progress/actions and emits `badge.earned`.",
+    )
+    schemas = spec["components"]["schemas"]
+    schemas["ActionKind"] = {
+        "type": "string",
+        "enum": ["daily_action", "insight_completed", "savings_goal_met"],
+    }
+    schemas["ActionCreate"] = {
+        "type": "object",
+        "required": ["kind"],
+        "properties": {
+            "kind": {"$ref": "#/components/schemas/ActionKind"},
+            "occurred_on": {
+                "type": ["string", "null"],
+                "format": "date",
+                "description": "Defaults to today (server clock) when omitted.",
+            },
+        },
+    }
+    schemas["StreakStat"] = {
+        "type": "object",
+        "required": [
+            "user_id", "current_streak_days", "longest_streak_days",
+            "actions_completed_total", "updated_at",
+        ],
+        "properties": {
+            "user_id": {"type": "string"},
+            "current_streak_days": {"type": "integer"},
+            "longest_streak_days": {"type": "integer"},
+            "actions_completed_total": {"type": "integer"},
+            "updated_at": {"type": "string", "format": "date-time"},
+        },
+    }
+    schemas["BadgeAward"] = {
+        "type": "object",
+        "required": ["badge_id", "label"],
+        "properties": {"badge_id": {"type": "string"}, "label": {"type": "string"}},
+    }
+    schemas["ActionRecordResponse"] = {
+        "type": "object",
+        "required": ["streak", "newly_earned_badges"],
+        "properties": {
+            "streak": {"$ref": "#/components/schemas/StreakStat"},
+            "newly_earned_badges": {
+                "type": "array",
+                "items": {"$ref": "#/components/schemas/BadgeAward"},
+            },
+        },
+    }
+    schemas["HeatmapDay"] = {
+        "type": "object",
+        "required": ["date", "count"],
+        "properties": {
+            "date": {"type": "string", "format": "date"},
+            "count": {"type": "integer"},
+        },
+    }
+    schemas["BadgeWithStatus"] = {
+        "type": "object",
+        "required": ["id", "label", "description", "icon_name", "earned_at"],
+        "properties": {
+            "id": {"type": "string"},
+            "label": {"type": "string"},
+            "description": {"type": "string"},
+            "icon_name": {"type": "string"},
+            "earned_at": {"type": ["string", "null"], "format": "date-time"},
+        },
+    }
+    schemas["ProgressSummary"] = {
+        "type": "object",
+        "required": ["streak", "heatmap", "badges"],
+        "properties": {
+            "streak": {"$ref": "#/components/schemas/StreakStat"},
+            "heatmap": {"type": "array", "items": {"$ref": "#/components/schemas/HeatmapDay"}},
+            "badges": {"type": "array", "items": {"$ref": "#/components/schemas/BadgeWithStatus"}},
+        },
+    }
+    schemas["WeeklySummaryShare"] = {
+        "type": "object",
+        "required": [
+            "user_id", "week_start", "week_end", "actions_this_week",
+            "current_streak_days", "badges_earned_this_week", "share_text",
+        ],
+        "properties": {
+            "user_id": {"type": "string"},
+            "week_start": {"type": "string", "format": "date"},
+            "week_end": {"type": "string", "format": "date"},
+            "actions_this_week": {"type": "integer"},
+            "current_streak_days": {"type": "integer"},
+            "badges_earned_this_week": {"type": "array", "items": {"type": "string"}},
+            "share_text": {"type": "string"},
+        },
+    }
+
+    unauth_401 = {
+        "description": "unauthorized",
+        "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Error"}}},
+    }
+    spec["tags"] = [{"name": "progress"}, {"name": "meta"}]
+    spec["paths"].update(
+        {
+            "/api/v1/progress": {
+                "get": {
+                    "tags": ["progress"],
+                    "summary": "Get the user's progress summary (streak + heatmap + badges)",
+                    "responses": {
+                        "200": {
+                            "description": "success",
+                            "content": {
+                                "application/json": {
+                                    "schema": {"$ref": "#/components/schemas/ProgressSummary"}
+                                }
+                            },
+                        },
+                        "401": unauth_401,
+                    },
+                }
+            },
+            "/api/v1/progress/streak": {
+                "get": {
+                    "tags": ["progress"],
+                    "summary": "Get current streak",
+                    "responses": {
+                        "200": {
+                            "description": "success",
+                            "content": {
+                                "application/json": {
+                                    "schema": {"$ref": "#/components/schemas/StreakStat"}
+                                }
+                            },
+                        },
+                        "401": unauth_401,
+                    },
+                }
+            },
+            "/api/v1/progress/badges": {
+                "get": {
+                    "tags": ["progress"],
+                    "summary": "List badge catalog with earned/locked status",
+                    "responses": {
+                        "200": {
+                            "description": "success",
+                            "content": {
+                                "application/json": {
+                                    "schema": {
+                                        "type": "array",
+                                        "items": {"$ref": "#/components/schemas/BadgeWithStatus"},
+                                    }
+                                }
+                            },
+                        },
+                        "401": unauth_401,
+                    },
+                }
+            },
+            "/api/v1/progress/actions": {
+                "post": {
+                    "tags": ["progress"],
+                    "summary": "Record one completed action for a day",
+                    "description": "Recording the same (day, kind) twice is a no-op, not an "
+                    "error. Recomputes the streak and re-evaluates badge triggers, awarding "
+                    "any newly-earned ones.",
+                    "requestBody": {
+                        "required": True,
+                        "content": {
+                            "application/json": {
+                                "schema": {"$ref": "#/components/schemas/ActionCreate"}
+                            }
+                        },
+                    },
+                    "responses": {
+                        "201": {
+                            "description": "recorded",
+                            "content": {
+                                "application/json": {
+                                    "schema": {
+                                        "$ref": "#/components/schemas/ActionRecordResponse"
+                                    }
+                                }
+                            },
+                        },
+                        "401": unauth_401,
+                    },
+                }
+            },
+            "/api/v1/progress/summary/share": {
+                "post": {
+                    "tags": ["progress"],
+                    "summary": "Build a shareable weekly-summary payload",
+                    "responses": {
+                        "200": {
+                            "description": "success",
+                            "content": {
+                                "application/json": {
+                                    "schema": {"$ref": "#/components/schemas/WeeklySummaryShare"}
+                                }
+                            },
+                        },
+                        "401": unauth_401,
+                    },
+                }
+            },
+        }
+    )
+    return spec
+
+
+def insight_spec() -> dict:
+    spec = base(
+        "Insight Library Service",
+        "insight-library-service",
+        8008,
+        "Curated insight articles/audio (card O3.2): catalog, search/filter, and "
+        "per-user favorites/bookmarks.",
+    )
+    spec["components"]["responses"] = {
+        "Unauthorized": {
+            "description": "unauthorized",
+            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Error"}}},
+        }
+    }
+    schemas = spec["components"]["schemas"]
+    schemas["InsightItemCreate"] = {
+        "type": "object",
+        "required": ["title", "summary", "category", "duration_minutes"],
+        "properties": {
+            "title": {"type": "string"},
+            "summary": {"type": "string"},
+            "category": {"type": "string"},
+            "duration_minutes": {"type": "integer"},
+            "is_audio": {"type": "boolean", "default": False},
+            "media_url": {"type": ["string", "null"]},
+        },
+    }
+    schemas["InsightItem"] = {
+        "type": "object",
+        "required": [
+            "id", "title", "summary", "category", "duration_minutes",
+            "is_audio", "created_at", "is_favorited",
+        ],
+        "properties": {
+            "id": {"type": "string"},
+            "title": {"type": "string"},
+            "summary": {"type": "string"},
+            "category": {"type": "string"},
+            "duration_minutes": {"type": "integer"},
+            "is_audio": {"type": "boolean"},
+            "media_url": {"type": ["string", "null"]},
+            "created_at": {"type": "string", "format": "date-time"},
+            "is_favorited": {"type": "boolean"},
+        },
+    }
+
+    unauthorized = {"$ref": "#/components/responses/Unauthorized"}
+    id_param = [{"name": "id", "in": "path", "required": True, "schema": {"type": "string"}}]
+    spec["tags"] = [{"name": "insights"}, {"name": "meta"}]
+    spec["paths"].update(
+        {
+            "/api/v1/insights": {
+                "get": {
+                    "tags": ["insights"],
+                    "summary": "List insights",
+                    "parameters": [
+                        {
+                            "name": "search",
+                            "in": "query",
+                            "schema": {"type": "string"},
+                            "description": "Matches title or summary (case-insensitive substring).",
+                        },
+                        {"name": "category", "in": "query", "schema": {"type": "string"}},
+                        {"name": "is_audio", "in": "query", "schema": {"type": "boolean"}},
+                    ],
+                    "responses": {
+                        "200": {
+                            "description": "success",
+                            "content": {
+                                "application/json": {
+                                    "schema": {
+                                        "type": "array",
+                                        "items": {"$ref": "#/components/schemas/InsightItem"},
+                                    }
+                                }
+                            },
+                        },
+                        "401": unauthorized,
+                    },
+                },
+                "post": {
+                    "tags": ["insights"],
+                    "summary": "Create a catalog entry (admin role required)",
+                    "requestBody": {
+                        "required": True,
+                        "content": {
+                            "application/json": {
+                                "schema": {"$ref": "#/components/schemas/InsightItemCreate"}
+                            }
+                        },
+                    },
+                    "responses": {
+                        "201": {
+                            "description": "created",
+                            "content": {
+                                "application/json": {
+                                    "schema": {"$ref": "#/components/schemas/InsightItem"}
+                                }
+                            },
+                        },
+                        "401": unauthorized,
+                        "403": {"description": "admin role required"},
+                    },
+                },
+            },
+            "/api/v1/insights/{id}": {
+                "get": {
+                    "tags": ["insights"],
+                    "summary": "Get an insight",
+                    "parameters": id_param,
+                    "responses": {
+                        "200": {
+                            "description": "success",
+                            "content": {
+                                "application/json": {
+                                    "schema": {"$ref": "#/components/schemas/InsightItem"}
+                                }
+                            },
+                        },
+                        "401": unauthorized,
+                        "404": {"description": "not found"},
+                    },
+                }
+            },
+            "/api/v1/insights/{id}/bookmark": {
+                "post": {
+                    "tags": ["insights"],
+                    "summary": "Bookmark an insight (idempotent)",
+                    "parameters": id_param,
+                    "responses": {
+                        "204": {"description": "bookmarked"},
+                        "401": unauthorized,
+                        "404": {"description": "not found"},
+                    },
+                },
+                "delete": {
+                    "tags": ["insights"],
+                    "summary": "Remove a bookmark (idempotent)",
+                    "parameters": id_param,
+                    "responses": {
+                        "204": {"description": "removed"},
+                        "401": unauthorized,
+                    },
+                },
+            },
+            "/api/v1/insights/bookmarks": {
+                "get": {
+                    "tags": ["insights"],
+                    "summary": "List the current user's bookmarked insights",
+                    "responses": {
+                        "200": {
+                            "description": "success",
+                            "content": {
+                                "application/json": {
+                                    "schema": {
+                                        "type": "array",
+                                        "items": {"$ref": "#/components/schemas/InsightItem"},
+                                    }
+                                }
+                            },
+                        },
+                        "401": unauthorized,
+                    },
+                }
+            },
+        }
+    )
+    return spec
+
+
+
+
+def feedback_spec() -> dict:
+    spec = base(
+        "Feedback Service",
+        "feedback-service",
+        8009,
+        "NPS-style feedback capture, milestone-triggered survey prompts, and "
+        "free-text/voice-note storage (card O3.3). Consumes `milestone.completed` "
+        "(emitted by goals-milestones-service) to auto-create a pending prompt.",
+    )
+    spec["components"]["responses"] = {
+        "Unauthorized": {
+            "description": "unauthorized",
+            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Error"}}},
+        }
+    }
+    schemas = spec["components"]["schemas"]
+    schemas["FeedbackSubmit"] = {
+        "type": "object",
+        "required": ["nps_score"],
+        "properties": {
+            "nps_score": {"type": "integer", "minimum": 1, "maximum": 10},
+            "comment": {"type": ["string", "null"]},
+            "voice_note_url": {"type": ["string", "null"]},
+            "trigger": {"type": "string", "default": "manual"},
+            "context_ref": {"type": ["string", "null"]},
+        },
+    }
+    schemas["FeedbackSurvey"] = {
+        "type": "object",
+        "required": ["id", "user_id", "nps_score", "trigger", "submitted_at"],
+        "properties": {
+            "id": {"type": "string"},
+            "user_id": {"type": "string"},
+            "nps_score": {"type": "integer"},
+            "comment": {"type": ["string", "null"]},
+            "voice_note_url": {"type": ["string", "null"]},
+            "trigger": {"type": "string"},
+            "context_ref": {"type": ["string", "null"]},
+            "submitted_at": {"type": "string", "format": "date-time"},
+        },
+    }
+    schemas["FeedbackPrompt"] = {
+        "type": "object",
+        "required": ["id", "user_id", "trigger", "created_at"],
+        "properties": {
+            "id": {"type": "string"},
+            "user_id": {"type": "string"},
+            "trigger": {"type": "string"},
+            "context_ref": {"type": ["string", "null"]},
+            "created_at": {"type": "string", "format": "date-time"},
+        },
+    }
+
+    unauthorized = {"$ref": "#/components/responses/Unauthorized"}
+    spec["tags"] = [{"name": "feedback"}, {"name": "meta"}]
+    spec["paths"].update(
+        {
+            "/api/v1/feedback": {
+                "post": {
+                    "tags": ["feedback"],
+                    "summary": "Submit feedback",
+                    "description": "If trigger/context_ref matches an open FeedbackPrompt "
+                    "for this user, it is marked fulfilled.",
+                    "requestBody": {
+                        "required": True,
+                        "content": {
+                            "application/json": {
+                                "schema": {"$ref": "#/components/schemas/FeedbackSubmit"}
+                            }
+                        },
+                    },
+                    "responses": {
+                        "201": {
+                            "description": "submitted",
+                            "content": {
+                                "application/json": {
+                                    "schema": {"$ref": "#/components/schemas/FeedbackSurvey"}
+                                }
+                            },
+                        },
+                        "401": unauthorized,
+                    },
+                },
+                "get": {
+                    "tags": ["feedback"],
+                    "summary": "List the current user's feedback submissions",
+                    "responses": {
+                        "200": {
+                            "description": "success",
+                            "content": {
+                                "application/json": {
+                                    "schema": {
+                                        "type": "array",
+                                        "items": {"$ref": "#/components/schemas/FeedbackSurvey"},
+                                    }
+                                }
+                            },
+                        },
+                        "401": unauthorized,
+                    },
+                },
+            },
+            "/api/v1/feedback/pending": {
+                "get": {
+                    "tags": ["feedback"],
+                    "summary": "List open survey prompts for the current user",
+                    "description": "A client polls this to decide whether to pop the "
+                    "Feedback Survey modal — the backend half of \"fires automatically on "
+                    "a milestone-completion event\".",
+                    "responses": {
+                        "200": {
+                            "description": "success",
+                            "content": {
+                                "application/json": {
+                                    "schema": {
+                                        "type": "array",
+                                        "items": {"$ref": "#/components/schemas/FeedbackPrompt"},
+                                    }
+                                }
+                            },
+                        },
+                        "401": unauthorized,
+                    },
+                }
+            },
+            "/api/v1/feedback/surveys/{id}": {
+                "get": {
+                    "tags": ["feedback"],
+                    "summary": "Get one feedback submission (owner only)",
+                    "parameters": [
+                        {
+                            "name": "id",
+                            "in": "path",
+                            "required": True,
+                            "schema": {"type": "string"},
+                        }
+                    ],
+                    "responses": {
+                        "200": {
+                            "description": "success",
+                            "content": {
+                                "application/json": {
+                                    "schema": {"$ref": "#/components/schemas/FeedbackSurvey"}
+                                }
+                            },
+                        },
+                        "401": unauthorized,
+                        "404": {"description": "not found"},
+                    },
+                }
+            },
+        }
+    )
+    return spec
+
+
+
+
+
+
+def notification_spec() -> dict:
+    spec = base(
+        "Notification Service",
+        "notification-service",
+        8012,
+        "Daily-action reminders and streak-at-risk alerts (card O3.4). v0 scaffold: "
+        "delivery is stubbed/logged, not sent to a real push provider — the "
+        "`/trigger/*` endpoints are the event contract a later push integration "
+        "builds on.",
+    )
+    spec["components"]["responses"] = {
+        "Unauthorized": {
+            "description": "unauthorized",
+            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Error"}}},
+        }
+    }
+    schemas = spec["components"]["schemas"]
+    schemas["Notification"] = {
+        "type": "object",
+        "required": ["id", "user_id", "kind", "title", "body", "created_at", "delivered_at"],
+        "properties": {
+            "id": {"type": "string"},
+            "user_id": {"type": "string"},
+            "kind": {"type": "string", "enum": ["daily_action_reminder", "streak_at_risk"]},
+            "title": {"type": "string"},
+            "body": {"type": "string"},
+            "created_at": {"type": "string", "format": "date-time"},
+            "read_at": {"type": ["string", "null"], "format": "date-time"},
+            "delivered_at": {"type": "string", "format": "date-time"},
+        },
+    }
+    schemas["DailyActionReminderTrigger"] = {
+        "type": "object",
+        "required": ["user_id"],
+        "properties": {
+            "user_id": {"type": "string"},
+            "action_title": {"type": ["string", "null"]},
+        },
+    }
+    schemas["StreakAtRiskTrigger"] = {
+        "type": "object",
+        "required": ["user_id", "current_streak_days"],
+        "properties": {
+            "user_id": {"type": "string"},
+            "current_streak_days": {"type": "integer", "minimum": 1},
+        },
+    }
+    schemas["SweepResult"] = {
+        "type": "object",
+        "required": ["users_checked", "notifications_created"],
+        "properties": {
+            "users_checked": {"type": "integer"},
+            "notifications_created": {"type": "integer"},
+        },
+    }
+
+    unauthorized = {"$ref": "#/components/responses/Unauthorized"}
+    notification_schema = {"$ref": "#/components/schemas/Notification"}
+    spec["tags"] = [{"name": "notifications"}, {"name": "meta"}]
+    spec["paths"].update(
+        {
+            "/api/v1/notifications": {
+                "get": {
+                    "tags": ["notifications"],
+                    "summary": "List notifications for the current user",
+                    "responses": {
+                        "200": {
+                            "description": "success",
+                            "content": {
+                                "application/json": {
+                                    "schema": {"type": "array", "items": notification_schema}
+                                }
+                            },
+                        },
+                        "401": unauthorized,
+                    },
+                }
+            },
+            "/api/v1/notifications/{id}/read": {
+                "post": {
+                    "tags": ["notifications"],
+                    "summary": "Mark one notification as read (owner only)",
+                    "parameters": [
+                        {
+                            "name": "id",
+                            "in": "path",
+                            "required": True,
+                            "schema": {"type": "string"},
+                        }
+                    ],
+                    "responses": {
+                        "200": {
+                            "description": "success",
+                            "content": {"application/json": {"schema": notification_schema}},
+                        },
+                        "401": unauthorized,
+                        "404": {"description": "not found"},
+                    },
+                }
+            },
+            "/api/v1/notifications/read-all": {
+                "post": {
+                    "tags": ["notifications"],
+                    "summary": "Mark all of the current user's notifications as read",
+                    "responses": {
+                        "200": {
+                            "description": "success",
+                            "content": {
+                                "application/json": {
+                                    "schema": {"type": "array", "items": notification_schema}
+                                }
+                            },
+                        },
+                        "401": unauthorized,
+                    },
+                }
+            },
+            "/api/v1/notifications/trigger/daily-action-reminder": {
+                "post": {
+                    "tags": ["notifications"],
+                    "summary": "Internal — create a daily-action reminder for a user",
+                    "security": [],
+                    "requestBody": {
+                        "required": True,
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/DailyActionReminderTrigger"
+                                }
+                            }
+                        },
+                    },
+                    "responses": {
+                        "201": {
+                            "description": "created",
+                            "content": {"application/json": {"schema": notification_schema}},
+                        }
+                    },
+                }
+            },
+            "/api/v1/notifications/trigger/streak-at-risk": {
+                "post": {
+                    "tags": ["notifications"],
+                    "summary": "Internal — create a streak-at-risk alert for a user",
+                    "security": [],
+                    "requestBody": {
+                        "required": True,
+                        "content": {
+                            "application/json": {
+                                "schema": {"$ref": "#/components/schemas/StreakAtRiskTrigger"}
+                            }
+                        },
+                    },
+                    "responses": {
+                        "201": {
+                            "description": "created",
+                            "content": {"application/json": {"schema": notification_schema}},
+                        }
+                    },
+                }
+            },
+            "/api/v1/notifications/sweep": {
+                "post": {
+                    "tags": ["notifications"],
+                    "summary": "Internal — run the streak-at-risk sweep synchronously",
+                    "description": "Same logic the background scheduler runs on a timer; "
+                    "exposed for deterministic ops/test triggering.",
+                    "security": [],
+                    "responses": {
+                        "200": {
+                            "description": "success",
+                            "content": {
+                                "application/json": {
+                                    "schema": {"$ref": "#/components/schemas/SweepResult"}
+                                }
+                            },
+                        }
+                    },
+                }
+            },
+        }
+    )
+    return spec
+
+
+
+
 def gateway_spec() -> dict:
     spec = base(
         "API Gateway",
@@ -974,33 +1706,6 @@ SERVICES: dict[str, tuple] = {
             ("post", "/api/v1/rag/query", "rag", "Retrieve relevant chunks", True),
         ],
     ),
-    "progress-gamification-service": (
-        "Progress & Gamification Service", 8007,
-        "XP, streaks, badges and levels. Reacts to milestone/session events.",
-        [
-            ("get", "/api/v1/progress", "progress", "Get the user's progress summary", False),
-            ("get", "/api/v1/progress/badges", "progress", "List earned badges", False),
-            ("get", "/api/v1/progress/streak", "progress", "Get current streak", False),
-        ],
-    ),
-    "insight-library-service": (
-        "Insight Library Service", 8008,
-        "Curated insight articles/cards, categories and bookmarks.",
-        [
-            ("get", "/api/v1/insights", "insights", "List insights", False),
-            ("get", "/api/v1/insights/{id}", "insights", "Get an insight", False),
-            ("post", "/api/v1/insights/{id}/bookmark", "insights", "Bookmark an insight", False),
-            ("get", "/api/v1/insights/bookmarks", "insights", "List bookmarks", False),
-        ],
-    ),
-    "feedback-service": (
-        "Feedback Service", 8009,
-        "Post-session surveys, thumbs, and free-text feedback capture.",
-        [
-            ("post", "/api/v1/feedback", "feedback", "Submit feedback", True),
-            ("get", "/api/v1/feedback/surveys/{id}", "feedback", "Get a survey definition", False),
-        ],
-    ),
     "research-evaluation-service": (
         "Research & Evaluation Service", 8010,
         "Session auditing, quality scoring, and drift detection for the research console.",
@@ -1016,15 +1721,6 @@ SERVICES: dict[str, tuple] = {
         [
             ("post", "/api/v1/voice/transcribe", "voice", "Transcribe uploaded audio", True),
             ("post", "/api/v1/voice/synthesize", "voice", "Synthesize speech from text", True),
-        ],
-    ),
-    "notification-service": (
-        "Notification Service", 8012,
-        "Push/in-app/email notifications. Reacts to domain events.",
-        [
-            ("get", "/api/v1/notifications", "notifications", "List notifications", False),
-            ("post", "/api/v1/notifications/{id}/read", "notifications", "Mark as read", False),
-            ("post", "/api/v1/notifications/read-all", "notifications", "Mark all as read", False),
         ],
     ),
 }
@@ -1052,6 +1748,10 @@ def main() -> None:
         ("auth-user-service", auth_spec()),
         ("intake-profiling-service", intake_spec()),
         ("goals-milestones-service", goals_spec()),
+        ("progress-gamification-service", progress_spec()),
+        ("insight-library-service", insight_spec()),
+        ("feedback-service", feedback_spec()),
+        ("notification-service", notification_spec()),
     ]:
         path = OUT / f"{name}.yaml"
         path.write_text(yaml.safe_dump(spec, sort_keys=False, width=100), encoding="utf-8")

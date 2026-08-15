@@ -26,6 +26,21 @@ router = APIRouter(prefix="/api/v1/rag", tags=["rag"])
 EMBED_DIM = 384
 BYTES_PER_FLOAT = 4
 
+
+def _require_admin(x_user_roles: str = Header("", alias="X-User-Roles")) -> None:
+    """Gate on the RAG Corpus Admin screen's operations (card O3.5).
+
+    These endpoints previously only checked X-User-Id — any authenticated user
+    could ingest/delete/export the shared corpus or pull its stats. The gateway
+    forwards verified JWT roles as X-User-Roles (same trust boundary _get_user
+    relies on for X-User-Id), so this mirrors that pattern rather than inventing
+    a new one. POST /query (retrieval for chat) is deliberately NOT gated here —
+    every user needs that for normal chat/RAG use.
+    """
+    roles = {r.strip() for r in x_user_roles.split(",") if r.strip()}
+    if "admin" not in roles:
+        raise HTTPException(status_code=403, detail="Admin role required")
+
 # ── Schemas ───────────────────────────────────────────────────────────────────
 
 class IngestRequest(BaseModel):
@@ -124,6 +139,7 @@ def ingest(
     body: IngestRequest,
     db: Session = Depends(get_db),
     x_user_id: str = Header(..., alias="X-User-Id"),
+    _admin: None = Depends(_require_admin),
 ):
     """Ingest a document into the RAG corpus."""
     doc = Document(
@@ -211,6 +227,7 @@ def list_documents(
     response: Response,
     db: Session = Depends(get_db),
     x_user_id: str = Header(..., alias="X-User-Id"),
+    _admin: None = Depends(_require_admin),
     q: str | None = Query(None, max_length=200, description="Search title, author, filename"),
     sector: str | None = Query(None, max_length=100),
     market: str | None = Query(None, max_length=10),
@@ -250,6 +267,7 @@ CSV_COLUMNS = [
 def export_documents_csv(
     db: Session = Depends(get_db),
     x_user_id: str = Header(..., alias="X-User-Id"),
+    _admin: None = Depends(_require_admin),
     q: str | None = Query(None, max_length=200),
     sector: str | None = Query(None, max_length=100),
     market: str | None = Query(None, max_length=10),
@@ -297,6 +315,7 @@ def export_documents_csv(
 def stats(
     db: Session = Depends(get_db),
     x_user_id: str = Header(..., alias="X-User-Id"),
+    _admin: None = Depends(_require_admin),
 ):
     """Index-health figures for the admin stats panel.
 
@@ -356,6 +375,7 @@ def delete_document(
     doc_id: str,
     db: Session = Depends(get_db),
     x_user_id: str = Header(..., alias="X-User-Id"),
+    _admin: None = Depends(_require_admin),
 ):
     """Delete a document and its vectors from the corpus."""
     doc = db.query(Document).filter(Document.id == doc_id).first()

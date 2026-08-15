@@ -27,6 +27,29 @@ interface TokenPair {
 // localStorage; still backed by localStorage so it survives a reload.
 let cachedAccessToken: string | null = null;
 
+// Two independent hazards, one fix. (1) The backend rotates refresh tokens on
+// every use (single-use — ADR-0001 §D5), so if two apiFetch calls hit a 401 at
+// the same time and each independently calls refreshSession() with the same
+// stored refresh token, only the first succeeds — the second's token is already
+// revoked. (2) On a device's very first launch, several components mount and
+// call apiFetch in parallel before any token exists, so each independently
+// calls signupDeviceAccount() — the backend's exists-check-then-insert isn't
+// atomic (auth-user-service `signup`), so concurrent signups for the same
+// device email race into an unhandled 500 instead of a clean 409. Both are the
+// same shape of bug: concurrent callers each mutating the shared token state
+// instead of sharing one in-flight operation. A single lock around "obtain a
+// valid token pair" (whichever operation gets there first) fixes both.
+let pendingAuth: Promise<TokenPair> | null = null;
+
+function withAuthLock(operation: () => Promise<TokenPair>): Promise<TokenPair> {
+  if (!pendingAuth) {
+    pendingAuth = operation().finally(() => {
+      pendingAuth = null;
+    });
+  }
+  return pendingAuth;
+}
+
 function getDeviceId(): string {
   let id = window.localStorage.getItem(DEVICE_ID_KEY);
   if (!id) {
@@ -48,42 +71,67 @@ function storeTokens(tokens: TokenPair): void {
   cachedAccessToken = tokens.accessToken;
 }
 
-async function signupDeviceAccount(): Promise<TokenPair> {
+function deviceCredentials(): { email: string; password: string } {
   const deviceId = getDeviceId();
+  // Password is the device id (a random UUID, 36 chars — well over the 8-char
+  // minimum) so nothing user-meaningful is ever transmitted or stored as a secret.
+  // Domain is `.app`, not `.local` — `.local`/`.test`/`.invalid`/etc. are IANA
+  // special-use TLDs that email-validator (used by auth-user-service's EmailStr)
+  // rejects outright, regardless of syntax.
+  return { email: `${deviceId}@device.afrimentor.app`, password: deviceId };
+}
+
+async function signupDeviceAccount(): Promise<TokenPair> {
   const res = await fetch(`${API_BASE}/api/v1/auth/signup`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    // Password is the device id (a random UUID, 36 chars — well over the 8-char
-    // minimum) so nothing user-meaningful is ever transmitted or stored as a secret.
-    // Domain is `.app`, not `.local` — `.local`/`.test`/`.invalid`/etc. are IANA
-    // special-use TLDs that email-validator (used by auth-user-service's EmailStr)
-    // rejects outright, regardless of syntax.
-    body: JSON.stringify({
-      email: `${deviceId}@device.afrimentor.app`,
-      password: deviceId,
-    }),
+    body: JSON.stringify(deviceCredentials()),
   });
   if (!res.ok) throw new Error(`device signup failed: ${res.status}`);
   const body = await res.json();
   return { accessToken: body.access_token, refreshToken: body.refresh_token };
 }
 
+/** Re-authenticates an existing device account by password (the device id is
+ * deterministic and always available locally, independent of token state) —
+ * this is the recovery path when the stored refresh token is dead but the
+ * account itself is still there, e.g. it was revoked by a concurrent refresh,
+ * or auth-user-service restarted and rotated its dev-mode signing key,
+ * invalidating every outstanding token. */
+async function loginDeviceAccount(): Promise<TokenPair> {
+  const res = await fetch(`${API_BASE}/api/v1/auth/login`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(deviceCredentials()),
+  });
+  if (!res.ok) throw new Error(`device login failed: ${res.status}`);
+  const body = await res.json();
+  return { accessToken: body.access_token, refreshToken: body.refresh_token };
+}
+
 async function refreshSession(): Promise<TokenPair> {
   const existing = readStoredTokens();
-  if (existing) {
-    const res = await fetch(`${API_BASE}/api/v1/auth/refresh`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ refresh_token: existing.refreshToken }),
-    });
-    if (res.ok) {
-      const body = await res.json();
-      return { accessToken: body.access_token, refreshToken: body.refresh_token };
-    }
-    // Refresh token expired/revoked (e.g. account deactivated, or this is a stale
-    // token from a previous local dev database) — fall through to a fresh signup.
+  if (!existing) return signupDeviceAccount();
+
+  const res = await fetch(`${API_BASE}/api/v1/auth/refresh`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ refresh_token: existing.refreshToken }),
+  });
+  if (res.ok) {
+    const body = await res.json();
+    return { accessToken: body.access_token, refreshToken: body.refresh_token };
   }
-  return signupDeviceAccount();
+  // Refresh token expired/revoked. The account usually still exists — log back in
+  // with this device's deterministic credentials rather than jumping straight to
+  // signup, which 409s (and strands the device with no valid session at all) if
+  // the account is already registered. Only signup if login says the account is
+  // genuinely gone (e.g. deactivated).
+  try {
+    return await loginDeviceAccount();
+  } catch {
+    return signupDeviceAccount();
+  }
 }
 
 /** Returns a currently-valid access token, provisioning/refreshing the device
@@ -95,7 +143,7 @@ async function ensureAccessToken(): Promise<string> {
     cachedAccessToken = existing.accessToken;
     return cachedAccessToken;
   }
-  const fresh = await signupDeviceAccount();
+  const fresh = await withAuthLock(signupDeviceAccount);
   storeTokens(fresh);
   return fresh.accessToken;
 }
@@ -132,7 +180,7 @@ export async function apiFetch(path: string, init: RequestInit = {}): Promise<Re
   const token = await ensureAccessToken();
   let res = await attempt(token);
   if (res.status === 401) {
-    const refreshed = await refreshSession();
+    const refreshed = await withAuthLock(refreshSession);
     storeTokens(refreshed);
     res = await attempt(refreshed.accessToken);
   }
