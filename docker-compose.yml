@@ -132,7 +132,7 @@ services:
       FEEDBACK_SERVICE_URL: http://feedback-service:8009
       RESEARCH_SERVICE_URL: http://research-evaluation-service:8010
       VOICE_SERVICE_URL: http://voice-service:8011
-      NOTIFICATION_SERVICE_URL: http://notification-service:8012
+      # NOTIFICATION_SERVICE_URL: http://notification-service:8012
     depends_on:
       redis: {condition: service_healthy}
       auth-user-service: {condition: service_healthy}
@@ -148,7 +148,7 @@ services:
       feedback-service: {condition: service_healthy}
       research-evaluation-service: {condition: service_healthy}
       voice-service: {condition: service_healthy}
-      notification-service: {condition: service_healthy}
+      # notification-service: {condition: service_healthy}
     healthcheck:
       test: ["CMD-SHELL", "python -c \"import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8000/health').status==200 else 1)\""]
       <<: *hc
@@ -353,9 +353,8 @@ services:
       # Streak-at-risk sweep (card O3.4) calls this to read a user's streak.
       PROGRESS_SERVICE_URL: http://progress-gamification-service:8007
     depends_on:
-      postgres: {condition: service_healthy}
-      rabbitmq: {condition: service_healthy}
-      progress-gamification-service: {condition: service_healthy}
+      postgres: { condition: service_healthy }
+      rabbitmq: { condition: service_healthy }
     healthcheck:
       test: ["CMD-SHELL", "python -c \"import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8012/health').status==200 else 1)\""]
       <<: *hc
