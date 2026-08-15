@@ -24,11 +24,10 @@ from sqlalchemy import (
     String,
     Text,
 )
-from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+from app.db.session import Base
 
 
-class Base(DeclarativeBase):
-    """Declarative base for this service's tables."""
 
 
 def _now() -> dt.datetime:
