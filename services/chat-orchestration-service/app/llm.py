@@ -137,12 +137,23 @@ async def chat_completion(
         return stub, len(messages) * 10, 20, citations
 
     client = get_llm_client()
-    response = await client.chat.completions.create(
-        model=settings.llm_model,
-        messages=messages,  # type: ignore[arg-type]
-        max_tokens=settings.llm_max_tokens,
-        temperature=settings.llm_temperature,
-    )
+    try:
+        response = await client.chat.completions.create(
+            model=settings.llm_model,
+            messages=messages,  # type: ignore[arg-type]
+            max_tokens=settings.llm_max_tokens,
+            temperature=settings.llm_temperature,
+        )
+    except Exception as exc:  # pragma: no cover - exercised via integration tests with bad creds
+        logger.warning("LLM request failed; falling back to stub reply: %s", exc)
+        return (
+            "I hear you! Let's work through this together. "
+            "(LLM unavailable — using safe fallback response.)",
+            len(messages) * 10,
+            20,
+            citations,
+        )
+
     choice = response.choices[0]
     usage = response.usage
     return (
@@ -188,12 +199,17 @@ async def generate_daily_action_for_user(user_id: str, db) -> str:
         return stub
 
     client = get_llm_client()
-    response = await client.chat.completions.create(
-        model=settings.llm_model,
-        messages=messages,  # type: ignore[arg-type]
-        max_tokens=100,
-        temperature=settings.llm_temperature,
-    )
+    try:
+        response = await client.chat.completions.create(
+            model=settings.llm_model,
+            messages=messages,  # type: ignore[arg-type]
+            max_tokens=100,
+            temperature=settings.llm_temperature,
+        )
+    except Exception as exc:  # pragma: no cover - provider-auth errors are handled here
+        logger.warning("Daily action LLM request failed; using fallback action: %s", exc)
+        return "Set aside 10% of your income for savings today. (LLM fallback)"
+
     choice = response.choices[0]
     return choice.message.content or ""
 

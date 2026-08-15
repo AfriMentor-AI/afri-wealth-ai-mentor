@@ -9,6 +9,7 @@ from unittest.mock import patch
 
 import pytest
 from fastapi.testclient import TestClient
+from openai import AuthenticationError
 
 from app.database import Base, SessionLocal, engine, get_db
 from app.main import app
@@ -438,3 +439,48 @@ def test_rag_context_injected_into_prompt(client, session_id):
 
     rag_messages = [m for m in captured if "TEF curriculum" in m.get("content", "")]
     assert rag_messages, "RAG context system message not found in LLM messages list"
+
+
+def test_invalid_llm_api_key_falls_back_to_stub(client, session_id):
+    """A bad provider key should degrade to a safe stub response instead of 500."""
+    with (
+        patch("app.llm.retrieve", return_value=[]),
+        patch(
+            "app.routers.chat.chat_completion",
+            wraps=__import__("app.llm", fromlist=["chat_completion"]).chat_completion,
+        ) as wrapped,
+    ):
+        def _raise_invalid_key_exception(**kwargs):
+            raise Exception("Invalid API Key")
+
+        mock_client = type("Client", (), {})()
+        mock_client.chat = type(
+            "Chat",
+            (),
+            {
+                "completions": type(
+                    "Completions",
+                    (),
+                    {"create": staticmethod(_raise_invalid_key_exception)},
+                )
+            },
+        )()
+
+        with (
+            patch("app.llm.get_llm_client", return_value=mock_client),
+            patch("app.llm.settings") as mock_settings,
+        ):
+            mock_settings.llm_api_key = "bad-key"
+            mock_settings.llm_model = "test"
+            mock_settings.llm_max_tokens = 512
+            mock_settings.llm_temperature = 0.7
+            mock_settings.commitment_keywords = []
+            r = client.post(
+                f"/api/v1/chat/sessions/{session_id}/messages",
+                json={"content": "How do I save?"},
+                headers=USER_HEADERS,
+            )
+
+    assert r.status_code == 201
+    assert "LLM unavailable" in r.json()["content"]
+    wrapped.assert_called_once()
