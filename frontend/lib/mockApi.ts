@@ -155,9 +155,9 @@ export async function sendMessage(a: string | { text: string; personaId?: string
     id: `msg-${Date.now()}`,
     userId: mockUser.id,
     sender: "mentor",
-    text: `(mock reply) Received: ${messageText}`,
+    content: `(mock reply) Received: ${messageText}`,
     personaId: personaId,
-    createdAt: new Date().toISOString(),
+    created_at: new Date().toISOString(),
   };
   return resolveAfterLatency(msg);
 }
