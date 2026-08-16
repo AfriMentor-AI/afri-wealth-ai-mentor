@@ -34,7 +34,7 @@ def _get_judge() -> OpenAI:
     return _judge_client
 
 
-_JUDGE_MODEL = os.getenv("EVAL_JUDGE_MODEL", "llama-3.1-8b-instant")
+_JUDGE_MODEL = os.getenv("EVAL_JUDGE_MODEL", "openai/gpt-oss-120b")
 
 # ── Score dataclass ───────────────────────────────────────────────────────────
 

@@ -22,6 +22,9 @@ htmlcov/
 .env.*
 !.env.example
 
+# MLflow local tracking artifacts
+mlruns/
+
 # Per-service SQLite dev fallback DBs (DATABASE_URL unset) and alembic scratch DBs
 *.db
 
