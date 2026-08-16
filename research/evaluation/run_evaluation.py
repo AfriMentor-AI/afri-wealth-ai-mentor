@@ -20,7 +20,7 @@ from research.evaluation.metrics import EvalResult, evaluate_response, log_eval_
 # ── Constants ─────────────────────────────────────────────────────────────────
 
 # The base model used during fine-tuning.
-BASE_MODEL_ID = "meta-llama/Llama-3-8B-Instruct"
+BASE_MODEL_ID = "Qwen/Qwen2.5-7B-Instruct"
 
 # Your Hugging Face username, read from an environment variable.
 HF_USERNAME = os.getenv("HF_USERNAME")

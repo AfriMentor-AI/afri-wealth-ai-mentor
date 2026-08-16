@@ -21,7 +21,7 @@ from trl import SFTConfig, SFTTrainer
 # ── Constants ─────────────────────────────────────────────────────────────────
 
 # Official Hugging Face repo ID for Meta Llama 3
-BASE_MODEL_ID = "meta-llama/Meta-Llama-3-8B-Instruct"
+BASE_MODEL_ID = "Qwen/Qwen2.5-7B-Instruct"
 DATASET_ID = "chioma_persona_sft.jsonl"
 
 HF_USERNAME = os.getenv("HF_USERNAME")
