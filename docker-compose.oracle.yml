@@ -1,0 +1,32 @@
+# Public-VM safety overlay for self-hosted free-tier deploys (e.g. an Oracle
+# Cloud Always Free VM — docs/deployment/oracle-free-tier.md). Layers on top
+# of docker-compose.yml + docker-compose.staging.yml:
+#   docker compose -f docker-compose.yml -f docker-compose.staging.yml \
+#     -f docker-compose.oracle.yml -p afrimentor-staging up -d --build <services>
+#
+# docker-compose.staging.yml already locks down the *datastore* ports
+# (postgres/redis/chromadb) because it was written for a private staging box.
+# This locks down the *service* ports too, because this overlay's target is a
+# VM with a public IP: ADR-0001's single-ingress design means only
+# api-gateway should ever be reachable from the internet — the other
+# services are meant to be called through it, not directly.
+name: afrimentor-staging
+
+services:
+  auth-user-service:
+    ports: !reset []
+
+  chat-orchestration-service:
+    ports: !reset []
+
+  persona-prompt-service:
+    ports: !reset []
+
+  rag-corpus-service:
+    ports: !reset []
+
+  # Not reset by docker-compose.staging.yml either — its AMQP port and
+  # management UI (real credentials, not the local dev defaults) would
+  # otherwise be published straight to this VM's public IP.
+  rabbitmq:
+    ports: !reset []

@@ -1,0 +1,8 @@
+# Keep the build context tiny and the image reproducible.
+node_modules/
+.next/
+docs/
+*.md
+.env
+.env.*
+.git/
