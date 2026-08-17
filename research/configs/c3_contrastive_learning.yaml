@@ -49,6 +49,13 @@ training:
   save_total_limit: 3
 
 evaluation:
+  # Post-training scoring of the DPO checkpoint against the SHARED metric suite
+  # (card C3.1 acceptance criterion). Same metrics + held-out split as C1/C2, so
+  # the conditions are directly comparable in MLflow.
+  sample_size: 100          # held-out samples drawn from sft_test.jsonl
+  eval_split: "sft_test.jsonl"
+  max_new_tokens: 512
+  temperature: 0.0          # greedy — a comparison baseline must not carry sampling noise
   metrics:
     - persona_adherence
     - cultural_fluency
