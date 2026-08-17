@@ -27,6 +27,10 @@ HF_USERNAME = os.getenv("HF_USERNAME")
 # The Hugging Face Hub ID of your fine-tuned adapter.
 ADAPTER_MODEL_ID = f"{HF_USERNAME}/c2-sft-Qwen2.5-7B-chioma-persona" if HF_USERNAME else None
 
+# Use the same SQLite backend as setup_mlflow.py for local tracking consistency.
+MLFLOW_TRACKING_URI = os.getenv("MLFLOW_TRACKING_URI", "sqlite:///research/tracking/mlflow.db")
+MLFLOW_ARTIFACT_ROOT = os.getenv("MLFLOW_ARTIFACT_ROOT", "research/tracking/artifacts")
+
 MLFLOW_EXPERIMENT_NAME = "C2_supervised_persona_finetuning"
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
@@ -109,6 +113,7 @@ def main():
     eval_result: EvalResult = evaluate_response(USER_MESSAGE, response_text, REFERENCE_RESPONSE)
 
     # Log to MLflow
+    mlflow.set_tracking_uri(MLFLOW_TRACKING_URI)
     mlflow.set_experiment(MLFLOW_EXPERIMENT_NAME)
     with mlflow.start_run(run_name="sft_local_evaluation_run"):
         mlflow.log_param("model_id", ADAPTER_MODEL_ID)
