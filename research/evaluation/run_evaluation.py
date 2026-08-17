@@ -25,7 +25,7 @@ BASE_MODEL_ID = "Qwen/Qwen2.5-7B-Instruct"
 # Your Hugging Face username, read from an environment variable.
 HF_USERNAME = os.getenv("HF_USERNAME")
 # The Hugging Face Hub ID of your fine-tuned adapter.
-ADAPTER_MODEL_ID = f"{HF_USERNAME}/c2-sft-llama3-8b-chioma-persona" if HF_USERNAME else None
+ADAPTER_MODEL_ID = f"{HF_USERNAME}/c2-sft-Qwen2.5-7B-chioma-persona" if HF_USERNAME else None
 
 MLFLOW_EXPERIMENT_NAME = "C2_supervised_persona_finetuning"
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"

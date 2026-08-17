@@ -25,9 +25,9 @@ BASE_MODEL_ID = "Qwen/Qwen2.5-7B-Instruct"
 DATASET_ID = "chioma_persona_sft.jsonl"
 
 HF_USERNAME = os.getenv("HF_USERNAME")
-HUB_MODEL_ID = f"{HF_USERNAME}/c2-sft-llama3-8b-chioma-persona" if HF_USERNAME else None
+HUB_MODEL_ID = f"{HF_USERNAME}/c2-sft-Qwen2.5-7B-chioma-persona" if HF_USERNAME else None
 
-NEW_MODEL_NAME = "c2-sft-llama3-8b-chioma-persona"
+NEW_MODEL_NAME = "c2-sft-Qwen2.5-7B-chioma-persona"
 MLFLOW_EXPERIMENT_NAME = "C2_supervised_persona_finetuning"
 
 # ── Configuration ─────────────────────────────────────────────────────────────
