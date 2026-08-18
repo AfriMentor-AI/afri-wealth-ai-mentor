@@ -17,7 +17,7 @@ The script reads hyperparameters from `research/configs/c2_supervised_finetuning
 
 To run the evaluation suite against the held-out test split:
 ```bash
-python experiments/02_supervised_finetuning/evaluate_runner.py
+python evaluation/evaluate_runner.py
 ```
 
 ## Results
@@ -37,9 +37,9 @@ python experiments/02_supervised_finetuning/evaluate_runner.py
 
 ### Analysis
 
-*   **Persona and Framework Retention**: Fine-tuning with response-only loss masking dramatically improved `persona_adherence` ($0.20 \rightarrow 0.66$) and `anti_dependency` ($0.20 \rightarrow 0.65$). The model ceased generating generic pleasantries and bulleted checklists, instead adopting Chioma's direct coaching style and framework-first methodology.
+*   **Persona and Framework Retention**: Fine-tuning with response-only loss masking dramatically improved `persona_adherence` (0.20 -> 0.66) and `anti_dependency` (0.20 -> 0.65). The model ceased generating generic pleasantries and bulleted checklists, instead adopting Chioma's direct coaching style and framework-first methodology.
 *   **Decoding Sensitivity**: Setting inference sampling to low temperature ($T=0.1$) locked generation paths into the learned low-rank adapter trajectories, preventing base-model assistant drift.
-*   **Urgency & Financial Grounding**: Incorporating explicit cost-of-inaction statements into the training data lifted `urgency` scores from $0.20$ to $0.44+$, with `financial_accuracy` peaking at $0.66$.
+*   **Urgency & Financial Grounding**: Incorporating explicit cost-of-inaction statements into the training data lifted `urgency` scores from 0.20 to 0.44+, with `financial_accuracy` peaking at 0.66.
 
 ## Artifacts & Model Checkpoints
 
