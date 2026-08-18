@@ -23,7 +23,7 @@ htmlcov/
 !.env.example
 
 # MLflow local tracking artifacts
-# mlruns/
+mlruns/
 
 # Model checkpoints and weights
 *.pt
