@@ -7,7 +7,6 @@
 
 import {
   mockBadges,
-  mockChatMessages,
   mockCommitments,
   mockDailyAction,
   mockGoals,
@@ -19,6 +18,7 @@ import {
   mockUser,
   mockUserBadges,
 } from "./mockData";
+import { apiFetch, getCurrentUserId } from "./session";
 import type {
   BadgeWithStatus,
   ChatMessage,
@@ -84,13 +84,35 @@ export async function fetchDailyAction(): Promise<DailyAction> {
   return resolveAfterLatency(mockDailyAction);
 }
 
-/** GET /chat/messages */
-// Accepts an optional options parameter to support future filtering/pagination
-// and to match call sites that may pass an argument. Keeping it optional so
-// existing calls with no args continue to work.
-export async function fetchChatMessages(_opts?: unknown): Promise<ChatMessage[]> {
-  console.info("[mock] fetchChatMessages options:", _opts);
-  return resolveAfterLatency(mockChatMessages);
+interface BackendMessage {
+  id: string;
+  role: "user" | "assistant" | "system";
+  content: string;
+  is_commitment_candidate: boolean;
+  citations: Array<{ label: string }>;
+  created_at: string;
+}
+
+function toChatMessage(m: BackendMessage, userId: string): ChatMessage {
+  return {
+    id: m.id,
+    userId,
+    sender: m.role === "user" ? "user" : "mentor",
+    text: m.content,
+    citations: m.citations,
+    isCommitmentCandidate: m.is_commitment_candidate,
+    createdAt: m.created_at,
+  };
+}
+
+/** GET /api/v1/chat/sessions/{id}/messages */
+export async function fetchChatMessages(chatSessionId?: string): Promise<ChatMessage[]> {
+  if (!chatSessionId) return [];
+  const res = await apiFetch(`/api/v1/chat/sessions/${chatSessionId}/messages`);
+  if (!res.ok) throw new Error(`fetchChatMessages failed: ${res.status}`);
+  const body: BackendMessage[] = await res.json();
+  const userId = await getCurrentUserId();
+  return body.filter((m) => m.role !== "system").map((m) => toChatMessage(m, userId));
 }
 
 /** GET /insights */
@@ -135,31 +157,16 @@ export async function fetchBadges(): Promise<BadgeWithStatus[]> {
 // them can build. When the real backend exists, replace with fetch() calls.
 // ---------------------------------------------------------------------------
 
-export async function sendMessage(chatSessionId: string, text: string): Promise<ChatMessage>;
-export async function sendMessage(input: { text: string; personaId?: string }): Promise<ChatMessage>;
-export async function sendMessage(a: string | { text: string; personaId?: string }, b?: string): Promise<ChatMessage> {
-  let personaId: string | undefined;
-  let messageText: string;
-  if (typeof a === "string") {
-    // Called as sendMessage(chatSessionId, text)
-    messageText = b ?? "";
-    // chatSessionId is available as `a` if needed for more realistic mocks
-    personaId = undefined;
-  } else {
-    // Called as sendMessage({ text, personaId })
-    messageText = a.text;
-    personaId = a.personaId;
-  }
-
-  const msg: ChatMessage = {
-    id: `msg-${Date.now()}`,
-    userId: mockUser.id,
-    sender: "mentor",
-    text: `(mock reply) Received: ${messageText}`,
-    personaId: personaId,
-    createdAt: new Date().toISOString(),
-  };
-  return resolveAfterLatency(msg);
+/** POST /api/v1/chat/sessions/{id}/messages — persists the user turn server-side
+ * and returns the mentor's reply. */
+export async function sendMessage(chatSessionId: string, text: string): Promise<ChatMessage> {
+  const res = await apiFetch(`/api/v1/chat/sessions/${chatSessionId}/messages`, {
+    method: "POST",
+    body: JSON.stringify({ content: text }),
+  });
+  if (!res.ok) throw new Error(`sendMessage failed: ${res.status}`);
+  const body: BackendMessage = await res.json();
+  return toChatMessage(body, await getCurrentUserId());
 }
 
 export async function tagCommitment(chatSessionId: string, chatMessageId: string, goalId?: string): Promise<Commitment>;
@@ -236,12 +243,13 @@ export async function submitIntake(intake: Partial<Profile> | Record<string, unk
   return resolveAfterLatency(profile);
 }
 
-// Starts a new chat session and returns its session id. The UI can then
-// call fetchChatMessages(sessionId) or fetchChatMessages() to seed the
-// conversation from mock data.
+/** POST /api/v1/chat/sessions — creates a new conversation and returns its id. */
 export async function startChatSession(personaId?: string): Promise<string> {
-  // In a real backend this would create a session and return its id. Here
-  // produce a deterministic-ish mock id that encodes the persona if present.
-  const sessionId = personaId ? `session-${personaId}-${Date.now()}` : `session-${Date.now()}`;
-  return resolveAfterLatency(sessionId);
+  const res = await apiFetch("/api/v1/chat/sessions", {
+    method: "POST",
+    body: JSON.stringify({ persona_id: personaId ?? null }),
+  });
+  if (!res.ok) throw new Error(`startChatSession failed: ${res.status}`);
+  const body: { id: string } = await res.json();
+  return body.id;
 }
