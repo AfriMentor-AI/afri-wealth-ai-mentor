@@ -116,6 +116,7 @@ def main():
     mlflow.set_tracking_uri(MLFLOW_TRACKING_URI)
     mlflow.set_experiment(MLFLOW_EXPERIMENT_NAME)
     with mlflow.start_run(run_name="sft_local_evaluation_run"):
+
         mlflow.log_param("model_id", ADAPTER_MODEL_ID)
         log_eval_to_mlflow(eval_result)
         print("\n✅ Evaluation complete. Results logged to MLflow.")
