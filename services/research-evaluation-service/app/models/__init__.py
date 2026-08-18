@@ -6,5 +6,13 @@ from app.models.audit import (
     ExperimentStatus,
     TraitFitReport,
 )
+from app.models.session_metric import SessionMetric, anonymize_user_id
 
-__all__ = ["Base", "ExperimentRun", "ExperimentStatus", "TraitFitReport"]
+__all__ = [
+    "Base",
+    "ExperimentRun",
+    "ExperimentStatus",
+    "TraitFitReport",
+    "SessionMetric",
+    "anonymize_user_id",
+]

@@ -15,7 +15,10 @@ import os
 from collections.abc import Iterator
 
 from sqlalchemy import create_engine
-from sqlalchemy.orm import Session, sessionmaker
+from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
+
+class Base(DeclarativeBase):
+    pass
 
 DEFAULT_DATABASE_URL = "sqlite:///./research_evaluation.db"
 

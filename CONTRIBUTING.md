@@ -82,7 +82,7 @@ We practise **trunk-based development** with a protected integration branch:
 - Open a PR early (draft is fine). Small PRs merge faster.
 - Squash-merge. Delete the branch after merge.
 
-### Branch protection (configured on `main` **and** `develop`)
+### Branch protection (target ruleset for `main` **and** `develop`)
 - Require the `ci-ok` status check to pass.
 - Require at least one approving review from the owning area (see below).
 - Require branches to be up to date (strict) and a linear history before merging.
@@ -93,11 +93,17 @@ Protection is applied as code — run once per repo (needs `gh` with admin scope
 
 ```bash
 gh auth login
-OWNER=<org-or-user> REPO=afri-wealth-ai-mentor bash scripts/setup-branch-protection.sh
+bash scripts/setup-branch-protection.sh          # defaults to AfriMentor-AI/afri-wealth-ai-mentor
 ```
 
 The script applies the identical ruleset to both `main` and `develop`. Create and push
 `develop` before running it (`git switch -c develop && git push -u origin develop`).
+
+> **Not yet active.** The `AfriMentor-AI` org is on the GitHub **Free** plan, and protected
+> branches (and rulesets) are unavailable on private repos there — the API returns
+> `403 Upgrade to GitHub Pro or make this repository public`. Until the org moves to Team,
+> the rules above are convention enforced by review, not by GitHub, and the script will
+> fail. Treat "don't push straight to `develop`" as a team agreement for now.
 
 ## 4a. Repository secrets
 

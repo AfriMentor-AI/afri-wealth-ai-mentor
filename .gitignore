@@ -22,6 +22,18 @@ htmlcov/
 .env.*
 !.env.example
 
+# MLflow local tracking artifacts
+mlruns/
+
+# Model checkpoints and weights
+*.pt
+*.bin
+*.safetensors
+optimizer.pt
+research/models/
+checkpoints/
+results/
+
 # Per-service SQLite dev fallback DBs (DATABASE_URL unset) and alembic scratch DBs
 *.db
 
