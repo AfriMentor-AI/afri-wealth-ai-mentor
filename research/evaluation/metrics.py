@@ -1,42 +1,25 @@
-"""Shared evaluation harness for all 4 alignment conditions (card D1.4).
-
-Computes the AfriMentor evaluation suite against a model response:
-  - PersonaAdherenceScore   : does the response sound like Chioma?
-  - CulturalFluencyScore    : African context, vernacular, local references
-  - AntiDependencyScore     : teaches frameworks, not just answers
-  - FinancialAccuracyScore  : factual correctness of financial advice
-  - UrgencyScore            : surfaces cost of inaction
-  - ROUGE-L                 : surface-level overlap with reference responses
-  - BERTScore               : semantic similarity to reference responses
-
-All scorers return a float in [0.0, 1.0].
-LLM-based scorers use the same OpenAI-compatible API as the chat service.
-"""
 from __future__ import annotations
 
+import json
 import os
+import re
+import time
 from dataclasses import dataclass, field
-
 import mlflow
 from openai import OpenAI
 
-# ── LLM judge client ──────────────────────────────────────────────────────────
 _judge_client: OpenAI | None = None
-
 
 def _get_judge() -> OpenAI:
     global _judge_client
     if _judge_client is None:
-        _judge_client = OpenAI(
-            api_key=os.getenv("LLM_API_KEY", ""),
-            base_url=os.getenv("LLM_BASE_URL", "https://api.groq.com/openai/v1"),
-        )
+        api_key = os.getenv("LLM_API_KEY") or os.getenv("GROQ_API_KEY", "")
+        base_url = os.getenv("LLM_BASE_URL", "https://api.groq.com/openai/v1")
+        _judge_client = OpenAI(api_key=api_key, base_url=base_url)
     return _judge_client
 
-
-_JUDGE_MODEL = os.getenv("EVAL_JUDGE_MODEL", "llama-3.1-8b-instant")
-
-# ── Score dataclass ───────────────────────────────────────────────────────────
+# Configured for openai/gpt-oss-120b
+_JUDGE_MODEL = os.getenv("EVAL_JUDGE_MODEL", "openai/gpt-oss-120b")
 
 @dataclass
 class EvalResult:
@@ -63,7 +46,6 @@ class EvalResult:
 
     @property
     def composite_score(self) -> float:
-        """Weighted composite — persona + cultural + anti-dependency weighted higher."""
         return (
             self.persona_adherence * 0.25
             + self.cultural_fluency * 0.20
@@ -72,115 +54,73 @@ class EvalResult:
             + self.urgency * 0.15
         )
 
+_COMBINED_EVAL_PROMPT = """You are an expert evaluator assessing an AI financial mentor response (Persona: Chioma) for African founders and individuals.
+Evaluate the AI response across these 5 dimensions on a scale from 0.0 (completely fails) to 1.0 (fully meets):
 
-# ── LLM-as-judge scorers ──────────────────────────────────────────────────────
+1. persona_adherence: Warm but direct, gives specific actionable advice with numbers, acknowledges before advising, ends with a single sharp question/next action rather than generic advice.
+2. cultural_fluency: Genuine understanding of African financial realities (informal markets, mobile money, SACCOs/chamas/esusu, local context).
+3. anti_dependency: Teaches underlying frameworks and principles rather than merely handing over generic lists.
+4. financial_accuracy: Factually realistic and sensible numbers/guidance for African markets.
+5. urgency: Surfaces the concrete cost of inaction or realistic timelines.
 
-_RUBRIC_TEMPLATE = """You are an expert evaluator for an African financial mentorship AI.
-Score the following AI response on the dimension: {dimension}
+User query: {user_message}
+AI output: {response}
 
-Definition: {definition}
+Output format: Return ONLY a JSON object with float scores (between 0.0 and 1.0) for:
+"persona_adherence", "cultural_fluency", "anti_dependency", "financial_accuracy", "urgency"."""
 
-User message: {user_message}
-AI response: {response}
-
-Score from 0.0 to 1.0 where:
-  0.0 = completely fails this dimension
-  0.5 = partially meets this dimension
-  1.0 = fully and excellently meets this dimension
-
-Reply with ONLY a single float number between 0.0 and 1.0. No explanation."""
-
-
-def _llm_score(dimension: str, definition: str, user_message: str, response: str) -> float:
-    prompt = _RUBRIC_TEMPLATE.format(
-        dimension=dimension,
-        definition=definition,
+def score_all_dimensions(user_message: str, response: str) -> dict[str, float]:
+    prompt = _COMBINED_EVAL_PROMPT.format(
         user_message=user_message,
         response=response,
     )
-    try:
-        result = _get_judge().chat.completions.create(
-            model=_JUDGE_MODEL,
-            messages=[{"role": "user", "content": prompt}],
-            max_tokens=5,
-            temperature=0.0,
-        )
-        return float(result.choices[0].message.content.strip())
-    except (ValueError, Exception):
-        return 0.0
+    
+    defaults = {
+        "persona_adherence": 0.0,
+        "cultural_fluency": 0.0,
+        "anti_dependency": 0.0,
+        "financial_accuracy": 0.0,
+        "urgency": 0.0,
+    }
 
+    client = _get_judge()
+    if not client.api_key:
+        print("[ERROR] LLM API key missing for judge client.", flush=True)
+        return defaults
 
-def score_persona_adherence(user_message: str, response: str) -> float:
-    return _llm_score(
-        dimension="Persona Adherence (Chioma)",
-        definition=(
-            "The response sounds like Chioma: warm but direct, uses African context, "
-            "gives specific actionable advice with numbers, acknowledges before advising, "
-            "and ends with a single sharp question or next action — not generic encouragement."
-        ),
-        user_message=user_message,
-        response=response,
-    )
+    for attempt in range(3):
+        try:
+            res = client.chat.completions.create(
+                model=_JUDGE_MODEL,
+                messages=[
+                    {"role": "user", "content": prompt}
+                ],
+                max_tokens=512,
+                temperature=0.0,
+            )
 
+            msg = res.choices[0].message
+            raw_text = (msg.content or getattr(msg, "reasoning_content", "") or "").strip()
 
-def score_cultural_fluency(user_message: str, response: str) -> float:
-    return _llm_score(
-        dimension="Cultural Fluency",
-        definition=(
-            "The response demonstrates genuine understanding of African financial realities: "
-            "informal markets, mobile money, rotating savings groups (ajo/esusu/chama), "
-            "family financial obligations, local business terminology, and regional context. "
-            "It does not impose Western personal-finance frameworks without adaptation."
-        ),
-        user_message=user_message,
-        response=response,
-    )
+            # Robust JSON extraction from raw content
+            json_match = re.search(r"\{[^{}]*\}", raw_text, re.DOTALL)
+            if json_match:
+                parsed = json.loads(json_match.group(0))
+                return {
+                    k: min(max(float(parsed.get(k, 0.0)), 0.0), 1.0)
+                    for k in defaults.keys()
+                }
 
+            print(f"[Judge Warning] Could not find JSON block in output: {repr(raw_text)}", flush=True)
+            break
+        except Exception as e:
+            time.sleep(1.5 * (attempt + 1))
+            if attempt == 2:
+                print(f"[Judge API Error with {_JUDGE_MODEL}]: {e}", flush=True)
 
-def score_anti_dependency(user_message: str, response: str) -> float:
-    return _llm_score(
-        dimension="Anti-Dependency",
-        definition=(
-            "The response builds the user's financial thinking rather than creating "
-            "dependence. It explains reasoning, teaches a framework or principle, "
-            "and asks what the user thinks before or alongside giving advice. "
-            "It does not just hand over an answer without transferring understanding."
-        ),
-        user_message=user_message,
-        response=response,
-    )
-
-
-def score_financial_accuracy(user_message: str, response: str) -> float:
-    return _llm_score(
-        dimension="Financial Accuracy",
-        definition=(
-            "The financial advice is factually correct, the numbers are realistic for "
-            "African markets, and no harmful or misleading financial guidance is given. "
-            "Calculations (margins, savings rates, costs) are accurate."
-        ),
-        user_message=user_message,
-        response=response,
-    )
-
-
-def score_urgency(user_message: str, response: str) -> float:
-    return _llm_score(
-        dimension="Urgency",
-        definition=(
-            "The response surfaces the cost of financial inaction in concrete terms — "
-            "specific numbers, timelines, or opportunity costs. It makes the future "
-            "feel close and real, not abstract."
-        ),
-        user_message=user_message,
-        response=response,
-    )
-
-
-# ── Reference-based scorers ───────────────────────────────────────────────────
+    return defaults
 
 def score_rouge_l(response: str, reference: str) -> float:
-    """ROUGE-L F1 score against a reference response."""
     try:
         from rouge_score import rouge_scorer
         scorer = rouge_scorer.RougeScorer(["rougeL"], use_stemmer=True)
@@ -188,9 +128,7 @@ def score_rouge_l(response: str, reference: str) -> float:
     except ImportError:
         return 0.0
 
-
 def score_bert(response: str, reference: str) -> float:
-    """BERTScore F1 against a reference response."""
     try:
         from bert_score import score as bert_score
         _, _, f1 = bert_score([response], [reference], lang="en", verbose=False)
@@ -198,29 +136,27 @@ def score_bert(response: str, reference: str) -> float:
     except ImportError:
         return 0.0
 
-
-# ── Full evaluation pipeline ──────────────────────────────────────────────────
-
 def evaluate_response(
     user_message: str,
     response: str,
     reference: str | None = None,
 ) -> EvalResult:
-    """Run the full evaluation suite on a single (user_message, response) pair."""
+    scores = score_all_dimensions(user_message, response)
+
     result = EvalResult(
-        persona_adherence=score_persona_adherence(user_message, response),
-        cultural_fluency=score_cultural_fluency(user_message, response),
-        anti_dependency=score_anti_dependency(user_message, response),
-        financial_accuracy=score_financial_accuracy(user_message, response),
-        urgency=score_urgency(user_message, response),
+        persona_adherence=scores["persona_adherence"],
+        cultural_fluency=scores["cultural_fluency"],
+        anti_dependency=scores["anti_dependency"],
+        financial_accuracy=scores["financial_accuracy"],
+        urgency=scores["urgency"],
     )
+
     if reference:
         result.rouge_l = score_rouge_l(response, reference)
         result.bert_score_f1 = score_bert(response, reference)
+        
     return result
 
-
 def log_eval_to_mlflow(result: EvalResult, step: int | None = None) -> None:
-    """Log all eval metrics to the active MLflow run."""
     mlflow.log_metrics(result.to_dict(), step=step)
     mlflow.log_metric("composite_score", result.composite_score, step=step)
