@@ -64,3 +64,16 @@ mlflow:
   run_name_prefix: "c3"
   log_artifacts: true
   log_model: true
+
+probing:
+  # Card C3.3 — latent-space persona-vector probing. Extracts per-trait persona
+  # vectors from model activations via contrastive diff-of-means over the CHIOMA
+  # profile's markers / counter_markers, then a linear probe scores how strongly a
+  # response expresses each trait. numpy-only core; the real activation extractor
+  # (HFActivationExtractor) needs a GPU/model node. See docs/implementation/C3_3_*.
+  profile_path: "services/persona-prompt-service/data/chioma_profile.v1.json"
+  pooling: "mean"                 # mean | last — token pooling per layer
+  heldout_fraction: 0.3           # markers reserved for the separation diagnostic
+  max_markers: null               # cap markers per trait (null = use all)
+  max_length: 256                 # tokenizer truncation for activation extraction
+  output_path: "research/experiments/03_contrastive_learning/checkpoints/persona_vectors.npz"
