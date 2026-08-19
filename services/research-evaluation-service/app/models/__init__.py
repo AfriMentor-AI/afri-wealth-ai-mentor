@@ -6,6 +6,7 @@ from app.models.audit import (
     ExperimentStatus,
     TraitFitReport,
 )
+from app.models.consistency_run import ConsistencyRun
 from app.models.session_metric import SessionMetric, anonymize_user_id
 
 __all__ = [
@@ -13,6 +14,7 @@ __all__ = [
     "ExperimentRun",
     "ExperimentStatus",
     "TraitFitReport",
+    "ConsistencyRun",
     "SessionMetric",
     "anonymize_user_id",
 ]

@@ -316,6 +316,9 @@ services:
     environment:
       <<: *svc-env
       DATABASE_URL: postgresql+psycopg://afrimentor:afrimentor@postgres:5432/svc_research
+      # C3.2 nightly consistency job samples real sessions straight from the chat
+      # service's database — chat owns the turns and no event carries them.
+      CHAT_DB_URL: postgresql+psycopg://afrimentor:afrimentor@postgres:5432/svc_chat
       RABBITMQ_URL: amqp://afrimentor:afrimentor@rabbitmq:5672/
       # Probe administration (card C2.3). Same LLM_* vars as chat-orchestration so
       # the baseline measures the model users actually talk to. Temperature is

@@ -24,6 +24,15 @@ class Settings(BaseModel):
     # Research salt for anonymization (anonymize_user_id function)
     research_salt: str = os.getenv("RESEARCH_SALT", "default-research-salt")
 
+    # Nightly consistency scoring job (card C3.2). The scheduler runs in-process;
+    # disable it in tests or one-off containers via ENABLE_SCHEDULER=false.
+    enable_scheduler: bool = os.getenv("ENABLE_SCHEDULER", "true").lower() in (
+        "1",
+        "true",
+        "yes",
+    )
+    consistency_sample_size: int = int(os.getenv("CONSISTENCY_SAMPLE_SIZE", "20"))
+
 
 @lru_cache
 def get_settings() -> Settings:

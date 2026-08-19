@@ -27,16 +27,22 @@ The connection between them:
      chat-orchestration-service via LLM_MODEL config, not through this service.
 ─────────────────────────────────────────────────────────────────────────────
 """
+import logging
 import os
 from datetime import date, timedelta
 
+from apscheduler.schedulers.background import BackgroundScheduler
 from fastapi import FastAPI, Depends, Query
 from sqlalchemy.orm import Session
 from sqlalchemy import func, select
 
+from .config import get_settings
+from .consistency_job import run_consistency_job
 from .observability import instrument
 from .db.session import engine, get_db
-from .models import Base, SessionMetric
+from .models import Base, ConsistencyRun, SessionMetric
+
+logger = logging.getLogger(__name__)
 
 SERVICE_NAME = "research-evaluation-service"
 SERVICE_VERSION = "0.1.0"
@@ -49,11 +55,46 @@ app = FastAPI(
 
 instrument(app, SERVICE_NAME)
 
-# Initialize database tables on startup
+# Nightly consistency scoring job (card C3.2). Held at module scope so the
+# shutdown handler can stop the same scheduler instance startup created.
+_scheduler: BackgroundScheduler | None = None
+
+
 @app.on_event("startup")
-def startup():
-    """Create all tables at startup."""
+def startup() -> None:
+    """Create tables and, unless disabled, arm the nightly consistency job."""
+    global _scheduler
     Base.metadata.create_all(bind=engine)
+
+    settings = get_settings()
+    if not settings.enable_scheduler:
+        logger.info("Scheduler disabled (ENABLE_SCHEDULER=false); nightly job not armed")
+        return
+
+    _scheduler = BackgroundScheduler(timezone="UTC")
+    _scheduler.add_job(
+        run_consistency_job,
+        "cron",
+        hour=2,
+        minute=0,
+        kwargs={"sample_size": settings.consistency_sample_size},
+        id="nightly_consistency",
+        replace_existing=True,
+    )
+    _scheduler.start()
+    logger.info(
+        "Nightly consistency job armed at 02:00 UTC (sample_size=%d)",
+        settings.consistency_sample_size,
+    )
+
+
+@app.on_event("shutdown")
+def shutdown() -> None:
+    """Stop the scheduler so a reload or container stop exits cleanly."""
+    global _scheduler
+    if _scheduler is not None:
+        _scheduler.shutdown(wait=False)
+        _scheduler = None
 
 
 @app.get("/health", tags=["meta"])
@@ -213,4 +254,90 @@ def get_daily_session_metrics(
             "end_date": end_date.isoformat() if end_date else None,
         },
         "daily_metrics": daily_metrics,
+    }
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Behavioral Consistency Metrics Endpoint (card C3.2)
+# ─────────────────────────────────────────────────────────────────────────────
+
+_EMPTY_CONSISTENCY_AGGREGATES = {
+    "mean_prompt_to_line": 0.0,
+    "mean_line_to_line": 0.0,
+    "mean_qa_consistency": 0.0,
+    "mean_aggregate": 0.0,
+}
+
+
+@app.get("/api/v1/metrics/consistency", tags=["metrics"])
+def get_consistency_metrics(
+    limit: int = Query(50, ge=1, le=500, description="Max per-session rows to return"),
+    job_run_id: str | None = Query(
+        None, description="Report a specific run; defaults to the most recent"
+    ),
+    db: Session = Depends(get_db),
+) -> dict:
+    """Behavioral consistency scores for the Research Console dashboard (Sprint 4).
+
+    Returns per-session sub-scores plus run-level means for one scoring run — the
+    most recent by default, or the run named by ``job_run_id``. Means are computed
+    over every session in the run; ``sessions`` is capped at ``limit`` rows.
+    """
+    if job_run_id is None:
+        latest = (
+            db.query(ConsistencyRun).order_by(ConsistencyRun.scored_at.desc()).first()
+        )
+        if latest is None:
+            return {
+                "job_run_id": None,
+                "session_count": 0,
+                "scored_at": None,
+                "aggregates": _EMPTY_CONSISTENCY_AGGREGATES,
+                "sessions": [],
+            }
+        job_run_id = latest.job_run_id
+
+    runs = (
+        db.query(ConsistencyRun)
+        .filter(ConsistencyRun.job_run_id == job_run_id)
+        .order_by(ConsistencyRun.scored_at.desc())
+        .all()
+    )
+
+    if not runs:
+        return {
+            "job_run_id": job_run_id,
+            "session_count": 0,
+            "scored_at": None,
+            "aggregates": _EMPTY_CONSISTENCY_AGGREGATES,
+            "sessions": [],
+        }
+
+    n = len(runs)
+    aggregates = {
+        "mean_prompt_to_line": round(sum(r.prompt_to_line for r in runs) / n, 4),
+        "mean_line_to_line": round(sum(r.line_to_line for r in runs) / n, 4),
+        "mean_qa_consistency": round(sum(r.qa_consistency for r in runs) / n, 4),
+        "mean_aggregate": round(sum(r.aggregate for r in runs) / n, 4),
+    }
+    sessions = [
+        {
+            "conversation_id": r.conversation_id,
+            "persona_id": r.persona_id,
+            "prompt_to_line": r.prompt_to_line,
+            "line_to_line": r.line_to_line,
+            "qa_consistency": r.qa_consistency,
+            "aggregate": r.aggregate,
+            "turn_count": r.turn_count,
+            "scored_at": r.scored_at.isoformat() if r.scored_at else None,
+        }
+        for r in runs[:limit]
+    ]
+
+    return {
+        "job_run_id": job_run_id,
+        "session_count": n,
+        "scored_at": runs[0].scored_at.isoformat() if runs[0].scored_at else None,
+        "aggregates": aggregates,
+        "sessions": sessions,
     }
