@@ -27,12 +27,15 @@ The connection between them:
      chat-orchestration-service via LLM_MODEL config, not through this service.
 ─────────────────────────────────────────────────────────────────────────────
 """
+import csv
+import io
 import logging
 import os
 from datetime import UTC, date, datetime
 
 from apscheduler.schedulers.background import BackgroundScheduler
 from fastapi import Depends, FastAPI, Header, HTTPException, Query
+from fastapi.responses import StreamingResponse
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
@@ -458,3 +461,72 @@ def acknowledge_drift_alert(
         "status": alert.status,
         "acknowledged_at": alert.acknowledged_at.isoformat(),
     }
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Pilot Data Export (card O4.4)
+# ─────────────────────────────────────────────────────────────────────────────
+
+# Declared once so the header row and value rows can't drift apart (same
+# pattern as rag-corpus-service's CSV_COLUMNS). No raw user_id or
+# conversation_id column — user_hash is already anonymize_user_id()'s output,
+# and sessions are identified only by row order, not by their real id.
+PILOT_EXPORT_COLUMNS = [
+    "user_hash", "session_date", "session_duration_seconds", "message_count",
+    "persona_id", "prompt_to_line", "line_to_line", "qa_consistency",
+    "aggregate", "consistency_delta_pct",
+]
+
+
+@app.get("/api/v1/research/export/pilot-data.csv", tags=["research-console"])
+def export_pilot_data(
+    start_date: date | None = Query(None, description="Filter from this date (inclusive)"),
+    end_date: date | None = Query(None, description="Filter to this date (inclusive)"),
+    db: Session = Depends(get_db),
+    _admin: None = Depends(_require_admin),
+):
+    """Anonymized pilot-data export for Grace's interim statistical analysis (O4.4).
+
+    One row per session: the C3.5 engagement measures (session length, message
+    count) left-joined to that same session's C3.2 consistency score, when one
+    exists (only a sampled subset of sessions get scored by the nightly job,
+    not every session — those columns are blank rather than fabricated).
+    Joined on conversation_id internally, but that id itself is never in the
+    output — only the already-anonymized user_hash identifies a row's user.
+    """
+    query = db.query(SessionMetric, ConsistencyRun).outerjoin(
+        ConsistencyRun, ConsistencyRun.conversation_id == SessionMetric.conversation_id
+    )
+    if start_date:
+        query = query.filter(SessionMetric.session_date >= start_date)
+    if end_date:
+        query = query.filter(SessionMetric.session_date <= end_date)
+    rows = query.order_by(SessionMetric.session_date).all()
+
+    def generate():
+        buffer = io.StringIO()
+        writer = csv.writer(buffer)
+        writer.writerow(PILOT_EXPORT_COLUMNS)
+        yield buffer.getvalue()
+        for metric, consistency in rows:
+            buffer.seek(0)
+            buffer.truncate(0)
+            writer.writerow([
+                metric.user_hash,
+                metric.session_date.isoformat(),
+                metric.session_duration_seconds,
+                metric.message_count,
+                consistency.persona_id if consistency else "",
+                consistency.prompt_to_line if consistency else "",
+                consistency.line_to_line if consistency else "",
+                consistency.qa_consistency if consistency else "",
+                consistency.aggregate if consistency else "",
+                consistency.consistency_delta_pct if consistency else "",
+            ])
+            yield buffer.getvalue()
+
+    return StreamingResponse(
+        generate(),
+        media_type="text/csv",
+        headers={"Content-Disposition": "attachment; filename=pilot-data-export.csv"},
+    )
