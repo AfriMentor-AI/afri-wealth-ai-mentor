@@ -8,7 +8,7 @@ from __future__ import annotations
 import httpx
 from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, StreamingResponse
 
 from .auth import TokenError, verify_access_token
 from .config import get_settings
@@ -116,6 +116,28 @@ async def gateway(path: str, request: Request) -> Response:
         fwd_headers["X-User-Roles"] = ",".join(roles)
 
     body = await request.body()
+    if full_path.endswith("/messages/stream"):
+        async def events():
+            try:
+                async with httpx.AsyncClient(timeout=None) as client:
+                    async with client.stream(
+                        request.method,
+                        upstream_url,
+                        params=dict(request.query_params),
+                        headers=fwd_headers,
+                        content=body,
+                    ) as upstream_resp:
+                        async for chunk in upstream_resp.aiter_bytes():
+                            yield chunk
+            except httpx.RequestError:
+                yield b'event: error\ndata: {"detail":"upstream unavailable"}\n\n'
+
+        return StreamingResponse(
+            events(),
+            media_type="text/event-stream",
+            headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+        )
+
     try:
         async with httpx.AsyncClient(timeout=settings.upstream_timeout_seconds) as client:
             upstream_resp = await client.request(

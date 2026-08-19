@@ -5,6 +5,8 @@ Builds the messages list sent to the OpenAI-compatible API.
 from __future__ import annotations
 
 import logging
+import time
+from collections.abc import AsyncIterator
 
 import httpx
 from openai import AsyncOpenAI
@@ -17,6 +19,8 @@ logger = logging.getLogger(__name__)
 settings = get_settings()
 
 _client: AsyncOpenAI | None = None
+_persona_http_client: httpx.AsyncClient | None = None
+_prompt_cache: dict[tuple[str, str], tuple[float, str]] = {}
 
 
 def get_llm_client() -> AsyncOpenAI:
@@ -31,7 +35,7 @@ def get_llm_client() -> AsyncOpenAI:
 
 # ── System prompt ─────────────────────────────────────────────────────────────
 
-def _get_system_prompt(persona_id: str | None) -> str:
+async def _get_system_prompt(persona_id: str | None) -> str:
     """Fetch the rendered system prompt from persona-prompt-service.
 
     Falls back to the hardcoded Chioma base prompt when PERSONA_SERVICE_URL
@@ -45,13 +49,23 @@ def _get_system_prompt(persona_id: str | None) -> str:
     )
     if not settings.persona_service_url or not persona_id:
         return _FALLBACK
+    cache_key = (settings.persona_service_url, persona_id)
+    cached = _prompt_cache.get(cache_key)
+    if cached and time.monotonic() - cached[0] < settings.cache_ttl_seconds:
+        return cached[1]
     try:
-        resp = httpx.get(
+        global _persona_http_client
+        if _persona_http_client is None:
+            _persona_http_client = httpx.AsyncClient(timeout=httpx.Timeout(1.5, connect=0.3))
+        resp = await _persona_http_client.get(
             f"{settings.persona_service_url}/api/v1/personas/{persona_id}/prompt",
-            timeout=3.0,
         )
         resp.raise_for_status()
-        return resp.json()["system_prompt"]
+        prompt = resp.json()["system_prompt"]
+        if len(_prompt_cache) >= settings.cache_max_entries:
+            _prompt_cache.pop(next(iter(_prompt_cache)))
+        _prompt_cache[cache_key] = (time.monotonic(), prompt)
+        return prompt
     except Exception:
         logger.warning("persona-prompt-service unavailable — using fallback prompt")
         return _FALLBACK
@@ -110,7 +124,7 @@ async def chat_completion(
     renderer; it is empty when no RAG chunks were retrieved.
     Falls back to a stub reply when LLM_API_KEY is not configured.
     """
-    system_prompt = _get_system_prompt(persona_id)
+    system_prompt = await _get_system_prompt(persona_id)
     chunks = await retrieve(user_content, collection=rag_collection)
 
     messages: list[dict] = [{"role": "system", "content": system_prompt}]
@@ -162,6 +176,53 @@ async def chat_completion(
         usage.completion_tokens if usage else 0,
         citations,
     )
+
+
+async def stream_chat_completion(
+    *,
+    history: list[Message],
+    user_content: str,
+    persona_id: str | None,
+    rag_collection: str | None,
+) -> tuple[AsyncIterator[str], list[dict]]:
+    """Prepare a provider token stream and return it with its RAG citations."""
+    system_prompt = await _get_system_prompt(persona_id)
+    chunks = await retrieve(user_content, collection=rag_collection)
+    messages: list[dict] = [{"role": "system", "content": system_prompt}]
+    if chunks:
+        messages.append({"role": "system", "content": _build_rag_system_message(chunks)})
+    messages.extend({"role": msg.role, "content": msg.content} for msg in history)
+    messages.append({"role": "user", "content": user_content})
+    citations = [{"label": label} for label in _deduplicate_labels(chunks)]
+
+    async def fallback() -> AsyncIterator[str]:
+        yield (
+            "I hear you! Let's work through this together. "
+            "(LLM stub — set LLM_API_KEY to enable real responses.)"
+        )
+
+    if not settings.llm_api_key or not settings.llm_streaming_enabled:
+        return fallback(), citations
+
+    client = get_llm_client()
+
+    async def provider_stream() -> AsyncIterator[str]:
+        try:
+            response = await client.chat.completions.create(
+                model=settings.llm_model,
+                messages=messages,  # type: ignore[arg-type]
+                max_tokens=settings.llm_max_tokens,
+                temperature=settings.llm_temperature,
+                stream=True,
+            )
+            async for chunk in response:
+                if chunk.choices and chunk.choices[0].delta.content:
+                    yield chunk.choices[0].delta.content
+        except Exception as exc:  # pragma: no cover - provider failures need integration coverage
+            logger.warning("LLM stream failed; using fallback response: %s", exc)
+            yield "I hear you! Let's work through this together. (LLM unavailable.)"
+
+    return provider_stream(), citations
 
 
 async def generate_daily_action_for_user(user_id: str, db) -> str:
