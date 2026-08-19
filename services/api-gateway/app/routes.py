@@ -41,6 +41,11 @@ ROUTES: list[Route] = [
     Route("/api/v1/insights", "INSIGHT_SERVICE_URL", "http://localhost:8008"),
     Route("/api/v1/feedback", "FEEDBACK_SERVICE_URL", "http://localhost:8009"),
     Route("/api/v1/research", "RESEARCH_SERVICE_URL", "http://localhost:8010"),
+    # research-evaluation-service also mounts the C3.5/C3.2 metrics endpoints
+    # under /api/v1/metrics (not /api/v1/research) — no gateway route ever
+    # covered that prefix, so it was unreachable through the gateway at all
+    # until card O4.2's dashboard needed GET /api/v1/metrics/consistency.
+    Route("/api/v1/metrics", "RESEARCH_SERVICE_URL", "http://localhost:8010"),
     Route("/api/v1/voice", "VOICE_SERVICE_URL", "http://localhost:8011"),
     Route("/api/v1/notifications", "NOTIFICATION_SERVICE_URL", "http://localhost:8012"),
 ]

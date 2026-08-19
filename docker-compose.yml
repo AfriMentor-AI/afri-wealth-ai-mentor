@@ -370,6 +370,24 @@ services:
       test: ["CMD-SHELL", "python -c \"import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8012/health').status==200 else 1)\""]
       <<: *hc
 
+  # Internal-only, role-gated console (card O4.2) — not part of *svc-defaults
+  # since that anchor's healthcheck override assumes a Python exec; this image
+  # already bakes a Node-based HEALTHCHECK (see apps/admin-research-console/Dockerfile).
+  admin-research-console:
+    restart: unless-stopped
+    init: true
+    build:
+      context: ./apps/admin-research-console
+      args:
+        NEXT_PUBLIC_API_BASE_URL: ${ADMIN_CONSOLE_API_BASE_URL:-http://localhost:8000}
+    # 3001 is already grafana's host port (observability stack below); this
+    # app's own internal port stays 3001 (matches its Dockerfile/dev default),
+    # only the host-side mapping moves to avoid the collision.
+    ports: ["3002:3001"]
+    networks: [afrimentor]
+    depends_on:
+      api-gateway: {condition: service_healthy}
+
   # --------------------------------------------------------- observability (O2.5)
   # Scrape target for every service's /metrics (see infra/prometheus/prometheus.yml).
   prometheus:

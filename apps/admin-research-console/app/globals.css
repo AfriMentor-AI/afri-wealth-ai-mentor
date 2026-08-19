@@ -1,0 +1,21 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --surface: #14140f;
+  --surface-raised: #1c1c18;
+  --surface-inset: #101009;
+  --border: #343333;
+  --on-surface: #f4f3ec;
+  --on-surface-dim: #a9a89f;
+  --accent: #3fae4a;
+  --on-accent: #04150a;
+  --warn: #e0a83a;
+  --danger: #d9584f;
+}
+
+body {
+  background: var(--surface);
+  color: var(--on-surface);
+}
