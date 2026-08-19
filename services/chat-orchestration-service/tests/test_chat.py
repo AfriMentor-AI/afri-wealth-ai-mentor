@@ -9,7 +9,6 @@ from unittest.mock import patch
 
 import pytest
 from fastapi.testclient import TestClient
-from openai import AuthenticationError
 
 from app.database import Base, SessionLocal, engine, get_db
 from app.main import app

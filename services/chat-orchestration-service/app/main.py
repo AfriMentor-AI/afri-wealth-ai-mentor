@@ -12,12 +12,11 @@ from fastapi import FastAPI
 
 from .config import get_settings
 from .database import init_db
+from .jobs import generate_daily_actions_job
 from .observability import instrument
 from .routers.chat import router as chat_router
 from .routers.daily_actions import router as daily_actions_router
 from .scheduler import scheduler, setup_scheduler
-from .jobs import generate_daily_actions_job
-
 
 settings = get_settings()
 

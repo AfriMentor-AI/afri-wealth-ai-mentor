@@ -1,8 +1,8 @@
 """Chat router — /api/v1/chat/sessions and /api/v1/chat/sessions/{id}/messages."""
 from __future__ import annotations
 
-import logging
 import json
+import logging
 
 import httpx
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -116,7 +116,12 @@ async def stream_message(
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Session is not active")
 
     next_seq = len(conv.messages)
-    user_msg = Message(conversation_id=conv.id, role="user", content=body.content, sequence=next_seq)
+    user_msg = Message(
+        conversation_id=conv.id,
+        role="user",
+        content=body.content,
+        sequence=next_seq,
+    )
     db.add(user_msg)
     db.flush()
     guardrails_on = get_settings().guardrails_enabled

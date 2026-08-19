@@ -11,7 +11,6 @@ from app.database import Base, SessionLocal, engine, get_db
 from app.main import app
 from app.rag import RagResult
 
-
 USER_HEADERS = {"X-User-Id": "performance-test-user"}
 
 

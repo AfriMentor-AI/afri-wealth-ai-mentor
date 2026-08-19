@@ -18,7 +18,7 @@ from .config import get_settings
 logger = logging.getLogger(__name__)
 settings = get_settings()
 _http_client: httpx.AsyncClient | None = None
-_cache: dict[tuple[str, str | None, int], tuple[float, list["RagResult"]]] = {}
+_cache: dict[tuple[str, str | None, int], tuple[float, list[RagResult]]] = {}
 
 # Maximum number of chunks to retrieve per turn. Kept small to stay within
 # the LLM context budget (LLM_MAX_TOKENS default 512).
