@@ -52,6 +52,14 @@ class IngestRequest(BaseModel):
     sector: str | None = Field(None, max_length=100)
     content_type: str | None = Field(None, max_length=50)
     language: str = Field("en", max_length=10)
+    # Corpus tier (card C3.4): 1 = Tier-1 entrepreneur transcripts, 2 = Tier-2
+    # reference reports. Defaults to 1 so existing Tier-1 ingests are unchanged.
+    tier: int = Field(1, ge=1, le=3)
+    # Opt-in stable id for idempotent (re-)ingestion. When set it becomes the
+    # Document primary key, so a refresh upserts the same row instead of minting
+    # a fresh UUID and orphaning the previous chunks. Tier-2's loader derives it
+    # from the registry id (see scripts/ingest_tier2.py); ad-hoc ingests omit it.
+    external_id: str | None = Field(None, max_length=255)
     # Catalogue metadata surfaced by the admin screen (card C2.2).
     title: str | None = Field(None, max_length=500)
     author: str | None = Field(None, max_length=200)
@@ -62,6 +70,7 @@ class IngestRequest(BaseModel):
     @field_validator(
         "figure_id", "market", "sector", "content_type",
         "title", "author", "source_url", "channel", "published_date",
+        "external_id",
         mode="before",
     )
     @classmethod
@@ -84,6 +93,7 @@ class DocumentResponse(BaseModel):
     figure_id: str | None
     market: str | None
     language: str
+    tier: int
     status: str
     chunk_count: int
     error_message: str | None
@@ -107,6 +117,7 @@ class DocumentResponse(BaseModel):
             figure_id=doc.figure_id,
             market=doc.market,
             language=doc.language,
+            tier=doc.tier,
             status=doc.status.value,
             chunk_count=doc.chunk_count,
             error_message=doc.error_message,
@@ -141,14 +152,21 @@ def ingest(
     x_user_id: str = Header(..., alias="X-User-Id"),
     _admin: None = Depends(_require_admin),
 ):
-    """Ingest a document into the RAG corpus."""
-    doc = Document(
+    """Ingest a document into the RAG corpus.
+
+    When ``external_id`` is supplied the write is an **upsert**: the id becomes
+    the Document primary key and any existing row (plus its Chroma vectors) is
+    replaced in place. That makes re-ingestion idempotent — the property the
+    C3.4 refresh cycle relies on — instead of minting a fresh UUID each run and
+    orphaning the previous chunks.
+    """
+    fields = dict(
         filename=body.filename,
         source_origin=body.source_origin,
         figure_id=body.figure_id,
         market=body.market,
         language=body.language,
-        status=DocumentStatus.processing,
+        tier=body.tier,
         title=body.title,
         author=body.author,
         sector=body.sector,
@@ -158,12 +176,35 @@ def ingest(
         channel=body.channel,
         byte_size=len(body.text.encode("utf-8")),
     )
-    db.add(doc)
+    existing = (
+        db.query(Document).filter(Document.id == body.external_id).first()
+        if body.external_id
+        else None
+    )
+    if existing is not None:
+        for key, value in fields.items():
+            setattr(existing, key, value)
+        existing.status = DocumentStatus.processing
+        existing.error_message = None
+        doc = existing
+    else:
+        if body.external_id:
+            fields["id"] = body.external_id
+        doc = Document(status=DocumentStatus.processing, **fields)
+        db.add(doc)
     db.commit()
     db.refresh(doc)
 
     try:
         collection = get_chroma_collection()
+        if body.external_id:
+            # Drop any prior vectors for this stable id so a re-ingest replaces
+            # rather than duplicates them (same delete-by-doc_id primitive the
+            # delete endpoint uses). Best-effort: a fresh id simply matches none.
+            try:
+                collection.delete(where={"doc_id": doc.id})
+            except Exception:
+                pass
         chunk_count = ingest_document(
             doc_id=doc.id,
             text=body.text,
@@ -173,6 +214,7 @@ def ingest(
             language=body.language,
             sector=body.sector,
             content_type=body.content_type,
+            tier=body.tier,
             chroma_collection=collection,
         )
         doc.chunk_count = chunk_count
@@ -194,6 +236,7 @@ def _apply_filters(
     market: str | None,
     status: DocumentStatus | None,
     content_type: str | None,
+    tier: int | None = None,
 ):
     """Apply the admin catalogue filters to a Document query.
 
@@ -219,6 +262,8 @@ def _apply_filters(
         query = query.filter(Document.status == status)
     if content_type:
         query = query.filter(Document.content_type == content_type)
+    if tier is not None:
+        query = query.filter(Document.tier == tier)
     return query
 
 
@@ -233,6 +278,7 @@ def list_documents(
     market: str | None = Query(None, max_length=10),
     status: DocumentStatus | None = Query(None),
     content_type: str | None = Query(None, max_length=50),
+    tier: int | None = Query(None, ge=1, le=3),
     limit: int = Query(50, ge=1, le=500),
     offset: int = Query(0, ge=0),
 ):
@@ -244,6 +290,7 @@ def list_documents(
     query = _apply_filters(
         db.query(Document),
         q=q, sector=sector, market=market, status=status, content_type=content_type,
+        tier=tier,
     )
     total = query.count()
     docs = (
@@ -257,7 +304,7 @@ def list_documents(
 # the value rows cannot drift apart.
 CSV_COLUMNS = [
     "id", "title", "author", "sector", "market", "content_type",
-    "published_date", "status", "chunk_count", "byte_size", "language",
+    "published_date", "status", "chunk_count", "byte_size", "language", "tier",
     "source_origin", "figure_id", "channel", "source_url", "filename",
     "created_at",
 ]
@@ -273,6 +320,7 @@ def export_documents_csv(
     market: str | None = Query(None, max_length=10),
     status: DocumentStatus | None = Query(None),
     content_type: str | None = Query(None, max_length=50),
+    tier: int | None = Query(None, ge=1, le=3),
 ):
     """Export the filtered document catalogue as CSV.
 
@@ -283,6 +331,7 @@ def export_documents_csv(
     query = _apply_filters(
         db.query(Document),
         q=q, sector=sector, market=market, status=status, content_type=content_type,
+        tier=tier,
     )
     docs = query.order_by(Document.created_at.desc()).all()
 
@@ -352,6 +401,7 @@ def stats(
             "by_status": group_counts(Document.status),
             "by_country": group_counts(Document.market),
             "by_sector": group_counts(Document.sector),
+            "by_tier": group_counts(Document.tier),
         },
         "vectors": {
             "active_count": vector_count,

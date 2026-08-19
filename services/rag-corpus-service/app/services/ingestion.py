@@ -50,6 +50,7 @@ def build_chunk_metadata(
     chunk_index: int,
     sector: str | None = None,
     content_type: str | None = None,
+    tier: int = 1,
 ) -> dict:
     """Build the metadata dict stored alongside each vector in ChromaDB."""
     return {
@@ -63,6 +64,8 @@ def build_chunk_metadata(
         "sector_label": sector or "",
         "content_type": (content_type or "").lower(),
         "language": language,
+        # Corpus tier (card C3.4) — lets retrieval prefer/scope Tier-1 vs Tier-2.
+        "tier": tier,
         "chunk_index": chunk_index,
     }
 
@@ -77,6 +80,7 @@ def ingest_document(
     chroma_collection,
     sector: str | None = None,
     content_type: str | None = None,
+    tier: int = 1,
 ) -> int:
     """
     Chunk text and write to ChromaDB.
@@ -98,6 +102,7 @@ def ingest_document(
             i,
             sector=sector,
             content_type=content_type,
+            tier=tier,
         )
         for i in range(len(chunks))
     ]

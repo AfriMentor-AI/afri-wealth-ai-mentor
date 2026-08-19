@@ -1,0 +1,57 @@
+[
+  {
+    "id": "tier2_afrobarometer_2023_ad734",
+    "title": "Africa's Youth: More Educated, Less Employed, Still Unheard in Policy and Development",
+    "publisher": "Afrobarometer",
+    "tier": 2,
+    "country": "Pan-Africa",
+    "sector": "Cross-Sector / Youth Enterprise",
+    "url": "https://www.afrobarometer.org/wp-content/uploads/2023/11/AD734-PAP3-Africas-youth-More-educated-less-employed-still-unheard-Afrobarometer-13nov23.pdf",
+    "cadence": "annual",
+    "status": "active"
+  },
+  {
+    "id": "tier2_brookings_agi_foresight",
+    "title": "Foresight Africa: Top Priorities for the Continent",
+    "publisher": "Brookings Institution (Africa Growth Initiative)",
+    "tier": 2,
+    "country": "Pan-Africa",
+    "sector": "SME Financing & Tech Innovation",
+    "url": "https://www.brookings.edu/tags/foresight-africa/",
+    "cadence": "annual",
+    "status": "active"
+  },
+  {
+    "id": "tier2_mo_ibrahim_forum_tipping_point",
+    "title": "Africa at a Tipping Point: Jobs, Youth and Governance",
+    "publisher": "Mo Ibrahim Foundation",
+    "tier": 2,
+    "country": "Pan-Africa",
+    "sector": "Economic Governance & Employment",
+    "url": "https://allafrica.com/view/resource/main/main/id/00101935.html",
+    "cadence": "annual",
+    "status": "active"
+  },
+  {
+    "id": "tier2_smedan_nbs_msme_survey",
+    "title": "National Survey of Micro, Small and Medium Enterprises (MSMEs)",
+    "publisher": "SMEDAN & National Bureau of Statistics (NBS)",
+    "tier": 2,
+    "country": "Nigeria",
+    "sector": "MSME & Informal Trade",
+    "url": "https://www.nigerianstat.gov.ng/download/290",
+    "cadence": "triennial",
+    "status": "active"
+  },
+  {
+    "id": "tier2_afdb_jobs_for_youth_strategy",
+    "title": "Jobs for Youth in Africa Strategy",
+    "publisher": "African Development Bank (AfDB)",
+    "tier": 2,
+    "country": "Pan-Africa",
+    "sector": "Agriculture & FinTech",
+    "url": "https://idev.afdb.org/sites/default/files/documents/files/Jobs_for_Youth_in_Africa_Strategy_Summary%20Report_EN.pdf",
+    "cadence": "as_published",
+    "status": "active"
+  }
+]

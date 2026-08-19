@@ -1,0 +1,7 @@
+# Tier-2 source originals (PDF/HTML) are *inputs* to
+# scripts/fetch_tier2_sources.py. Only the extracted *.txt is tracked in git;
+# keep the bulky binaries out of the repo (they live with the operator, and can
+# be re-dropped here to re-extract). Card C3.4.
+*.pdf
+*.html
+*.htm

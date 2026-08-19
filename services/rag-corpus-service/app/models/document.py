@@ -35,6 +35,11 @@ class Document(Base):
     figure_id: Mapped[str | None] = mapped_column(String(100), nullable=True)
     market: Mapped[str | None] = mapped_column(String(10), nullable=True)
     language: Mapped[str] = mapped_column(String(10), default="en")
+    # Corpus tier (card C3.4). 1 = Tier-1 entrepreneur transcripts (C1.2/C2.2);
+    # 2 = Tier-2 reference reports (statistics bureaus, Brookings AGI, Mo Ibrahim,
+    # Afrobarometer, AfDB, sector guides, podcast transcripts). Defaults to 1 so
+    # existing rows and ad-hoc ingests stay Tier-1 without a backfill.
+    tier: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
     # ── Admin/catalogue fields (card C2.2) ────────────────────────────────────
     # Sourced from corpus.jsonl metadata; all nullable so ad-hoc ingests that
     # only supply filename+text keep working.

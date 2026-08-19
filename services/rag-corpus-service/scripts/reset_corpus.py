@@ -69,6 +69,7 @@ def main() -> None:
     print()
     print("Done. Restart the service to recreate tables, then run:")
     print("  python scripts/ingest_tier1.py")
+    print("  python scripts/fetch_tier2_sources.py && python scripts/ingest_tier2.py")
 
 
 if __name__ == "__main__":
