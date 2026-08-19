@@ -363,7 +363,7 @@ def _require_admin(x_user_roles: str = Header("", alias="X-User-Roles")) -> None
     """
     roles = {r.strip() for r in x_user_roles.split(",") if r.strip()}
     if not roles & _CONSOLE_ROLES:
-        raise HTTPException(status_code=403, detail="Admin, researcher, or lead_architect role required")
+        raise HTTPException(status_code=403, detail="admin, researcher, or lead_architect required")
 
 
 @app.get("/api/v1/research/audit-sessions", tags=["research-console"])
