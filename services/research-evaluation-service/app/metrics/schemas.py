@@ -35,11 +35,16 @@ class Dialogue(BaseModel):
 
     ``system_prompt`` is the persona instruction the mentor was given; it is the
     anchor for the prompt-to-line consistency metric.
+
+    ``persona_id`` is optional metadata identifying which persona produced the
+    dialogue. It carries no weight in scoring; it lets callers that sample real
+    sessions (card C3.2) record provenance alongside each score.
     """
 
     dialogue_id: str
     system_prompt: str = Field(min_length=1)
     turns: list[Turn] = Field(min_length=1)
+    persona_id: str | None = None
     notes: str | None = None
 
     @property
