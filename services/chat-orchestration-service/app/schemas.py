@@ -58,6 +58,18 @@ class ConversationResponse(BaseModel):
     updated_at: dt.datetime
 
 
+class ConversationSummary(BaseModel):
+    """One row of GET /api/v1/chat/sessions — the multi-mentor conversation
+    list. Built by hand (not from_attributes) since last_message_preview/at
+    come from a join, not a Conversation column."""
+
+    id: str
+    persona_id: str | None
+    last_message_preview: str | None
+    last_message_at: dt.datetime | None
+    updated_at: dt.datetime
+
+
 # ── Message ───────────────────────────────────────────────────────────────────
 
 class MessageCreate(BaseModel):

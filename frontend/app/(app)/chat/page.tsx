@@ -2,6 +2,7 @@
 
 import { Fragment, useEffect, useRef, useState } from "react";
 import Image from "next/image";
+import { ConversationList } from "@/components/ConversationList";
 import { Icon } from "@/components/Icon";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { useAppDispatch, useAppState } from "@/lib/store";
@@ -286,10 +287,11 @@ function MentorMessageContent({ content }: Readonly<{ content: string }>) {
 }
 
 export default function ChatPage() {
-  const { chatMessages, chatDraft, profile, chatSessionId, activeGoalId } = useAppState();
+  const { chatMessages, chatDraft, profile, chatSessionId, activeGoalId, selectedPersona } = useAppState();
   const dispatch = useAppDispatch();
   const [isRecording, setIsRecording] = useState(false);
   const [commitmentTagged, setCommitmentTagged] = useState(false);
+  const [showConversations, setShowConversations] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -348,36 +350,81 @@ export default function ChatPage() {
 
   const lastIsMentor = chatMessages.length > 0 && chatMessages[chatMessages.length - 1].sender === "mentor";
 
+  const mentorName = selectedPersona?.name ?? "CHIOMA";
+
   return (
-    <div className="flex h-full flex-col">
-      <div className="flex shrink-0 items-center justify-between border-b border-outline-variant px-margin-mobile py-md">
-        <div className="flex items-center gap-sm">
-          <div className="relative h-11 w-11 shrink-0 overflow-hidden rounded-full border-2 border-primary">
-            <Image src="/images/chioma-avatar.png" alt="Chioma" fill className="object-cover" />
-            <span
-              aria-hidden
-              className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full border border-surface bg-secondary"
-            />
-          </div>
-          <div>
-            <p className="font-title-md text-title-md text-primary">CHIOMA</p>
-            <p className="flex items-center gap-xs font-label-sm text-label-sm text-on-surface-variant">
-              <span className="h-1.5 w-1.5 rounded-full bg-secondary" /> online
-            </p>
+    <div className="flex h-full md:flex-row">
+      {/* Desktop: persistent conversation list pane, real personas/sessions
+          (no fabricated "Mama Beatrice"/group-chat entries — every row here
+          is a real session from GET /api/v1/chat/sessions). */}
+      <aside className="hidden w-80 shrink-0 border-r border-outline-variant md:block">
+        <ConversationList />
+      </aside>
+
+      {/* Mobile: full-screen slide-over for the same list. */}
+      {showConversations && (
+        <div className="fixed inset-0 z-30 bg-surface md:hidden">
+          <div className="flex h-full flex-col">
+            <div className="flex h-16 shrink-0 items-center gap-sm border-b border-outline-variant px-margin-mobile">
+              <button
+                type="button"
+                aria-label="Close conversation list"
+                onClick={() => setShowConversations(false)}
+                className="tap-target flex items-center justify-center rounded-full text-on-surface-variant hover:bg-surface-container-low"
+              >
+                <Icon name="arrow_back" />
+              </button>
+              <p className="font-title-md text-title-md text-on-surface">Conversations</p>
+            </div>
+            <div className="flex-1 overflow-hidden">
+              <ConversationList onSelect={() => setShowConversations(false)} />
+            </div>
           </div>
         </div>
-        <ThemeToggle />
-      </div>
+      )}
 
-      <div ref={scrollRef} className="flex-1 overflow-y-auto px-margin-mobile py-lg">
-        <div className="flex flex-col gap-lg">
+      <div className="flex h-full flex-1 flex-col bg-surface-bright md:bg-surface">
+        <div className="flex shrink-0 items-center justify-between border-b border-outline-variant px-margin-mobile py-md md:px-lg">
+          <div className="flex items-center gap-sm md:gap-md">
+            <button
+              type="button"
+              aria-label="Show conversations"
+              onClick={() => setShowConversations(true)}
+              className="tap-target flex items-center justify-center rounded-full text-on-surface-variant hover:bg-surface-container-low md:hidden"
+            >
+              <Icon name="forum" />
+            </button>
+            <div className="relative h-11 w-11 shrink-0 overflow-hidden rounded-full border-2 border-primary">
+              <Image src="/images/chioma-avatar.png" alt={mentorName} fill className="object-cover" />
+              <span
+                aria-hidden
+                className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full border border-surface bg-secondary"
+              />
+            </div>
+            <div>
+              <div className="flex items-center gap-sm">
+                <p className="font-title-md text-title-md text-primary">{mentorName.toUpperCase()}</p>
+                <span className="hidden rounded bg-secondary-container px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-tighter text-on-secondary-container md:inline">
+                  Mentor
+                </span>
+              </div>
+              <p className="flex items-center gap-xs font-label-sm text-label-sm text-on-surface-variant">
+                <span className="h-1.5 w-1.5 rounded-full bg-secondary" /> online
+              </p>
+            </div>
+          </div>
+          <ThemeToggle />
+        </div>
+
+      <div ref={scrollRef} className="flex-1 overflow-y-auto px-margin-mobile py-lg md:px-0">
+        <div className="mx-auto flex max-w-3xl flex-col gap-lg md:px-lg">
           {chatMessages.map((m) => (
             <div key={m.id} className={`flex max-w-[85%] flex-col ${m.sender === "user" ? "items-end self-end" : "items-start"}`}>
               <div
-                className={`p-md text-body-md ${
+                className={`p-md text-body-md md:rounded-xl md:shadow-sm ${
                   m.sender === "user"
-                    ? "rounded rounded-tr-none bg-primary-container text-on-primary-container shadow-sm"
-                    : "rounded rounded-tl-none border border-outline-variant bg-surface-container-low text-on-surface shadow-sm"
+                    ? "rounded rounded-tr-none bg-primary-container text-on-primary-container shadow-sm md:rounded-tr-xl"
+                    : "rounded rounded-tl-none border border-outline-variant bg-surface-container-low text-on-surface shadow-sm md:rounded-tl-xl"
                 }`}
               >
                 {m.sender === "mentor" ? (
@@ -397,7 +444,7 @@ export default function ChatPage() {
           ))}
 
           {lastIsMentor && chatMessages[chatMessages.length - 1].is_commitment_candidate && !commitmentTagged && (
-            <div className="flex items-center justify-between gap-md rounded border border-secondary bg-secondary-container p-md">
+            <div className="flex items-center justify-between gap-md rounded border border-secondary bg-secondary-container p-md md:rounded-xl">
               <div className="flex items-center gap-sm">
                 <Icon name="workspace_premium" filled className="text-secondary" />
                 <span className="font-body-md text-body-md font-semibold text-on-secondary-container">
@@ -416,7 +463,7 @@ export default function ChatPage() {
         </div>
       </div>
 
-      <div className="flex shrink-0 items-center gap-sm border-t border-outline-variant px-margin-mobile py-sm">
+      <div className="mx-auto flex w-full max-w-3xl shrink-0 items-center gap-sm border-t border-outline-variant px-margin-mobile py-sm md:px-lg md:py-md">
         <button
           type="button"
           aria-label="Attach a file"
@@ -438,8 +485,8 @@ export default function ChatPage() {
           value={chatDraft}
           onChange={(e) => dispatch({ type: "SET_CHAT_DRAFT", draft: e.target.value })}
           onKeyDown={(e) => e.key === "Enter" && send()}
-          placeholder={isRecording ? "Recording... tap mic again to stop" : "Ask Chioma anything"}
-          className="flex-1 rounded-full border border-outline-variant bg-surface-container-lowest px-md py-sm font-body-md text-body-md text-on-surface outline-none focus-visible:outline-primary"
+          placeholder={isRecording ? "Recording... tap mic again to stop" : `Ask ${mentorName} anything`}
+          className="flex-1 rounded-full border border-outline-variant bg-surface-container-lowest px-md py-sm font-body-md text-body-md text-on-surface outline-none focus-visible:outline-primary md:py-md"
         />
         <button
           type="button"
@@ -450,6 +497,7 @@ export default function ChatPage() {
         >
           <Icon name="send" />
         </button>
+      </div>
       </div>
     </div>
   );

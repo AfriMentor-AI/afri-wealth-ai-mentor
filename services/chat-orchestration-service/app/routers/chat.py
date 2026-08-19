@@ -27,6 +27,7 @@ from ..models import Conversation, Message
 from ..schemas import (
     ConversationCreate,
     ConversationResponse,
+    ConversationSummary,
     MessageCreate,
     MessageResponse,
     PersonaBindRequest,
@@ -56,6 +57,42 @@ def create_session(
     db.commit()
     db.refresh(conv)
     return conv
+
+
+@router.get("/sessions", response_model=list[ConversationSummary])
+def list_sessions(
+    user_id: str = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> list[ConversationSummary]:
+    """Multi-mentor conversation list — one row per session the user has ever
+    started (with any persona), newest activity first. Powers the desktop/
+    mobile conversation-list UI; each conversation may be with a different
+    persona (Conversation.persona_id already supports this — no schema
+    change needed, a user was never restricted to one concurrent session)."""
+    convs = (
+        db.query(Conversation)
+        .filter(Conversation.user_id == user_id)
+        .order_by(Conversation.updated_at.desc())
+        .all()
+    )
+    summaries: list[ConversationSummary] = []
+    for conv in convs:
+        last_message = (
+            db.query(Message)
+            .filter(Message.conversation_id == conv.id)
+            .order_by(Message.sequence.desc())
+            .first()
+        )
+        summaries.append(
+            ConversationSummary(
+                id=conv.id,
+                persona_id=conv.persona_id,
+                last_message_preview=last_message.content[:140] if last_message else None,
+                last_message_at=last_message.created_at if last_message else None,
+                updated_at=conv.updated_at,
+            )
+        )
+    return summaries
 
 
 @router.get("/sessions/{session_id}", response_model=ConversationResponse)
