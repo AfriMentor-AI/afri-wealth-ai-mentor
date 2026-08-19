@@ -16,8 +16,22 @@ services:
     volumes:
       - pgdata_staging:/var/lib/postgresql/data
       - ./infra/postgres/init-databases.sh:/docker-entrypoint-initdb.d/init-databases.sh:ro
+    # Card O4.3: the default max_connections=100 was exhausted at 2x pilot
+    # concurrency once chat/goals/progress/library's per-service pools (each
+    # pool_size=10/max_overflow=10) ran concurrently against every other
+    # service's own connections — see docs/deployment/o4-3-pilot-load-test-report.md.
+    # A real production rollout should add a pooler (PgBouncer) in front of
+    # Postgres rather than rely on a raised ceiling alone; tracked for O4.5.
+    command: ["postgres", "-c", "max_connections=300"]
 
   redis:
+    ports: !reset []
+
+  # Card O4.3 — the dev stack's own rabbitmq (docker-compose.yml) publishes
+  # 5672/15672 to the host; goals/progress services are the first staging
+  # services that need rabbitmq, and starting it here collided with the dev
+  # stack's container. Same "no host ports" treatment as the other datastores.
+  rabbitmq:
     ports: !reset []
 
   api-gateway:
@@ -43,6 +57,20 @@ services:
       APP_ENV: staging
 
   rag-corpus-service:
+    environment:
+      APP_ENV: staging
+
+  # Card O4.3 — pilot-scale load testing needs these three in staging alongside
+  # chat, so they were added here rather than only ever running in the dev stack.
+  goals-milestones-service:
+    environment:
+      APP_ENV: staging
+
+  progress-gamification-service:
+    environment:
+      APP_ENV: staging
+
+  insight-library-service:
     environment:
       APP_ENV: staging
 

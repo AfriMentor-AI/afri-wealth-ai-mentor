@@ -16,11 +16,11 @@ if [ ! -f infra/keys/jwt_private_key.pem ] || [ ! -f infra/keys/jwt_public_key.p
   exit 1
 fi
 
-echo "==> Building and starting the staging stack (api-gateway, auth-user-service, chat-orchestration-service + deps)"
-$COMPOSE up -d --build api-gateway auth-user-service chat-orchestration-service persona-prompt-service rag-corpus-service
+echo "==> Building and starting the staging stack (api-gateway, auth-user-service, chat-orchestration-service, goals/progress/library + deps)"
+$COMPOSE up -d --build api-gateway auth-user-service chat-orchestration-service persona-prompt-service rag-corpus-service goals-milestones-service progress-gamification-service insight-library-service
 
 echo "==> Waiting for services to report healthy"
-for svc in postgres redis auth-user-service api-gateway chat-orchestration-service persona-prompt-service rag-corpus-service; do
+for svc in postgres redis rabbitmq auth-user-service api-gateway chat-orchestration-service persona-prompt-service rag-corpus-service goals-milestones-service progress-gamification-service insight-library-service; do
   healthy=""
   for _ in $(seq 1 30); do
     if $COMPOSE ps "$svc" | grep -qi "(healthy)"; then

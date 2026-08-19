@@ -34,31 +34,42 @@ async def stream_one(
     user_id: str,
     prompt: str,
 ) -> Sample:
-    session_response = await client.post(
-        f"{base_url}/api/v1/chat/sessions",
-        headers={"X-User-Id": user_id},
-        json={},
-    )
-    session_response.raise_for_status()
-    session_id = session_response.json()["id"]
+    # Card O4.3: a single failed/timed-out request used to raise straight out of
+    # asyncio.gather() and abort the whole run — under real concurrency some
+    # requests failing is the point of the test, not a reason to lose every
+    # other sample. Caught here the same way the goals/library/progress
+    # benchmarks (scripts/load-test/) already handle per-request failures.
+    try:
+        session_response = await client.post(
+            f"{base_url}/api/v1/chat/sessions",
+            headers={"X-User-Id": user_id},
+            json={},
+        )
+        session_response.raise_for_status()
+        session_id = session_response.json()["id"]
 
-    started = time.perf_counter()
-    first_token = None
-    async with client.stream(
-        "POST",
-        f"{base_url}/api/v1/chat/sessions/{session_id}/messages/stream",
-        headers={"X-User-Id": user_id},
-        json={"content": prompt},
-    ) as response:
-        async for line in response.aiter_lines():
-            if line.startswith("event: token") and first_token is None:
-                first_token = time.perf_counter()
-        completed = time.perf_counter()
+        started = time.perf_counter()
+        first_token = None
+        async with client.stream(
+            "POST",
+            f"{base_url}/api/v1/chat/sessions/{session_id}/messages/stream",
+            headers={"X-User-Id": user_id},
+            json={"content": prompt},
+        ) as response:
+            async for line in response.aiter_lines():
+                if line.startswith("event: token") and first_token is None:
+                    first_token = time.perf_counter()
+            completed = time.perf_counter()
+            status_code = response.status_code
+    except httpx.HTTPStatusError as exc:
+        return Sample(first_token_ms=0.0, complete_ms=0.0, status_code=exc.response.status_code)
+    except httpx.HTTPError:
+        return Sample(first_token_ms=0.0, complete_ms=0.0, status_code=599)
 
     return Sample(
         first_token_ms=((first_token or completed) - started) * 1000,
         complete_ms=(completed - started) * 1000,
-        status_code=response.status_code,
+        status_code=status_code,
     )
 
 
