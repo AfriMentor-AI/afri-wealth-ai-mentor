@@ -11,6 +11,7 @@ import hashlib
 import secrets
 import uuid
 from functools import lru_cache
+from pathlib import Path
 
 import jwt
 from cryptography.hazmat.primitives import serialization
@@ -54,7 +55,17 @@ def _keys() -> tuple[str, str]:
             public_pem = f.read()
         return private_pem, public_pem
 
-    # Dev fallback: generate an ephemeral keypair (stable for process lifetime).
+    # Dev fallback: previously an in-process-only keypair, regenerated (and every
+    # outstanding token invalidated) on every restart. Persisted under
+    # `dev_key_dir` instead so a container restart/rebuild reuses the same
+    # keypair — that directory must be a Docker volume, not the writable layer,
+    # to survive `down`/recreate, not just `stop`/`start` (see docker-compose.yml).
+    key_dir = Path(settings.dev_key_dir)
+    private_path = key_dir / "jwt_private_key.pem"
+    public_path = key_dir / "jwt_public_key.pem"
+    if private_path.exists() and public_path.exists():
+        return private_path.read_text(), public_path.read_text()
+
     key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
     private_pem = key.private_bytes(
         encoding=serialization.Encoding.PEM,
@@ -69,6 +80,9 @@ def _keys() -> tuple[str, str]:
         )
         .decode()
     )
+    key_dir.mkdir(parents=True, exist_ok=True)
+    private_path.write_text(private_pem)
+    public_path.write_text(public_pem)
     return private_pem, public_pem
 
 
