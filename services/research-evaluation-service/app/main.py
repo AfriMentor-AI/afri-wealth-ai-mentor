@@ -348,18 +348,22 @@ def get_consistency_metrics(
 # ─────────────────────────────────────────────────────────────────────────────
 
 
+_CONSOLE_ROLES = {"admin", "researcher", "lead_architect"}
+
+
 def _require_admin(x_user_roles: str = Header("", alias="X-User-Roles")) -> None:
-    """Gate the Research Console's admin endpoints (card O4.1).
+    """Gate the Research Console's admin endpoints (cards O4.1/O4.2).
 
     Mirrors the pattern in rag-corpus-service/app/api/routes.py: the gateway
     forwards verified JWT roles as X-User-Roles, so this trusts the header the
-    same way rag-corpus-service's _require_admin does. Card O4.2 widens this to
-    accept researcher/lead_architect roles once the console exists; O4.1 alone
-    has no console to gate for, so it checks admin only.
+    same way rag-corpus-service's _require_admin does. Widened for O4.2's
+    Admin Research Console, which Lead Architect/Researcher accounts use
+    alongside admin — see docs/deployment/rbac-console-roles.md for how those
+    role values get granted to accounts.
     """
     roles = {r.strip() for r in x_user_roles.split(",") if r.strip()}
-    if "admin" not in roles:
-        raise HTTPException(status_code=403, detail="Admin role required")
+    if not roles & _CONSOLE_ROLES:
+        raise HTTPException(status_code=403, detail="Admin, researcher, or lead_architect role required")
 
 
 @app.get("/api/v1/research/audit-sessions", tags=["research-console"])

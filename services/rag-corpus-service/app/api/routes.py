@@ -27,19 +27,24 @@ EMBED_DIM = 384
 BYTES_PER_FLOAT = 4
 
 
+_CONSOLE_ROLES = {"admin", "researcher", "lead_architect"}
+
+
 def _require_admin(x_user_roles: str = Header("", alias="X-User-Roles")) -> None:
-    """Gate on the RAG Corpus Admin screen's operations (card O3.5).
+    """Gate on the RAG Corpus Admin screen's operations (cards O3.5/O4.2).
 
     These endpoints previously only checked X-User-Id — any authenticated user
     could ingest/delete/export the shared corpus or pull its stats. The gateway
     forwards verified JWT roles as X-User-Roles (same trust boundary _get_user
     relies on for X-User-Id), so this mirrors that pattern rather than inventing
     a new one. POST /query (retrieval for chat) is deliberately NOT gated here —
-    every user needs that for normal chat/RAG use.
+    every user needs that for normal chat/RAG use. Widened for O4.2's Admin
+    Research Console, which Lead Architect/Researcher accounts use alongside
+    admin — see docs/deployment/rbac-console-roles.md.
     """
     roles = {r.strip() for r in x_user_roles.split(",") if r.strip()}
-    if "admin" not in roles:
-        raise HTTPException(status_code=403, detail="Admin role required")
+    if not roles & _CONSOLE_ROLES:
+        raise HTTPException(status_code=403, detail="Admin, researcher, or lead_architect role required")
 
 # ── Schemas ───────────────────────────────────────────────────────────────────
 
