@@ -166,6 +166,9 @@ services:
       <<: *svc-env
       DATABASE_URL: postgresql+psycopg://afrimentor:afrimentor@postgres:5432/svc_auth
       REDIS_URL: redis://redis:6379/1
+      DEV_KEY_DIR: /dev_keys
+    volumes:
+      - auth_dev_keys:/dev_keys
     depends_on:
       postgres: {condition: service_healthy}
       redis: {condition: service_healthy}
@@ -483,3 +486,4 @@ volumes:
   promdata:
   lokidata:
   grafanadata:
+  auth_dev_keys:

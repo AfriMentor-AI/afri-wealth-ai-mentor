@@ -25,6 +25,12 @@ COPY --chown=app:app alembic.ini ./alembic.ini
 COPY --chown=app:app docker-entrypoint.sh ./docker-entrypoint.sh
 # App owns its workdir so a standalone run (default SQLite) can write locally.
 RUN chown app:app /app && chmod +x docker-entrypoint.sh
+# Pre-create with app ownership so the named volume mounted here in
+# docker-compose.yml (auth_dev_keys) inherits it on first creation — Docker
+# copies a fresh named volume's initial content/ownership from the image
+# directory it's mounted over, and the container itself runs as uid 10001,
+# not root, so it can't chown this after the fact.
+RUN mkdir -p /dev_keys && chown app:app /dev_keys
 USER app
 
 EXPOSE 8001
