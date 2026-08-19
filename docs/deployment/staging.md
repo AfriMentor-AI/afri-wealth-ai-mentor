@@ -45,6 +45,48 @@ injected as secrets instead of a mounted directory.
 
 ## Deploying
 
+For the chat UX load profile, set a fast streaming-capable model and keep generated
+answers bounded so time-to-first-token is decoupled from total completion time:
+
+```bash
+export LLM_MODEL='Qwen/Qwen2.5-7B-Instruct'
+export LLM_MAX_TOKENS=384
+export LLM_STREAMING_ENABLED=true
+export CHAT_CACHE_TTL_SECONDS=300
+```
+
+Clients that need progressive rendering should call
+`POST /api/v1/chat/sessions/{id}/messages/stream`; it emits `token` SSE events followed
+by one `complete` event. The existing JSON message endpoint remains available.
+
+### D3.5 validation record
+
+Focused validation for the Chat Orchestration Service passed on 2026-08-19:
+
+```text
+43 passed, 4 warnings in 3.52s
+```
+
+The run covered the existing chat and guardrail regression tests plus the D3.5
+performance tests for RAG cache reuse, SSE token and completion events, and stream
+assembly. The warnings are FastAPI scheduler deprecation warnings and do not affect
+the D3.5 assertions.
+
+The staging acceptance measurement is still pending. Run the benchmark after the
+service, RAG corpus, and real LLM provider are deployed:
+
+```bash
+cd services/chat-orchestration-service
+python scripts/chat_latency_benchmark.py \
+  --base-url http://localhost:8003 \
+  --users 20 \
+  --requests 200
+```
+
+Record the benchmark's `first_token_ms.p95` and `complete_ms.p95` here. D3.5 is
+accepted only when the successful requests' `complete_ms.p95` is below 3000 ms; the
+local focused tests do not substitute for this realistic staging-load measurement.
+
 ```bash
 scripts/deploy-staging.sh
 ```

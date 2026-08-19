@@ -1,7 +1,8 @@
 import logging
+
 from .database import SessionLocal
-from .models import Conversation, DailyAction
 from .llm import generate_daily_action_for_user
+from .models import Conversation, DailyAction
 from .schemas import DailyActionCreate
 
 logger = logging.getLogger(__name__)

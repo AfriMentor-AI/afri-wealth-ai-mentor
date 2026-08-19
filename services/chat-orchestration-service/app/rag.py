@@ -8,6 +8,7 @@ unavailability.
 from __future__ import annotations
 
 import logging
+import time
 from dataclasses import dataclass
 
 import httpx
@@ -16,6 +17,8 @@ from .config import get_settings
 
 logger = logging.getLogger(__name__)
 settings = get_settings()
+_http_client: httpx.AsyncClient | None = None
+_cache: dict[tuple[str, str | None, int], tuple[float, list[RagResult]]] = {}
 
 # Maximum number of chunks to retrieve per turn. Kept small to stay within
 # the LLM context budget (LLM_MAX_TOKENS default 512).
@@ -64,18 +67,25 @@ async def retrieve(
         logger.debug("RAG_SERVICE_URL not set — skipping retrieval")
         return []
 
+    cache_key = (query.strip().lower(), collection, top_k)
+    cached = _cache.get(cache_key)
+    if cached and time.monotonic() - cached[0] < settings.cache_ttl_seconds:
+        return cached[1]
+
     payload: dict = {"query": query, "top_k": top_k}
     if collection:
         payload["filters"] = {"collection": collection}
 
     try:
-        async with httpx.AsyncClient(timeout=3.0) as client:
-            response = await client.post(
-                f"{settings.rag_service_url}/api/v1/rag/query",
-                json=payload,
-                headers={"X-User-Id": "chat-orchestration-service"},
-            )
-            response.raise_for_status()
+        global _http_client
+        if _http_client is None:
+            _http_client = httpx.AsyncClient(timeout=httpx.Timeout(1.5, connect=0.3))
+        response = await _http_client.post(
+            f"{settings.rag_service_url}/api/v1/rag/query",
+            json=payload,
+            headers={"X-User-Id": "chat-orchestration-service"},
+        )
+        response.raise_for_status()
     except Exception as exc:
         logger.warning("RAG retrieval failed: %s", exc)
         return []
@@ -91,4 +101,7 @@ async def retrieve(
                 score=float(chunk.get("score", 0.0)),
             )
         )
+    if len(_cache) >= settings.cache_max_entries:
+        _cache.pop(next(iter(_cache)))
+    _cache[cache_key] = (time.monotonic(), results)
     return results

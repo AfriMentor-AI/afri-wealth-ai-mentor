@@ -29,6 +29,11 @@ class Settings(BaseModel):
     llm_model: str = os.getenv("LLM_MODEL", "Qwen/Qwen2.5-7B-Instruct")
     llm_max_tokens: int = int(os.getenv("LLM_MAX_TOKENS", "512"))
     llm_temperature: float = float(os.getenv("LLM_TEMPERATURE", "0.7"))
+    llm_streaming_enabled: bool = (
+        os.getenv("LLM_STREAMING_ENABLED", "true").strip().lower() == "true"
+    )
+    cache_ttl_seconds: float = float(os.getenv("CHAT_CACHE_TTL_SECONDS", "300"))
+    cache_max_entries: int = int(os.getenv("CHAT_CACHE_MAX_ENTRIES", "256"))
 
     # RabbitMQ exchange (ADR-0001 §D3)
     amqp_exchange: str = "afrimentor.events"

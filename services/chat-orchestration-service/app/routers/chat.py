@@ -1,10 +1,12 @@
 """Chat router — /api/v1/chat/sessions and /api/v1/chat/sessions/{id}/messages."""
 from __future__ import annotations
 
+import json
 import logging
 
 import httpx
 from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 
 from ..config import get_settings
@@ -20,7 +22,7 @@ from ..guardrails import (
     screen_input,
     screen_output,
 )
-from ..llm import chat_completion, is_commitment_candidate
+from ..llm import chat_completion, is_commitment_candidate, stream_chat_completion
 from ..models import Conversation, Message
 from ..schemas import (
     ConversationCreate,
@@ -94,6 +96,109 @@ def bind_persona(
 
 
 # ── Messages ──────────────────────────────────────────────────────────────────
+
+@router.post("/sessions/{session_id}/messages/stream")
+async def stream_message(
+    session_id: str,
+    body: MessageCreate,
+    user_id: str = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> StreamingResponse:
+    """Stream model tokens as SSE and persist the completed assistant turn.
+
+    The existing JSON endpoint remains available for non-streaming clients. SSE
+    keeps time-to-first-token independent of the model's total completion time.
+    """
+    conv = db.get(Conversation, session_id)
+    if not conv or conv.user_id != user_id:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Session not found")
+    if conv.status != "active":
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Session is not active")
+
+    next_seq = len(conv.messages)
+    user_msg = Message(
+        conversation_id=conv.id,
+        role="user",
+        content=body.content,
+        sequence=next_seq,
+    )
+    db.add(user_msg)
+    db.flush()
+    guardrails_on = get_settings().guardrails_enabled
+    input_decision = screen_input(body.content) if guardrails_on else ALLOWED
+
+    async def events():
+        if input_decision.blocked:
+            reply_text = refusal_message(input_decision)
+            citations: list[dict] = []
+            prompt_tokens = completion_tokens = 0
+            decision = input_decision
+            candidate = False
+            yield f"event: token\ndata: {json.dumps({'text': reply_text})}\n\n"
+        else:
+            stream, citations = await stream_chat_completion(
+                history=conv.messages,
+                user_content=body.content,
+                persona_id=conv.persona_id,
+                rag_collection=conv.rag_collection,
+            )
+            parts: list[str] = []
+            async for token in stream:
+                parts.append(token)
+                partial_decision = screen_output("".join(parts)) if guardrails_on else ALLOWED
+                if partial_decision.blocked:
+                    break
+                yield f"event: token\ndata: {json.dumps({'text': token})}\n\n"
+
+            reply_text = "".join(parts)
+            output_decision = screen_output(reply_text) if guardrails_on else ALLOWED
+            if output_decision.blocked:
+                reply_text = refusal_message(output_decision)
+                citations = []
+            else:
+                reply_text = apply_disclaimer(reply_text, output_decision)
+            decision = most_severe(input_decision, output_decision)
+            if decision.action is GuardrailAction.disclaim:
+                reply_text = apply_disclaimer(reply_text, decision)
+            candidate = is_commitment_candidate(body.content) and not decision.blocked
+            prompt_tokens = completion_tokens = 0
+
+        assistant_msg = Message(
+            conversation_id=conv.id,
+            role="assistant",
+            content=reply_text,
+            sequence=next_seq + 1,
+            is_commitment_candidate=int(candidate),
+            prompt_tokens=prompt_tokens,
+            completion_tokens=completion_tokens,
+            citations=citations,
+            guardrail_action=decision.action.value if guardrails_on else None,
+            guardrail_categories=list(decision.categories),
+        )
+        db.add(assistant_msg)
+        conv.total_prompt_tokens += prompt_tokens
+        conv.total_completion_tokens += completion_tokens
+        db.commit()
+        db.refresh(assistant_msg)
+        if candidate:
+            emit_commitment_tag_suggested(
+                conversation_id=conv.id,
+                message_id=assistant_msg.id,
+                user_id=user_id,
+                content=reply_text,
+            )
+        yield "event: complete\ndata: " + json.dumps({
+            "id": assistant_msg.id,
+            "content": reply_text,
+            "citations": citations,
+            "guardrail_action": decision.action.value if guardrails_on else None,
+        }) + "\n\n"
+
+    return StreamingResponse(
+        events(),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+    )
 
 @router.post(
     "/sessions/{session_id}/messages",
