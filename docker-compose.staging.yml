@@ -16,6 +16,13 @@ services:
     volumes:
       - pgdata_staging:/var/lib/postgresql/data
       - ./infra/postgres/init-databases.sh:/docker-entrypoint-initdb.d/init-databases.sh:ro
+    # Card O4.3: the default max_connections=100 was exhausted at 2x pilot
+    # concurrency once chat/goals/progress/library's per-service pools (each
+    # pool_size=10/max_overflow=10) ran concurrently against every other
+    # service's own connections — see docs/deployment/o4-3-pilot-load-test-report.md.
+    # A real production rollout should add a pooler (PgBouncer) in front of
+    # Postgres rather than rely on a raised ceiling alone; tracked for O4.5.
+    command: ["postgres", "-c", "max_connections=300"]
 
   redis:
     ports: !reset []

@@ -55,7 +55,11 @@ def _chat_status(result: dict | None, returncode: int) -> str:
 
 async def run(args: argparse.Namespace) -> dict:
     requests = args.concurrency * args.requests_per_user
-    common_flags = ["--users", str(args.concurrency), "--requests", str(requests)]
+    common_flags = [
+        "--users", str(args.concurrency),
+        "--requests", str(requests),
+        "--timeout-seconds", str(args.timeout_seconds),
+    ]
 
     jobs = [
         _run_script(
@@ -108,8 +112,9 @@ def render_markdown(report: dict) -> str:
         f"Run at: {report['run_at']}",
         "",
         f"Concurrency: {report['concurrency']} simulated users "
-        f"({report['concurrency_multiplier']}x the {report['pilot_participants_baseline']}-participant "
-        "pilot baseline from docs/research/pilot-data-collection-plan-v0.md, card C2.5).",
+        f"({report['concurrency_multiplier']}x the "
+        f"{report['pilot_participants_baseline']}-participant pilot baseline from "
+        "docs/research/pilot-data-collection-plan-v0.md, card C2.5).",
         "",
         "| Service | Status | Requests | Successful | Failed | p50 (ms) | p95 (ms) |",
         "|---|---|---|---|---|---|---|",
@@ -155,6 +160,7 @@ def main() -> int:
         help="Simulated concurrent users; default is 2x the documented pilot cohort size.",
     )
     parser.add_argument("--requests-per-user", type=int, default=5)
+    parser.add_argument("--timeout-seconds", type=float, default=30.0)
     parser.add_argument("--chat-url", default="http://localhost:8003")
     parser.add_argument("--goals-url", default="http://localhost:8006")
     parser.add_argument("--progress-url", default="http://localhost:8007")
