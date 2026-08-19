@@ -7,6 +7,7 @@ from app.models.audit import (
     TraitFitReport,
 )
 from app.models.consistency_run import ConsistencyRun
+from app.models.drift_alert import DriftAlert, DriftAlertStatus
 from app.models.session_metric import SessionMetric, anonymize_user_id
 
 __all__ = [
@@ -15,6 +16,8 @@ __all__ = [
     "ExperimentStatus",
     "TraitFitReport",
     "ConsistencyRun",
+    "DriftAlert",
+    "DriftAlertStatus",
     "SessionMetric",
     "anonymize_user_id",
 ]

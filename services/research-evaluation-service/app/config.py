@@ -33,6 +33,13 @@ class Settings(BaseModel):
     )
     consistency_sample_size: int = int(os.getenv("CONSISTENCY_SAMPLE_SIZE", "20"))
 
+    # Drift-threshold alerting (card O4.1). A persona's run-mean aggregate is
+    # compared against its own rolling baseline (prior job runs only); crossing
+    # this percent deviation fires a DriftAlert. Mirrors the ~14% deviation the
+    # Research Console mockup uses as its illustrative alert copy.
+    drift_threshold_pct: float = float(os.getenv("DRIFT_THRESHOLD_PCT", "15.0"))
+    drift_baseline_window: int = int(os.getenv("DRIFT_BASELINE_WINDOW", "10"))
+
 
 @lru_cache
 def get_settings() -> Settings:

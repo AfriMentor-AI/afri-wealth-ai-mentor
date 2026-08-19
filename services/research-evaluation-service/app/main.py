@@ -29,18 +29,18 @@ The connection between them:
 """
 import logging
 import os
-from datetime import date, timedelta
+from datetime import UTC, date, datetime
 
 from apscheduler.schedulers.background import BackgroundScheduler
-from fastapi import FastAPI, Depends, Query
+from fastapi import Depends, FastAPI, Header, HTTPException, Query
+from sqlalchemy import func
 from sqlalchemy.orm import Session
-from sqlalchemy import func, select
 
 from .config import get_settings
 from .consistency_job import run_consistency_job
-from .observability import instrument
 from .db.session import engine, get_db
-from .models import Base, ConsistencyRun, SessionMetric
+from .models import Base, ConsistencyRun, DriftAlert, SessionMetric
+from .observability import instrument
 
 logger = logging.getLogger(__name__)
 
@@ -340,4 +340,117 @@ def get_consistency_metrics(
         "scored_at": runs[0].scored_at.isoformat() if runs[0].scored_at else None,
         "aggregates": aggregates,
         "sessions": sessions,
+    }
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Session Audit-Log & Drift-Threshold Alerting (card O4.1)
+# ─────────────────────────────────────────────────────────────────────────────
+
+
+def _require_admin(x_user_roles: str = Header("", alias="X-User-Roles")) -> None:
+    """Gate the Research Console's admin endpoints (card O4.1).
+
+    Mirrors the pattern in rag-corpus-service/app/api/routes.py: the gateway
+    forwards verified JWT roles as X-User-Roles, so this trusts the header the
+    same way rag-corpus-service's _require_admin does. Card O4.2 widens this to
+    accept researcher/lead_architect roles once the console exists; O4.1 alone
+    has no console to gate for, so it checks admin only.
+    """
+    roles = {r.strip() for r in x_user_roles.split(",") if r.strip()}
+    if "admin" not in roles:
+        raise HTTPException(status_code=403, detail="Admin role required")
+
+
+@app.get("/api/v1/research/audit-sessions", tags=["research-console"])
+def get_audit_sessions(
+    limit: int = Query(50, ge=1, le=500),
+    persona_id: str | None = Query(None, description="Filter to one persona"),
+    min_abs_delta_pct: float | None = Query(
+        None, ge=0, description="Only sessions whose |consistency_delta_pct| is at least this"
+    ),
+    db: Session = Depends(get_db),
+    _admin: None = Depends(_require_admin),
+) -> dict:
+    """Recent Conversations (Persona Audit) table — Research Console (card O4.1).
+
+    Session id, primary intent, prompt context, and consistency delta for the
+    most recently scored sessions, newest first.
+    """
+    query = db.query(ConsistencyRun).order_by(ConsistencyRun.scored_at.desc())
+    if persona_id:
+        query = query.filter(ConsistencyRun.persona_id == persona_id)
+    if min_abs_delta_pct is not None:
+        query = query.filter(
+            ConsistencyRun.consistency_delta_pct.isnot(None),
+            func.abs(ConsistencyRun.consistency_delta_pct) >= min_abs_delta_pct,
+        )
+
+    rows = query.limit(limit).all()
+    return {
+        "sessions": [
+            {
+                "session_id": r.conversation_id,
+                "persona_id": r.persona_id,
+                "primary_intent": r.primary_intent,
+                "prompt_context": r.prompt_context,
+                "consistency_delta_pct": r.consistency_delta_pct,
+                "aggregate": r.aggregate,
+                "scored_at": r.scored_at.isoformat() if r.scored_at else None,
+            }
+            for r in rows
+        ]
+    }
+
+
+@app.get("/api/v1/research/drift-alerts", tags=["research-console"])
+def get_drift_alerts(
+    status: str | None = Query(None, description="Filter by 'open' or 'acknowledged'"),
+    limit: int = Query(50, ge=1, le=500),
+    db: Session = Depends(get_db),
+    _admin: None = Depends(_require_admin),
+) -> dict:
+    """Drift Threshold Alert widget — Research Console (card O4.1)."""
+    query = db.query(DriftAlert).order_by(DriftAlert.created_at.desc())
+    if status:
+        query = query.filter(DriftAlert.status == status)
+    rows = query.limit(limit).all()
+    return {
+        "alerts": [
+            {
+                "id": a.id,
+                "job_run_id": a.job_run_id,
+                "persona_id": a.persona_id,
+                "baseline_aggregate": a.baseline_aggregate,
+                "current_aggregate": a.current_aggregate,
+                "delta_pct": a.delta_pct,
+                "message": a.message,
+                "status": a.status,
+                "created_at": a.created_at.isoformat() if a.created_at else None,
+                "acknowledged_at": a.acknowledged_at.isoformat() if a.acknowledged_at else None,
+            }
+            for a in rows
+        ]
+    }
+
+
+@app.post("/api/v1/research/drift-alerts/{alert_id}/acknowledge", tags=["research-console"])
+def acknowledge_drift_alert(
+    alert_id: str,
+    db: Session = Depends(get_db),
+    _admin: None = Depends(_require_admin),
+) -> dict:
+    """"Acknowledge" button on the drift-alert banner (card O4.1)."""
+    alert = db.query(DriftAlert).filter(DriftAlert.id == alert_id).first()
+    if alert is None:
+        raise HTTPException(status_code=404, detail="Drift alert not found")
+
+    alert.status = "acknowledged"
+    alert.acknowledged_at = datetime.now(UTC)
+    db.commit()
+    db.refresh(alert)
+    return {
+        "id": alert.id,
+        "status": alert.status,
+        "acknowledged_at": alert.acknowledged_at.isoformat(),
     }
