@@ -1,9 +1,12 @@
 """ConsistencyRun — stores per-session consistency scores (C3.2)."""
 from __future__ import annotations
+
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
+
 from sqlalchemy import DateTime, Float, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
+
 from app.db.session import Base
 
 
@@ -23,9 +26,18 @@ class ConsistencyRun(Base):
     aggregate: Mapped[float] = mapped_column(Float, nullable=False)
     turn_count: Mapped[int] = mapped_column(Integer, nullable=False)
     warnings_json: Mapped[str] = mapped_column(Text, nullable=False, default="[]")
+    # Card O4.1 — Research Console "Recent Conversations (Persona Audit)" table.
+    # Nullable: rows scored before O4.1 landed have neither field, and that is a
+    # fact to record, not backfill with a guess.
+    primary_intent: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    prompt_context: Mapped[str | None] = mapped_column(Text, nullable=True)
+    # Percent deviation of this session's aggregate from its persona's rolling
+    # baseline (computed from prior job runs only). Null when no baseline existed
+    # yet for the persona at scoring time — e.g. the persona's first-ever run.
+    consistency_delta_pct: Mapped[float | None] = mapped_column(Float, nullable=True)
     # Indexed: the Sprint-4 dashboard reads the most recent run first.
     scored_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
-        default=lambda: datetime.now(timezone.utc),
+        default=lambda: datetime.now(UTC),
         index=True,
     )

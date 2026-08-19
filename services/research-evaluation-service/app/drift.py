@@ -1,0 +1,166 @@
+"""Card O4.1 — session audit fields and persona drift-threshold alerting.
+
+Runs at the end of a consistency job (:func:`app.consistency_job.run_consistency_job`):
+each scored session gets a lightweight ``primary_intent`` label and a trimmed
+``prompt_context`` excerpt for the Research Console's audit table, and each
+persona's mean score for the run is compared against its own rolling baseline
+(computed from prior job runs only) to decide whether a :class:`DriftAlert`
+should fire.
+
+This service stays dependency-light (FastAPI + SQLAlchemy only — see
+``app/main.py``'s module docstring), so intent classification is a v0 keyword
+heuristic rather than a model call, matching the "v0 scorer" precedent already
+established for :mod:`app.metrics.consistency`'s ``LexicalScorer``.
+"""
+from __future__ import annotations
+
+import uuid
+from datetime import UTC, datetime
+
+from sqlalchemy.orm import Session
+
+from app.metrics.schemas import Dialogue, Speaker
+from app.models.consistency_run import ConsistencyRun
+from app.models.drift_alert import DriftAlert
+
+PROMPT_CONTEXT_MAX_LEN = 240
+
+# Ordered so the first matching bucket wins on ties (savings mentioned before
+# budgeting, etc.) — a session about "saving for a business" reads as savings.
+_INTENT_KEYWORDS: dict[str, tuple[str, ...]] = {
+    "savings": ("save", "saving", "savings"),
+    "debt_management": ("debt", "loan", "borrow", "repay", "repayment"),
+    "budgeting": ("budget", "expense", "spending", "cut back"),
+    "investing": ("invest", "investment", "stock", "shares", "portfolio"),
+    "business_growth": ("business", "customer", "revenue", "sales", "scale"),
+    "goal_setting": ("goal", "milestone", "plan", "target"),
+}
+DEFAULT_INTENT = "general_mentorship"
+
+
+def _first_user_text(dialogue: Dialogue) -> str | None:
+    for turn in dialogue.turns:
+        if turn.speaker is Speaker.user:
+            return turn.text
+    return None
+
+
+def classify_primary_intent(text: str | None) -> str:
+    """Keyword-bucket heuristic over the first user turn. v0 — see module docstring."""
+    if not text:
+        return DEFAULT_INTENT
+    lowered = text.lower()
+    for intent, keywords in _INTENT_KEYWORDS.items():
+        if any(keyword in lowered for keyword in keywords):
+            return intent
+    return DEFAULT_INTENT
+
+
+def extract_prompt_context(text: str | None, max_len: int = PROMPT_CONTEXT_MAX_LEN) -> str | None:
+    """Trimmed excerpt of the first user turn for the audit table's context column."""
+    if not text:
+        return None
+    stripped = text.strip()
+    if len(stripped) <= max_len:
+        return stripped
+    return stripped[: max_len - 1].rstrip() + "…"
+
+
+def audit_fields_for_dialogue(dialogue: Dialogue) -> tuple[str, str | None]:
+    """Return ``(primary_intent, prompt_context)`` for a scored dialogue."""
+    first_user_text = _first_user_text(dialogue)
+    return classify_primary_intent(first_user_text), extract_prompt_context(first_user_text)
+
+
+def compute_persona_baseline(
+    db: Session, persona_id: str, exclude_job_run_id: str, window: int
+) -> float | None:
+    """Mean ``aggregate`` over the persona's most recent prior job runs.
+
+    Excludes ``exclude_job_run_id`` (the run currently being scored) so a run
+    can never use itself as its own baseline. Returns ``None`` when the persona
+    has no scoring history yet — there is nothing to compare against, and that
+    absence must not be silently treated as "no drift".
+    """
+    recent_job_run_ids = (
+        db.query(ConsistencyRun.job_run_id)
+        .filter(ConsistencyRun.persona_id == persona_id)
+        .filter(ConsistencyRun.job_run_id != exclude_job_run_id)
+        .order_by(ConsistencyRun.scored_at.desc())
+        .distinct()
+        .limit(window)
+        .all()
+    )
+    if not recent_job_run_ids:
+        return None
+
+    job_run_ids = [row[0] for row in recent_job_run_ids]
+    rows = (
+        db.query(ConsistencyRun.aggregate)
+        .filter(ConsistencyRun.persona_id == persona_id)
+        .filter(ConsistencyRun.job_run_id.in_(job_run_ids))
+        .all()
+    )
+    values = [row[0] for row in rows]
+    if not values:
+        return None
+    return sum(values) / len(values)
+
+
+def delta_pct(baseline: float | None, current: float) -> float | None:
+    """Percent deviation of ``current`` below ``baseline`` (positive = worse)."""
+    if baseline is None or baseline == 0:
+        return None
+    return round((baseline - current) / baseline * 100, 2)
+
+
+def evaluate_drift_and_alert(
+    db: Session, job_run_id: str, threshold_pct: float, window: int = 10
+) -> list[DriftAlert]:
+    """After a job run is committed, compare each scored persona's run mean
+    against its pre-run baseline and persist a :class:`DriftAlert` for any
+    persona whose deviation crosses ``threshold_pct``.
+
+    Reads ``ConsistencyRun`` rows already committed for ``job_run_id`` — call
+    this after :func:`app.consistency_job.run_consistency_job` commits, not
+    inside the same transaction, so the baseline queries in
+    :func:`compute_persona_baseline` never see this run's own rows.
+    """
+    run_rows = (
+        db.query(ConsistencyRun)
+        .filter(ConsistencyRun.job_run_id == job_run_id)
+        .filter(ConsistencyRun.persona_id.isnot(None))
+        .all()
+    )
+
+    by_persona: dict[str, list[float]] = {}
+    for row in run_rows:
+        by_persona.setdefault(row.persona_id, []).append(row.aggregate)
+
+    alerts: list[DriftAlert] = []
+    for persona_id, scores in by_persona.items():
+        current_mean = sum(scores) / len(scores)
+        baseline = compute_persona_baseline(db, persona_id, job_run_id, window=window)
+        pct = delta_pct(baseline, current_mean)
+        if pct is None or abs(pct) < threshold_pct:
+            continue
+
+        alert = DriftAlert(
+            id=str(uuid.uuid4()),
+            job_run_id=job_run_id,
+            persona_id=persona_id,
+            baseline_aggregate=round(baseline, 4),
+            current_aggregate=round(current_mean, 4),
+            delta_pct=pct,
+            message=(
+                f"Consistency for persona '{persona_id}' deviated {pct:+.1f}% "
+                f"from its {window}-run baseline ({baseline:.3f} → {current_mean:.3f})."
+            ),
+            created_at=datetime.now(UTC),
+        )
+        db.add(alert)
+        alerts.append(alert)
+
+    if alerts:
+        db.commit()
+    return alerts
