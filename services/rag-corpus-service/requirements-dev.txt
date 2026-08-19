@@ -1,3 +1,6 @@
-# Test-only deps (not installed in the runtime image). Install: pip install -r requirements-dev.txt
+# Test-only + ops-tooling deps (not installed in the runtime image).
+# Install: pip install -r requirements-dev.txt
 -r requirements.txt
 pytest==8.3.4
+# Tier-2 PDF text extraction for scripts/fetch_tier2_sources.py (card C3.4).
+pypdf==6.16.1

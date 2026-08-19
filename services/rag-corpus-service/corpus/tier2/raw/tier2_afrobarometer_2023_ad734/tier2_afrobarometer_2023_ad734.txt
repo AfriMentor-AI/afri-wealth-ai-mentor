@@ -1,0 +1,1945 @@
+Copyright ©Afrobarometer 2023  1 
+ 
+ 
+   
+Dispatch No. 734 | 15 November 2023 
+Africa’s youth: More educated, less employed, 
+still unheard in policy and development  
+Afrobarometer Dispatch No. 734 | Josephine Appiah-Nyamekye Sanny,               
+Shannon van Wyk-Khosa, and Joseph Asunka  
+ 
+Summary  
+The United Nations’ 2030 Agenda for Sustainable Development and the African Union’s 
+Agenda 2063 emphasise the vital role of young people in catalysing sustainable and 
+transformative governance and development in Africa (United Nations Economic 
+Commission for Africa, 2017). Home to a population with a median age of 
+about 20, Africa’s trajectory stands to gain immensely from its youth if their 
+energies and skills are harnessed effectively and they are given the space 
+and opportunity to contribute to public policy and decision making.  
+For now, young people remain grossly under-represented in formal 
+governance structures as well as political discourse, understood to be an 
+important voting bloc but marginalised from meaningful decision-making 
+processes (Ayaji, Gukurume, & Bangura, 2022). As Niang (2019) observes, 
+Africa has the world’s youngest population and some of its oldest leaders. A combination of 
+legal barriers (e.g. age and financial requirements for public office) and social norms 
+systematically undermines active participation of young people, especially young women, in 
+public policy and development decisions. This disconnect between African political systems 
+– dominated by old men, especially at the highest levels – and African youth results in 
+governance and policy that do not keep pace with the needs and expectations of young 
+people (Ibrahim, 2019). 
+Critics often cite a lack of interest in politics among young people, particularly when it comes 
+to political parties and voting. However, the explosion of youth participation in 
+unconventional political processes, notably online political and social movements , shows 
+that many are in fact engaged and suggests that their participation may depend  on the 
+likelihood that their voices will be heard and will contribute to tangible political change (Van 
+Gyampo & Anyidoho, 2019).  
+Afrobarometer Round 9 survey results highlight the views and experiences of young Africans 
+as well as some of the challenges they face. Across the continent, unemployment is the  top 
+policy priority that 18- to 35-year-olds want their governments to address. Although African 
+youth are more educated than their elders, they are also more likely to be unemployed, and 
+they overwhelmingly give their governments failing marks on job creation. More broadly, 
+compared to older generations, young people are less trustful of government institutions and 
+leaders and more likely to view them as corrupt.  
+Even so, young Africans are just as committed to democracy and opposed to non-
+democratic alternatives, including military rule, as their elders. But young Africans are 
+particularly dissatisfied with the way democracy works in their countries, and in the event 
+that elected leaders abuse their power, younger Africans are more likely than their elders to 
+countenance military intervention.   
+
+                                             
+Copyright ©Afrobarometer 2023  2 
+ 
+ 
+As for political engagement, African youth are less involved than older cohorts in 
+conventional processes such as voting, identifying with a political party, and attending 
+community meetings, but are more likely to participate in demonstrations or protests.  
+Afrobarometer surveys 
+Afrobarometer is a pan-African, non-partisan survey research network that provides reliable 
+data on African experiences and evaluations of democracy, governance, and quality of life. 
+Nine survey rounds in up to 42 countries have been completed since 1999. Round 9 surveys 
+(2021/2023) cover 39 countries. (See Appendix Table A.1 for a list of countries and fieldwork 
+dates.)  
+Afrobarometer’s national partners conduct face-to-face interviews in the language of the 
+respondent’s choice that yield country-level results with margins of error of +/-2 to +/-3 
+percentage points at a 95% confidence level. This 39-country analysis is based on 54,436 
+interviews. The data are weighted to ensure nationally representative samples. When 
+reporting multi-country averages, all countries are weighted equally (rather than in 
+proportion to population size). 
+Key findings 
+On education and employment status: 
+ Young Africans (aged 18-35) are more educated than their elders: Almost two-thirds 
+(64%) of youth have had at least some secondary school education, compared to 
+35% of those aged 56 and older.  
+ But they are considerably more likely than their elders to be out of work and looking 
+for a job. 
+On policy priorities:  
+ Unemployment tops the list of the most important problems that African  youth want 
+their government to address, followed by management of the economy and health. 
+ On average across 39 countries, only two in 10 youth (19%) say their government is 
+performing well on job creation. 
+On their county’s direction and economy: 
+ About two-thirds of young people say their country is going in “the wrong direction”  
+(66%) and describe its economic condition as “fairly bad” or “very bad” (64%). 
+On attitudes toward democracy and leaders: 
+ Like their elders, young Africans support democracy (64%) and reject such 
+authoritarian alternatives as one-man rule (80%), one-party rule (78%), and military 
+rule (65%).  
+ However, six in 10 (60%) are dissatisfied with the way democracy works in their 
+country. 
+ Young Africans are more likely than older cohorts to see state institutions and leaders 
+as corrupt and to mistrust them. 
+                                             
+Copyright ©Afrobarometer 2023  3 
+ 
+ 
+ Youth are also more willing to tolerate a military takeover of the government if 
+elected leaders abuse their power (56% among those aged 18-35 vs. 47% among 
+those aged 56 and above). 
+On political engagement: 
+ Youth are less likely than older citizens to vote in elections, identify with a political 
+party, attend a community meeting, join others to raise an issue, and contact a local 
+leader.  
+ Among young people, fewer women than men engage in political processes. 
+Education and employment status 
+Quality education is one of the main objectives of Agenda 2063 (African Union, 2023) as well 
+as the UN Sustainable Development Goals (Goal 4). Although the continent has made 
+modest progress in some aspects of education in the past decade, in particular regarding 
+access and dropout rates (UNICEF & African Union Commission, 2021), it continues to lag 
+behind other world regions on many indicators (Klapper & Panchamia, 2023).  
+The modest progress may have contributed to improvements in educational attainment on 
+the continent: The latest round of Afrobarometer surveys shows that young Africans are, on 
+average, more educated than their elders. Across 39 countries surveyed in 2021/2023, a lmost 
+two-thirds (64%) of respondents aged 18-35 have had at least some secondary education, 
+compared 52%, 44%, and 35% of the progressively older cohorts (Figure 1). 1 One in eight 
+young adults (13%) report having no formal education, fewer than half as many as among 
+those above age 55 (30%). 
+Figure 1: Educational level | by age group | 39 countries | 2021/2023  
+ 
+Respondents were asked: What is your highest level of education? 
+ 
+ 
+1 Due to rounding, percentages for combined categories reported in the text may differ slightly from the sum of 
+sub-categories shown in figures (e.g. among 46- to 55-year-olds, 31% “secondary” and 14% “post-secondary” 
+sum to 44%). 
+13% 20% 24% 30%
+18%
+22%
+28%
+32%
+35%
+27%
+44%
+33%
+31%
+23%
+37%
+20% 19% 14% 12% 18%
+0%
+20%
+40%
+60%
+80%
+100%
+18-35 years 36-45 years 46-55 years 56 years and
+above
+39-country
+average
+Post-secondary
+Secondary
+Primary
+No formal
+education
+                                             
+Copyright ©Afrobarometer 2023  4 
+ 
+ 
+Although they are more educated, African youth are less likely than their elders to be 
+employed. About four in 10 young adults (39%) across the 39 countries are unemployed and 
+looking for a job, a considerably larger proportion than among the middle-aged (24%-31%) 
+and older citizens (14%) (Figure 2). 
+In addition, one-third (33%) of young adults say they are not employed but not looking for 
+jobs, including 9% who are students (Figure 3). 
+Figure 2: Unemployment rate | by age group | 39 countries | 2021/2023 
+ 
+Respondents were asked: Do you have a job that pays a cash income? [If yes:] Is it full time or part 
+time? [If no:] Are you currently looking for a job?  
+Figure 3: Employment and student status | respondents aged 18-35 years                   
+| 39 countries | 2021/2023 
+ 
+Respondents were asked:  
+Do you have a job that pays a cash income? [If yes:] Is it full time or part time? [If no:] Are you 
+currently looking for a job? 
+What is your main occupation? [If not currently working:] What was your last main occupation?                
+(% who say “student”) 
+ 
+Youth unemployment is particularly high in Angola, Sâo Tomé and Principe, and Botswana, 
+where at least six in 10 young adults report being unemployed and looking for jobs (Figure 4). 
+39% 31% 24% 14%
+32%
+33%
+32% 42% 64% 38%
+0%
+20%
+40%
+60%
+80%
+100%
+18-35 years 36-45 years 46-55 years 56 years and
+above
+39-country
+average
+Not employed, looking Not employed, not looking
+33%
+39%
+10%
+18%
+9%
+8%
+0% 20% 40% 60%
+Not employed, not looking
+Not employed, looking
+Employed part time
+Employed full time
+Total Students
+                                             
+Copyright ©Afrobarometer 2023  5 
+ 
+ 
+The situation is quite different in Mauritius (4%) and Seychelles (8%), where fewer than one in 
+10 youth are unemployed. 
+Figure 4: Unemployed, looking for a job | respondents aged 18-35 | 39 countries      
+| 2021/2023 
+ 
+Respondents were asked: Do you have a job that pays a cash income? [If yes:] Is it full time or part time? 
+[If no:] Are you currently looking for a job? (% aged 18-35 who say “no, but looking”)  
+Priorities for action 
+With so many young people struggling to find jobs, it comes as no surprise that 
+unemployment tops the list of most important problems that young Africans want their 
+4%
+8%
+19%
+21%
+21%
+24%
+24%
+27%
+27%
+28%
+29%
+29%
+32%
+36%
+37%
+38%
+38%
+39%
+39%
+39%
+41%
+41%
+41%
+41%
+42%
+44%
+44%
+47%
+47%
+49%
+50%
+51%
+51%
+51%
+52%
+55%
+57%
+60%
+60%
+67%
+0% 20% 40% 60% 80% 100%
+Mauritius
+Seychelles
+Gambia
+Ethiopia
+Morocco
+Tanzania
+Nigeria
+Uganda
+Ghana
+Madagascar
+Benin
+Senegal
+Sudan
+Zambia
+Mali
+Tunisia
+Guinea
+Cabo Verde
+Cameroon
+39-country average
+Zimbabwe
+Kenya
+Malawi
+Congo-Brazzaville
+Côte d'Ivoire
+Namibia
+Gabon
+South Africa
+Mauritania
+Togo
+Eswatini
+Niger
+Liberia
+Sierra Leone
+Burkina Faso
+Mozambique
+Lesotho
+Botswana
+São Tomé and Príncipe
+Angola
+                                             
+Copyright ©Afrobarometer 2023  6 
+ 
+ 
+government to address (cited by 37% of respondents aged 18-35). The related problem of 
+economic management ranks second (30%), followed by health (26%), water supply (23%), 
+infrastructure/roads (23%), and education (22%) (Figure 5).  
+Figure 5: Most important problems | by age group | 39 countries | 2021/2023  
+ 
+Respondents were asked: In your opinion, what are the most important problems facing this country 
+that government should address? (Up to three responses per respondent) 
+ 
+While the youth are more likely than older groups to prioritise unemployment as their most 
+important problem (37% vs. 28%-33%), they share similar views on most other policy priorities. 
+Across all age groups, management of the economy as a policy priority rose sharply from the 
+middle of the pack in previous survey rounds to almost tie with unemployment, displacing 
+health to third position. The effects of COVID-19 and the war in Ukraine may have informed 
+this shift in policy priorities. Paraphrasing UN Assistant Secretary-General Ahunnah Eziakonwa, 
+Sen (2022) captures the situation very well: “Russia’s war in Ukraine has disrupted Africa’s 
+promising recovery from the COVID-19 pandemic by raising food and fuel prices, disrupting 
+trade of goods and services, tightening the fiscal space, constraining green tra nsitions and 
+reducing the flow of development finance in the continent.”    
+At the country level, unemployment is a top policy priority for about two-thirds of young 
+adults in Cabo Verde (66%), Namibia (65%), and Botswana (64%) (Figure 6). On the other 
+13%
+10%
+10%
+16%
+23%
+16%
+22%
+22%
+28%
+30%
+28%
+13%
+11%
+11%
+16%
+21%
+20%
+23%
+22%
+30%
+30%
+30%
+13%
+12%
+13%
+15%
+20%
+21%
+22%
+22%
+29%
+30%
+33%
+12%
+12%
+14%
+15%
+20%
+22%
+23%
+23%
+26%
+30%
+37%
+0% 20% 40% 60%
+Poverty/Destitution
+Corruption
+Electricity
+Food shortage/Famine
+Crime and security
+Education
+Infrastructure/Roads
+Water supply
+Health
+Management of the economy
+Unemployment
+18-35 years
+36-45 years
+46-55 years
+56 years and
+above
+                                             
+Copyright ©Afrobarometer 2023  7 
+ 
+ 
+hand, very few young respondents in Sudan (8%), Seychelles (11%), Sierra Leone (15%), and 
+Uganda (15%) rank unemployment as a top policy priority. Economic management is the 
+highest policy priority for young people in Sudan (70%), Sierra Leone (50%), and Seychelles 
+(43%), while among Ugandan youth, health care (48%) ranks No. 1. 
+Figure 6: Unemployment as most important problem | respondents aged 18-35                     
+| 39 countries | 2021/2023  
+ 
+Respondents were asked: In your opinion, what are the most important problems facing this country 
+that government should address? (Up to three responses per respondent) (% who say 
+“unemployment”) 
+8%
+11%
+15%
+15%
+16%
+19%
+20%
+20%
+20%
+23%
+24%
+25%
+27%
+28%
+28%
+32%
+34%
+35%
+36%
+37%
+38%
+39%
+40%
+40%
+42%
+44%
+47%
+48%
+52%
+52%
+52%
+53%
+54%
+55%
+56%
+58%
+59%
+64%
+65%
+66%
+0% 20% 40% 60% 80% 100%
+Sudan
+Seychelles
+Sierra Leone
+Uganda
+Tanzania
+Gambia
+Malawi
+Ethiopia
+Mali
+Madagascar
+Burkina Faso
+Liberia
+Benin
+Zambia
+Guinea
+Niger
+Senegal
+Mauritania
+Kenya
+39-country average
+Nigeria
+Mozambique
+São Tomé and Príncipe
+Angola
+Cameroon
+Côte d'Ivoire
+Ghana
+Zimbabwe
+Togo
+Congo-Brazzaville
+Mauritius
+Tunisia
+South Africa
+Eswatini
+Lesotho
+Gabon
+Morocco
+Botswana
+Namibia
+Cabo Verde
+                                             
+Copyright ©Afrobarometer 2023  8 
+ 
+ 
+Evaluation of government performance 
+On their top policy priority, most Africans rate their government’s performance as poor. On 
+average across 39 countries, only two in 10 citizens (20%) say their government is doing “fairly 
+well” or “very well” on job creation (Figure 7). Just two countries – Zambia (72%) and 
+Seychelles (60%) – record majority approval, while satisfaction is vanishingly low in Gabon 
+(3%), Congo-Brazzaville (5%), Lesotho (5%), and Eswatini (6%). 
+Figure 7: Positive rating of government performance on job creation | 39 countries   
+| 2021/2023 
+  
+Respondents were asked: How well or badly would you say the current government is handling the 
+following matters, or haven’t you heard enough to say: Handling job creation? (% who say “fairly well” 
+or “very well”) 
+3%
+5%
+5%
+6%
+8%
+8%
+9%
+10%
+10%
+10%
+12%
+12%
+13%
+13%
+14%
+14%
+14%
+15%
+15%
+16%
+16%
+17%
+18%
+19%
+20%
+20%
+22%
+22%
+22%
+24%
+24%
+25%
+26%
+28%
+30%
+39%
+42%
+45%
+60%
+72%
+0% 20% 40% 60% 80% 100%
+Gabon
+Congo-Brazzaville
+Lesotho
+Eswatini
+Sudan
+Tunisia
+South Africa
+Liberia
+Angola
+Guinea
+Gambia
+Zimbabwe
+Botswana
+Cabo Verde
+Morocco
+Kenya
+Malawi
+Namibia
+Mauritania
+Ghana
+Nigeria
+Mauritius
+Burkina Faso
+Cameroon
+Benin
+39-country average
+Mozambique
+Uganda
+Madagascar
+Senegal
+Togo
+São Tomé and Príncipe
+Ethiopia
+Sierra Leone
+Côte d'Ivoire
+Niger
+Mali
+Tanzania
+Seychelles
+Zambia
+                                             
+Copyright ©Afrobarometer 2023  9 
+ 
+ 
+Young Africans align with the general population in their evaluations of government 
+performance on the most important problems they face. Only 19% approve of government 
+efforts to create jobs, while 25% and 41%, respectively, are satisfied with the government’s 
+performance on economic management and improving basic health services (Figure 8). 
+These assessments are close to the continental averages, though 3-5 percentage points 
+lower than those offered by the oldest respondents. 
+Figure 8: Approval of government performance on jobs, economy, and health          
+| by age group | 39 countries | 2021/2023 
+  
+Respondents were asked: How well or badly would you say the current government is handling the 
+following matters, or haven’t you heard enough to say? (% who say “fairly well” or “very well”) 
+ 
+As shown in Figure 9, youth in Tanzania, Seychelles, and Zambia consistently give their 
+government some of the best ratings on their top policy priorities, while their counterparts in 
+Sudan, Gabon, Tunisia, Congo-Brazzaville. Lesotho, and Eswatini offer some of the least 
+positive assessments. 
+ 
+ 
+ 
+ 
+ 
+ 
+19%
+25%
+41%
+19%
+26%
+39%
+22%
+29%
+43%
+23%
+30%
+44%
+20%
+27%
+41%
+0%
+20%
+40%
+60%
+80%
+100%
+Creating jobs Managing economy Improving basic health
+services
+18-35 years 36-45 years 46-55 years
+56 years and above 39-country average
+Do your own analysis of Afrobarometer data – on any 
+question, for any country and survey round. It’s easy and 
+free at www.afrobarometer.org/online-data-analysis. 
+                                             
+Copyright ©Afrobarometer 2023  10 
+ 
+ 
+Figure 9: Youth approval of government performance on jobs, economy, and health 
+| respondents aged 18-35 years | 39 countries | 2021/2023  
+Respondents were asked: How well or badly would you say the current government is handling the 
+following matters, or haven’t you heard enough to say? (% who say “fairly well” or “very well”) 
+ 
+Since 2014/2015, young people’s ratings of their government’s performance in addressing 
+their top three policy priorities have declined significantly across 32 countries surveyed 
+consistently in this period (Figure 10). Approval of efforts to reduce unemployment has 
+dropped by 7 percentage points (from 27% to 20%), while approval of health-care delivery 
+has seen a 9-point decline. We see the sharpest decline in governments’ economic 
+management, a 13-point drop from 39% to 26%. 
+  
+3%
+5%
+5%
+5%
+6%
+9%
+10%
+10%
+10%
+10%
+11%
+11%
+11%
+14%
+14%
+14%
+14%
+14%
+16%
+16%
+16%
+17%
+18%
+18%
+19%
+20%
+22%
+22%
+23%
+24%
+25%
+25%
+25%
+28%
+29%
+35%
+35%
+46%
+58%
+72%
+Gabon
+Congo-Brazzaville
+Lesotho
+Eswatini
+Tunisia
+Sudan
+Angola
+Guinea
+Liberia
+Gambia
+South Africa
+Zimbabwe
+Cabo Verde
+Mauritius
+Malawi
+Morocco
+Ghana
+Botswana
+Mauritania
+Namibia
+Kenya
+Burkina Faso
+Benin
+Nigeria
+39-country average
+Cameroon
+Mozambique
+Uganda
+Madagascar
+Senegal
+São Tomé and Príncipe
+Togo
+Sierra Leone
+Ethiopia
+Côte d'Ivoire
+Mali
+Niger
+Tanzania
+Seychelles
+Zambia
+Creating                                                                                       
+jobs
+4%
+13%
+7%
+12%
+14%
+7%
+18%
+29%
+16%
+12%
+17%
+22%
+22%
+18%
+12%
+15%
+16%
+35%
+21%
+28%
+19%
+19%
+40%
+14%
+25%
+20%
+26%
+32%
+27%
+27%
+41%
+33%
+29%
+30%
+49%
+46%
+47%
+60%
+54%
+51%
+Managing the 
+economy
+26%
+23%
+33%
+29%
+18%
+10%
+20%
+45%
+21%
+19%
+40%
+28%
+34%
+47%
+36%
+26%
+44%
+51%
+25%
+49%
+58%
+43%
+56%
+29%
+41%
+54%
+49%
+48%
+55%
+50%
+42%
+47%
+57%
+55%
+56%
+56%
+60%
+73%
+54%
+44%
+Improving health 
+services
+                                             
+Copyright ©Afrobarometer 2023  11 
+ 
+ 
+Figure 10: Youth approval of government performance on jobs, economy,              
+and health | respondents aged 18-35 years | 32 countries | 2014-2023  
+  
+Respondents were asked: How well or badly would you say the current government is handling the 
+following matters, or haven’t you heard enough to say? (% who say “fairly well” or “very well”) 
+Views on country’s direction and economic situation 
+The African Development Bank’s (2023) African Economic Outlook 2023 paints a mixed 
+picture for the continent. Notwithstanding a generally positive outlook on prospects for gross 
+domestic product growth, the report notes that “Africa faces several downside risks to its 
+growth prospects that call for cautious optimism. The tightening of global financial conditions 
+and appreciation of the United States dollar have exacerbated debt service costs a nd could 
+increase the risk of debt distress, especially for countries with severely constrained fiscal 
+positions. … This is in addition to climate change, which continues to threaten lives, 
+livelihoods, and economic activities”. 
+Citizens’ views across 39 countries that Afrobarometer surveyed in 2021/2023 are consistent 
+with these projections: On average, two-thirds (66%) of Africans say their country is heading in 
+“the wrong direction,” while only one-third (32%) see it as moving in “the right direction” 
+(Figure 11). Africa’s youth are slightly more pessimistic than the over-55 group about the 
+direction of the country (66% vs. 62%).  
+Figure 11: Country’s direction | by age group | 39 countries | 2021/2023 
+ 
+Respondents were asked: Would you say that the country is going in the wrong direction or going in the 
+right direction? 
+53%
+53%
+48%
+44%39% 36% 35%
+26%
+27% 24% 23% 20%
+0%
+20%
+40%
+60%
+80%
+100%
+2014/2015 2016/2018 2019/2021 2021/2023
+Improving basic
+health services
+Managing the
+economy
+Creating jobs
+66% 67% 65% 62% 66%
+32% 31% 32% 34% 32%
+0%
+20%
+40%
+60%
+80%
+100%
+18-35 years 36-45 years 46-55 years 56 years and
+above
+39-country
+average
+Going in the wrong direction Going in the right direction
+                                             
+Copyright ©Afrobarometer 2023  12 
+ 
+ 
+In 20 of the 39 surveyed countries, young adults are significantly more pessimistic (by 3 
+percentage points or more) about the general direction of their country, with the largest 
+gaps recorded in Liberia (a 17-percentage-point difference between the proportion of 
+young adults and elder citizens who say the country is heading in the wrong direction), 
+Mauritius (14 points), Mali (14 points), Tunisia (13 points), and Mozambique (12 points)              
+(Figure 12).  
+In 12 countries, older citizens are more likely than the youth to share gloomy views about the 
+direction of their countries. These include Ethiopia (by 8 percentage-points), Seychelles (7 
+points), Togo (7 points), and Congo-Brazzaville (6 points). 
+Figure 12: Country is going in the wrong direction | by age group | 39 countries           
+| 2021/2023 
+Respondents were asked: Would you say that the country is going in the wrong direction or going in the 
+right direction? (% who say “wrong direction”) 
+30%
+37%
+37%
+41%
+43%
+44%
+45%
+45%
+46%
+51%
+53%
+53%
+55%
+63%
+64%
+66%
+66%
+66%
+67%
+68%
+69%
+70%
+71%
+71%
+71%
+71%
+76%
+77%
+77%
+79%
+80%
+80%
+81%
+83%
+83%
+87%
+87%
+90%
+91%
+92%
+Seychelles
+Tanzania
+Mali
+Mozambique
+Côte d'Ivoire
+Morocco
+Benin
+Zambia
+Mauritania
+Uganda
+Niger
+Ethiopia
+Togo
+São Tomé and Príncipe
+Angola
+39-country average
+Madagascar
+Cabo Verde
+Sierra Leone
+Cameroon
+Mauritius
+Zimbabwe
+Senegal
+Botswana
+Guinea
+Kenya
+Namibia
+Liberia
+Congo-Brazzaville
+Tunisia
+Gambia
+Burkina Faso
+South Africa
+Lesotho
+Eswatini
+Nigeria
+Ghana
+Malawi
+Gabon
+Sudan
+18-35 years
+37%
+36%
+23%
+29%
+47%
+39%
+35%
+46%
+43%
+53%
+52%
+61%
+62%
+53%
+58%
+62%
+71%
+58%
+64%
+71%
+55%
+70%
+64%
+73%
+65%
+74%
+73%
+60%
+83%
+66%
+73%
+80%
+85%
+88%
+88%
+91%
+84%
+80%
+88%
+89%
+56 years and above
+                                             
+Copyright ©Afrobarometer 2023  13 
+ 
+ 
+In line with views of their country’s direction, about two-thirds (65%) of Africans say its 
+economic conditions are “fairly bad” or “very bad,” an assessment that is shared across all 
+age groups (Figure 13).  
+A slim majority (52%) of respondents also describe their personal living conditions as bad, 
+though the youth (49%) are slightly less negative about their living conditions than their elders. 
+Figure 13: Negative assessments of country’s economic and personal living 
+conditions | by age group | 39 countries | 2021/2023 
+ 
+Respondents were asked: In general, how would you describe:  The present economic condition of this 
+country?  Your own present living conditions? (% who say “fairly bad” or “very bad”)  
+ 
+Looking back, only two in 10 young adults (21%) think their countries’ economies have gotten 
+better in the past 12 months (Figure 14). But optimism about the future is more robust: More 
+than four in 10 young Africans (42%) expect economic conditions to get better in the next 12 
+months, a view that is also shared by their elders. 
+  
+64%
+49%
+66%
+55%
+66%
+56%
+64%
+54%
+65%
+52%
+0%
+20%
+40%
+60%
+80%
+100%
+Country's economic conditions are
+fairly/very bad
+Personal living conditions are fairly/very
+bad
+18-35 years 36-45 years 46-55 years
+56 years and above 39-country average
+                                             
+Copyright ©Afrobarometer 2023  14 
+ 
+ 
+Figure 14: Retrospective and prospective assessments of country’s economic 
+conditions | by age group | 39 countries | 2021/2023 
+ 
+Respondents were asked: Looking back, how do you rate economic conditions in this country 
+compared to 12 months ago? Looking ahead, do you expect economic conditions in this country to 
+be better or worse in 12 months’ time? 
+Attitudes toward democratic governance and institutions 
+The recent spike in military coups in West and Central Africa might suggest that democratic 
+decline is gaining momentum on the continent. These headwinds notwithstanding, popular 
+commitment to democracy and democratic norms remains strong. Across the 39 countries 
+surveyed in 2021/2023, large majorities of Africans say they prefer democracy to any other 
+form of government (66%) and reject authoritarian alternatives such as one-man rule (80%), 
+one-party rule (78%), and military rule (66%) (Figure 15). Opposition to one-man rule and one-
+party rule is strong and consistent across all age groups. However, African youth are slightly 
+less likely than those above age 55 to express a preference for democracy (64% vs. 68%) and 
+to reject military rule (65% vs. 69%). 
+40%
+40%
+39%
+38%
+42%
+20%
+20%
+21%
+19%
+21%
+18%
+17%
+18%
+19%
+18%
+21%
+20%
+21%
+21%
+22%
+35%
+35%
+36%
+36%
+34%
+58%
+59%
+58%
+60%
+57%
+7%
+8%
+7%
+7%
+6%
+39-country average
+56 years and above
+46-55 years
+36-45 years
+18-35 years
+39-country average
+56 years and above
+46-55 years
+36-45 years
+18-35 years
+Country’s economic conditions
+in 12 months
+Country’s economic conditions
+compared to 12 months ago
+Better/Much better Same Worse/Much worse Refused/Don't know
+                                             
+Copyright ©Afrobarometer 2023  15 
+ 
+ 
+Figure 15: Support for democracy and rejection of authoritarian rule | by age group 
+| 39 countries | 2021/2023 
+ 
+Respondents were asked: 
+Which of these three statements is closest to your own opinion? Statement 1: Democracy is 
+preferable to any other kind of government. Statement 2: In some circumstances, a non-
+democratic government can be preferable. Statement 3: For someone like me, it doesn't matter 
+what kind government we have. (% who say democracy is preferable) 
+There are many ways to govern a country. Would you disapprove or approve of the following 
+alternatives: Only one political party is allowed to stand for election and hold office? The army 
+comes in to govern the country? Elections and Parliament are abolished so that the president can 
+decide everything? (% who “disagree” or “strongly disagree”) 
+ 
+While demand for democracy remains strong, the supply side – what citizens feel they’re 
+getting in terms of democracy – is far weaker. Nearly six in 10 Africans (59%) are dissatisfied 
+with the way democracy works in their countries. Young adults are slightly more likely than 
+those over age 55 to say they are “not very satisfied” or “not at all satisfied” with the way 
+their democracy is functioning (60% vs. 56%) (Figure 16). 
+Figure 16: Dissatisfaction with democracy | by age group | 39 countries | 2021/2023 
+ 
+Respondents were asked: Overall, how satisfied are you with the way democracy works in [your 
+country]? (% who say “not very satisfied” or “not at all satisfied”) 
+80% 78%
+65% 64%
+81% 79%
+67% 68%
+80% 78%
+67% 67%
+80% 76%
+69% 68%
+80% 78%
+66% 66%
+0%
+20%
+40%
+60%
+80%
+100%
+Reject one-man rule Reject one-party
+rule
+Reject military rule Prefer democracy
+to any other kind of
+governance
+18-35 years 36-45 years 46-55 years
+56 years and above 39-country average
+60% 58% 58% 56% 59%
+0%
+20%
+40%
+60%
+80%
+100%
+18-35 years 36-45 years 46-55 years 56 years and
+above
+39-country
+average
+                                             
+Copyright ©Afrobarometer 2023  16 
+ 
+ 
+African youth also express less trust in public institutions than older citizens. Only 44% of 
+respondents aged 18-35 say they trust their president “somewhat” or “a lot,” compared to 
+52% among those aged 56 and above (Figure 17). Similarly, youth are less likely than seniors 
+to trust the courts (45% vs. 50%) and members of Parliament (MPs) (36% vs. 41%).  
+Figure 17: Trust in state institutions | by age group | 39 countries* | 2021/2023 
+ 
+Respondents were asked: How much do you trust each of the following? (% who say “somewhat” or “a 
+lot”) 
+* The question about trust in MPs was not asked in Guinea and Tunisia.  
+ 
+Perceptions of widespread corruption in public institutions are also higher among young 
+Africans than among their elders (Figure 18). About four in 10 young Africans (41%) say 
+“most” or “all” MPs are corrupt, compared to 35% of those aged 56 and above. This pattern 
+is mirrored in perceptions of widespread corruption among officials at the Presidency (40% vs. 
+32%) and among judges and magistrates (37% vs. 31%). 
+Figure 18: Perceived corruption in institutions | by age group | 39 countries*                          
+| 2021/2023 
+ 
+Respondents were asked: How many of the following people do you think are involved in corruption, or 
+haven’t you heard enough about them to say? (% who say “most of them” or “all of them”) 
+* The question about corruption among MPs was not asked in Guinea, Sudan, and Tunisia. 
+45% 44%
+36%
+47% 45%
+37%
+48% 50%
+41%
+50% 52%
+41%
+49% 46%
+37%
+0%
+20%
+40%
+60%
+80%
+100%
+Courts President Members of Parliament
+18-35 years 36-45 years 46-55 years 56 years and above Average
+41% 40% 37%40% 38% 35%37% 35% 34%35% 32% 31%
+40% 38% 35%
+0%
+20%
+40%
+60%
+80%
+100%
+Members of Parliament Office of the president Judges and magistrates
+18-35 years 36-45 years 46-55 years 56 years and above Average
+                                             
+Copyright ©Afrobarometer 2023  17 
+ 
+ 
+The poor supply of democracy reflected in dissatisfaction with its functioning, perceived 
+corruption, and weak trust may have contributed to some tolerance for military intervention. 
+On average across 39 countries, a slim majority (53%) of adults say it is “legitimate for the 
+armed forces to take control of government when elected leaders abuse power for their 
+own ends.” Youth express the greatest willingness to tolerate military intervention if elected 
+leaders abuse their power: 56% of 18- to 35-year-olds agree, vs. 51%-52% of the middle-aged 
+and 47% of those aged 56 and above (Figure 19).  
+Figure 19: Should military intervene when elected leaders abuse power? | by age 
+group | 39 countries | 2021/2023 
+ 
+Respondents were asked: Which of the following statements is closest to your view? 
+Statement 1: [Country]’s armed forces should never intervene in the country’s political process. 
+Statement 2: It is legitimate for the armed forces to take control of government when elected leaders 
+abuse power for their own ends. 
+(% who “agree” or “strongly agree” with each statement) 
+ 
+Tolerance for military intervention is more widespread among the youth than the e lders in 29 
+of the 39 surveyed countries, including huge gaps in Angola (25 percentage points), Malawi 
+(23 points), Senegal (23 points), Tanzania (20 points), and Benin (20 points) (Figure 20). 
+Congo-Brazzaville and Mozambique are the only countries where the elders are significantly 
+more likely than the youth to accept military intervention if elected leaders abuse their 
+power. Given the numerical strength of young people on the continent, these findings  should 
+be concerning to African governments and other governance and development 
+stakeholders. 
+  
+40% 44% 44% 46% 42%
+56% 52% 51% 47% 53%
+0%
+20%
+40%
+60%
+80%
+100%
+18-35 years 36-45 years 46-55 years 56 years and
+above
+39-country
+average
+Armed forces can intervene when leaders abuse power
+Armed forces should never intervene
+                                             
+Copyright ©Afrobarometer 2023  18 
+ 
+ 
+Figure 20: Military can intervene if elected leaders abuse power | by age group                  
+| 39 countries | 2021/2023 
+Respondents were asked: Which of the following statements is closest to your view? 
+Statement 1: [Country]’s armed forces should never intervene in the country’s political process. 
+Statement 2: It is legitimate for the armed forces to take control of government when elected leaders 
+abuse power for their own ends. 
+(% who “agree” or “strongly agree” with Statement 2) 
+ 
+28%
+28%
+30%
+33%
+35%
+37%
+42%
+43%
+43%
+44%
+48%
+49%
+49%
+51%
+53%
+54%
+55%
+55%
+55%
+56%
+56%
+58%
+59%
+61%
+63%
+65%
+67%
+67%
+67%
+67%
+67%
+68%
+69%
+69%
+69%
+70%
+71%
+74%
+75%
+82%
+Seychelles
+Mauritius
+Morocco
+Uganda
+Eswatini
+Zimbabwe
+Gambia
+Nigeria
+Mauritania
+Ghana
+Botswana
+Sierra Leone
+Liberia
+Ethiopia
+Kenya
+Angola
+Mozambique
+South Africa
+Benin
+39-country average
+Zambia
+Sudan
+Lesotho
+Namibia
+Senegal
+Malawi
+Togo
+Congo-Brazzaville
+São Tomé and Príncipe
+Cameroon
+Madagascar
+Gabon
+Burkina Faso
+Côte d'Ivoire
+Niger
+Cabo Verde
+Guinea
+Tanzania
+Tunisia
+Mali
+18-35 years
+19%
+25%
+25%
+30%
+36%
+38%
+40%
+36%
+42%
+33%
+33%
+40%
+29%
+41%
+36%
+29%
+61%
+51%
+35%
+47%
+40%
+54%
+56%
+49%
+40%
+42%
+62%
+76%
+56%
+69%
+57%
+67%
+60%
+64%
+71%
+52%
+65%
+54%
+66%
+83%
+56 years and above
+                                             
+Copyright ©Afrobarometer 2023  19 
+ 
+ 
+While the disappointing supply of democratic governance may have contributed to some 
+willingness to accept military intervention, the data also show that economic factors play a 
+role. In particular, the experience of poverty appears to correlate strongly w ith a tolerance 
+for military intervention: As shown in Figure 21, countries with higher levels of lived poverty2 
+tend to record greater acceptance of military intervention if elected leaders abuse their 
+power. 
+Figure 21: Lived poverty and tolerance for military intervention | 39 countries                          
+| 2021/2023 
+ 
+Respondents were asked: 
+Over the past year, how often, if ever, have you or anyone in your family gone without: Enough 
+food to eat? Enough clean water for home use? Medicines or medical treatment? Enough fuel to 
+cook your food? A cash income? 
+Which of the following statements is closest to your view? 
+Statement 1: [Country]’s armed forces should never intervene in the country’s political process. 
+Statement 2: It is legitimate for the armed forces to take control of government when elected 
+leaders abuse power for their own ends. (% who “agree” or “strongly agree” with Statement 2) 
+ 
+2 Afrobarometer’s Lived Poverty Index (LPI) measures respondents’ levels of material deprivation by asking how 
+often they or their families went without basic necessities during the preceding year. For more on lived poverty, 
+see Mattes and Patel (2022). 
+ANG
+BEN
+BOT
+BFA CMR
+CPV
+CIV
+SWZ
+ETH
+GAB
+GMBGHA
+GUI
+KEN
+LES
+LIB
+MDG
+MLI
+MWI
+MRT
+MAU
+MOR
+MOZ
+NAM
+NGR
+NRA
+STP
+SEN
+SYC
+SRL
+ZAF
+SDN
+TAN
+TGO
+TUN
+UGA
+ZAM
+ZIM
+CBZ
+Average
+0%
+20%
+40%
+60%
+80%
+100%
+0% 20% 40% 60% 80% 100%
+Armed forces can intervene when elected leaders abuse power 
+Experiencing moderate or high lived poverty
+                                             
+Copyright ©Afrobarometer 2023  20 
+ 
+ 
+Participation in change-making activities 
+Even though African youth are more dissatisfied than their elders about the state of 
+democratic governance in their countries, they tend to be less engaged in activities that 
+might produce change (Figure 22). One large gap in political engagement concerns the 
+basic act of voting in elections. Fewer than two-thirds (63%) of the youth who were old 
+enough to vote in their country’s most recent national election say they did so, compared to 
+78%, 82%, and 84% of the older cohorts. 
+Similarly, young adults are less likely to report having attended a community meeting (43%, 
+vs. 53%-55% of the older groups) and having joined others to raise an issue (39%, vs. 45%-47%) 
+during the previous year. They are also less likely than their elders to identify with political 
+parties (37%, vs. 43%-46%). The youth outstrip the over-55 cohort slightly when it comes to 
+participating in demonstrations or protest marches during the previous 12 months (10% vs. 
+7%). 
+Figure 22: Political participation | by age group | 39 countries* | 2021/2023 
+ 
+Respondents were asked:  
+In the last national election, held in [year], did you vote, or not, or were you too young to vote? Or 
+can’t you remember whether you voted? (Respondents who were too young to vote are 
+excluded.) 
+Do you feel close to any particular political party?  
+Here is a list of actions that people sometimes take as citizens. For each of these, please tell me 
+whether you, personally, have done any of these things during the past year: Attended a 
+community meeting? Got together with others to raise an issue? Participated in a demonstration 
+or protest march? (% who say “once or twice,” “several times,” or “often”)  
+* The question about feeling close to a political party was not asked in Eswatini. 
+9%
+42%
+48%
+41%
+73%
+7%
+45%
+54%
+45%
+84%
+8%
+47%
+55%
+46%
+82%
+9%
+46%
+53%
+43%
+78%
+10%
+39%
+43%
+37%
+63%
+0% 20% 40% 60% 80% 100%
+Participated in demonstration
+or protest
+Joined others to raise an issue
+Attended community meeting
+Feel close to a political party
+Voted in last election
+18-35 years
+36-45 years
+46-55 years
+56 years and above
+Average
+                                             
+Copyright ©Afrobarometer 2023  21 
+ 
+ 
+The pattern of less political engagement by youth is particularly pronounced among young 
+women. As shown in Table 1, young African women are less likely than their male 
+counterparts to vote (61% vs. 67%), to feel close to a political party (34% vs. 41%), to attend a 
+community meeting (36% vs. 50%), to join others to raise an issue (32% vs. 46%), and to 
+participate in a demonstration (8% vs. 13%). 
+Economic status appears to matter in youth political engagement. Poorer African youth are 
+more likely than the well-off to be politically affiliated (39% among those experiencing high 
+lived poverty vs. 27% among those with no lived poverty), to attend a community meeting 
+(48% vs. 27%), and to join others to raise issues (43% vs. 31%). But the likelihood of voting or 
+participating in a demonstration is the same, irrespective of their economic status. 
+Table 1: Political participation | respondents aged 18-35 by demographic group                
+| 39 countries* | 2021/2023 
+ 
+Voted in 
+last 
+election 
+Feel close 
+to a 
+political 
+party 
+Attended 
+community 
+meeting 
+Joined 
+others to 
+raise an 
+issue 
+Participated in 
+demonstration 
+or protest 
+No lived poverty 63% 27% 27% 31% 10% 
+Low lived poverty 63% 36% 38% 35% 10% 
+Moderate lived poverty 63% 37% 47% 41% 10% 
+High lived poverty 65% 39% 48% 43% 11% 
+      
+Men 67% 40% 50% 46% 13% 
+Women 61% 33% 36% 32% 8% 
+      
+No formal education 70% 40% 51% 38% 8% 
+Primary 66% 40% 51% 39% 9% 
+Secondary 61% 36% 40% 38% 10% 
+Post-secondary 61% 31% 35% 41% 13% 
+      
+Urban 59% 32% 32% 36% 11% 
+Rural 68% 41% 53% 42% 10% 
+Respondents were asked:  
+In the last national election, held in [year], did you vote, or not, or were you too young to vote? Or 
+can’t you remember whether you voted? (Respondents who were too young to vote are 
+excluded.) 
+Do you feel close to any particular political party?  
+Here is a list of actions that people sometimes take as citizens. For each of these, please tell me 
+whether you, personally, have done any of these things during the past year: Attended a 
+community meeting? Got together with others to raise an issue? Participated in a demonstration 
+or protest march? (% who say “once or twice,” “several times,” or “often”)  
+* The question about feeling close to a political party was not asked in Eswatini. 
+ 
+Voting, attending community meetings, and political party affiliation d ecrease as young 
+respondents’ level of education increases, showing gaps of 6-9 percentage points between 
+those with no formal schooling and those with post-secondary qualifications. But the most 
+                                             
+Copyright ©Afrobarometer 2023  22 
+ 
+ 
+educated young adults are more likely than those with low or no education to participate in 
+demonstrations (13% vs. 8%-9%). 
+Rural youth outstrip urban youth in all these forms of political participation with the exception 
+of participating in demonstrations. 
+Over the past decade, there has been a sharp decline in young Africans’ political party 
+affiliation (-17 percentage points across 31 countries surveyed consistently), though self-
+reported voting has held fairly steady and attendance at community meetings has 
+increased by 6 percentage points (Figure 23). Their likelihood of joining others to raise an issue 
+and of participating in a demonstration or protest both increased significantly between 
+2014/2015 and 2019/2021 but has since reverted to the levels recorded in 2014/2015. 
+Figure 23: Political participation | respondents aged 18-35 | 31 countries*                    
+| 2014-2023 
+  
+Respondents were asked:  
+In the last national election, held in [year], did you vote, or not, or were you too young to vote? Or 
+can’t you remember whether you voted? (Respondents who were too young to vote are 
+excluded.) 
+Do you feel close to any particular political party?  
+Here is a list of actions that people sometimes take as citizens. For each of these, please tell me 
+whether you, personally, have done any of these things during the past year: Attended a 
+community meeting? Got together with others to raise an issue? Participated in a demonstration 
+or protest march? (% who say “once or twice,” “several times,” or “often”)  
+* The question about voting was not asked in Senegal in Round 6. 
+* The question about feeling close to a political party was not asked in Eswatini. 
+ 
+64%
+65% 64% 62%
+49%
+53%
+55%
+55%
+41%
+45%
+51%
+39%
+54%
+43% 42%
+37%
+11% 12%
+18%
+10%
+0%
+20%
+40%
+60%
+80%
+100%
+2014/2015 2016/2018 2019/2021 2021/2023
+Voted in last
+election
+Attended
+community
+meeting
+Joined others
+to raise an issue
+Feel close to a
+political party
+Participated in
+demonstration
+or protest
+                                             
+Copyright ©Afrobarometer 2023  23 
+ 
+ 
+Another form of engagement in which youth trail the older generations is contact with 
+leaders and representatives (Figure 24). A third (33%) of young respondents say they 
+contacted a traditional leader during the previous year, compared to 39%-43% of the 
+middle-aged and nearly half (47%) of those above age 55.  
+Not quite one-fourth (23%) of youth report contacting a local government councillor, again 
+short of contact rates for their elders (31%-35%). Interaction with an MP was slightly less 
+frequent among young people (13%) than among the older cohorts (16%-17%), while 
+contact rates with political party officials were similar across age groups (19%-22%).  
+Figure 24: Contacted leaders during the previous year | by age group                                    
+| 39 countries* | 2021/2023  
+ 
+Respondents were asked: During the past year, how often have you contacted any of the following 
+persons about some important problem or to give them your views? (% who say “only once,” “a few 
+times,” or “often”) 
+* The question about MPs was not asked in Guinea and Sudan. The question about local government 
+councillors was not asked in Liberia, Malawi, and Sudan. The question about political party officials was 
+not asked in Eswatini. The question about traditional leaders was not asked in Cabo Verde, Mauritius, 
+and Tunisia. 
+ 
+Gender gaps persist with respect to youth engagement with local leaders. Young women 
+are less likely than their male counterparts to contact traditional leaders (26% vs. 35%), local 
+government councillors (17% vs. 26%), political party officials (15% vs. 22%), and MPs (11% vs. 
+15%) (Figure 25). 
+Although young Africans’ rates of contact with leaders are lower than those of their elders, 
+they have shown steady growth over the past decade (Figure 26). Across 31 countries 
+surveyed consistently between 2014/2015 and 2021/2023, contact by young Africans saw 
+increases of 6 percentage points for traditional leaders, 5 points for local government 
+councillors, 8 points for political party officials, and 3 points for MPs.  
+15%
+20%
+28%
+37%
+16%
+20%
+35%
+47%
+17%
+22%
+33%
+43%
+16%
+22%
+31%
+39%
+13%
+19%
+23%
+33%
+0% 20% 40% 60% 80% 100%
+Member of Parliament
+Political party official
+Local government
+councillor
+Traditional leader
+18-35 years
+36-45 years
+46-55 years
+56 years and above
+Average
+                                             
+Copyright ©Afrobarometer 2023  24 
+ 
+ 
+Figure 25: Contacted political representatives during previous year | respondents 
+aged 18-35 by gender | 39 countries* | 2021/2023  
+ 
+Respondents were asked: During the past year, how often have you contacted any of the following 
+persons about some important problem or to give them your views? (% who say “only once,” “a few 
+times,” or “often”) 
+* The question about MPs was not asked in Guinea and Sudan. The question about local government 
+councillors was not asked in Liberia, Malawi, and Sudan. The question about political party officials was 
+not asked in Eswatini. The question about traditional leaders was not asked in Cabo Verde, Mauritius, 
+and Tunisia. 
+Figure 26: Contacted leaders during the previous year | respondents aged 18-35                    
+| 31 countries* | 2014-2023  
+ 
+Respondents were asked: During the past year, how often have you contacted any of the following 
+persons about some important problem or to give them your views? (% who say “only once,” “a few 
+times,” or “often”) 
+* The question about MPs was not asked in Guinea and Sudan. The question about local government 
+councillors was not asked in Liberia, Malawi, and Sudan. The question about political party officials was 
+not asked in Eswatini. The question about traditional leaders was not asked in Cabo Verde, Mauritius, 
+and Tunisia.
+ 
+15%
+22%
+26%
+35%
+11%
+15%
+17%
+26%
+0% 20% 40% 60%
+Member of Parliament
+Political party official
+Local government councillor
+Traditional leader
+Young women Young men
+27% 27%
+33% 33%
+18%
+18%
+22% 23%
+14% 15%
+18% 18%
+10%
+10% 11% 13%
+0%
+20%
+40%
+60%
+2014/2015 2016/2018 2019/2021 2021/2023
+Traditional
+leader
+Local
+government
+councillor
+Polical party
+official
+Member of
+Parliament
+                                             
+Copyright ©Afrobarometer 2023  25 
+ 
+ 
+Conclusion  
+Despite being more educated than their elders, young Africans find it harder to get a job. 
+Unemployment is their top priority for government action, followed by the related problem of 
+economic management, and on both issues, overwhelming majorities in most countries see 
+their government as failing. 
+In their assessments of their country’s overall direction and economic conditions, African 
+youth are about as gloomy as the older generations, although optimists outnumber pessimists  
+when it comes to expectations for the coming year. 
+Young Africans join their elders in expressing a strong preference for democracy and 
+rejection of authoritarian alternatives, including military rule. But they are even more 
+pronounced than older cohorts in their dissatisfaction with the way democracy works in their 
+country as well as their perceptions of widespread corruption and their mistrust  of institutions 
+and leaders. And they express a greater willingness to tolerate military takeovers if elected 
+leaders abuse their power – a worrying finding considering their numerical strength. 
+African youth are also considerably less engaged than their elders in civic and political 
+activities that could spur change, including voting in elections. One encouraging trend is a 
+steady increase in young people’s contact with local leaders – a fitting forum for the political 
+establishment to meet the youth – and engage them – where they are. 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+  
+                                             
+Copyright ©Afrobarometer 2023  26 
+ 
+ 
+References  
+African Development Bank. (2023). African economic outlook 2023. 
+African Union. (2023). Our aspirations for the Africa we want.  
+Ayaji, T., Gukurume, S., & Bangura, I. (2022). Strengthening democratic governance and political 
+stability in Africa: Critical policy perspectives. ACCORD Policy and Practice Brief. 22 December. 
+Ibrahim, M. (2019). Governance lags behind youth expectations and needs. Brookings Institute 
+Foresight Africa 2019. 
+Klapper, L., & Panchamia, M. V. (2023). The high price of education in sub-Saharan Africa. World 
+Bank Blogs. 13 March. 
+Mattes, R., & Patel, J. (2022). Lived poverty resurgent. Afrobarometer Policy Paper 84. 
+Niang, T. (2019). Raising the voice of young people in governance. Brookings Institute Foresight 
+Africa 2019. 
+Sen, A. K. (2022). Russia’s war in Ukraine is taking a toll on Africa. United States Institute of Peace. 15 
+June. 
+UNICEF & African Union Commission. (2021). Transforming education in Africa: An evidence-based 
+overview and recommendations for long-term improvements. 
+United Nations Economic Commission for Africa. (2017). Economic report on Africa 2017: 
+Urbanization and industrialization for Africa’s transformation.  
+Van Gyampo, R., & Anyidoho, N. (2019). Youth politics in Africa. Oxford Research Encyclopedia of 
+Politics. 
+ 
+ 
+ 
+ 
+  
+                                             
+Copyright ©Afrobarometer 2023  27 
+ 
+ 
+Appendix 
+Table A.1: Afrobarometer Round 9 fieldwork dates and previous survey rounds 
+Country Round 9 fieldwork Previous survey rounds 
+Angola Feb.-March 2022 2019 
+Benin Jan. 2022 2005, 2008, 2011, 2014, 2017, 2020 
+Botswana June-July 2022 1999, 2003, 2005, 2008, 2012, 2014, 2017, 2019 
+Burkina Faso Sept.-Oct. 2022 2008, 2012, 2015, 2017, 2019 
+Cabo Verde July-Aug. 2022 2002, 2005, 2008, 2011, 2014, 2017, 2019 
+Cameroon March 2022 2013, 2015, 2018, 2021 
+Congo-Brazzaville June-July 2023 NA 
+Côte d'Ivoire Nov.-Dec. 2021 2013, 2014, 2017, 2019 
+Eswatini Oct.-Nov. 2022 2013, 2015, 2018, 2021 
+Ethiopia May-June 2023 2013, 2020 
+Gabon Nov.-Dec. 2021 2015, 2017, 2020 
+Gambia Aug.-Sept. 2022 2018, 2021 
+Ghana April 2022 1999, 2002, 2005, 2008, 2012, 2014, 2017, 2019 
+Guinea Aug. 2022 2013, 2015, 2017, 2019 
+Kenya Nov.-Dec. 2021 2003, 2005, 2008, 2011, 2014, 2016, 2019 
+Lesotho Feb.-March 2022 2000, 2003, 2005, 2008, 2012, 2014, 2017, 2020 
+Liberia Aug.-Sept. 2022 2008, 2012, 2015, 2018, 2020 
+Madagascar April-May 2022 2005, 2008, 2013, 2015, 2018 
+Malawi Feb. 2022 1999, 2003, 2005, 2008, 2012, 2014, 2017, 2019 
+Mali July 2022 2001, 2002, 2005, 2008, 2013, 2014, 2017, 2020 
+Mauritania Nov. 2022 NA 
+Mauritius March 2022 2012, 2014, 2017, 2020 
+Morocco Aug.-Sept. 2022 2013, 2015, 2018, 2021 
+Mozambique Oct.-Nov. 2022 2002, 2005, 2008, 2012, 2015, 2018, 2021 
+Namibia Oct.-Nov. 2021 1999, 2003, 2006, 2008, 2012, 2014, 2017, 2019 
+Niger June 2022 2013, 2015, 2018, 2020 
+Nigeria March 2022 2000, 2003, 2005, 2008, 2013, 2015, 2017, 2020 
+São Tomé and Príncipe Dec. 2022 2015, 2018 
+Senegal May-June 2022 2002, 2005, 2008, 2013, 2014, 2017, 2021 
+Seychelles Dec. 2022 NA 
+Sierra Leone June-July 2022 2012, 2015, 2018, 2020 
+South Africa Nov.-Dec. 2022 2000, 2002, 2006, 2008, 2011, 2015, 2018, 2021 
+Sudan Nov.-Dec. 2022 2013, 2015, 2018, 2021 
+Tanzania Sept.-Oct. 2022 2001, 2003, 2005, 2008, 2012, 2014, 2017, 2021 
+Togo March 2022 2012, 2014, 2017, 2021 
+Tunisia Feb.-March 2022 2013, 2015, 2018, 2020 
+Uganda Jan. 2022 2000, 2002, 2005, 2008, 2012, 2015, 2017, 2019 
+Zambia Aug.-Sept. 2022 1999, 2003, 2005, 2009, 2013, 2014, 2017, 2020 
+Zimbabwe March-April 2022 1999, 2004, 2005, 2009, 2012, 2014, 2017, 2021 
+ 
+ 
+                                             
+Copyright ©Afrobarometer 2023  28 
+ 
+ 
+ 
+ 
+Josephine Appiah-Nyamekye Sanny is Afrobarometer communications and knowledge 
+manager. Email: jappiah@afrobarometer.org. 
+Shannon van Wyk-Khosa is Afrobarometer digital portfolio manager. Email: 
+shannon@afrobarometer.org. 
+Joseph Asunka is Afrobarometer’s chief executive officer. Email: asunka@afrobarometer.org.  
+Afrobarometer, a nonprofit corporation with headquarters in Ghana, is a pan -African, non-
+partisan research network. Regional coordination of national partners in about 35 countries is 
+provided by the Ghana Center for Democratic Development (CDD-Ghana), the Institute for 
+Justice and Reconciliation (IJR) in South Africa, and the Institute for Development Studies 
+(IDS) at the University of Nairobi in Kenya. Michigan State University (MSU) and the University 
+of Cape Town (UCT) provide technical support to the network. 
+Financial support for Afrobarometer is provided by Sweden via the Swedish International 
+Development Cooperation Agency, the U.S. Agency for International Development (USAID) 
+via the U.S. Institute of Peace, the Mo Ibrahim Foundation, the Open Society Foundations -  
+Africa, Luminate, the William and Flora Hewlett Foundation, the Bill & Melinda Gates 
+Foundation, the Mastercard Foundation, the David and Lucile Packard Foundation, the 
+European Union Commission, the World Bank Group, the Ministry of Foreign Affairs of Finland, 
+the Embassy of the Kingdom of the Netherlands in Uganda, the Embassy of Sweden in 
+Zimbabwe, the Global Centre for Pluralism, and GIZ. 
+Donations help Afrobarometer give voice to African citizens. Please consider making a 
+contribution (at www.afrobarometer.org) or contact Felix Biga (felixbiga@afrobarometer.org ) 
+or Runyararo Munetsi (runyararo@afrobarometer.org) to discuss institutional funding. 
+Follow our releases on #VoicesAfrica.  
+                             /Afrobarometer                  @Afrobarometer                          
+Afrobarometer Dispatch No. 734 | 15 November 2023

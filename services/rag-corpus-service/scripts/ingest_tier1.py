@@ -40,7 +40,14 @@ def ingest_record(record):
     req = urllib.request.Request(
         API_URL + "/api/v1/rag/documents",
         data=data,
-        headers={"Content-Type": "application/json", "X-User-Id": USER_ID},
+        headers={
+            "Content-Type": "application/json",
+            "X-User-Id": USER_ID,
+            # Ingest is admin-gated (card O3.5); when run directly against the
+            # service (bypassing the gateway that injects roles) the loader must
+            # assert the admin role itself, or every POST 403s.
+            "X-User-Roles": "admin",
+        },
         method="POST",
     )
     try:
