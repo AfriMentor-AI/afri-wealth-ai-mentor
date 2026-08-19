@@ -20,6 +20,13 @@ services:
   redis:
     ports: !reset []
 
+  # Card O4.3 — the dev stack's own rabbitmq (docker-compose.yml) publishes
+  # 5672/15672 to the host; goals/progress services are the first staging
+  # services that need rabbitmq, and starting it here collided with the dev
+  # stack's container. Same "no host ports" treatment as the other datastores.
+  rabbitmq:
+    ports: !reset []
+
   api-gateway:
     environment:
       APP_ENV: staging
@@ -43,6 +50,20 @@ services:
       APP_ENV: staging
 
   rag-corpus-service:
+    environment:
+      APP_ENV: staging
+
+  # Card O4.3 — pilot-scale load testing needs these three in staging alongside
+  # chat, so they were added here rather than only ever running in the dev stack.
+  goals-milestones-service:
+    environment:
+      APP_ENV: staging
+
+  progress-gamification-service:
+    environment:
+      APP_ENV: staging
+
+  insight-library-service:
     environment:
       APP_ENV: staging
 
