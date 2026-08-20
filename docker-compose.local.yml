@@ -1,0 +1,21 @@
+# Local development stack.
+# Runs only the Next.js frontend; the API gateway is on the remote host.
+name: afrimentor-local
+
+services:
+  frontend:
+    image: node:20-alpine
+    working_dir: /app
+    command: sh -c "npm install --no-audit --no-fund && npm run dev -- --hostname 0.0.0.0"
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend:/app
+      - frontend-node-modules:/app/node_modules
+    env_file:
+      - ./docker-compose.local.env
+    environment:
+      NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL}
+
+volumes:
+  frontend-node-modules:
