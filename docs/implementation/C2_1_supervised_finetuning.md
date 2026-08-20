@@ -86,7 +86,7 @@ python experiments/02_supervised_finetuning/run.py
 
 The configured output is:
 `research/experiments/02_supervised_finetuning/checkpoints/final`.
-The Hub repository is configured as `afrimentor/chioma-sft-v1`. Publication and
+The Hub repository is configured as `Danleon56/qwen2.5-7b-chioma-sft-merged`. Publication and
 deployment require evaluation and safety review.
 
 ## Current gaps and path differences
