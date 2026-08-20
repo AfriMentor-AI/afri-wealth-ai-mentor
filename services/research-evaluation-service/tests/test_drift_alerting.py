@@ -153,6 +153,30 @@ def test_compute_persona_baseline_respects_window():
     assert baseline == 0.0  # only the single most recent prior run (window=1)
 
 
+def test_recent_prior_run_ids_stmt_compiles_postgres_safe():
+    """Regression guard for a Postgres-only failure the SQLite suite can't reach.
+
+    The baseline query must not be ``SELECT DISTINCT`` ordered by a non-selected
+    column: Postgres raises ``InvalidColumnReference`` ("ORDER BY expressions must
+    appear in select list"), while SQLite runs it fine — so every test here would
+    stay green while production (Postgres) fails, exactly as it did before this
+    guard. Compile the real statement builder against the Postgres dialect and
+    assert the safe GROUP BY shape, so a revert to the DISTINCT form fails in CI.
+    """
+    from sqlalchemy.dialects import postgresql
+
+    from app.drift import _recent_prior_run_ids_stmt
+
+    sql = str(
+        _recent_prior_run_ids_stmt("chioma", "current-run", window=10).compile(
+            dialect=postgresql.dialect()
+        )
+    ).upper()
+    assert "DISTINCT" not in sql
+    assert "GROUP BY" in sql
+    assert "ORDER BY" in sql
+
+
 def test_delta_pct_none_without_baseline():
     assert delta_pct(None, 0.5) is None
 

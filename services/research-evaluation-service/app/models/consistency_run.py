@@ -35,6 +35,15 @@ class ConsistencyRun(Base):
     # baseline (computed from prior job runs only). Null when no baseline existed
     # yet for the persona at scoring time — e.g. the persona's first-ever run.
     consistency_delta_pct: Mapped[float | None] = mapped_column(Float, nullable=True)
+    # Card C4.1 — the literal "CHIOMA alignment" numbers the dashboard shows,
+    # both already computed by score_dialogue() and previously discarded.
+    #   trait_fit_cosine: cosine similarity of the dialogue's trait vector to
+    #     CHIOMA's target profile ("is this the right personality").
+    #   composite_score: the 0.5·trait + 0.5·consistency blend.
+    # Nullable: rows scored before C4.1 have neither, and that is a fact to
+    # record, not backfill with a guess.
+    trait_fit_cosine: Mapped[float | None] = mapped_column(Float, nullable=True)
+    composite_score: Mapped[float | None] = mapped_column(Float, nullable=True)
     # Indexed: the Sprint-4 dashboard reads the most recent run first.
     scored_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
