@@ -9,6 +9,7 @@ import {
   fetchAuditSessions,
   fetchConsistencyMetrics,
   fetchPersonas,
+  exportPilotDataCsv,
   type DriftAlert,
   type AuditSession,
   type ConsistencyMetrics,
@@ -91,11 +92,27 @@ function DashboardScreen() {
     load();
   }
 
+  async function handleExportPilotData() {
+    try {
+      await exportPilotDataCsv();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Export failed");
+    }
+  }
+
   return (
     <div>
       <Nav />
       <main className="mx-auto max-w-6xl px-6 py-8">
-        <h1 className="mb-6 text-xl font-semibold">Persona Consistency Dashboard</h1>
+        <div className="mb-6 flex items-center justify-between">
+          <h1 className="text-xl font-semibold">Persona Consistency Dashboard</h1>
+          <button
+            onClick={handleExportPilotData}
+            className="rounded border border-border px-3 py-2 text-sm text-on-surface-dim hover:text-on-surface"
+          >
+            Export pilot data (CSV)
+          </button>
+        </div>
 
         {error && <p className="mb-4 text-sm text-danger">{error}</p>}
 

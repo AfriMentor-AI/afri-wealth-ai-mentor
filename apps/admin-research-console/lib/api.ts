@@ -84,13 +84,30 @@ export async function runTestQuery(query: string, topK = 3): Promise<QueryResult
   return res.json();
 }
 
-/** Resolves to a same-origin gateway URL the browser can navigate to directly
- * (the export streams a file — not a fetch()+blob round trip). The browser
- * carries the console's own cookies/auth for this call, same as any direct
- * link; if the gateway ever requires a bearer header for this route it'll
- * need a signed short-lived URL instead. */
-export function exportDocumentsCsvUrl(): string {
-  return `${process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000"}/api/v1/rag/documents/export.csv`;
+/** Every export endpoint requires the console's bearer token (X-User-Roles
+ * gate at the service, Authorization at the gateway) — a plain `<a href>`
+ * navigation never sends either, since the token lives in localStorage, not
+ * a cookie. Fetch it authenticated instead, then hand the browser a Blob to
+ * save under a real filename (Content-Disposition isn't honored on
+ * object: URLs, so the name has to come from here). */
+export async function downloadCsv(path: string, filename: string): Promise<void> {
+  const res = await apiFetch(path);
+  if (!res.ok) throw new Error(`Export failed: ${res.status}`);
+  const blob = await res.blob();
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  link.click();
+  URL.revokeObjectURL(url);
+}
+
+export function exportDocumentsCsv(): Promise<void> {
+  return downloadCsv("/api/v1/rag/documents/export.csv", "rag-documents.csv");
+}
+
+export function exportPilotDataCsv(): Promise<void> {
+  return downloadCsv("/api/v1/research/export/pilot-data.csv", "pilot-data-export.csv");
 }
 
 // ── Persona Consistency Dashboard (research-evaluation-service, card O4.1) ──

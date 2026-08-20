@@ -77,6 +77,66 @@ def test_get_session_wrong_user(client):
     assert r.status_code == 404
 
 
+def test_list_sessions_returns_only_own_conversations(client):
+    client.post("/api/v1/chat/sessions", json={"persona_id": "chioma-base"}, headers=USER_HEADERS)
+    client.post("/api/v1/chat/sessions", json={"persona_id": "market-queen"}, headers=USER_HEADERS)
+    client.post("/api/v1/chat/sessions", json={}, headers={"X-User-Id": "other-user"})
+
+    r = client.get("/api/v1/chat/sessions", headers=USER_HEADERS)
+    assert r.status_code == 200
+    body = r.json()
+    assert len(body) == 2
+    persona_ids = {row["persona_id"] for row in body}
+    assert persona_ids == {"chioma-base", "market-queen"}
+
+
+def test_list_sessions_includes_last_message_preview(client):
+    r = client.post(
+        "/api/v1/chat/sessions", json={"persona_id": "chioma-base"}, headers=USER_HEADERS
+    )
+    sid = r.json()["id"]
+
+    with patch("app.routers.chat.chat_completion", return_value=("Sounds good!", 10, 5, [])):
+        client.post(
+            f"/api/v1/chat/sessions/{sid}/messages",
+            json={"content": "How should I price my goods?"},
+            headers=USER_HEADERS,
+        )
+
+    r = client.get("/api/v1/chat/sessions", headers=USER_HEADERS)
+    row = r.json()[0]
+    assert row["id"] == sid
+    assert row["last_message_preview"] == "Sounds good!"
+    assert row["last_message_at"] is not None
+
+
+def test_list_sessions_empty_conversation_has_null_preview(client):
+    client.post("/api/v1/chat/sessions", json={"persona_id": "chioma-base"}, headers=USER_HEADERS)
+    r = client.get("/api/v1/chat/sessions", headers=USER_HEADERS)
+    row = r.json()[0]
+    assert row["last_message_preview"] is None
+    assert row["last_message_at"] is None
+
+
+def test_list_sessions_orders_newest_activity_first(client):
+    r = client.post(
+        "/api/v1/chat/sessions", json={"persona_id": "chioma-base"}, headers=USER_HEADERS
+    )
+    first = r.json()["id"]
+    client.post("/api/v1/chat/sessions", json={"persona_id": "market-queen"}, headers=USER_HEADERS)
+
+    # Touch the first conversation again so it becomes the most recently updated.
+    with patch("app.routers.chat.chat_completion", return_value=("Noted.", 10, 5, [])):
+        client.post(
+            f"/api/v1/chat/sessions/{first}/messages",
+            json={"content": "Any update?"},
+            headers=USER_HEADERS,
+        )
+
+    r = client.get("/api/v1/chat/sessions", headers=USER_HEADERS)
+    assert r.json()[0]["id"] == first
+
+
 # ── Messages ──────────────────────────────────────────────────────────────────
 
 @pytest.fixture

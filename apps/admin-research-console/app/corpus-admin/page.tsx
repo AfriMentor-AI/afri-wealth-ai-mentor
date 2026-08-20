@@ -8,7 +8,7 @@ import {
   fetchDocuments,
   ingestDocument,
   runTestQuery,
-  exportDocumentsCsvUrl,
+  exportDocumentsCsv,
   type CorpusStats,
   type DocumentRow,
   type QueryResult,
@@ -155,6 +155,14 @@ function CorpusAdminScreen() {
     }
   }
 
+  async function handleExport() {
+    try {
+      await exportDocumentsCsv();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Export failed");
+    }
+  }
+
   return (
     <div>
       <Nav />
@@ -162,12 +170,12 @@ function CorpusAdminScreen() {
         <div className="mb-6 flex items-center justify-between">
           <h1 className="text-xl font-semibold">RAG Corpus Admin</h1>
           <div className="flex gap-2">
-            <a
-              href={exportDocumentsCsvUrl()}
+            <button
+              onClick={handleExport}
               className="rounded border border-border px-3 py-2 text-sm text-on-surface-dim hover:text-on-surface"
             >
               Export CSV
-            </a>
+            </button>
             <button
               onClick={() => setShowUpload(true)}
               className="rounded bg-accent px-3 py-2 text-sm font-semibold text-on-accent"
