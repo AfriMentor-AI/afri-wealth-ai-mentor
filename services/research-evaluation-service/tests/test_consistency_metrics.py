@@ -482,3 +482,30 @@ def test_trigger_consistency_run_invokes_job_and_returns_summary():
     assert resp.status_code == 200
     assert resp.json() == summary
     job.assert_called_once()
+
+
+def test_rolling_24h_endpoint_requires_console_role():
+    """GET /api/v1/research/metrics/rolling-24h requires console auth."""
+    engine = make_in_memory_engine()
+    client = _client_with_db(engine)
+    try:
+        resp = client.get("/api/v1/research/metrics/rolling-24h")
+    finally:
+        client.app.dependency_overrides.clear()
+    assert resp.status_code == 403
+
+
+def test_rolling_24h_endpoint_returns_data_with_admin_headers():
+    """GET /api/v1/research/metrics/rolling-24h returns payload when authenticated."""
+    engine = make_in_memory_engine()
+    client = _client_with_db(engine)
+    try:
+        resp = client.get("/api/v1/research/metrics/rolling-24h", headers=ADMIN_HEADERS)
+    finally:
+        client.app.dependency_overrides.clear()
+    assert resp.status_code == 200
+    body = resp.json()
+    assert "tone_match" in body
+    assert "fact_retrieval" in body
+    assert body["window_hours"] == 24
+

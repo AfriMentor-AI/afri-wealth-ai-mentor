@@ -22,6 +22,37 @@ function pct(n: number | null): string {
   return `${n > 0 ? "+" : ""}${n.toFixed(1)}%`;
 }
 
+function formatUtcTime(isoStr: string | null | undefined): string {
+  if (!isoStr) return "—";
+  try {
+    const d = new Date(isoStr);
+    return `${d.getUTCHours().toString().padStart(2, "0")}:${d.getUTCMinutes().toString().padStart(2, "0")} UTC`;
+  } catch {
+    return isoStr;
+  }
+}
+
+function TrendBadge({
+  trend,
+  delta,
+}: {
+  trend: "up" | "down" | "flat" | null | undefined;
+  delta: number | null | undefined;
+}) {
+  if (delta == null || trend == null) return null;
+  const isUp = trend === "up";
+  const isDown = trend === "down";
+  const colorClass = isUp ? "text-accent" : isDown ? "text-danger" : "text-on-surface-dim";
+  const arrow = isUp ? "↑" : isDown ? "↓" : "→";
+
+  return (
+    <span className={`flex items-center gap-1 text-xs font-semibold ${colorClass}`}>
+      <span>{arrow}</span>
+      <span>{Math.abs(delta).toFixed(1)}%</span>
+    </span>
+  );
+}
+
 function DriftBanner({ alerts, onAcknowledge }: { alerts: DriftAlert[]; onAcknowledge: (id: string) => void }) {
   const open = alerts.filter((a) => a.status === "open");
   if (open.length === 0) {
@@ -145,6 +176,67 @@ function DashboardScreen() {
         {error && <p className="mb-4 text-sm text-danger">{error}</p>}
 
         <DriftBanner alerts={alerts} onAcknowledge={handleAcknowledge} />
+
+        {/* Consistency Score: Tone Match & Fact Retrieval Widgets */}
+        <div className="mb-6 rounded-xl border border-border bg-surface-raised p-5">
+          <div className="mb-4 flex items-center justify-between">
+            <div>
+              <h2 className="text-base font-semibold">Consistency Score</h2>
+              <p className="text-xs text-on-surface-dim">Aggregate CHIOMA Alignment (Rolling 24h)</p>
+            </div>
+            <div className="text-right text-xs font-mono text-on-surface-dim">
+              <span>Last Evaluated: </span>
+              <span className="font-semibold text-on-surface">
+                {formatUtcTime(metrics?.rolling_24h?.last_evaluated || metrics?.scored_at)}
+              </span>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            {/* Tone Match Card */}
+            <div className="rounded-lg border border-border bg-surface-inset p-4">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-on-surface-dim">Tone Match</span>
+              <div className="mt-2 flex items-baseline justify-between">
+                <span className="font-mono text-3xl font-bold text-accent">
+                  {metrics?.rolling_24h?.tone_match?.score != null && metrics.rolling_24h.tone_match.score > 0
+                    ? metrics.rolling_24h.tone_match.score.toFixed(1)
+                    : metrics?.aggregates.mean_tone_match != null && metrics.aggregates.mean_tone_match > 0
+                    ? (metrics.aggregates.mean_tone_match * 100).toFixed(1)
+                    : "—"}
+                </span>
+                <TrendBadge
+                  trend={metrics?.rolling_24h?.tone_match?.trend_direction}
+                  delta={metrics?.rolling_24h?.tone_match?.delta_pct}
+                />
+              </div>
+              <p className="mt-1 text-xs text-on-surface-dim">
+                Empathetic tough-love & African cultural resonance
+              </p>
+            </div>
+
+            {/* Fact Retrieval Card */}
+            <div className="rounded-lg border border-border bg-surface-inset p-4">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-on-surface-dim">Fact Retrieval</span>
+              <div className="mt-2 flex items-baseline justify-between">
+                <span className="font-mono text-3xl font-bold text-[#6495ed]">
+                  {metrics?.rolling_24h?.fact_retrieval?.score != null && metrics.rolling_24h.fact_retrieval.score > 0
+                    ? metrics.rolling_24h.fact_retrieval.score.toFixed(1)
+                    : metrics?.aggregates.mean_fact_retrieval != null && metrics.aggregates.mean_fact_retrieval > 0
+                    ? (metrics.aggregates.mean_fact_retrieval * 100).toFixed(1)
+                    : "—"}
+                </span>
+                <TrendBadge
+                  trend={metrics?.rolling_24h?.fact_retrieval?.trend_direction}
+                  delta={metrics?.rolling_24h?.fact_retrieval?.delta_pct}
+                />
+              </div>
+              <p className="mt-1 text-xs text-on-surface-dim">
+                Financial domain accuracy & knowledge grounding
+              </p>
+            </div>
+          </div>
+        </div>
+
 
         <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
           <div className="rounded-md border border-border bg-surface-raised p-4">

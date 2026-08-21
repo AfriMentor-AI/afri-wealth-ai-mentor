@@ -135,6 +135,23 @@ export interface AuditSession {
   scored_at: string | null;
 }
 
+export interface RollingMetric {
+  score: number;
+  raw_score: number;
+  prior_score: number | null;
+  delta_pct: number | null;
+  trend_direction: "up" | "down" | "flat" | null;
+  sample_count: number;
+}
+
+export interface Rolling24hMetrics {
+  window_hours: number;
+  sample_count: number;
+  last_evaluated: string | null;
+  tone_match: RollingMetric;
+  fact_retrieval: RollingMetric;
+}
+
 export interface ConsistencyMetrics {
   job_run_id: string | null;
   session_count: number;
@@ -148,7 +165,10 @@ export interface ConsistencyMetrics {
     // console keeps rendering against a backend that has not shipped C4.1 yet.
     mean_trait_fit_cosine?: number;
     mean_composite?: number;
+    mean_tone_match?: number;
+    mean_fact_retrieval?: number;
   };
+  rolling_24h?: Rolling24hMetrics;
   sessions: Array<{
     conversation_id: string;
     persona_id: string;
@@ -158,6 +178,8 @@ export interface ConsistencyMetrics {
     aggregate: number;
     trait_fit_cosine?: number | null;
     composite_score?: number | null;
+    tone_match_score?: number | null;
+    fact_retrieval_score?: number | null;
     turn_count: number;
     scored_at: string | null;
   }>;
@@ -185,6 +207,12 @@ export async function fetchAuditSessions(minAbsDeltaPct?: number): Promise<Audit
 export async function fetchConsistencyMetrics(): Promise<ConsistencyMetrics> {
   const res = await apiFetch("/api/v1/metrics/consistency");
   if (!res.ok) throw new Error(`fetchConsistencyMetrics failed: ${res.status}`);
+  return res.json();
+}
+
+export async function fetchRolling24hMetrics(): Promise<Rolling24hMetrics> {
+  const res = await apiFetch("/api/v1/research/metrics/rolling-24h");
+  if (!res.ok) throw new Error(`fetchRolling24hMetrics failed: ${res.status}`);
   return res.json();
 }
 

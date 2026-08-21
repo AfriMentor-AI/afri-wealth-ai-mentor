@@ -8,6 +8,7 @@ from app.metrics.consistency import score_consistency
 from app.metrics.profile import TargetProfile, load_profile
 from app.metrics.schemas import ConsistencyResult, Dialogue, ProbeResponse, TraitFitResult
 from app.metrics.scoring import SimilarityScorer, default_scorer
+from app.metrics.tone_fact_scoring import score_fact_retrieval, score_tone_match
 from app.metrics.trait_fit import score_dialogue_traits, score_probe_traits
 
 #: Weights for the composite persona score. Trait fit answers "is this the right
@@ -26,6 +27,8 @@ class EvaluationReport(BaseModel):
     scorer: str
     trait_fit: TraitFitResult
     consistency: ConsistencyResult
+    tone_match_score: float = 0.0
+    fact_retrieval_score: float = 0.0
     probe_trait_fit: TraitFitResult | None = None
     warnings: list[str] = Field(default_factory=list)
 
@@ -103,6 +106,8 @@ def score_dialogue(
 
     trait_fit = score_dialogue_traits(dialogue, profile=profile)
     consistency = score_consistency(dialogue, scorer=scorer)
+    tone_match = score_tone_match(dialogue, profile=profile, scorer=scorer)
+    fact_retrieval = score_fact_retrieval(dialogue, scorer=scorer)
     probe_fit = score_probe_traits(probes, profile=profile) if probes else None
 
     return EvaluationReport(
@@ -112,6 +117,8 @@ def score_dialogue(
         scorer=type(scorer).__name__,
         trait_fit=trait_fit,
         consistency=consistency,
+        tone_match_score=tone_match,
+        fact_retrieval_score=fact_retrieval,
         probe_trait_fit=probe_fit,
         warnings=_collect_warnings(trait_fit, consistency),
     )

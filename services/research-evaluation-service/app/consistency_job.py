@@ -97,6 +97,8 @@ def run_consistency_job(sample_size: int = 20) -> dict:
                     # numbers score_dialogue() already produced (was discarded).
                     trait_fit_cosine=report.trait_fit.cosine_similarity,
                     composite_score=report.composite_score,
+                    tone_match_score=report.tone_match_score,
+                    fact_retrieval_score=report.fact_retrieval_score,
                     scored_at=datetime.now(UTC),
                 )
                 db.add(run)

@@ -44,6 +44,9 @@ class ConsistencyRun(Base):
     # record, not backfill with a guess.
     trait_fit_cosine: Mapped[float | None] = mapped_column(Float, nullable=True)
     composite_score: Mapped[float | None] = mapped_column(Float, nullable=True)
+    # Research Console widgets: Tone Match (0.0-1.0) and Fact Retrieval (0.0-1.0)
+    tone_match_score: Mapped[float | None] = mapped_column(Float, nullable=True)
+    fact_retrieval_score: Mapped[float | None] = mapped_column(Float, nullable=True)
     # Indexed: the Sprint-4 dashboard reads the most recent run first.
     scored_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
