@@ -95,13 +95,13 @@ def test_rolling_24h_trend_up_and_down():
         assert res["tone_match"]["score"] == 94.2
         assert res["tone_match"]["prior_score"] == 93.0
         assert res["tone_match"]["trend_direction"] == "up"
-        assert res["tone_match"]["delta_pct"] == 1.3  # (94.2 - 93.0) / 93.0 * 100 = +1.29%
+        assert res["tone_match"]["delta_pct"] == 1.3
 
         # Fact Retrieval: 89.8 vs 93.0 -> trend 'down', negative delta
         assert res["fact_retrieval"]["score"] == 89.8
         assert res["fact_retrieval"]["prior_score"] == 93.0
         assert res["fact_retrieval"]["trend_direction"] == "down"
-        assert res["fact_retrieval"]["delta_pct"] == -3.4  # (89.8 - 93.0) / 93.0 * 100 = -3.44%
+        assert res["fact_retrieval"]["delta_pct"] == -3.4
     finally:
         db.close()
 

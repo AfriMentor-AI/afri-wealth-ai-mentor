@@ -15,7 +15,10 @@ from sqlalchemy.orm import Session
 from app.models.consistency_run import ConsistencyRun
 
 
-def _calc_trend(current_score: float | None, prior_score: float | None) -> tuple[str | None, float | None]:
+def _calc_trend(
+    current_score: float | None,
+    prior_score: float | None,
+) -> tuple[str | None, float | None]:
     """Calculate trend direction ('up', 'down', 'flat') and delta_pct."""
     if current_score is None or prior_score is None or prior_score == 0:
         return None, None
@@ -38,10 +41,10 @@ def compute_rolling_24h_aggregates(
     now: datetime | None = None,
 ) -> dict[str, Any]:
     """Compute rolling 24h aggregates and prior-period trends for Tone Match & Fact Retrieval.
-    
+
     Current period: [now - 24h, now]
     Prior period:   [now - 48h, now - 24h]
-    
+
     Scores are reported both raw [0.0, 1.0] and scaled to 0–100 for the console widgets.
     """
     if now is None:
@@ -65,12 +68,19 @@ def compute_rolling_24h_aggregates(
     if not current_runs:
         latest = db.query(ConsistencyRun).order_by(desc(ConsistencyRun.scored_at)).first()
         if latest and latest.scored_at:
-            ref_time = latest.scored_at if latest.scored_at.tzinfo else latest.scored_at.replace(tzinfo=UTC)
+            ref_time = (
+                latest.scored_at
+                if latest.scored_at.tzinfo
+                else latest.scored_at.replace(tzinfo=UTC)
+            )
             t_current_start = ref_time - timedelta(hours=24)
             t_prior_start = ref_time - timedelta(hours=48)
             current_runs = (
                 db.query(ConsistencyRun)
-                .filter(ConsistencyRun.scored_at >= t_current_start, ConsistencyRun.scored_at <= ref_time)
+                .filter(
+                    ConsistencyRun.scored_at >= t_current_start,
+                    ConsistencyRun.scored_at <= ref_time,
+                )
                 .order_by(desc(ConsistencyRun.scored_at))
                 .all()
             )
@@ -78,7 +88,10 @@ def compute_rolling_24h_aggregates(
     # 2. Fetch prior 24h runs
     prior_runs = (
         db.query(ConsistencyRun)
-        .filter(ConsistencyRun.scored_at >= t_prior_start, ConsistencyRun.scored_at < t_current_start)
+        .filter(
+            ConsistencyRun.scored_at >= t_prior_start,
+            ConsistencyRun.scored_at < t_current_start,
+        )
         .all()
     )
 

@@ -81,7 +81,13 @@ def _ensure_consistency_columns() -> None:
         return
     try:
         with engine.begin() as conn:
-            for col in ("trait_fit_cosine", "composite_score", "tone_match_score", "fact_retrieval_score"):
+            cols = (
+                "trait_fit_cosine",
+                "composite_score",
+                "tone_match_score",
+                "fact_retrieval_score",
+            )
+            for col in cols:
                 conn.exec_driver_sql(
                     f"ALTER TABLE consistency_runs ADD COLUMN IF NOT EXISTS {col} double precision"
                 )

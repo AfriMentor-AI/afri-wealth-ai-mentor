@@ -12,7 +12,6 @@ Fact Retrieval:
 """
 from __future__ import annotations
 
-import math
 import re
 from typing import Protocol, runtime_checkable
 
@@ -69,14 +68,18 @@ class FactScorer(Protocol):
 
 class LexicalToneMatchScorer:
     """Deterministic lexical scorer for Tone Match.
-    
+
     Combines:
       1. Trait fit cosine similarity against the target profile (50%).
       2. Lexical tone markers (positive action & tough love vs evasive fluff) (30%).
       3. Prompt-to-line style consistency (20%).
     """
 
-    def __init__(self, profile: TargetProfile | None = None, base_scorer: SimilarityScorer | None = None) -> None:
+    def __init__(
+        self,
+        profile: TargetProfile | None = None,
+        base_scorer: SimilarityScorer | None = None,
+    ) -> None:
         self.profile = profile or load_profile()
         self.base_scorer = base_scorer or default_scorer()
 
@@ -103,7 +106,10 @@ class LexicalToneMatchScorer:
             marker_score = max(0.0, min(1.0, 0.5 + 0.45 * sat_pos - 0.45 * sat_neg))
 
         # 3. Prompt alignment component
-        prompt_scores = [self.base_scorer.similarity(dialogue.system_prompt, t.text) for t in mentor_turns]
+        prompt_scores = [
+            self.base_scorer.similarity(dialogue.system_prompt, t.text)
+            for t in mentor_turns
+        ]
         prompt_align = sum(prompt_scores) / len(prompt_scores) if prompt_scores else 0.5
         # Normalize prompt alignment to ~0.5-1.0 dynamic range
         prompt_norm = min(1.0, max(0.0, 0.4 + prompt_align * 3.0))
@@ -115,7 +121,7 @@ class LexicalToneMatchScorer:
 
 class LexicalFactRetrievalScorer:
     """Deterministic lexical scorer for Fact Retrieval and Financial Grounding.
-    
+
     Evaluates:
       1. Presence of verifiable financial concepts, African economic structures,
          and concrete calculations/metrics (60%).
@@ -139,7 +145,7 @@ class LexicalFactRetrievalScorer:
             unique_fact_hits = set(t for t in tokens if t in _FINANCIAL_FACT_KEYWORDS)
             # Check numbers/percentages mentioned (concrete financial advice)
             has_numbers = len(re.findall(r"\b\d+(?:\.\d+)?%?\b", all_mentor_text))
-            
+
             # Saturation for distinct factual concepts + numerical concreteness
             fact_points = len(unique_fact_hits) + min(3, has_numbers)
             fact_density = min(1.0, max(0.1, fact_points / (fact_points + 2.5) * 1.0))
@@ -151,7 +157,7 @@ class LexicalFactRetrievalScorer:
             if turns[i].speaker is Speaker.user and turns[i + 1].speaker is Speaker.mentor:
                 qa_sim = self.base_scorer.similarity(turns[i].text, turns[i + 1].text)
                 qa_overlaps.append(qa_sim)
-        
+
         qa_factor = (sum(qa_overlaps) / len(qa_overlaps)) if qa_overlaps else 0.5
         # Scale to [0.4, 1.0] range
         qa_norm = min(1.0, max(0.0, 0.4 + qa_factor * 3.0))

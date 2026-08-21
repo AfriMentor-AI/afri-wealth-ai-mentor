@@ -3,12 +3,13 @@
 Tests the session metric recording and query functionality for anonymized
 logging of pilot quantitative measures.
 """
-from datetime import datetime, date, timedelta
+from datetime import UTC, date, datetime
+
 import pytest
 from sqlalchemy.orm import Session
 
+from app.db.session import Base, SessionLocal, engine
 from app.models import SessionMetric, anonymize_user_id
-from app.db.session import SessionLocal, engine, Base
 
 
 @pytest.fixture
@@ -109,10 +110,9 @@ class TestSessionMetricModel:
         saved = db.query(SessionMetric).filter_by(conversation_id="conv-001").first()
         assert saved.recorded_at is not None
         # Should be approximately now
-        from datetime import timezone as tz
-        now = datetime.now(tz.utc)
+        now = datetime.now(UTC)
         rec = (
-            saved.recorded_at.replace(tzinfo=tz.utc)
+            saved.recorded_at.replace(tzinfo=UTC)
             if saved.recorded_at.tzinfo is None
             else saved.recorded_at
         )

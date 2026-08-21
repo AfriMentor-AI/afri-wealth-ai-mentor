@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import json
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from unittest.mock import MagicMock, patch
 
 from fastapi.testclient import TestClient
@@ -78,7 +78,7 @@ def test_consistency_run_model_fields():
         aggregate=0.75,
         turn_count=4,
         warnings_json="[]",
-        scored_at=datetime.now(timezone.utc),
+        scored_at=datetime.now(UTC),
     )
     assert run.prompt_to_line == 0.75
     assert run.aggregate == 0.75
@@ -255,7 +255,7 @@ def test_consistency_endpoint_reports_latest_run():
             aggregate=0.5,
             turn_count=4,
             warnings_json="[]",
-            scored_at=datetime.now(timezone.utc),
+            scored_at=datetime.now(UTC),
         ))
     db.commit()
     db.close()
@@ -384,7 +384,7 @@ def test_consistency_endpoint_exposes_trait_fit_and_composite():
             warnings_json="[]",
             trait_fit_cosine=0.8,
             composite_score=0.65,
-            scored_at=datetime.now(timezone.utc),
+            scored_at=datetime.now(UTC),
         ))
     db.commit()
     db.close()
@@ -415,13 +415,13 @@ def test_consistency_endpoint_alignment_mean_ignores_null_rows():
         persona_id="chioma", prompt_to_line=0.5, line_to_line=0.5,
         qa_consistency=0.5, aggregate=0.5, turn_count=4, warnings_json="[]",
         trait_fit_cosine=0.9, composite_score=0.7,
-        scored_at=datetime.now(timezone.utc),
+        scored_at=datetime.now(UTC),
     ))
     db.add(ConsistencyRun(
         id=str(uuid.uuid4()), job_run_id=job_id, conversation_id="conv-legacy",
         persona_id="chioma", prompt_to_line=0.5, line_to_line=0.5,
         qa_consistency=0.5, aggregate=0.5, turn_count=4, warnings_json="[]",
-        scored_at=datetime.now(timezone.utc),
+        scored_at=datetime.now(UTC),
     ))
     db.commit()
     db.close()
