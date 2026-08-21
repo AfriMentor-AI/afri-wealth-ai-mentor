@@ -44,6 +44,7 @@ from .consistency_job import run_consistency_job
 from .db.session import engine, get_db
 from .models import Base, ConsistencyRun, DriftAlert, SessionMetric
 from .observability import instrument
+from .rolling_aggregate import compute_rolling_24h_aggregates
 
 logger = logging.getLogger(__name__)
 
@@ -80,7 +81,13 @@ def _ensure_consistency_columns() -> None:
         return
     try:
         with engine.begin() as conn:
-            for col in ("trait_fit_cosine", "composite_score"):
+            cols = (
+                "trait_fit_cosine",
+                "composite_score",
+                "tone_match_score",
+                "fact_retrieval_score",
+            )
+            for col in cols:
                 conn.exec_driver_sql(
                     f"ALTER TABLE consistency_runs ADD COLUMN IF NOT EXISTS {col} double precision"
                 )
@@ -320,6 +327,9 @@ _EMPTY_CONSISTENCY_AGGREGATES = {
     # Card C4.1 — CHIOMA trait-fit alignment + composite blend.
     "mean_trait_fit_cosine": 0.0,
     "mean_composite": 0.0,
+    # Tone Match & Fact Retrieval widgets
+    "mean_tone_match": 0.0,
+    "mean_fact_retrieval": 0.0,
 }
 
 
@@ -337,6 +347,8 @@ def get_consistency_metrics(
     most recent by default, or the run named by ``job_run_id``. Means are computed
     over every session in the run; ``sessions`` is capped at ``limit`` rows.
     """
+    rolling_24h = compute_rolling_24h_aggregates(db)
+
     if job_run_id is None:
         latest = (
             db.query(ConsistencyRun).order_by(ConsistencyRun.scored_at.desc()).first()
@@ -347,6 +359,7 @@ def get_consistency_metrics(
                 "session_count": 0,
                 "scored_at": None,
                 "aggregates": _EMPTY_CONSISTENCY_AGGREGATES,
+                "rolling_24h": rolling_24h,
                 "sessions": [],
             }
         job_run_id = latest.job_run_id
@@ -364,14 +377,17 @@ def get_consistency_metrics(
             "session_count": 0,
             "scored_at": None,
             "aggregates": _EMPTY_CONSISTENCY_AGGREGATES,
+            "rolling_24h": rolling_24h,
             "sessions": [],
         }
 
     n = len(runs)
-    # trait_fit_cosine/composite_score are nullable (card C4.1 added them; older
-    # rows have neither), so their means are taken over non-null values only.
+    # trait_fit_cosine/composite_score/tone_match/fact_retrieval are nullable
     trait_vals = [r.trait_fit_cosine for r in runs if r.trait_fit_cosine is not None]
     composite_vals = [r.composite_score for r in runs if r.composite_score is not None]
+    tone_vals = [r.tone_match_score for r in runs if r.tone_match_score is not None]
+    fact_vals = [r.fact_retrieval_score for r in runs if r.fact_retrieval_score is not None]
+
     aggregates = {
         "mean_prompt_to_line": round(sum(r.prompt_to_line for r in runs) / n, 4),
         "mean_line_to_line": round(sum(r.line_to_line for r in runs) / n, 4),
@@ -382,6 +398,12 @@ def get_consistency_metrics(
         ),
         "mean_composite": (
             round(sum(composite_vals) / len(composite_vals), 4) if composite_vals else 0.0
+        ),
+        "mean_tone_match": (
+            round(sum(tone_vals) / len(tone_vals), 4) if tone_vals else 0.0
+        ),
+        "mean_fact_retrieval": (
+            round(sum(fact_vals) / len(fact_vals), 4) if fact_vals else 0.0
         ),
     }
     sessions = [
@@ -394,6 +416,8 @@ def get_consistency_metrics(
             "aggregate": r.aggregate,
             "trait_fit_cosine": r.trait_fit_cosine,
             "composite_score": r.composite_score,
+            "tone_match_score": r.tone_match_score,
+            "fact_retrieval_score": r.fact_retrieval_score,
             "turn_count": r.turn_count,
             "scored_at": r.scored_at.isoformat() if r.scored_at else None,
         }
@@ -405,6 +429,7 @@ def get_consistency_metrics(
         "session_count": n,
         "scored_at": runs[0].scored_at.isoformat() if runs[0].scored_at else None,
         "aggregates": aggregates,
+        "rolling_24h": rolling_24h,
         "sessions": sessions,
     }
 
@@ -430,6 +455,15 @@ def _require_admin(x_user_roles: str = Header("", alias="X-User-Roles")) -> None
     roles = {r.strip() for r in x_user_roles.split(",") if r.strip()}
     if not roles & _CONSOLE_ROLES:
         raise HTTPException(status_code=403, detail="admin, researcher, or lead_architect required")
+
+
+@app.get("/api/v1/research/metrics/rolling-24h", tags=["research-console"])
+def get_rolling_24h_metrics(
+    db: Session = Depends(get_db),
+    _admin: None = Depends(_require_admin),
+) -> dict:
+    """Rolling 24h aggregation for Tone Match and Fact Retrieval widgets."""
+    return compute_rolling_24h_aggregates(db)
 
 
 @app.post("/api/v1/research/consistency/run", tags=["research-console"])
