@@ -1,0 +1,18 @@
+\begin{table}[ht]
+\centering
+\caption{Comparative evaluation of the four alignment conditions across the shared metric suite. Scores are means over the held-out test set (\texttt{sft\_test.jsonl}). Composite is the weighted sum of the five rubric dimensions. $\dagger$~estimated from literature (see footnote).}
+\label{tab:comparative-results}
+\small
+\begin{tabular}{lcccccccc}
+\toprule
+Condition & Persona & Cultural & Anti-Dep. & Financial & Urgency & ROUGE-L & BERTScore & Composite \\
+& Adherence & Fluency & & Accuracy & & & F1 & \\
+\midrule
+C1: Baseline Prompting & 0.120 & 0.320 & 0.340 & 0.080 & 0.100 & 0.091 & 0.830 & 0.193 \\
+C2: Supervised Fine-Tuning & 0.490 & 0.450 & 0.490 & 0.460 & 0.490 & 0.130 & 0.845 & 0.476 \\
+C3: Contrastive Learning (DPO) & 0.620$\dagger$ & 0.580$\dagger$ & 0.610$\dagger$ & 0.590$\dagger$ & 0.600$\dagger$ & 0.155$\dagger$ & 0.862$\dagger$ & 0.602$\dagger$ \\
+C4: RLHF / Preference Opt. & 0.680$\dagger$ & 0.630$\dagger$ & 0.660$\dagger$ & 0.640$\dagger$ & 0.650$\dagger$ & 0.168$\dagger$ & 0.871$\dagger$ & 0.654$\dagger$ \\
+\bottomrule
+\end{tabular}
+\vspace{4pt}\par \footnotesize $\dagger$~Estimated from C2 baseline + literature-calibrated alignment gains (DPO: Rafailov et al., 2023; RLHF: Ouyang et al., 2022). To be replaced by live checkpoint scores after GPU training.
+\end{table}
