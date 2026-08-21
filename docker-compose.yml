@@ -322,6 +322,12 @@ services:
       # C3.2 nightly consistency job samples real sessions straight from the chat
       # service's database — chat owns the turns and no event carries them.
       CHAT_DB_URL: postgresql+psycopg://afrimentor:afrimentor@postgres:5432/svc_chat
+      # C4.1 live consistency cadence. The interval keeps the dashboard's aggregate
+      # score live between nightly runs; SESSION_IDLE_MINUTES gates how long an
+      # active conversation must be quiet before it is eligible to score. Set the
+      # interval to 0 to fall back to nightly-only.
+      CONSISTENCY_INTERVAL_MINUTES: ${CONSISTENCY_INTERVAL_MINUTES:-2}
+      SESSION_IDLE_MINUTES: ${SESSION_IDLE_MINUTES:-10}
       RABBITMQ_URL: amqp://afrimentor:afrimentor@rabbitmq:5672/
       # Probe administration (card C2.3). Same LLM_* vars as chat-orchestration so
       # the baseline measures the model users actually talk to. Temperature is

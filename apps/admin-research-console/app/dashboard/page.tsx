@@ -10,6 +10,7 @@ import {
   fetchConsistencyMetrics,
   fetchPersonas,
   exportPilotDataCsv,
+  triggerConsistencyRun,
   type DriftAlert,
   type AuditSession,
   type ConsistencyMetrics,
@@ -64,6 +65,7 @@ function DashboardScreen() {
   const [metrics, setMetrics] = useState<ConsistencyMetrics | null>(null);
   const [personas, setPersonas] = useState<PersonaMeta[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
 
   async function load() {
     try {
@@ -85,11 +87,28 @@ function DashboardScreen() {
 
   useEffect(() => {
     load();
+    // Card C4.1 — poll so the aggregate/alignment tiles stay live as the
+    // interval scheduler scores new sessions. 30s sits well under the backend's
+    // ~2-min recompute and is cheap (four small GETs).
+    const id = setInterval(load, 30_000);
+    return () => clearInterval(id);
   }, []);
 
   async function handleAcknowledge(id: string) {
     await acknowledgeDriftAlert(id);
     load();
+  }
+
+  async function handleRefreshNow() {
+    setRefreshing(true);
+    try {
+      await triggerConsistencyRun();
+      await load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Refresh failed");
+    } finally {
+      setRefreshing(false);
+    }
   }
 
   async function handleExportPilotData() {
@@ -106,19 +125,28 @@ function DashboardScreen() {
       <main className="mx-auto max-w-6xl px-6 py-8">
         <div className="mb-6 flex items-center justify-between">
           <h1 className="text-xl font-semibold">Persona Consistency Dashboard</h1>
-          <button
-            onClick={handleExportPilotData}
-            className="rounded border border-border px-3 py-2 text-sm text-on-surface-dim hover:text-on-surface"
-          >
-            Export pilot data (CSV)
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleRefreshNow}
+              disabled={refreshing}
+              className="rounded border border-border px-3 py-2 text-sm text-on-surface-dim hover:text-on-surface disabled:opacity-50"
+            >
+              {refreshing ? "Refreshing…" : "Refresh now"}
+            </button>
+            <button
+              onClick={handleExportPilotData}
+              className="rounded border border-border px-3 py-2 text-sm text-on-surface-dim hover:text-on-surface"
+            >
+              Export pilot data (CSV)
+            </button>
+          </div>
         </div>
 
         {error && <p className="mb-4 text-sm text-danger">{error}</p>}
 
         <DriftBanner alerts={alerts} onAcknowledge={handleAcknowledge} />
 
-        <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-4">
+        <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
           <div className="rounded-md border border-border bg-surface-raised p-4">
             <p className="text-xs uppercase tracking-wide text-on-surface-dim">Aggregate consistency</p>
             <p className="mt-1 text-2xl font-semibold">
@@ -127,6 +155,15 @@ function DashboardScreen() {
             <p className="mt-1 text-xs text-on-surface-dim">
               {metrics?.session_count ?? 0} sessions scored
             </p>
+          </div>
+          <div className="rounded-md border border-border bg-surface-raised p-4">
+            <p className="text-xs uppercase tracking-wide text-on-surface-dim">CHIOMA persona alignment</p>
+            <p className="mt-1 text-2xl font-semibold">
+              {metrics?.aggregates.mean_trait_fit_cosine != null
+                ? metrics.aggregates.mean_trait_fit_cosine.toFixed(3)
+                : "—"}
+            </p>
+            <p className="mt-1 text-xs text-on-surface-dim">trait-fit cosine</p>
           </div>
           <div className="rounded-md border border-border bg-surface-raised p-4">
             <p className="text-xs uppercase tracking-wide text-on-surface-dim">Prompt→line</p>

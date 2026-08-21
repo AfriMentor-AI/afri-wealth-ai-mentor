@@ -33,6 +33,17 @@ class Settings(BaseModel):
     )
     consistency_sample_size: int = int(os.getenv("CONSISTENCY_SAMPLE_SIZE", "20"))
 
+    # Live consistency cadence (card C4.1). The nightly cron (C3.2) establishes a
+    # daily baseline; this short interval keeps the dashboard's aggregate score
+    # live-updating from real sessions. Set CONSISTENCY_INTERVAL_MINUTES=0 to
+    # disable the interval and keep only the nightly run.
+    consistency_interval_minutes: int = int(os.getenv("CONSISTENCY_INTERVAL_MINUTES", "2"))
+    # A still-active conversation must be idle this long before it is eligible for
+    # scoring. Nothing in the pilot marks a conversation 'completed', so scoring
+    # idle-but-active sessions is what feeds the live dashboard; the idle gate keeps
+    # mid-reply conversations out. Set to 0 to score any active session immediately.
+    session_idle_minutes: int = int(os.getenv("SESSION_IDLE_MINUTES", "10"))
+
     # Drift-threshold alerting (card O4.1). A persona's run-mean aggregate is
     # compared against its own rolling baseline (prior job runs only); crossing
     # this percent deviation fires a DriftAlert. Mirrors the ~14% deviation the

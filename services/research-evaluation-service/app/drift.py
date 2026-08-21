@@ -17,6 +17,7 @@ from __future__ import annotations
 import uuid
 from datetime import UTC, datetime
 
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.metrics.schemas import Dialogue, Speaker
@@ -72,6 +73,28 @@ def audit_fields_for_dialogue(dialogue: Dialogue) -> tuple[str, str | None]:
     return classify_primary_intent(first_user_text), extract_prompt_context(first_user_text)
 
 
+def _recent_prior_run_ids_stmt(persona_id: str, exclude_job_run_id: str, window: int):
+    """Select the most recent ``window`` prior job-run ids for a persona.
+
+    Ranks each run by its latest scored row via ``GROUP BY job_run_id`` +
+    ``ORDER BY max(scored_at)`` — deliberately **not** ``SELECT DISTINCT`` +
+    ``ORDER BY scored_at``. Under ``SELECT DISTINCT`` Postgres requires every
+    ``ORDER BY`` term to appear in the select list, so the DISTINCT form raises
+    ``InvalidColumnReference`` on Postgres while passing silently on SQLite.
+    Isolated as a statement builder so a unit test can compile it against the
+    Postgres dialect and assert the shape stays safe — the SQLite-backed test
+    suite cannot reproduce that runtime error otherwise.
+    """
+    return (
+        select(ConsistencyRun.job_run_id)
+        .where(ConsistencyRun.persona_id == persona_id)
+        .where(ConsistencyRun.job_run_id != exclude_job_run_id)
+        .group_by(ConsistencyRun.job_run_id)
+        .order_by(func.max(ConsistencyRun.scored_at).desc())
+        .limit(window)
+    )
+
+
 def compute_persona_baseline(
     db: Session, persona_id: str, exclude_job_run_id: str, window: int
 ) -> float | None:
@@ -82,15 +105,9 @@ def compute_persona_baseline(
     has no scoring history yet — there is nothing to compare against, and that
     absence must not be silently treated as "no drift".
     """
-    recent_job_run_ids = (
-        db.query(ConsistencyRun.job_run_id)
-        .filter(ConsistencyRun.persona_id == persona_id)
-        .filter(ConsistencyRun.job_run_id != exclude_job_run_id)
-        .order_by(ConsistencyRun.scored_at.desc())
-        .distinct()
-        .limit(window)
-        .all()
-    )
+    recent_job_run_ids = db.execute(
+        _recent_prior_run_ids_stmt(persona_id, exclude_job_run_id, window)
+    ).all()
     if not recent_job_run_ids:
         return None
 

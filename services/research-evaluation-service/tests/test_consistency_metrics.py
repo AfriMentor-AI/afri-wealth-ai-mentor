@@ -21,6 +21,8 @@ SYSTEM_PROMPT = (
     "guidance grounded in African market realities. Practise empathetic tough love."
 )
 
+ADMIN_HEADERS = {"X-User-Roles": "admin"}
+
 
 # ── Fixtures ──────────────────────────────────────────────────────────────────
 
@@ -287,3 +289,196 @@ def test_consistency_endpoint_empty_when_no_runs():
     assert body["job_run_id"] is None
     assert body["session_count"] == 0
     assert body["sessions"] == []
+
+
+# ── C4.1 — live pipeline: active-session sampling, alignment score, trigger ────
+
+def test_session_sampler_includes_active_idle_when_requested():
+    """With include_active_after_minutes set, the query also samples idle-but-
+    active conversations (card C4.1) — nothing in the pilot marks sessions
+    'completed', so this is what feeds the live dashboard."""
+    conv_rows = [("conv-active", "chioma")]
+    msgs = [
+        ("user", "How do I price my product?", 0),
+        ("assistant", "Anchor to value, not cost. Test a premium tier.", 1),
+    ]
+    mock_db = make_mock_db([conv_rows, msgs])
+
+    with patch("app.session_sampler._get_chat_engine", return_value=MagicMock()), \
+         patch("app.session_sampler.sessionmaker", return_value=lambda: mock_db), \
+         patch("app.session_sampler.fetch_system_prompt", return_value=(SYSTEM_PROMPT, "test")):
+        dialogues = sample_completed_sessions(limit=5, include_active_after_minutes=10)
+
+    assert len(dialogues) == 1
+    conv_query = mock_db.execute.call_args_list[0]
+    sql = str(conv_query.args[0])
+    assert "status = 'active'" in sql
+    assert "make_interval" in sql
+    assert conv_query.args[1]["idle_min"] == 10
+
+
+def test_session_sampler_completed_only_by_default():
+    """Default (include_active_after_minutes=None) keeps the completed-only query
+    and passes no idle window — backward-compatible with C3.2."""
+    conv_rows = [("conv-done", "chioma")]
+    msgs = [
+        ("user", "How do I save?", 0),
+        ("assistant", "Automate a fixed transfer on payday.", 1),
+    ]
+    mock_db = make_mock_db([conv_rows, msgs])
+
+    with patch("app.session_sampler._get_chat_engine", return_value=MagicMock()), \
+         patch("app.session_sampler.sessionmaker", return_value=lambda: mock_db), \
+         patch("app.session_sampler.fetch_system_prompt", return_value=(SYSTEM_PROMPT, "test")):
+        sample_completed_sessions(limit=5)
+
+    conv_query = mock_db.execute.call_args_list[0]
+    sql = str(conv_query.args[0])
+    assert "status = 'active'" not in sql
+    assert "make_interval" not in sql
+    assert "idle_min" not in conv_query.args[1]
+
+
+def test_consistency_job_persists_trait_fit_and_composite():
+    """Card C4.1 — the job persists the CHIOMA alignment numbers score_dialogue()
+    produces (trait-fit cosine + composite), instead of discarding them."""
+    from app.consistency_job import run_consistency_job
+
+    engine = make_in_memory_engine()
+    Session = sessionmaker(bind=engine)
+    dialogues = [make_dialogue(4, "conv-align-001")]
+
+    with patch("app.consistency_job.sample_completed_sessions", return_value=dialogues), \
+         patch("app.consistency_job.SessionLocal", Session):
+        run_consistency_job(sample_size=1)
+
+    db = Session()
+    run = db.query(ConsistencyRun).filter_by(conversation_id="conv-align-001").first()
+    assert run is not None
+    assert run.trait_fit_cosine is not None
+    assert -1.0 <= run.trait_fit_cosine <= 1.0
+    assert run.composite_score is not None
+    assert 0.0 <= run.composite_score <= 1.0
+    db.close()
+
+
+def test_consistency_endpoint_exposes_trait_fit_and_composite():
+    """The metrics endpoint surfaces the new alignment aggregates and per-session
+    fields (card C4.1) — the numbers the dashboard's CHIOMA alignment tile reads."""
+    engine = make_in_memory_engine()
+    Session = sessionmaker(bind=engine)
+
+    job_id = str(uuid.uuid4())
+    db = Session()
+    for i in range(2):
+        db.add(ConsistencyRun(
+            id=str(uuid.uuid4()),
+            job_run_id=job_id,
+            conversation_id=f"conv-{i}",
+            persona_id="chioma",
+            prompt_to_line=0.5,
+            line_to_line=0.6,
+            qa_consistency=0.4,
+            aggregate=0.5,
+            turn_count=4,
+            warnings_json="[]",
+            trait_fit_cosine=0.8,
+            composite_score=0.65,
+            scored_at=datetime.now(timezone.utc),
+        ))
+    db.commit()
+    db.close()
+
+    client = _client_with_db(engine)
+    try:
+        resp = client.get("/api/v1/metrics/consistency")
+    finally:
+        client.app.dependency_overrides.clear()
+
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["aggregates"]["mean_trait_fit_cosine"] == 0.8
+    assert body["aggregates"]["mean_composite"] == 0.65
+    assert body["sessions"][0]["trait_fit_cosine"] == 0.8
+    assert body["sessions"][0]["composite_score"] == 0.65
+
+
+def test_consistency_endpoint_alignment_mean_ignores_null_rows():
+    """Legacy rows (null trait_fit/composite) don't crash the mean and are excluded
+    from it — the mean is taken over rows that actually carry the C4.1 columns."""
+    engine = make_in_memory_engine()
+    Session = sessionmaker(bind=engine)
+    job_id = str(uuid.uuid4())
+    db = Session()
+    db.add(ConsistencyRun(
+        id=str(uuid.uuid4()), job_run_id=job_id, conversation_id="conv-new",
+        persona_id="chioma", prompt_to_line=0.5, line_to_line=0.5,
+        qa_consistency=0.5, aggregate=0.5, turn_count=4, warnings_json="[]",
+        trait_fit_cosine=0.9, composite_score=0.7,
+        scored_at=datetime.now(timezone.utc),
+    ))
+    db.add(ConsistencyRun(
+        id=str(uuid.uuid4()), job_run_id=job_id, conversation_id="conv-legacy",
+        persona_id="chioma", prompt_to_line=0.5, line_to_line=0.5,
+        qa_consistency=0.5, aggregate=0.5, turn_count=4, warnings_json="[]",
+        scored_at=datetime.now(timezone.utc),
+    ))
+    db.commit()
+    db.close()
+
+    client = _client_with_db(engine)
+    try:
+        resp = client.get("/api/v1/metrics/consistency")
+    finally:
+        client.app.dependency_overrides.clear()
+
+    body = resp.json()
+    # mean over the single non-null row, not divided by the full row count
+    assert body["aggregates"]["mean_trait_fit_cosine"] == 0.9
+    assert body["aggregates"]["mean_composite"] == 0.7
+    legacy = next(s for s in body["sessions"] if s["conversation_id"] == "conv-legacy")
+    assert legacy["trait_fit_cosine"] is None
+    assert legacy["composite_score"] is None
+
+
+def test_consistency_endpoint_empty_state_includes_alignment_keys():
+    """The empty-state aggregates still carry the new keys, so the frontend can
+    read them unconditionally even before any run exists."""
+    engine = make_in_memory_engine()
+    client = _client_with_db(engine)
+    try:
+        resp = client.get("/api/v1/metrics/consistency")
+    finally:
+        client.app.dependency_overrides.clear()
+
+    body = resp.json()
+    assert body["aggregates"]["mean_trait_fit_cosine"] == 0.0
+    assert body["aggregates"]["mean_composite"] == 0.0
+
+
+def test_trigger_consistency_run_requires_console_role():
+    """The on-demand "Refresh now" trigger is admin-gated (card C4.1)."""
+    engine = make_in_memory_engine()
+    client = _client_with_db(engine)
+    try:
+        resp = client.post("/api/v1/research/consistency/run")
+    finally:
+        client.app.dependency_overrides.clear()
+    assert resp.status_code == 403
+
+
+def test_trigger_consistency_run_invokes_job_and_returns_summary():
+    """With a console role, the trigger runs the job inline and returns its
+    summary dict — patched here so the test never touches the real chat DB."""
+    engine = make_in_memory_engine()
+    client = _client_with_db(engine)
+    summary = {"run_id": "abc", "session_count": 3, "status": "completed"}
+    try:
+        with patch("app.main.run_consistency_job", return_value=summary) as job:
+            resp = client.post("/api/v1/research/consistency/run", headers=ADMIN_HEADERS)
+    finally:
+        client.app.dependency_overrides.clear()
+
+    assert resp.status_code == 200
+    assert resp.json() == summary
+    job.assert_called_once()

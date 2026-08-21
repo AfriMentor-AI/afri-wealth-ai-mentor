@@ -144,6 +144,10 @@ export interface ConsistencyMetrics {
     mean_line_to_line: number;
     mean_qa_consistency: number;
     mean_aggregate: number;
+    // Card C4.1 — CHIOMA trait-fit alignment + composite blend. Optional so the
+    // console keeps rendering against a backend that has not shipped C4.1 yet.
+    mean_trait_fit_cosine?: number;
+    mean_composite?: number;
   };
   sessions: Array<{
     conversation_id: string;
@@ -152,6 +156,8 @@ export interface ConsistencyMetrics {
     line_to_line: number;
     qa_consistency: number;
     aggregate: number;
+    trait_fit_cosine?: number | null;
+    composite_score?: number | null;
     turn_count: number;
     scored_at: string | null;
   }>;
@@ -179,6 +185,15 @@ export async function fetchAuditSessions(minAbsDeltaPct?: number): Promise<Audit
 export async function fetchConsistencyMetrics(): Promise<ConsistencyMetrics> {
   const res = await apiFetch("/api/v1/metrics/consistency");
   if (!res.ok) throw new Error(`fetchConsistencyMetrics failed: ${res.status}`);
+  return res.json();
+}
+
+/** Card C4.1 — force an immediate scoring run behind the dashboard's "Refresh
+ * now" button. Admin-gated at the service; the bearer token rides along via
+ * apiFetch. Returns the job summary the endpoint emits. */
+export async function triggerConsistencyRun(): Promise<Record<string, unknown>> {
+  const res = await apiFetch("/api/v1/research/consistency/run", { method: "POST" });
+  if (!res.ok) throw new Error(`triggerConsistencyRun failed: ${res.status}`);
   return res.json();
 }
 

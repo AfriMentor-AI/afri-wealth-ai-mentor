@@ -72,8 +72,19 @@ def _dialogue_from_conversation(
     )
 
 
-def sample_completed_sessions(limit: int = 20) -> list[Dialogue]:
-    """Return up to ``limit`` recently completed conversations as Dialogues.
+def sample_completed_sessions(
+    limit: int = 20,
+    include_active_after_minutes: int | None = None,
+) -> list[Dialogue]:
+    """Return up to ``limit`` recently sampled conversations as Dialogues.
+
+    By default only conversations explicitly marked ``completed`` are sampled.
+    When ``include_active_after_minutes`` is set, conversations still ``active``
+    but idle for at least that many minutes are also included — nothing in the
+    pilot marks a conversation ``completed`` yet, so this is what lets the live
+    consistency dashboard (card C4.1) score real, in-flight sessions once they go
+    quiet. The ``<2 turns`` guard in :func:`_dialogue_from_conversation` still
+    drops conversations too thin to score.
 
     Resilient by design: a chat-DB outage returns ``[]`` rather than raising, so a
     scheduled scoring run degrades to "no data" instead of crashing the service.
@@ -86,21 +97,36 @@ def sample_completed_sessions(limit: int = 20) -> list[Dialogue]:
         return []
 
     try:
+        # WHERE clause is built from these literal fragments only (never user
+        # input), so interpolating it into the query text is injection-safe; the
+        # idle window and limit are bound parameters. make_interval() is
+        # Postgres-only, and the chat DB (svc_chat) always is.
+        params: dict[str, object] = {"limit": limit}
+        if include_active_after_minutes is not None:
+            where_clause = (
+                "status = 'completed' "
+                "OR (status = 'active' "
+                "AND updated_at < NOW() - make_interval(mins => :idle_min))"
+            )
+            params["idle_min"] = include_active_after_minutes
+        else:
+            where_clause = "status = 'completed'"
+
         conv_rows = db.execute(
             text(
-                """
+                f"""
                 SELECT id, persona_id
                 FROM conversations
-                WHERE status = 'completed'
+                WHERE {where_clause}
                 ORDER BY updated_at DESC
                 LIMIT :limit
                 """
             ),
-            {"limit": limit},
+            params,
         ).fetchall()
 
         if not conv_rows:
-            logger.info("No completed conversations found in chat DB")
+            logger.info("No scorable conversations found in chat DB")
             return []
 
         # One CHIOMA persona in v0, so the anchor is fetched once and reused.

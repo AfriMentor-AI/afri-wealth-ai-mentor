@@ -58,23 +58,50 @@ app = FastAPI(
 
 instrument(app, SERVICE_NAME)
 
-# Nightly consistency scoring job (card C3.2). Held at module scope so the
+# Consistency scoring scheduler (cards C3.2 + C4.1). Held at module scope so the
 # shutdown handler can stop the same scheduler instance startup created.
 _scheduler: BackgroundScheduler | None = None
 
 
+def _ensure_consistency_columns() -> None:
+    """Additively add the card C4.1 columns to an existing consistency_runs table.
+
+    This service has no Alembic; startup relies on ``Base.metadata.create_all``,
+    which creates a brand-new table with the new columns but never ALTERs a table
+    that already exists. On the already-provisioned pilot ``svc_research`` DB the
+    ``trait_fit_cosine``/``composite_score`` columns would therefore be missing.
+    ``ADD COLUMN IF NOT EXISTS`` is idempotent and a no-op once they exist.
+
+    Postgres only: SQLite (tests, local CLI) gets the columns from ``create_all``
+    on a fresh table. Wrapped so a locked or absent table logs a warning rather
+    than crashing startup.
+    """
+    if engine.dialect.name != "postgresql":
+        return
+    try:
+        with engine.begin() as conn:
+            for col in ("trait_fit_cosine", "composite_score"):
+                conn.exec_driver_sql(
+                    f"ALTER TABLE consistency_runs ADD COLUMN IF NOT EXISTS {col} double precision"
+                )
+    except Exception as exc:  # pragma: no cover - defensive: never block startup
+        logger.warning("Could not ensure C4.1 consistency columns: %s", exc)
+
+
 @app.on_event("startup")
 def startup() -> None:
-    """Create tables and, unless disabled, arm the nightly consistency job."""
+    """Create tables and, unless disabled, arm the consistency scoring jobs."""
     global _scheduler
     Base.metadata.create_all(bind=engine)
+    _ensure_consistency_columns()
 
     settings = get_settings()
     if not settings.enable_scheduler:
-        logger.info("Scheduler disabled (ENABLE_SCHEDULER=false); nightly job not armed")
+        logger.info("Scheduler disabled (ENABLE_SCHEDULER=false); scoring jobs not armed")
         return
 
     _scheduler = BackgroundScheduler(timezone="UTC")
+    # Nightly baseline run (card C3.2).
     _scheduler.add_job(
         run_consistency_job,
         "cron",
@@ -84,10 +111,31 @@ def startup() -> None:
         id="nightly_consistency",
         replace_existing=True,
     )
+    # Live cadence (card C4.1): recompute every few minutes so the dashboard's
+    # aggregate score updates from real sessions, and score once immediately on
+    # boot so the dashboard has data without waiting a full interval. max_instances
+    # + coalesce stop a slow run from piling up overlapping executions.
+    if settings.consistency_interval_minutes > 0:
+        _scheduler.add_job(
+            run_consistency_job,
+            "interval",
+            minutes=settings.consistency_interval_minutes,
+            kwargs={"sample_size": settings.consistency_sample_size},
+            id="live_consistency",
+            replace_existing=True,
+            max_instances=1,
+            coalesce=True,
+            next_run_time=datetime.now(UTC),
+        )
     _scheduler.start()
     logger.info(
-        "Nightly consistency job armed at 02:00 UTC (sample_size=%d)",
+        "Consistency scheduler armed: nightly@02:00 UTC; live interval=%s "
+        "(sample_size=%d, session_idle=%d min)",
+        f"{settings.consistency_interval_minutes} min"
+        if settings.consistency_interval_minutes > 0
+        else "disabled",
         settings.consistency_sample_size,
+        settings.session_idle_minutes,
     )
 
 
@@ -269,6 +317,9 @@ _EMPTY_CONSISTENCY_AGGREGATES = {
     "mean_line_to_line": 0.0,
     "mean_qa_consistency": 0.0,
     "mean_aggregate": 0.0,
+    # Card C4.1 — CHIOMA trait-fit alignment + composite blend.
+    "mean_trait_fit_cosine": 0.0,
+    "mean_composite": 0.0,
 }
 
 
@@ -317,11 +368,21 @@ def get_consistency_metrics(
         }
 
     n = len(runs)
+    # trait_fit_cosine/composite_score are nullable (card C4.1 added them; older
+    # rows have neither), so their means are taken over non-null values only.
+    trait_vals = [r.trait_fit_cosine for r in runs if r.trait_fit_cosine is not None]
+    composite_vals = [r.composite_score for r in runs if r.composite_score is not None]
     aggregates = {
         "mean_prompt_to_line": round(sum(r.prompt_to_line for r in runs) / n, 4),
         "mean_line_to_line": round(sum(r.line_to_line for r in runs) / n, 4),
         "mean_qa_consistency": round(sum(r.qa_consistency for r in runs) / n, 4),
         "mean_aggregate": round(sum(r.aggregate for r in runs) / n, 4),
+        "mean_trait_fit_cosine": (
+            round(sum(trait_vals) / len(trait_vals), 4) if trait_vals else 0.0
+        ),
+        "mean_composite": (
+            round(sum(composite_vals) / len(composite_vals), 4) if composite_vals else 0.0
+        ),
     }
     sessions = [
         {
@@ -331,6 +392,8 @@ def get_consistency_metrics(
             "line_to_line": r.line_to_line,
             "qa_consistency": r.qa_consistency,
             "aggregate": r.aggregate,
+            "trait_fit_cosine": r.trait_fit_cosine,
+            "composite_score": r.composite_score,
             "turn_count": r.turn_count,
             "scored_at": r.scored_at.isoformat() if r.scored_at else None,
         }
@@ -367,6 +430,21 @@ def _require_admin(x_user_roles: str = Header("", alias="X-User-Roles")) -> None
     roles = {r.strip() for r in x_user_roles.split(",") if r.strip()}
     if not roles & _CONSOLE_ROLES:
         raise HTTPException(status_code=403, detail="admin, researcher, or lead_architect required")
+
+
+@app.post("/api/v1/research/consistency/run", tags=["research-console"])
+def trigger_consistency_run(_admin: None = Depends(_require_admin)) -> dict:
+    """"Refresh now" — force an immediate consistency scoring run (card C4.1).
+
+    The dashboard's tiles normally refresh from the interval scheduler; this lets
+    an operator force a fresh score on demand. Lexical scoring over a small sample
+    is fast enough to run inline in the request. ``run_consistency_job`` opens its
+    own DB session (it is the scheduler's entrypoint too), so no request-scoped
+    ``db`` is taken here. Returns the job's summary dict (run_id, session_count,
+    mean_aggregate, drift_alerts).
+    """
+    settings = get_settings()
+    return run_consistency_job(sample_size=settings.consistency_sample_size)
 
 
 @app.get("/api/v1/research/audit-sessions", tags=["research-console"])

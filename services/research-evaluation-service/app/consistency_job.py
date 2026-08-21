@@ -37,7 +37,12 @@ def run_consistency_job(sample_size: int = 20) -> dict:
 
     settings = get_settings()
     profile = load_profile()
-    dialogues = sample_completed_sessions(limit=sample_size)
+    # Include idle-but-active sessions (card C4.1): nothing in the pilot marks a
+    # conversation 'completed', so completed-only sampling would score nothing.
+    dialogues = sample_completed_sessions(
+        limit=sample_size,
+        include_active_after_minutes=settings.session_idle_minutes,
+    )
 
     if not dialogues:
         logger.warning("No completed sessions available to score")
@@ -88,6 +93,10 @@ def run_consistency_job(sample_size: int = 20) -> dict:
                     primary_intent=primary_intent,
                     prompt_context=prompt_context,
                     consistency_delta_pct=session_delta_pct,
+                    # Card C4.1 — persist the trait-fit/composite alignment
+                    # numbers score_dialogue() already produced (was discarded).
+                    trait_fit_cosine=report.trait_fit.cosine_similarity,
+                    composite_score=report.composite_score,
                     scored_at=datetime.now(UTC),
                 )
                 db.add(run)
