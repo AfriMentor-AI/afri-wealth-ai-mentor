@@ -62,7 +62,7 @@ except ImportError:  # pragma: no cover — handled at runtime
 
 logger = logging.getLogger(__name__)
 
-# ── Reward weights (from C4 config default — overridden at runtime by cfg) ────
+# ── Base and Extended Reward weights ──────────────────────────────────────────
 DEFAULT_REWARD_WEIGHTS: dict[str, float] = {
     "persona_adherence": 0.25,
     "cultural_fluency": 0.20,
@@ -71,7 +71,136 @@ DEFAULT_REWARD_WEIGHTS: dict[str, float] = {
     "urgency": 0.15,
 }
 
+CONSISTENCY_DIMENSIONS: list[str] = [
+    "prompt_to_line",
+    "line_to_line",
+    "qa_consistency",
+]
+
+DEFAULT_REWARD_WEIGHTS_WITH_CONSISTENCY: dict[str, float] = {
+    "persona_adherence": 0.20,
+    "cultural_fluency": 0.15,
+    "anti_dependency": 0.15,
+    "financial_accuracy": 0.15,
+    "urgency": 0.15,
+    "prompt_to_line": 0.08,
+    "line_to_line": 0.06,
+    "qa_consistency": 0.06,
+}
+
 _DIMENSIONS = list(DEFAULT_REWARD_WEIGHTS.keys())
+_EXTENDED_DIMENSIONS = list(DEFAULT_REWARD_WEIGHTS_WITH_CONSISTENCY.keys())
+
+
+# ── Consistency Scorer helper (per Abdulhai et al. 2025) ─────────────────────
+
+def _get_system_prompt_for_persona(persona_slug: str) -> str:
+    """Retrieve or render persona system prompt anchor."""
+    try:
+        from evaluation.checkpoint_eval import render_system_prompt
+        return render_system_prompt(persona_slug)
+    except Exception:
+        return f"You are Chioma ({persona_slug}), an African financial mentor. Direct, pragmatic, and actionable."
+
+
+def _lexical_similarity(text_a: str, text_b: str) -> float:
+    """Compute lexical cosine similarity between two texts in [0.0, 1.0]."""
+    import math
+    import re
+    from collections import Counter
+
+    tokens_a = re.findall(r"[a-z0-9']+", text_a.lower())
+    tokens_b = re.findall(r"[a-z0-9']+", text_b.lower())
+    if not tokens_a or not tokens_b:
+        return 0.0
+
+    cnt_a, cnt_b = Counter(tokens_a), Counter(tokens_b)
+    vec_a = {t: 1.0 + math.log(c) for t, c in cnt_a.items()}
+    vec_b = {t: 1.0 + math.log(c) for t, c in cnt_b.items()}
+
+    shared = set(vec_a) & set(vec_b)
+    if not shared:
+        return 0.0
+    dot = sum(vec_a[t] * vec_b[t] for t in shared)
+    norm_a = math.sqrt(sum(v * v for v in vec_a.values()))
+    norm_b = math.sqrt(sum(v * v for v in vec_b.values()))
+    if norm_a == 0.0 or norm_b == 0.0:
+        return 0.0
+    return round(dot / (norm_a * norm_b), 6)
+
+
+def compute_consistency_scores(
+    prompt: str,
+    response: str,
+    persona_slug: str = "chioma-base",
+    reference: str | None = None,
+) -> dict[str, float]:
+    """Compute behavioral consistency metrics per Abdulhai et al. (2025).
+
+    Returns
+    -------
+    dict with keys:
+      - prompt_to_line: similarity between system prompt anchor and candidate response
+      - line_to_line: similarity across turns / candidate vs reference exemplar
+      - qa_consistency: relevance/alignment between user prompt and candidate response
+    """
+    sys_prompt = _get_system_prompt_for_persona(persona_slug)
+    p2l = _lexical_similarity(sys_prompt, response)
+    qa = _lexical_similarity(prompt, response)
+
+    if reference:
+        l2l = _lexical_similarity(response, reference)
+    else:
+        # Multi-sentence internal coherence across response lines
+        sentences = [s.strip() for s in response.split(".") if len(s.strip()) > 5]
+        if len(sentences) >= 2:
+            sims = [
+                _lexical_similarity(sentences[i], sentences[j])
+                for i in range(len(sentences))
+                for j in range(i + 1, len(sentences))
+            ]
+            l2l = round(sum(sims) / len(sims), 6) if sims else 1.0
+        else:
+            l2l = 1.0
+
+    return {
+        "prompt_to_line": p2l,
+        "line_to_line": l2l,
+        "qa_consistency": qa,
+    }
+
+
+def measure_persona_drift(
+    turn_responses: list[str],
+    persona_slug: str = "chioma-base",
+) -> dict[str, float]:
+    """Measure persona drift across a sequence of multi-turn responses.
+
+    Calculates:
+      - early_p2l: prompt-to-line alignment in initial half of turns
+      - late_p2l: prompt-to-line alignment in latter half of turns
+      - drift_magnitude: drop in persona alignment (early_p2l - late_p2l)
+      - drift_pct: percentage drop relative to early baseline
+    """
+    if not turn_responses:
+        return {"early_p2l": 0.0, "late_p2l": 0.0, "drift_magnitude": 0.0, "drift_pct": 0.0}
+
+    sys_prompt = _get_system_prompt_for_persona(persona_slug)
+    p2l_scores = [_lexical_similarity(sys_prompt, r) for r in turn_responses]
+
+    mid = max(1, len(p2l_scores) // 2)
+    early_p2l = float(np.mean(p2l_scores[:mid]))
+    late_p2l = float(np.mean(p2l_scores[mid:])) if len(p2l_scores) > mid else early_p2l
+
+    drift_mag = max(0.0, early_p2l - late_p2l)
+    drift_pct = round((drift_mag / (early_p2l + 1e-9)) * 100, 2)
+
+    return {
+        "early_p2l": round(early_p2l, 4),
+        "late_p2l": round(late_p2l, 4),
+        "drift_magnitude": round(drift_mag, 4),
+        "drift_pct": drift_pct,
+    }
 
 
 # ── Data classes ──────────────────────────────────────────────────────────────
@@ -84,11 +213,22 @@ class PairScores:
     scores_b: dict[str, float]
     preferred: str           # "a" or "b" — ground-truth human label
     persona_slug: str = ""
+    include_consistency: bool = False
+    custom_dimensions: list[str] | None = None
+
+    @property
+    def dimensions(self) -> list[str]:
+        if self.custom_dimensions is not None:
+            return self.custom_dimensions
+        if self.include_consistency:
+            return _EXTENDED_DIMENSIONS
+        return _DIMENSIONS
 
     @property
     def delta(self) -> list[float]:
         """score_a − score_b per dimension — the feature vector for the probe."""
-        return [self.scores_a.get(d, 0.0) - self.scores_b.get(d, 0.0) for d in _DIMENSIONS]
+        dims = self.dimensions
+        return [self.scores_a.get(d, 0.0) - self.scores_b.get(d, 0.0) for d in dims]
 
     @property
     def label(self) -> int:
@@ -110,12 +250,17 @@ class PairReward:
 
 # ── Scalar reward from dimension scores ──────────────────────────────────────
 
-def _weighted_reward(scores: dict[str, float], weights: dict[str, float]) -> float:
+def _weighted_reward(
+    scores: dict[str, float],
+    weights: dict[str, float],
+    dimensions: list[str] | None = None,
+) -> float:
     """Compute a weighted sum reward from per-dimension scores."""
-    return sum(scores.get(dim, 0.0) * weights.get(dim, 0.0) for dim in _DIMENSIONS)
+    dims = dimensions or list(weights.keys())
+    return sum(scores.get(dim, 0.0) * weights.get(dim, 0.0) for dim in dims)
 
 
-# ── Scoring a pair (calls the LLM judge) ──────────────────────────────────────
+# ── Scoring a pair (calls the LLM judge + optional consistency) ───────────────
 
 def score_pair(
     prompt: str,
@@ -124,38 +269,58 @@ def score_pair(
     *,
     probe=None,           # fitted LogisticRegression or None
     reward_weights: Optional[dict[str, float]] = None,
+    persona_slug: str = "chioma-base",
+    include_consistency: bool = False,
+    reference: str | None = None,
 ) -> PairReward:
     """Score a preference pair.
 
-    Calls the shared LLM-as-judge for both responses, computes weighted reward
+    Calls the shared LLM-as-judge for both responses, optionally computes
+    Abdulhai et al. 2025 persona-consistency metrics, computes weighted reward
     scalars, and (if a probe is provided) runs the logistic probe to predict
     which the human would prefer.
 
     Parameters
     ----------
-    prompt:         The user query.
-    response_a:     First candidate response.
-    response_b:     Second candidate response.
-    probe:          Fitted sklearn LogisticRegression, or None (falls back to
-                    weighted reward comparison).
-    reward_weights: Per-dimension weights dict, defaults to C4 config weights.
+    prompt:              The user query.
+    response_a:          First candidate response.
+    response_b:          Second candidate response.
+    probe:               Fitted sklearn LogisticRegression, or None (falls back to
+                         weighted reward comparison).
+    reward_weights:      Per-dimension weights dict.
+    persona_slug:        Persona archetype identifier.
+    include_consistency: Whether to augment score vectors with consistency metrics.
+    reference:           Optional ground-truth reference response.
 
     Returns
     -------
     PairReward with reward_a, reward_b, predicted_preferred, and raw scores.
     """
-    weights = reward_weights or DEFAULT_REWARD_WEIGHTS
+    if reward_weights is not None:
+        weights = reward_weights
+    elif include_consistency:
+        weights = DEFAULT_REWARD_WEIGHTS_WITH_CONSISTENCY
+    else:
+        weights = DEFAULT_REWARD_WEIGHTS
+
+    dims = list(weights.keys())
 
     logger.debug("Scoring response_a for prompt: %s…", prompt[:60])
     scores_a = score_all_dimensions(prompt, response_a)
     logger.debug("Scoring response_b for prompt: %s…", prompt[:60])
     scores_b = score_all_dimensions(prompt, response_b)
 
-    reward_a = _weighted_reward(scores_a, weights)
-    reward_b = _weighted_reward(scores_b, weights)
+    if include_consistency:
+        c_a = compute_consistency_scores(prompt, response_a, persona_slug=persona_slug, reference=reference)
+        c_b = compute_consistency_scores(prompt, response_b, persona_slug=persona_slug, reference=reference)
+        scores_a.update(c_a)
+        scores_b.update(c_b)
+
+    reward_a = _weighted_reward(scores_a, weights, dimensions=dims)
+    reward_b = _weighted_reward(scores_b, weights, dimensions=dims)
 
     if probe is not None:
-        delta = np.array([[scores_a.get(d, 0.0) - scores_b.get(d, 0.0) for d in _DIMENSIONS]])
+        delta = np.array([[scores_a.get(d, 0.0) - scores_b.get(d, 0.0) for d in dims]])
         prob_a = float(probe.predict_proba(delta)[0][1])  # P(label=1) = P(prefer_a)
         predicted_preferred = "a" if prob_a >= 0.5 else "b"
         confidence = prob_a
@@ -208,13 +373,22 @@ def score_dataset(
     pairs: list[dict],
     *,
     reward_weights: Optional[dict[str, float]] = None,
+    include_consistency: bool = False,
 ) -> list[PairScores]:
-    """Score every pair in a dataset with the LLM judge.
+    """Score every pair in a dataset with the LLM judge (+ optional consistency).
 
     Returns :class:`PairScores` objects ready for probe fitting.  Skips pairs
     where both responses are empty strings.
     """
-    weights = reward_weights or DEFAULT_REWARD_WEIGHTS
+    if reward_weights is not None:
+        weights = reward_weights
+    elif include_consistency:
+        weights = DEFAULT_REWARD_WEIGHTS_WITH_CONSISTENCY
+    else:
+        weights = DEFAULT_REWARD_WEIGHTS
+
+    dims = list(weights.keys())
+    has_consistency = include_consistency or any(d in CONSISTENCY_DIMENSIONS for d in dims)
 
     results: list[PairScores] = []
     for i, pair in enumerate(pairs):
@@ -222,7 +396,8 @@ def score_dataset(
         response_a = pair.get("response_a", "")
         response_b = pair.get("response_b", "")
         preferred = pair.get("preferred", "a")
-        persona_slug = pair.get("persona_slug", "")
+        persona_slug = pair.get("persona_slug", "chioma-base")
+        reference = pair.get("reference")
 
         if not (prompt and response_a and response_b):
             logger.warning("Skipping incomplete pair %d", i)
@@ -235,12 +410,20 @@ def score_dataset(
         scores_a = score_all_dimensions(prompt, response_a)
         scores_b = score_all_dimensions(prompt, response_b)
 
+        if has_consistency:
+            c_a = compute_consistency_scores(prompt, response_a, persona_slug=persona_slug, reference=reference)
+            c_b = compute_consistency_scores(prompt, response_b, persona_slug=persona_slug, reference=reference)
+            scores_a.update(c_a)
+            scores_b.update(c_b)
+
         results.append(PairScores(
             prompt=prompt,
             scores_a=scores_a,
             scores_b=scores_b,
             preferred=preferred,
             persona_slug=persona_slug,
+            include_consistency=has_consistency,
+            custom_dimensions=dims,
         ))
 
     return results
@@ -275,6 +458,7 @@ def fit_reward_probe(
     if not scored_pairs:
         raise ValueError("No scored pairs — cannot fit reward probe.")
 
+    dims = scored_pairs[0].dimensions
     X = np.array([p.delta for p in scored_pairs])
     y = np.array([p.label for p in scored_pairs])
 
@@ -294,8 +478,7 @@ def fit_reward_probe(
         ])
         probe.fit(X, y)
         train_acc = 1.0  # trivially correct on single-class data
-        # No real coefficients from DummyClassifier — use zeros as placeholder
-        coef = [0.0] * len(_DIMENSIONS)
+        coef = [0.0] * len(dims)
     else:
         probe = Pipeline([
             ("scaler", StandardScaler()),
@@ -308,13 +491,13 @@ def fit_reward_probe(
     report = {
         "train_accuracy": train_acc,
         "n_samples": len(scored_pairs),
-        "feature_names": _DIMENSIONS,
-        "probe_coefficients": dict(zip(_DIMENSIONS, coef)),
+        "feature_names": dims,
+        "probe_coefficients": dict(zip(dims, coef)),
         "single_class": len(unique_classes) < 2,
     }
     logger.info(
-        "Reward probe fitted: n=%d train_acc=%.3f single_class=%s",
-        len(scored_pairs), train_acc, len(unique_classes) < 2,
+        "Reward probe fitted: n=%d train_acc=%.3f single_class=%s features=%s",
+        len(scored_pairs), train_acc, len(unique_classes) < 2, dims,
     )
     return probe, report
 
@@ -333,8 +516,12 @@ def evaluate_probe(
     y = np.array([p.label for p in scored_pairs])
     preds = probe.predict(X)
     acc = float((preds == y).mean())
-    report_str = classification_report(y, preds, target_names=["prefer_b", "prefer_a"],
-                                       zero_division=0)
+    try:
+        report_str = classification_report(
+            y, preds, labels=[0, 1], target_names=["prefer_b", "prefer_a"], zero_division=0
+        )
+    except Exception:
+        report_str = f"Accuracy: {acc:.3f}"
     logger.info("Probe eval: n=%d accuracy=%.3f\n%s", len(scored_pairs), acc, report_str)
     return {"accuracy": acc, "n_samples": len(scored_pairs), "report": report_str}
 
@@ -367,6 +554,7 @@ def pairs_to_dpo_format(
     pairs: list[dict],
     probe=None,
     reward_weights: Optional[dict[str, float]] = None,
+    include_consistency: bool = False,
 ) -> list[dict]:
     """Convert preference pairs to TRL DPO ``{prompt, chosen, rejected}`` format.
 
@@ -378,18 +566,34 @@ def pairs_to_dpo_format(
 
     If no probe, falls back to the dataset ``preferred`` field directly.
     """
+    if reward_weights is not None:
+        weights = reward_weights
+    elif include_consistency:
+        weights = DEFAULT_REWARD_WEIGHTS_WITH_CONSISTENCY
+    else:
+        weights = DEFAULT_REWARD_WEIGHTS
+
+    dims = list(weights.keys())
+    has_consistency = include_consistency or any(d in CONSISTENCY_DIMENSIONS for d in dims)
+
     dpo_pairs = []
     for pair in pairs:
         prompt = pair.get("prompt", "")
         response_a = pair.get("response_a", "")
         response_b = pair.get("response_b", "")
         preferred = pair.get("preferred", "a")
+        persona_slug = pair.get("persona_slug", "chioma-base")
+        reference = pair.get("reference")
 
         if probe is not None:
-            weights = reward_weights or DEFAULT_REWARD_WEIGHTS
             scores_a = score_all_dimensions(prompt, response_a)
             scores_b = score_all_dimensions(prompt, response_b)
-            delta = np.array([[scores_a.get(d, 0.0) - scores_b.get(d, 0.0) for d in _DIMENSIONS]])
+            if has_consistency:
+                c_a = compute_consistency_scores(prompt, response_a, persona_slug=persona_slug, reference=reference)
+                c_b = compute_consistency_scores(prompt, response_b, persona_slug=persona_slug, reference=reference)
+                scores_a.update(c_a)
+                scores_b.update(c_b)
+            delta = np.array([[scores_a.get(d, 0.0) - scores_b.get(d, 0.0) for d in dims]])
             prob_a = float(probe.predict_proba(delta)[0][1])
             if prob_a > 0.65:
                 preferred = "a"
