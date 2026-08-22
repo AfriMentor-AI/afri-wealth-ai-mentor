@@ -1,5 +1,19 @@
 # research/configs/c4_rlhf_preference_opt.yaml
-# Condition C4: RLHF / Preference Optimization — reward model + PPO.
+# Condition C4: RLHF / Preference Optimization — reward probe + personality-focused DPO.
+#
+# Pipeline (3 stages):
+#   Stage 1 (reward_model): Score preference pairs with LLM-as-judge, fit a logistic
+#     probe on per-dimension score deltas, evaluate on held-out val split.
+#   Stage 2 (dpo): Convert probe-ranked pairs to DPO format, warm-start from the
+#     best prior checkpoint (C3 DPO adapter or base model), run TRL DPO.
+#   Stage 3 (evaluate): Score the trained checkpoint against the shared metric suite
+#     (same keys as C1/C2/C3) and log to MLflow.
+#
+# Usage (no GPU — reward probe + eval only):
+#   python research/experiments/04_rlhf_preference_opt/run.py --stage all
+#
+# Usage (GPU node — full pipeline including DPO fine-tuning):
+#   python research/experiments/04_rlhf_preference_opt/run.py --stage all
 
 experiment:
   name: "C4_rlhf_preference_optimization"
@@ -8,19 +22,19 @@ experiment:
 
 model:
   base_model_id: "Qwen/Qwen2.5-7B-Instruct"
-  dpo_checkpoint: "research/experiments/03_contrastive_learning/checkpoints/final"
+  # Warm-start from the C3 DPO checkpoint if available; otherwise uses base model.
+  prior_checkpoint: "research/experiments/03_contrastive_learning/checkpoints/final"
   output_dir: "research/experiments/04_rlhf_preference_opt/checkpoints"
   hub_repo: "afrimentor/chioma-rlhf-v1"
 
 reward_model:
-  base_model_id: "Qwen/Qwen2.5-7B-Instruct"
-  output_dir: "research/experiments/04_rlhf_preference_opt/reward_model"
+  # Preference datasets — expanded to 50/12/10 pairs in this sprint.
   dataset: "research/datasets/splits/rlhf_train.jsonl"
   eval_dataset: "research/datasets/splits/rlhf_val.jsonl"
-  num_train_epochs: 2
-  per_device_train_batch_size: 4
-  learning_rate: 1.0e-5
-  # Reward dimensions weighted in the reward signal
+  test_dataset: "research/datasets/splits/rlhf_test.jsonl"
+  # Output path for the serialised sklearn logistic probe.
+  probe_output: "research/experiments/04_rlhf_preference_opt/reward_model/reward_probe.pkl"
+  # Per-dimension weights used to compute scalar reward from LLM-judge scores.
   reward_weights:
     persona_adherence: 0.25
     cultural_fluency: 0.20
@@ -28,23 +42,23 @@ reward_model:
     financial_accuracy: 0.20
     urgency: 0.15
 
-ppo:
-  learning_rate: 1.0e-5
-  batch_size: 16
-  mini_batch_size: 4
-  gradient_accumulation_steps: 4
-  ppo_epochs: 4
-  kl_penalty: "kl"
-  init_kl_coef: 0.2
-  target_kl: 6.0
-  horizon: 10000
-  gamma: 1.0
-  lam: 0.95
-  cliprange: 0.2
-  cliprange_value: 0.2
-  vf_coef: 0.1
-  max_new_tokens: 512
-  temperature: 0.7
+dpo:
+  # Probe-guided DPO — pairs are re-ranked by the reward probe before DPO training.
+  beta: 0.1                         # KL penalty coefficient (same as C3 for comparability)
+  loss_type: "sigmoid"              # sigmoid | hinge | ipo
+  max_length: 2048
+  max_prompt_length: 512
+  # Dataset for DPO training (converted from rlhf_train.jsonl by the runner)
+  converted_dataset: "research/experiments/04_rlhf_preference_opt/checkpoints/dpo_converted_train.jsonl"
+  converted_eval_dataset: "research/experiments/04_rlhf_preference_opt/checkpoints/dpo_converted_val.jsonl"
+
+lora:
+  r: 16
+  lora_alpha: 32
+  lora_dropout: 0.05
+  target_modules: ["q_proj", "v_proj", "k_proj", "o_proj"]
+  bias: "none"
+  task_type: "CAUSAL_LM"
 
 quantization:
   load_in_4bit: true
@@ -52,7 +66,25 @@ quantization:
   bnb_4bit_quant_type: "nf4"
   bnb_4bit_use_double_quant: true
 
+training:
+  num_train_epochs: 2
+  per_device_train_batch_size: 2
+  gradient_accumulation_steps: 8     # effective batch = 16
+  learning_rate: 5.0e-5
+  lr_scheduler_type: "cosine"
+  warmup_ratio: 0.05
+  bf16: true
+  logging_steps: 10
+  eval_steps: 50
+  save_steps: 100
+  save_total_limit: 3
+
 evaluation:
+  # Post-training scoring against the SHARED metric suite — same keys as C1/C2/C3.
+  sample_size: 6
+  eval_split: "sft_test.jsonl"
+  max_new_tokens: 512
+  temperature: 0.0           # greedy — comparison baseline must not carry sampling noise
   metrics:
     - persona_adherence
     - cultural_fluency
@@ -62,10 +94,9 @@ evaluation:
     - rouge_l
     - bert_score_f1
   compare_against: "C3_persona_contrastive_learning"
-  human_eval: true                          # flag: requires human annotators in Sprint 5
 
 mlflow:
   experiment_name: "C4_rlhf_preference_optimization"
   run_name_prefix: "c4"
   log_artifacts: true
-  log_model: true
+  log_model: false          # only log on GPU node when actual adapter is produced
