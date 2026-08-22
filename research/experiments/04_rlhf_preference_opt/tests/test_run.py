@@ -410,7 +410,7 @@ class TestRunDpo:
         runner = _load_runner()
         cfg = runner.load_config(_CONFIG_PATH)
 
-        with patch("torch.cuda.is_available", return_value=False):
+        with patch.object(runner, "_gpu_available", return_value=False):
             adapter_path, dpo_metrics = runner.run_dpo(cfg)
 
         assert adapter_path is None
@@ -420,7 +420,7 @@ class TestRunDpo:
         runner = _load_runner()
         cfg = runner.load_config(_CONFIG_PATH)
 
-        with patch("torch.cuda.is_available", return_value=False):
+        with patch.object(runner, "_gpu_available", return_value=False):
             result = runner.run_dpo(cfg)
 
         assert isinstance(result, tuple)

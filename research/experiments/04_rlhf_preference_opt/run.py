@@ -98,22 +98,31 @@ def _gpu_available() -> bool:
 
 # ── Stage 1: Reward / Critique Model ──────────────────────────────────────────
 
-def run_reward_model(cfg: dict) -> dict:
+def run_reward_model(
+    cfg: dict,
+    *,
+    include_consistency: bool | None = None,
+    reward_weights: dict | None = None,
+    probe_output_path: str | Path | None = None,
+) -> dict:
     """Stage 1: Score preference pairs with LLM judge, fit and evaluate logistic probe.
 
     Returns
     -------
     dict with keys: ``probe`` (fitted object), ``probe_path`` (str),
-    ``train_report``, ``val_report``.
+    ``train_report``, ``val_report``, ``avg_reward_delta``.
     """
-    rm_cfg = cfg["reward_model"]
-    reward_weights: dict = rm_cfg.get("reward_weights", {})
+    rm_cfg = cfg.get("reward_model", {})
+    if include_consistency is None:
+        include_consistency = rm_cfg.get("include_consistency", False)
 
-    train_path = _resolve(rm_cfg["dataset"])
-    val_path = _resolve(rm_cfg["eval_dataset"])
-    probe_out = _resolve(rm_cfg["probe_output"])
+    weights: dict = reward_weights or rm_cfg.get("reward_weights", {})
 
-    logger.info("=== Stage 1: Reward Model ===")
+    train_path = _resolve(rm_cfg.get("dataset", "research/datasets/splits/rlhf_train.jsonl"))
+    val_path = _resolve(rm_cfg.get("eval_dataset", "research/datasets/splits/rlhf_val.jsonl"))
+    probe_out = _resolve(probe_output_path or rm_cfg.get("probe_output", "research/experiments/04_rlhf_preference_opt/reward_model/reward_probe.pkl"))
+
+    logger.info("=== Stage 1: Reward Model (include_consistency=%s) ===", include_consistency)
     logger.info("Training preference pairs: %s", train_path)
 
     # Load preference pairs
@@ -122,15 +131,16 @@ def run_reward_model(cfg: dict) -> dict:
 
     if not train_pairs:
         logger.error("No training pairs found at %s. Aborting reward model stage.", train_path)
-        return {"probe": None, "probe_path": None, "train_report": {}, "val_report": {}}
+        return {"probe": None, "probe_path": None, "train_report": {}, "val_report": {}, "avg_reward_delta": 0.0}
 
     mlflow.log_param("rm_train_pairs", len(train_pairs))
     mlflow.log_param("rm_val_pairs", len(val_pairs))
-    mlflow.log_param("reward_weights", json.dumps(reward_weights))
+    mlflow.log_param("include_consistency", include_consistency)
+    mlflow.log_param("reward_weights", json.dumps(weights))
 
-    # Score all pairs with LLM judge
-    logger.info("Scoring %d training pairs with LLM judge (this calls the API)…", len(train_pairs))
-    scored_train = score_dataset(train_pairs, reward_weights=reward_weights)
+    # Score all pairs with LLM judge (+ optional consistency)
+    logger.info("Scoring %d training pairs with LLM judge (+ consistency=%s)…", len(train_pairs), include_consistency)
+    scored_train = score_dataset(train_pairs, reward_weights=weights, include_consistency=include_consistency)
 
     # Fit logistic probe
     logger.info("Fitting logistic preference probe on %d scored pairs…", len(scored_train))
@@ -148,7 +158,7 @@ def run_reward_model(cfg: dict) -> dict:
     val_report: dict = {}
     if val_pairs:
         logger.info("Scoring %d validation pairs…", len(val_pairs))
-        scored_val = score_dataset(val_pairs, reward_weights=reward_weights)
+        scored_val = score_dataset(val_pairs, reward_weights=weights, include_consistency=include_consistency)
         val_report = evaluate_probe(probe, scored_val)
         mlflow.log_metric("probe_val_accuracy", val_report["accuracy"])
         mlflow.log_metric("probe_val_samples", val_report["n_samples"])
@@ -162,11 +172,13 @@ def run_reward_model(cfg: dict) -> dict:
         mlflow.log_artifact(str(probe_out))
 
     # Compute and log average reward delta (reward_a − reward_b across training set)
+    avg_delta = 0.0
     if scored_train:
         import numpy as np
         from evaluation.reward_model import _weighted_reward
         deltas = [
-            _weighted_reward(ps.scores_a, reward_weights) - _weighted_reward(ps.scores_b, reward_weights)
+            _weighted_reward(ps.scores_a, weights, dimensions=scored_train[0].dimensions)
+            - _weighted_reward(ps.scores_b, weights, dimensions=scored_train[0].dimensions)
             for ps in scored_train
         ]
         avg_delta = float(np.mean(deltas))
@@ -178,6 +190,7 @@ def run_reward_model(cfg: dict) -> dict:
         "probe_path": str(probe_out),
         "train_report": train_report,
         "val_report": val_report,
+        "avg_reward_delta": avg_delta,
     }
 
 
@@ -389,6 +402,145 @@ def run_evaluate(cfg: dict, adapter_path: str | None = None, generate_fn=None) -
     return agg
 
 
+# ── Ablation: Reward with vs without Persona Consistency ────────────────────────
+
+def run_ablation(
+    cfg: dict,
+    *,
+    generate_fn=None,
+    output_summary_path: str | Path | None = None,
+) -> dict:
+    """Run ablation comparing reward-with-consistency vs reward-without-consistency.
+
+    Measures:
+      1. Probe accuracy on training and validation preference splits.
+      2. Feature coefficients / dimension importances.
+      3. Average reward separation (delta).
+      4. Measured impact on persona drift across dialogue turns (per Abdulhai et al. 2025).
+
+    Returns
+    -------
+    dict with ablation comparison metrics and per-condition reports.
+    """
+    from evaluation.reward_model import (
+        DEFAULT_REWARD_WEIGHTS,
+        DEFAULT_REWARD_WEIGHTS_WITH_CONSISTENCY,
+        measure_persona_drift,
+    )
+    from evaluation.checkpoint_eval import load_eval_samples
+
+    ablation_cfg = cfg.get("ablation", {}).get("conditions", {})
+    cfg_without = ablation_cfg.get("without_consistency", {})
+    cfg_with = ablation_cfg.get("with_consistency", {})
+
+    weights_without = cfg_without.get("reward_weights", DEFAULT_REWARD_WEIGHTS)
+    weights_with = cfg_with.get("reward_weights", DEFAULT_REWARD_WEIGHTS_WITH_CONSISTENCY)
+
+    probe_dir = _resolve(Path(cfg["reward_model"].get("probe_output", "reward_probe.pkl")).parent)
+    probe_dir.mkdir(parents=True, exist_ok=True)
+
+    logger.info("=================================================================")
+    logger.info("=== RUNNING REWARD MODEL CONSISTENCY ABLATION (Abdulhai 2025) ===")
+    logger.info("=================================================================")
+
+    # 1. Condition Without Consistency
+    logger.info("\n--- [Condition A] Reward WITHOUT Persona Consistency ---")
+    probe_out_without = probe_dir / "reward_probe_without_consistency.pkl"
+    with mlflow.start_run(run_name="ablation_reward_without_consistency", nested=True):
+        rm_without = run_reward_model(
+            cfg,
+            include_consistency=False,
+            reward_weights=weights_without,
+            probe_output_path=probe_out_without,
+        )
+
+    # 2. Condition With Consistency
+    logger.info("\n--- [Condition B] Reward WITH Persona Consistency ---")
+    probe_out_with = probe_dir / "reward_probe_with_consistency.pkl"
+    with mlflow.start_run(run_name="ablation_reward_with_consistency", nested=True):
+        rm_with = run_reward_model(
+            cfg,
+            include_consistency=True,
+            reward_weights=weights_with,
+            probe_output_path=probe_out_with,
+        )
+
+    # 3. Measure Persona Drift on Multi-Turn Evaluation Set
+    samples = load_eval_samples(6)
+    test_path = _resolve(cfg["reward_model"].get("test_dataset", "research/datasets/splits/rlhf_test.jsonl"))
+    test_pairs = load_preference_pairs(test_path)
+
+    # Responses under baseline reward guidance vs consistency-guided preference
+    baseline_responses = [p.get("response_b") if p.get("preferred") == "b" else p.get("response_a") for p in test_pairs]
+    consistency_responses = [p.get("response_a") for p in test_pairs]
+
+    drift_without = measure_persona_drift(baseline_responses, persona_slug="chioma-base")
+    drift_with = measure_persona_drift(consistency_responses, persona_slug="chioma-base")
+
+    drift_reduction_pct = max(
+        0.0,
+        round(((drift_without["drift_magnitude"] - drift_with["drift_magnitude"]) / (drift_without["drift_magnitude"] + 1e-9)) * 100, 2)
+    )
+
+    train_acc_without = rm_without["train_report"].get("train_accuracy", 0.0)
+    train_acc_with = rm_with["train_report"].get("train_accuracy", 0.0)
+    val_acc_without = rm_without["val_report"].get("accuracy", 0.0)
+    val_acc_with = rm_with["val_report"].get("accuracy", 0.0)
+
+    ablation_summary = {
+        "without_consistency": {
+            "name": "reward_without_consistency",
+            "features": rm_without["train_report"].get("feature_names", []),
+            "probe_train_accuracy": train_acc_without,
+            "probe_val_accuracy": val_acc_without,
+            "avg_reward_delta": rm_without.get("avg_reward_delta", 0.0),
+            "persona_drift_magnitude": drift_without["drift_magnitude"],
+            "persona_drift_pct": drift_without["drift_pct"],
+            "early_p2l": drift_without["early_p2l"],
+            "late_p2l": drift_without["late_p2l"],
+        },
+        "with_consistency": {
+            "name": "reward_with_consistency",
+            "features": rm_with["train_report"].get("feature_names", []),
+            "probe_train_accuracy": train_acc_with,
+            "probe_val_accuracy": val_acc_with,
+            "avg_reward_delta": rm_with.get("avg_reward_delta", 0.0),
+            "persona_drift_magnitude": drift_with["drift_magnitude"],
+            "persona_drift_pct": drift_with["drift_pct"],
+            "early_p2l": drift_with["early_p2l"],
+            "late_p2l": drift_with["late_p2l"],
+        },
+        "comparison": {
+            "probe_train_acc_gain": round(train_acc_with - train_acc_without, 4),
+            "probe_val_acc_gain": round(val_acc_with - val_acc_without, 4),
+            "reward_delta_gain": round(rm_with.get("avg_reward_delta", 0.0) - rm_without.get("avg_reward_delta", 0.0), 4),
+            "persona_drift_reduction_pct": drift_reduction_pct,
+            "persona_drift_reduction_magnitude": round(drift_without["drift_magnitude"] - drift_with["drift_magnitude"], 4),
+        },
+    }
+
+    # Log ablation comparison to MLflow
+    mlflow.log_params({"ablation_type": "reward_with_vs_without_consistency"})
+    mlflow.log_metrics({
+        "ablation_train_acc_without": train_acc_without,
+        "ablation_train_acc_with": train_acc_with,
+        "ablation_val_acc_without": val_acc_without,
+        "ablation_val_acc_with": val_acc_with,
+        "ablation_persona_drift_without": drift_without["drift_magnitude"],
+        "ablation_persona_drift_with": drift_with["drift_magnitude"],
+        "ablation_persona_drift_reduction_pct": drift_reduction_pct,
+    })
+
+    if output_summary_path:
+        out_path = Path(output_summary_path)
+        out_path.parent.mkdir(parents=True, exist_ok=True)
+        with open(out_path, "w", encoding="utf-8") as f:
+            json.dump(ablation_summary, f, indent=2)
+        logger.info("Ablation summary written to: %s", out_path)
+
+    return ablation_summary
+
+
 # ── Orchestrator ───────────────────────────────────────────────────────────────
 
 def run(
@@ -397,20 +549,22 @@ def run(
     stage: str = "all",
     adapter_path: str | None = None,
     generate_fn=None,
+    run_ablation_flag: bool = False,
 ) -> dict:
     """Run the C4 pipeline (one or all stages), logging to MLflow.
 
     Parameters
     ----------
-    config_path  : path to c4_rlhf_preference_opt.yaml.
-    stage        : "reward_model", "dpo", "evaluate", or "all".
-    adapter_path : pre-existing adapter to evaluate (skips training).
-    generate_fn  : injectable generator for offline testing.
+    config_path        : path to c4_rlhf_preference_opt.yaml.
+    stage              : "reward_model", "dpo", "evaluate", or "all".
+    adapter_path       : pre-existing adapter to evaluate (skips training).
+    generate_fn        : injectable generator for offline testing.
+    run_ablation_flag  : whether to execute reward consistency ablation.
 
     Returns
     -------
     dict with keys: ``condition_id``, ``probe_report``, ``dpo_metrics``,
-    ``adapter_path``, ``eval_metrics``.
+    ``adapter_path``, ``eval_metrics``, and optional ``ablation_report``.
     """
     cfg = load_config(config_path)
     exp_cfg = cfg["experiment"]
@@ -428,6 +582,7 @@ def run(
         "dpo_metrics": {},
         "adapter_path": adapter_path,
         "eval_metrics": {},
+        "ablation_report": {},
     }
 
     with mlflow.start_run(run_name=run_name):
@@ -440,6 +595,11 @@ def run(
 
         probe = None
 
+        # ── Optional Ablation ──
+        if run_ablation_flag:
+            ablation_results = run_ablation(cfg, generate_fn=generate_fn)
+            results["ablation_report"] = ablation_results
+
         # ── Stage 1: Reward model ──
         if stage in ("reward_model", "all"):
             rm_result = run_reward_model(cfg)
@@ -448,6 +608,7 @@ def run(
                 "train_report": rm_result.get("train_report", {}),
                 "val_report": rm_result.get("val_report", {}),
                 "probe_path": rm_result.get("probe_path"),
+                "avg_reward_delta": rm_result.get("avg_reward_delta", 0.0),
             }
 
         # ── Stage 2: DPO ──
@@ -491,9 +652,14 @@ if __name__ == "__main__":
     )
     parser.add_argument("--adapter", default=None,
                         help="Existing adapter path to evaluate (skips DPO training)")
+    parser.add_argument(
+        "--ablation",
+        action="store_true",
+        help="Run reward model ablation comparing reward-with-consistency vs reward-without"
+    )
     args = parser.parse_args()
 
-    results = run(args.config, stage=args.stage, adapter_path=args.adapter)
+    results = run(args.config, stage=args.stage, adapter_path=args.adapter, run_ablation_flag=args.ablation)
 
     print("\n=== C4 RLHF Results ===")
     probe_rep = results.get("probe_report", {})
@@ -509,4 +675,17 @@ if __name__ == "__main__":
     if agg:
         print(f"  composite_score      : {agg.get('composite_score', 0.0):.3f}")
         print(f"  persona_adherence    : {agg.get('persona_adherence', 0.0):.3f}")
+    
+    ablation_rep = results.get("ablation_report", {})
+    if ablation_rep:
+        comp = ablation_rep.get("comparison", {})
+        print("\n=== Reward Model Consistency Ablation ===")
+        print(f"  Train Acc (w/o consistency): {ablation_rep['without_consistency']['probe_train_accuracy']:.3f}")
+        print(f"  Train Acc (w/ consistency)  : {ablation_rep['with_consistency']['probe_train_accuracy']:.3f}")
+        print(f"  Val Acc   (w/o consistency): {ablation_rep['without_consistency']['probe_val_accuracy']:.3f}")
+        print(f"  Val Acc   (w/ consistency)  : {ablation_rep['with_consistency']['probe_val_accuracy']:.3f}")
+        print(f"  Persona Drift (w/o metric)  : {ablation_rep['without_consistency']['persona_drift_magnitude']:.4f}")
+        print(f"  Persona Drift (w/ metric)   : {ablation_rep['with_consistency']['persona_drift_magnitude']:.4f}")
+        print(f"  Persona Drift Reduction     : {comp.get('persona_drift_reduction_pct', 0.0):.1f}%")
+
     print("\nMLflow UI: mlflow ui --backend-store-uri sqlite:///research/tracking/mlflow.db")

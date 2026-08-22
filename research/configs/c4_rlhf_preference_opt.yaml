@@ -34,13 +34,43 @@ reward_model:
   test_dataset: "research/datasets/splits/rlhf_test.jsonl"
   # Output path for the serialised sklearn logistic probe.
   probe_output: "research/experiments/04_rlhf_preference_opt/reward_model/reward_probe.pkl"
+  # Automatic persona-consistency metrics integration (Abdulhai et al. 2025)
+  include_consistency: true
   # Per-dimension weights used to compute scalar reward from LLM-judge scores.
   reward_weights:
-    persona_adherence: 0.25
-    cultural_fluency: 0.20
-    anti_dependency: 0.20
-    financial_accuracy: 0.20
+    persona_adherence: 0.20
+    cultural_fluency: 0.15
+    anti_dependency: 0.15
+    financial_accuracy: 0.15
     urgency: 0.15
+    prompt_to_line: 0.08
+    line_to_line: 0.06
+    qa_consistency: 0.06
+
+ablation:
+  enabled: true
+  conditions:
+    without_consistency:
+      name: "reward_without_consistency"
+      include_consistency: false
+      reward_weights:
+        persona_adherence: 0.25
+        cultural_fluency: 0.20
+        anti_dependency: 0.20
+        financial_accuracy: 0.20
+        urgency: 0.15
+    with_consistency:
+      name: "reward_with_consistency"
+      include_consistency: true
+      reward_weights:
+        persona_adherence: 0.20
+        cultural_fluency: 0.15
+        anti_dependency: 0.15
+        financial_accuracy: 0.15
+        urgency: 0.15
+        prompt_to_line: 0.08
+        line_to_line: 0.06
+        qa_consistency: 0.06
 
 dpo:
   # Probe-guided DPO — pairs are re-ranked by the reward probe before DPO training.
