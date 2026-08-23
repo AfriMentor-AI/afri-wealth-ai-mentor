@@ -126,12 +126,18 @@ export interface DriftAlert {
 }
 
 export interface AuditSession {
+  id: string;
   session_id: string;
   persona_id: string;
   primary_intent: string | null;
   prompt_context: string | null;
   consistency_delta_pct: number | null;
   aggregate: number;
+  // Card C4.2 — human-review flag. A null review_status means "not flagged";
+  // review_reason records which arm(s) fired (below_floor | drift | both).
+  review_status: string | null;
+  review_reason: string | null;
+  reviewed_at: string | null;
   scored_at: string | null;
 }
 
@@ -175,8 +181,13 @@ export async function acknowledgeDriftAlert(id: string): Promise<void> {
   if (!res.ok) throw new Error(`acknowledgeDriftAlert failed: ${res.status}`);
 }
 
-export async function fetchAuditSessions(minAbsDeltaPct?: number): Promise<AuditSession[]> {
-  const qs = minAbsDeltaPct != null ? `?min_abs_delta_pct=${minAbsDeltaPct}` : "";
+export async function fetchAuditSessions(
+  opts?: { minAbsDeltaPct?: number; flaggedOnly?: boolean },
+): Promise<AuditSession[]> {
+  const params = new URLSearchParams();
+  if (opts?.minAbsDeltaPct != null) params.set("min_abs_delta_pct", String(opts.minAbsDeltaPct));
+  if (opts?.flaggedOnly) params.set("flagged_only", "true");
+  const qs = params.toString() ? `?${params.toString()}` : "";
   const res = await apiFetch(`/api/v1/research/audit-sessions${qs}`);
   if (!res.ok) throw new Error(`fetchAuditSessions failed: ${res.status}`);
   return (await res.json()).sessions;
@@ -195,6 +206,28 @@ export async function triggerConsistencyRun(): Promise<Record<string, unknown>> 
   const res = await apiFetch("/api/v1/research/consistency/run", { method: "POST" });
   if (!res.ok) throw new Error(`triggerConsistencyRun failed: ${res.status}`);
   return res.json();
+}
+
+export interface ManualAuditResult {
+  run: Record<string, unknown>;
+  sessions: AuditSession[];
+}
+
+/** Card C4.2 — "New Manual Audit". Re-scores the current session sample on
+ * demand and returns the run summary plus that run's freshly-scored (and
+ * auto-flagged) rows. Admin-gated; the bearer token rides along via apiFetch. */
+export async function triggerManualAudit(sampleSize?: number): Promise<ManualAuditResult> {
+  const qs = sampleSize != null ? `?sample_size=${sampleSize}` : "";
+  const res = await apiFetch(`/api/v1/research/audits${qs}`, { method: "POST" });
+  if (!res.ok) throw new Error(`triggerManualAudit failed: ${res.status}`);
+  return res.json();
+}
+
+/** Card C4.2 — "Mark reviewed" on a flagged session, keyed by its audit row id
+ * (ConsistencyRun primary key). Closes the human-review loop. */
+export async function reviewAuditSession(id: string): Promise<void> {
+  const res = await apiFetch(`/api/v1/research/audit-sessions/${id}/review`, { method: "POST" });
+  if (!res.ok) throw new Error(`reviewAuditSession failed: ${res.status}`);
 }
 
 // ── Personas (persona-prompt-service) ───────────────────────────────────────

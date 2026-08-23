@@ -42,7 +42,7 @@ from sqlalchemy.orm import Session
 from .config import get_settings
 from .consistency_job import run_consistency_job
 from .db.session import engine, get_db
-from .models import Base, ConsistencyRun, DriftAlert, SessionMetric
+from .models import Base, ConsistencyRun, DriftAlert, ReviewStatus, SessionMetric
 from .observability import instrument
 from .rolling_aggregate import compute_rolling_24h_aggregates
 
@@ -64,14 +64,40 @@ instrument(app, SERVICE_NAME)
 _scheduler: BackgroundScheduler | None = None
 
 
+# Columns added to consistency_runs after its original C3.2 creation, in the
+# order introduced (card C4.1 alignment scores, then card C4.2 review lifecycle).
+# Each SQL type string MUST equal what Base.metadata.create_all emits for the ORM
+# column, so a Postgres DB migrated via ADD COLUMN ends up identical to a fresh
+# one create_all builds:
+#   Float                   -> double precision
+#   String(20) / String(32) -> VARCHAR(20) / VARCHAR(32)
+#   DateTime(timezone=True) -> TIMESTAMP WITH TIME ZONE
+_CONSISTENCY_ADDED_COLUMNS: tuple[tuple[str, str], ...] = (
+    ("trait_fit_cosine", "double precision"),
+    ("composite_score", "double precision"),
+    ("tone_match_score", "double precision"),
+    ("fact_retrieval_score", "double precision"),
+    ("review_status", "VARCHAR(20)"),
+    ("review_reason", "VARCHAR(32)"),
+    ("reviewed_at", "TIMESTAMP WITH TIME ZONE"),
+)
+
+
 def _ensure_consistency_columns() -> None:
-    """Additively add the card C4.1 columns to an existing consistency_runs table.
+    """Additively add post-C3.2 columns to an existing consistency_runs table.
 
     This service has no Alembic; startup relies on ``Base.metadata.create_all``,
-    which creates a brand-new table with the new columns but never ALTERs a table
+    which creates a brand-new table with every column but never ALTERs a table
     that already exists. On the already-provisioned pilot ``svc_research`` DB the
-    ``trait_fit_cosine``/``composite_score`` columns would therefore be missing.
+    columns added after the table's original creation — card C4.1's alignment
+    scores and card C4.2's review-lifecycle columns — would therefore be missing.
     ``ADD COLUMN IF NOT EXISTS`` is idempotent and a no-op once they exist.
+
+    Column names and types come only from the hardcoded
+    ``_CONSISTENCY_ADDED_COLUMNS`` table above (never request input), so
+    interpolating them into the DDL text is injection-safe; each type string is
+    kept equal to the ORM's ``create_all`` output so migrated and fresh Postgres
+    DBs cannot diverge.
 
     Postgres only: SQLite (tests, local CLI) gets the columns from ``create_all``
     on a fresh table. Wrapped so a locked or absent table logs a warning rather
@@ -81,18 +107,12 @@ def _ensure_consistency_columns() -> None:
         return
     try:
         with engine.begin() as conn:
-            cols = (
-                "trait_fit_cosine",
-                "composite_score",
-                "tone_match_score",
-                "fact_retrieval_score",
-            )
-            for col in cols:
+            for name, sql_type in _CONSISTENCY_ADDED_COLUMNS:
                 conn.exec_driver_sql(
-                    f"ALTER TABLE consistency_runs ADD COLUMN IF NOT EXISTS {col} double precision"
+                    f"ALTER TABLE consistency_runs ADD COLUMN IF NOT EXISTS {name} {sql_type}"
                 )
     except Exception as exc:  # pragma: no cover - defensive: never block startup
-        logger.warning("Could not ensure C4.1 consistency columns: %s", exc)
+        logger.warning("Could not ensure consistency_runs columns: %s", exc)
 
 
 @app.on_event("startup")
@@ -481,6 +501,29 @@ def trigger_consistency_run(_admin: None = Depends(_require_admin)) -> dict:
     return run_consistency_job(sample_size=settings.consistency_sample_size)
 
 
+def _audit_session_dict(r: ConsistencyRun) -> dict:
+    """Serialize one ConsistencyRun for the audit-session views (cards O4.1/C4.2).
+
+    Shared by the listing endpoint and the manual-audit trigger so their row shape
+    can never drift. ``session_id`` stays the (non-unique) conversation id the
+    O4.1 table already exposed; ``id`` is the row PK the review endpoint keys on.
+    ``review_status``/``review_reason``/``reviewed_at`` carry the card C4.2 flag.
+    """
+    return {
+        "id": r.id,
+        "session_id": r.conversation_id,
+        "persona_id": r.persona_id,
+        "primary_intent": r.primary_intent,
+        "prompt_context": r.prompt_context,
+        "consistency_delta_pct": r.consistency_delta_pct,
+        "aggregate": r.aggregate,
+        "review_status": r.review_status,
+        "review_reason": r.review_reason,
+        "reviewed_at": r.reviewed_at.isoformat() if r.reviewed_at else None,
+        "scored_at": r.scored_at.isoformat() if r.scored_at else None,
+    }
+
+
 @app.get("/api/v1/research/audit-sessions", tags=["research-console"])
 def get_audit_sessions(
     limit: int = Query(50, ge=1, le=500),
@@ -488,13 +531,19 @@ def get_audit_sessions(
     min_abs_delta_pct: float | None = Query(
         None, ge=0, description="Only sessions whose |consistency_delta_pct| is at least this"
     ),
+    flagged_only: bool = Query(
+        False, description="Only sessions auto-flagged for review (card C4.2)"
+    ),
     db: Session = Depends(get_db),
     _admin: None = Depends(_require_admin),
 ) -> dict:
-    """Recent Conversations (Persona Audit) table — Research Console (card O4.1).
+    """Recent Conversations (Persona Audit) table — Research Console (cards O4.1/C4.2).
 
-    Session id, primary intent, prompt context, and consistency delta for the
-    most recently scored sessions, newest first.
+    Session id, primary intent, prompt context, consistency delta, and review flag
+    for the most recently scored sessions, newest first. ``flagged_only`` surfaces
+    just the sessions auto-flagged for human review — the "Filter by Drift" control
+    (card C4.2, AC2); it returns both pending and already-reviewed flagged rows
+    (any non-null ``review_status``), the literal "flagged" reading.
     """
     query = db.query(ConsistencyRun).order_by(ConsistencyRun.scored_at.desc())
     if persona_id:
@@ -504,21 +553,76 @@ def get_audit_sessions(
             ConsistencyRun.consistency_delta_pct.isnot(None),
             func.abs(ConsistencyRun.consistency_delta_pct) >= min_abs_delta_pct,
         )
+    if flagged_only:
+        query = query.filter(ConsistencyRun.review_status.isnot(None))
 
     rows = query.limit(limit).all()
+    return {"sessions": [_audit_session_dict(r) for r in rows]}
+
+
+@app.post("/api/v1/research/audits", tags=["research-console"])
+def trigger_manual_audit(
+    sample_size: int | None = Query(
+        None, ge=1, le=500, description="Sessions to sample; defaults to CONSISTENCY_SAMPLE_SIZE"
+    ),
+    db: Session = Depends(get_db),
+    _admin: None = Depends(_require_admin),
+) -> dict:
+    """"New Manual Audit" — score the current session sample on demand and return
+    the freshly-scored rows (card C4.2, AC1).
+
+    Re-runs the same scoring engine the scheduler uses (``run_consistency_job``),
+    so auto-flagging for review happens identically to a scheduled run, then
+    returns that run's rows with their flags applied. The job opens and commits
+    its own DB session before returning; this handler then reads the committed
+    rows through the request-scoped ``db`` — safe because the read happens strictly
+    after the job commits, and on Postgres READ COMMITTED the committed run is
+    visible regardless. Lexical scoring over a small sample is fast enough to run
+    inline in the request.
+    """
+    settings = get_settings()
+    summary = run_consistency_job(sample_size=sample_size or settings.consistency_sample_size)
+    # no_data: the sampler found nothing to score — no rows carry this run_id, and
+    # the summary omits mean_aggregate/drift_alerts. Return an empty audit, not 500.
+    if summary.get("status") == "no_data":
+        return {"run": summary, "sessions": []}
+
+    rows = (
+        db.query(ConsistencyRun)
+        .filter(ConsistencyRun.job_run_id == summary["run_id"])
+        .order_by(ConsistencyRun.scored_at.desc())
+        .all()
+    )
+    return {"run": summary, "sessions": [_audit_session_dict(r) for r in rows]}
+
+
+@app.post("/api/v1/research/audit-sessions/{audit_id}/review", tags=["research-console"])
+def review_audit_session(
+    audit_id: str,
+    db: Session = Depends(get_db),
+    _admin: None = Depends(_require_admin),
+) -> dict:
+    """"Mark reviewed" — close the human-review loop on a flagged session (card C4.2).
+
+    Mirrors ``acknowledge_drift_alert``: keyed by the ConsistencyRun ``id`` PK
+    (``conversation_id`` is not unique — the same conversation is re-scored across
+    runs), sets ``review_status`` to 'reviewed' and stamps ``reviewed_at`` while
+    preserving ``review_reason`` (why it was flagged stays on the record). 404 if
+    the id is unknown.
+    """
+    run = db.query(ConsistencyRun).filter(ConsistencyRun.id == audit_id).first()
+    if run is None:
+        raise HTTPException(status_code=404, detail="Audit session not found")
+
+    run.review_status = ReviewStatus.reviewed.value
+    run.reviewed_at = datetime.now(UTC)
+    db.commit()
+    db.refresh(run)
     return {
-        "sessions": [
-            {
-                "session_id": r.conversation_id,
-                "persona_id": r.persona_id,
-                "primary_intent": r.primary_intent,
-                "prompt_context": r.prompt_context,
-                "consistency_delta_pct": r.consistency_delta_pct,
-                "aggregate": r.aggregate,
-                "scored_at": r.scored_at.isoformat() if r.scored_at else None,
-            }
-            for r in rows
-        ]
+        "id": run.id,
+        "review_status": run.review_status,
+        "review_reason": run.review_reason,
+        "reviewed_at": run.reviewed_at.isoformat() if run.reviewed_at else None,
     }
 
 

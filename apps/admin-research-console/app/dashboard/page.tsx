@@ -11,6 +11,8 @@ import {
   fetchPersonas,
   exportPilotDataCsv,
   triggerConsistencyRun,
+  triggerManualAudit,
+  reviewAuditSession,
   type DriftAlert,
   type AuditSession,
   type ConsistencyMetrics,
@@ -66,12 +68,17 @@ function DashboardScreen() {
   const [personas, setPersonas] = useState<PersonaMeta[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+  // Card C4.2 — "Filter by Drift" toggle and "New Manual Audit" in-flight flag.
+  const [flaggedOnly, setFlaggedOnly] = useState(false);
+  const [auditing, setAuditing] = useState(false);
 
-  async function load() {
+  // Reads flaggedOnly through a param (not the closure) so the poll below can be
+  // re-armed on toggle and always fetch the currently-selected filter.
+  async function load(flagged = flaggedOnly) {
     try {
       const [a, s, m, p] = await Promise.all([
         fetchDriftAlerts(),
-        fetchAuditSessions(),
+        fetchAuditSessions({ flaggedOnly: flagged }),
         fetchConsistencyMetrics(),
         fetchPersonas(),
       ]);
@@ -89,10 +96,12 @@ function DashboardScreen() {
     load();
     // Card C4.1 — poll so the aggregate/alignment tiles stay live as the
     // interval scheduler scores new sessions. 30s sits well under the backend's
-    // ~2-min recompute and is cheap (four small GETs).
+    // ~2-min recompute and is cheap (four small GETs). Re-armed when the
+    // "Filter by Drift" toggle flips (card C4.2) so the poll keeps the filter.
     const id = setInterval(load, 30_000);
     return () => clearInterval(id);
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [flaggedOnly]);
 
   async function handleAcknowledge(id: string) {
     await acknowledgeDriftAlert(id);
@@ -111,6 +120,30 @@ function DashboardScreen() {
     }
   }
 
+  // Card C4.2 — "New Manual Audit": re-score the sample on demand, auto-flagging
+  // sessions for review, then reload so the freshly-flagged rows show up.
+  async function handleNewManualAudit() {
+    setAuditing(true);
+    try {
+      await triggerManualAudit();
+      await load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Manual audit failed");
+    } finally {
+      setAuditing(false);
+    }
+  }
+
+  // Card C4.2 — "Mark reviewed": close the human-review loop on a flagged row.
+  async function handleMarkReviewed(id: string) {
+    try {
+      await reviewAuditSession(id);
+      await load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Mark reviewed failed");
+    }
+  }
+
   async function handleExportPilotData() {
     try {
       await exportPilotDataCsv();
@@ -126,6 +159,13 @@ function DashboardScreen() {
         <div className="mb-6 flex items-center justify-between">
           <h1 className="text-xl font-semibold">Persona Consistency Dashboard</h1>
           <div className="flex items-center gap-2">
+            <button
+              onClick={handleNewManualAudit}
+              disabled={auditing}
+              className="rounded border border-accent px-3 py-2 text-sm text-accent hover:bg-accent/10 disabled:opacity-50"
+            >
+              {auditing ? "Auditing…" : "New Manual Audit"}
+            </button>
             <button
               onClick={handleRefreshNow}
               disabled={refreshing}
@@ -213,9 +253,20 @@ function DashboardScreen() {
         </div>
 
         <div>
-          <h2 className="mb-3 text-sm font-semibold text-on-surface-dim">
-            Recent conversations (persona audit)
-          </h2>
+          <div className="mb-3 flex items-center justify-between">
+            <h2 className="text-sm font-semibold text-on-surface-dim">
+              Recent conversations (persona audit)
+            </h2>
+            <label className="flex cursor-pointer items-center gap-2 text-xs text-on-surface-dim">
+              <input
+                type="checkbox"
+                checked={flaggedOnly}
+                onChange={(e) => setFlaggedOnly(e.target.checked)}
+                className="h-3.5 w-3.5 accent-accent"
+              />
+              Filter by Drift
+            </label>
+          </div>
           <div className="overflow-x-auto rounded-md border border-border">
             <table className="w-full text-left text-sm">
               <thead className="bg-surface-raised text-xs uppercase text-on-surface-dim">
@@ -225,11 +276,12 @@ function DashboardScreen() {
                   <th className="px-3 py-2">Primary intent</th>
                   <th className="px-3 py-2">Prompt context</th>
                   <th className="px-3 py-2">Consistency Δ</th>
+                  <th className="px-3 py-2">Review</th>
                 </tr>
               </thead>
               <tbody>
                 {sessions.map((s) => (
-                  <tr key={s.session_id} className="border-t border-border">
+                  <tr key={s.id} className="border-t border-border">
                     <td className="px-3 py-2 font-mono text-xs">{s.session_id.slice(0, 8)}</td>
                     <td className="px-3 py-2 text-on-surface-dim">{s.persona_id}</td>
                     <td className="px-3 py-2">{s.primary_intent || "—"}</td>
@@ -245,12 +297,36 @@ function DashboardScreen() {
                     >
                       {pct(s.consistency_delta_pct)}
                     </td>
+                    <td className="px-3 py-2">
+                      {s.review_status === "pending_review" ? (
+                        <div className="flex items-center gap-2">
+                          <span
+                            className="rounded bg-danger/20 px-2 py-0.5 text-xs text-danger"
+                            title={s.review_reason || ""}
+                          >
+                            Pending{s.review_reason ? ` · ${s.review_reason}` : ""}
+                          </span>
+                          <button
+                            onClick={() => handleMarkReviewed(s.id)}
+                            className="shrink-0 rounded border border-border px-2 py-1 text-xs text-on-surface-dim hover:text-on-surface"
+                          >
+                            Mark reviewed
+                          </button>
+                        </div>
+                      ) : s.review_status === "reviewed" ? (
+                        <span className="text-xs text-on-surface-dim" title={s.review_reason || ""}>
+                          Reviewed{s.review_reason ? ` · ${s.review_reason}` : ""}
+                        </span>
+                      ) : (
+                        <span className="text-on-surface-dim">—</span>
+                      )}
+                    </td>
                   </tr>
                 ))}
                 {sessions.length === 0 && (
                   <tr>
-                    <td colSpan={5} className="px-3 py-6 text-center text-on-surface-dim">
-                      No scored sessions yet.
+                    <td colSpan={6} className="px-3 py-6 text-center text-on-surface-dim">
+                      {flaggedOnly ? "No flagged sessions." : "No scored sessions yet."}
                     </td>
                   </tr>
                 )}
