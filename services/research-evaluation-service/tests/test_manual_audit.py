@@ -246,6 +246,7 @@ def test_job_flags_drift_only_when_above_floor():
          patch("app.consistency_job.score_dialogue", return_value=fake_report(0.75)):
         summary = run_consistency_job(sample_size=1)
 
+    assert summary["flagged_count"] == 1
     db = Session()
     run = db.query(ConsistencyRun).filter_by(conversation_id="conv-slip").first()
     assert run.aggregate >= FLOOR
