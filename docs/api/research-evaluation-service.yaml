@@ -49,27 +49,130 @@ paths:
     post:
       tags:
       - research
-      summary: Trigger an audit
+      summary: Trigger a manual audit (New Manual Audit)
+      description: >-
+        Re-scores the current sample of active/idle sessions on demand (card
+        C4.2), applying the same auto-flagging for human review that the
+        scheduled job applies, then returns that run's freshly-scored rows.
+        Admin, researcher, or lead_architect role required.
+      parameters:
+      - name: sample_size
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 500
+        description: Sessions to sample; defaults to CONSISTENCY_SAMPLE_SIZE.
       responses:
-        '201':
-          description: success
+        '200':
+          description: Audit run summary plus the run's scored sessions.
           content:
             application/json:
               schema:
-                type: object
+                $ref: '#/components/schemas/ManualAuditResponse'
         '401':
           description: unauthorized
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-      description: 'TODO: request/response bodies finalised in later sprint.'
-      requestBody:
+        '403':
+          description: forbidden — console role required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/v1/research/audit-sessions:
+    get:
+      tags:
+      - research
+      summary: List recently scored sessions (Recent Conversations / Persona Audit)
+      description: >-
+        Recently scored sessions, newest first (cards O4.1/C4.2). Set
+        flagged_only=true for the "Filter by Drift" control — only sessions
+        auto-flagged for human review (any non-null review_status). Admin,
+        researcher, or lead_architect role required.
+      parameters:
+      - name: limit
+        in: query
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 500
+          default: 50
+      - name: persona_id
+        in: query
+        schema:
+          type: string
+        description: Filter to one persona.
+      - name: min_abs_delta_pct
+        in: query
+        schema:
+          type: number
+          minimum: 0
+        description: Only sessions whose |consistency_delta_pct| is at least this.
+      - name: flagged_only
+        in: query
+        schema:
+          type: boolean
+          default: false
+        description: Only sessions auto-flagged for review (card C4.2).
+      responses:
+        '200':
+          description: Scored sessions.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  sessions:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/AuditSession'
+        '403':
+          description: forbidden — console role required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/v1/research/audit-sessions/{audit_id}/review:
+    post:
+      tags:
+      - research
+      summary: Mark a flagged session reviewed (Mark reviewed)
+      description: >-
+        Closes the human-review loop on a flagged session (card C4.2): sets
+        review_status to 'reviewed' and stamps reviewed_at, preserving
+        review_reason. Keyed by the ConsistencyRun id (primary key), since a
+        conversation is re-scored across runs and its conversation_id is not
+        unique. Admin, researcher, or lead_architect role required.
+      parameters:
+      - name: audit_id
+        in: path
         required: true
-        content:
-          application/json:
-            schema:
-              type: object
+        schema:
+          type: string
+        description: ConsistencyRun primary key (the audit-session row id).
+      responses:
+        '200':
+          description: The updated review-lifecycle fields.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReviewResponse'
+        '403':
+          description: forbidden — console role required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: audit session not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   /api/v1/research/drift:
     get:
       tags:
@@ -116,3 +219,125 @@ components:
           type: string
       required:
       - detail
+    AuditSession:
+      type: object
+      description: One scored session row for the Research Console audit table.
+      properties:
+        id:
+          type: string
+          description: ConsistencyRun primary key; the key for the /review endpoint.
+        session_id:
+          type: string
+          description: Conversation id (not unique across scoring runs).
+        persona_id:
+          type:
+          - string
+          - 'null'
+        primary_intent:
+          type:
+          - string
+          - 'null'
+        prompt_context:
+          type:
+          - string
+          - 'null'
+        consistency_delta_pct:
+          type:
+          - number
+          - 'null'
+          description: >-
+            Percent deviation from the persona rolling baseline; null when no
+            baseline existed yet (e.g. the persona's first-ever run).
+        aggregate:
+          type: number
+        review_status:
+          type:
+          - string
+          - 'null'
+          enum:
+          - pending_review
+          - reviewed
+          - null
+          description: >-
+            Human-review lifecycle (card C4.2); null when the session was not
+            flagged.
+        review_reason:
+          type:
+          - string
+          - 'null'
+          description: >-
+            Which arm(s) flagged the session: below_floor, drift, or
+            below_floor+drift.
+        reviewed_at:
+          type:
+          - string
+          - 'null'
+          format: date-time
+        scored_at:
+          type:
+          - string
+          - 'null'
+          format: date-time
+      required:
+      - id
+      - session_id
+      - aggregate
+    AuditRunSummary:
+      type: object
+      description: >-
+        The run summary returned by the scoring job. mean_aggregate/flagged_count
+        are present only when status is 'completed'.
+      properties:
+        run_id:
+          type: string
+        session_count:
+          type: integer
+        mean_aggregate:
+          type: number
+        flagged_count:
+          type: integer
+          description: Sessions auto-flagged for review in this run (card C4.2).
+        status:
+          type: string
+          enum:
+          - completed
+          - no_data
+        drift_alerts:
+          type: array
+          items:
+            type: string
+      required:
+      - run_id
+      - session_count
+      - status
+    ManualAuditResponse:
+      type: object
+      properties:
+        run:
+          $ref: '#/components/schemas/AuditRunSummary'
+        sessions:
+          type: array
+          items:
+            $ref: '#/components/schemas/AuditSession'
+      required:
+      - run
+      - sessions
+    ReviewResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        review_status:
+          type: string
+          enum:
+          - reviewed
+        review_reason:
+          type:
+          - string
+          - 'null'
+        reviewed_at:
+          type: string
+          format: date-time
+      required:
+      - id
+      - review_status

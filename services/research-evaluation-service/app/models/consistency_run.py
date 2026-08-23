@@ -3,11 +3,24 @@ from __future__ import annotations
 
 import uuid
 from datetime import UTC, datetime
+from enum import Enum
 
 from sqlalchemy import DateTime, Float, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.session import Base
+
+
+class ReviewStatus(str, Enum):
+    """Human-review lifecycle for a session flagged by the manual audit workflow
+    (card C4.2). Mirrors :class:`app.models.drift_alert.DriftAlertStatus`'s
+    open→acknowledged shape at the per-session grain. Used only for its ``.value``
+    string constants; the column stays ``String(20)`` (not a native SQLAlchemy
+    ``Enum``) so the additive ``ADD COLUMN IF NOT EXISTS`` migration needs no
+    ``CREATE TYPE`` first — see app/main.py:_ensure_consistency_columns.
+    """
+    pending_review = "pending_review"
+    reviewed = "reviewed"
 
 
 class ConsistencyRun(Base):
@@ -46,6 +59,16 @@ class ConsistencyRun(Base):
     composite_score: Mapped[float | None] = mapped_column(Float, nullable=True)
     tone_match_score: Mapped[float | None] = mapped_column(Float, nullable=True)
     fact_retrieval_score: Mapped[float | None] = mapped_column(Float, nullable=True)
+    # Card C4.2 — manual audit workflow. Set at scoring time when a session trips
+    # the review flag (see app.drift.evaluate_review_flag): review_status is
+    # 'pending_review' until an operator marks it 'reviewed', review_reason records
+    # which arm(s) fired ('below_floor' | 'drift' | 'below_floor+drift').
+    # Nullable with no default — most sessions aren't flagged, so a null status is
+    # the honest "not flagged" fact, deliberately unlike DriftAlert.status's
+    # non-null 'open' default (every alert row *is* an alert; not every run is).
+    review_status: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    review_reason: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    reviewed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     # Indexed: the Sprint-4 dashboard reads the most recent run first.
     scored_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),

@@ -131,6 +131,35 @@ def delta_pct(baseline: float | None, current: float) -> float | None:
     return round((baseline - current) / baseline * 100, 2)
 
 
+def evaluate_review_flag(
+    aggregate: float,
+    consistency_delta_pct: float | None,
+    *,
+    floor: float,
+    drift_threshold_pct: float,
+) -> str | None:
+    """Decide whether a scored session should be auto-flagged for human review (card C4.2).
+
+    Union rule: flag when the raw consistency ``aggregate`` is below the absolute
+    ``floor`` OR the session's deviation from its persona baseline crosses
+    ``drift_threshold_pct``. Returns a ``'+'``-joined reason
+    (``'below_floor'``, ``'drift'``, or ``'below_floor+drift'``) or ``None`` when
+    the session is healthy on both arms.
+
+    ``consistency_delta_pct`` is ``None`` for any persona with no prior baseline
+    (the common early case — :func:`delta_pct` returns ``None``); the ``is not
+    None`` guard is mandatory, since the caller's per-dialogue loop swallows
+    exceptions and would otherwise silently drop a baseline-less session. Such a
+    session is still eligible for the floor arm.
+    """
+    reasons = []
+    if aggregate < floor:
+        reasons.append("below_floor")
+    if consistency_delta_pct is not None and abs(consistency_delta_pct) >= drift_threshold_pct:
+        reasons.append("drift")
+    return "+".join(reasons) if reasons else None
+
+
 def evaluate_drift_and_alert(
     db: Session, job_run_id: str, threshold_pct: float, window: int = 10
 ) -> list[DriftAlert]:

@@ -16,10 +16,11 @@ from app.drift import (
     compute_persona_baseline,
     delta_pct,
     evaluate_drift_and_alert,
+    evaluate_review_flag,
 )
 from app.metrics.profile import load_profile
 from app.metrics.report import score_dialogue
-from app.models.consistency_run import ConsistencyRun
+from app.models.consistency_run import ConsistencyRun, ReviewStatus
 from app.session_sampler import sample_completed_sessions
 
 logger = logging.getLogger(__name__)
@@ -57,6 +58,7 @@ def run_consistency_job(sample_size: int = 20) -> dict:
 
     db = SessionLocal()
     results = []
+    flagged_count = 0
     # Baseline is per-persona and looked up once per persona per run — every
     # dialogue for the same persona shares the same pre-run baseline, computed
     # from job runs strictly older than this one (see app.drift docstring).
@@ -79,6 +81,18 @@ def run_consistency_job(sample_size: int = 20) -> dict:
                     )
                 session_delta_pct = delta_pct(baseline_cache[dialogue.persona_id], c.aggregate)
 
+                # Card C4.2 — auto-flag for human review on the union rule (raw
+                # aggregate below the floor OR |per-session delta| over threshold).
+                # evaluate_review_flag guards delta=None internally, so a persona's
+                # first-ever session (no baseline) is still scored on the floor arm
+                # rather than raising and being dropped by the except below.
+                review_reason = evaluate_review_flag(
+                    c.aggregate,
+                    session_delta_pct,
+                    floor=settings.consistency_review_floor,
+                    drift_threshold_pct=settings.drift_threshold_pct,
+                )
+
                 run = ConsistencyRun(
                     id=str(uuid.uuid4()),
                     job_run_id=run_id,
@@ -97,10 +111,16 @@ def run_consistency_job(sample_size: int = 20) -> dict:
                     # numbers score_dialogue() already produced (was discarded).
                     trait_fit_cosine=report.trait_fit.cosine_similarity,
                     composite_score=report.composite_score,
+                    # Card C4.2 — pending_review only when a reason fired; null
+                    # review_status is the honest "not flagged" state.
+                    review_status=ReviewStatus.pending_review.value if review_reason else None,
+                    review_reason=review_reason,
                     scored_at=datetime.now(UTC),
                 )
                 db.add(run)
                 results.append(c.aggregate)
+                if review_reason:
+                    flagged_count += 1
 
             except Exception as exc:
                 logger.error(
@@ -127,6 +147,7 @@ def run_consistency_job(sample_size: int = 20) -> dict:
         "run_id": run_id,
         "session_count": len(results),
         "mean_aggregate": round(mean_aggregate, 4),
+        "flagged_count": flagged_count,
         "started_at": started_at.isoformat(),
         "completed_at": datetime.now(UTC).isoformat(),
         "status": "completed",

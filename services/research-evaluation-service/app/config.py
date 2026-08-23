@@ -51,6 +51,17 @@ class Settings(BaseModel):
     drift_threshold_pct: float = float(os.getenv("DRIFT_THRESHOLD_PCT", "15.0"))
     drift_baseline_window: int = int(os.getenv("DRIFT_BASELINE_WINDOW", "10"))
 
+    # Manual audit workflow (card C4.2). A session whose raw consistency aggregate
+    # is below this absolute floor is auto-flagged for human review, independent of
+    # persona drift. The drift arm of the flag rule intentionally reuses
+    # ``drift_threshold_pct`` above — but note the granularity differs: that
+    # threshold gates a persona's *run-mean* deviation for DriftAlert (card O4.1),
+    # whereas the review flag applies it to each *session's* own delta, which is
+    # noisier. A session can therefore be flagged for review without a DriftAlert
+    # firing, and vice-versa. (A future CONSISTENCY_REVIEW_DRIFT_PCT could decouple
+    # the two sensitivities; not needed yet.)
+    consistency_review_floor: float = float(os.getenv("CONSISTENCY_REVIEW_FLOOR", "0.70"))
+
 
 @lru_cache
 def get_settings() -> Settings:
