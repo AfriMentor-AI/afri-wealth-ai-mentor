@@ -1671,6 +1671,239 @@ def gateway_spec() -> dict:
     return spec
 
 
+def research_spec() -> dict:
+    spec = base(
+        "Research & Evaluation Service",
+        "research-evaluation-service",
+        8010,
+        "Session auditing, quality scoring, and drift detection for the research console.",
+    )
+
+    def err(desc: str) -> dict:
+        return {
+            "description": desc,
+            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Error"}}},
+        }
+
+    schemas = spec["components"]["schemas"]
+    schemas["AuditSession"] = {
+        "type": "object",
+        "description": "One scored session row for the Research Console audit table.",
+        "properties": {
+            "id": {
+                "type": "string",
+                "description": "ConsistencyRun primary key; the key for the /review endpoint.",
+            },
+            "session_id": {
+                "type": "string",
+                "description": "Conversation id (not unique across scoring runs).",
+            },
+            "persona_id": {"type": ["string", "null"]},
+            "primary_intent": {"type": ["string", "null"]},
+            "prompt_context": {"type": ["string", "null"]},
+            "consistency_delta_pct": {
+                "type": ["number", "null"],
+                "description": "Percent deviation from the persona rolling baseline; null "
+                "when no baseline existed yet (e.g. the persona's first-ever run).",
+            },
+            "aggregate": {"type": "number"},
+            "review_status": {
+                "type": ["string", "null"],
+                "enum": ["pending_review", "reviewed", None],
+                "description": "Human-review lifecycle (card C4.2); null when the session "
+                "was not flagged.",
+            },
+            "review_reason": {
+                "type": ["string", "null"],
+                "description": "Which arm(s) flagged the session: below_floor, drift, or "
+                "below_floor+drift.",
+            },
+            "reviewed_at": {"type": ["string", "null"], "format": "date-time"},
+            "scored_at": {"type": ["string", "null"], "format": "date-time"},
+        },
+        "required": ["id", "session_id", "aggregate"],
+    }
+    schemas["AuditRunSummary"] = {
+        "type": "object",
+        "description": "The run summary returned by the scoring job. mean_aggregate/"
+        "flagged_count are present only when status is 'completed'.",
+        "properties": {
+            "run_id": {"type": "string"},
+            "session_count": {"type": "integer"},
+            "mean_aggregate": {"type": "number"},
+            "flagged_count": {
+                "type": "integer",
+                "description": "Sessions auto-flagged for review in this run (card C4.2).",
+            },
+            "status": {"type": "string", "enum": ["completed", "no_data"]},
+            "drift_alerts": {"type": "array", "items": {"type": "string"}},
+        },
+        "required": ["run_id", "session_count", "status"],
+    }
+    schemas["ManualAuditResponse"] = {
+        "type": "object",
+        "properties": {
+            "run": {"$ref": "#/components/schemas/AuditRunSummary"},
+            "sessions": {
+                "type": "array",
+                "items": {"$ref": "#/components/schemas/AuditSession"},
+            },
+        },
+        "required": ["run", "sessions"],
+    }
+    schemas["ReviewResponse"] = {
+        "type": "object",
+        "properties": {
+            "id": {"type": "string"},
+            "review_status": {"type": "string", "enum": ["reviewed"]},
+            "review_reason": {"type": ["string", "null"]},
+            "reviewed_at": {"type": "string", "format": "date-time"},
+        },
+        "required": ["id", "review_status"],
+    }
+
+    spec["tags"] = [{"name": "research"}, {"name": "meta"}]
+    spec["paths"].update(
+        {
+            "/api/v1/research/audits": {
+                "get": op("research", "List session audits", resp="200"),
+                "post": {
+                    "tags": ["research"],
+                    "summary": "Trigger a manual audit (New Manual Audit)",
+                    "description": "Re-scores the current sample of active/idle sessions on "
+                    "demand (card C4.2), applying the same auto-flagging for human review "
+                    "that the scheduled job applies, then returns that run's freshly-scored "
+                    "rows. Admin, researcher, or lead_architect role required.",
+                    "parameters": [
+                        {
+                            "name": "sample_size",
+                            "in": "query",
+                            "required": False,
+                            "schema": {"type": "integer", "minimum": 1, "maximum": 500},
+                            "description": "Sessions to sample; defaults to "
+                            "CONSISTENCY_SAMPLE_SIZE.",
+                        }
+                    ],
+                    "responses": {
+                        "200": {
+                            "description": "Audit run summary plus the run's scored sessions.",
+                            "content": {
+                                "application/json": {
+                                    "schema": {
+                                        "$ref": "#/components/schemas/ManualAuditResponse"
+                                    }
+                                }
+                            },
+                        },
+                        "401": err("unauthorized"),
+                        "403": err("forbidden — console role required"),
+                    },
+                },
+            },
+            "/api/v1/research/audit-sessions": {
+                "get": {
+                    "tags": ["research"],
+                    "summary": "List recently scored sessions (Recent Conversations / "
+                    "Persona Audit)",
+                    "description": "Recently scored sessions, newest first (cards O4.1/C4.2). "
+                    "Set flagged_only=true for the \"Filter by Drift\" control — only "
+                    "sessions auto-flagged for human review (any non-null review_status). "
+                    "Admin, researcher, or lead_architect role required.",
+                    "parameters": [
+                        {
+                            "name": "limit",
+                            "in": "query",
+                            "schema": {
+                                "type": "integer",
+                                "minimum": 1,
+                                "maximum": 500,
+                                "default": 50,
+                            },
+                        },
+                        {
+                            "name": "persona_id",
+                            "in": "query",
+                            "schema": {"type": "string"},
+                            "description": "Filter to one persona.",
+                        },
+                        {
+                            "name": "min_abs_delta_pct",
+                            "in": "query",
+                            "schema": {"type": "number", "minimum": 0},
+                            "description": "Only sessions whose |consistency_delta_pct| is at "
+                            "least this.",
+                        },
+                        {
+                            "name": "flagged_only",
+                            "in": "query",
+                            "schema": {"type": "boolean", "default": False},
+                            "description": "Only sessions auto-flagged for review (card C4.2).",
+                        },
+                    ],
+                    "responses": {
+                        "200": {
+                            "description": "Scored sessions.",
+                            "content": {
+                                "application/json": {
+                                    "schema": {
+                                        "type": "object",
+                                        "properties": {
+                                            "sessions": {
+                                                "type": "array",
+                                                "items": {
+                                                    "$ref": "#/components/schemas/AuditSession"
+                                                },
+                                            }
+                                        },
+                                    }
+                                }
+                            },
+                        },
+                        "403": err("forbidden — console role required"),
+                    },
+                }
+            },
+            "/api/v1/research/audit-sessions/{audit_id}/review": {
+                "post": {
+                    "tags": ["research"],
+                    "summary": "Mark a flagged session reviewed (Mark reviewed)",
+                    "description": "Closes the human-review loop on a flagged session (card "
+                    "C4.2): sets review_status to 'reviewed' and stamps reviewed_at, "
+                    "preserving review_reason. Keyed by the ConsistencyRun id (primary key), "
+                    "since a conversation is re-scored across runs and its conversation_id "
+                    "is not unique. Admin, researcher, or lead_architect role required.",
+                    "parameters": [
+                        {
+                            "name": "audit_id",
+                            "in": "path",
+                            "required": True,
+                            "schema": {"type": "string"},
+                            "description": "ConsistencyRun primary key (the audit-session "
+                            "row id).",
+                        }
+                    ],
+                    "responses": {
+                        "200": {
+                            "description": "The updated review-lifecycle fields.",
+                            "content": {
+                                "application/json": {
+                                    "schema": {"$ref": "#/components/schemas/ReviewResponse"}
+                                }
+                            },
+                        },
+                        "403": err("forbidden — console role required"),
+                        "404": err("audit session not found"),
+                    },
+                }
+            },
+            "/api/v1/research/drift": {
+                "get": op("research", "Get drift-detection results", resp="200"),
+            },
+        }
+    )
+    return spec
+
+
 # service -> (title, port, description, [(method, path, tag, summary, has_body)])
 SERVICES: dict[str, tuple] = {
     "chat-orchestration-service": (
@@ -1706,15 +1939,8 @@ SERVICES: dict[str, tuple] = {
             ("post", "/api/v1/rag/query", "rag", "Retrieve relevant chunks", True),
         ],
     ),
-    "research-evaluation-service": (
-        "Research & Evaluation Service", 8010,
-        "Session auditing, quality scoring, and drift detection for the research console.",
-        [
-            ("get", "/api/v1/research/audits", "research", "List session audits", False),
-            ("post", "/api/v1/research/audits", "research", "Trigger an audit", True),
-            ("get", "/api/v1/research/drift", "research", "Get drift-detection results", False),
-        ],
-    ),
+    # research-evaluation-service uses the rich research_spec() (see main()), not this
+    # terse table.
     "voice-service": (
         "Voice Service", 8011,
         "Speech-to-text and text-to-speech for the mentor chat.",
@@ -1752,6 +1978,7 @@ def main() -> None:
         ("insight-library-service", insight_spec()),
         ("feedback-service", feedback_spec()),
         ("notification-service", notification_spec()),
+        ("research-evaluation-service", research_spec()),
     ]:
         path = OUT / f"{name}.yaml"
         path.write_text(yaml.safe_dump(spec, sort_keys=False, width=100), encoding="utf-8")

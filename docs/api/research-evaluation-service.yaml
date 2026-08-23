@@ -50,11 +50,9 @@ paths:
       tags:
       - research
       summary: Trigger a manual audit (New Manual Audit)
-      description: >-
-        Re-scores the current sample of active/idle sessions on demand (card
-        C4.2), applying the same auto-flagging for human review that the
-        scheduled job applies, then returns that run's freshly-scored rows.
-        Admin, researcher, or lead_architect role required.
+      description: Re-scores the current sample of active/idle sessions on demand (card C4.2), applying
+        the same auto-flagging for human review that the scheduled job applies, then returns that run's
+        freshly-scored rows. Admin, researcher, or lead_architect role required.
       parameters:
       - name: sample_size
         in: query
@@ -78,7 +76,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
         '403':
-          description: forbidden — console role required
+          description: "forbidden \u2014 console role required"
           content:
             application/json:
               schema:
@@ -88,11 +86,9 @@ paths:
       tags:
       - research
       summary: List recently scored sessions (Recent Conversations / Persona Audit)
-      description: >-
-        Recently scored sessions, newest first (cards O4.1/C4.2). Set
-        flagged_only=true for the "Filter by Drift" control — only sessions
-        auto-flagged for human review (any non-null review_status). Admin,
-        researcher, or lead_architect role required.
+      description: "Recently scored sessions, newest first (cards O4.1/C4.2). Set flagged_only=true for\
+        \ the \"Filter by Drift\" control \u2014 only sessions auto-flagged for human review (any non-null\
+        \ review_status). Admin, researcher, or lead_architect role required."
       parameters:
       - name: limit
         in: query
@@ -131,7 +127,7 @@ paths:
                     items:
                       $ref: '#/components/schemas/AuditSession'
         '403':
-          description: forbidden — console role required
+          description: "forbidden \u2014 console role required"
           content:
             application/json:
               schema:
@@ -141,12 +137,10 @@ paths:
       tags:
       - research
       summary: Mark a flagged session reviewed (Mark reviewed)
-      description: >-
-        Closes the human-review loop on a flagged session (card C4.2): sets
-        review_status to 'reviewed' and stamps reviewed_at, preserving
-        review_reason. Keyed by the ConsistencyRun id (primary key), since a
-        conversation is re-scored across runs and its conversation_id is not
-        unique. Admin, researcher, or lead_architect role required.
+      description: 'Closes the human-review loop on a flagged session (card C4.2): sets review_status
+        to ''reviewed'' and stamps reviewed_at, preserving review_reason. Keyed by the ConsistencyRun
+        id (primary key), since a conversation is re-scored across runs and its conversation_id is not
+        unique. Admin, researcher, or lead_architect role required.'
       parameters:
       - name: audit_id
         in: path
@@ -162,7 +156,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ReviewResponse'
         '403':
-          description: forbidden — console role required
+          description: "forbidden \u2014 console role required"
           content:
             application/json:
               schema:
@@ -245,9 +239,8 @@ components:
           type:
           - number
           - 'null'
-          description: >-
-            Percent deviation from the persona rolling baseline; null when no
-            baseline existed yet (e.g. the persona's first-ever run).
+          description: Percent deviation from the persona rolling baseline; null when no baseline existed
+            yet (e.g. the persona's first-ever run).
         aggregate:
           type: number
         review_status:
@@ -258,16 +251,12 @@ components:
           - pending_review
           - reviewed
           - null
-          description: >-
-            Human-review lifecycle (card C4.2); null when the session was not
-            flagged.
+          description: Human-review lifecycle (card C4.2); null when the session was not flagged.
         review_reason:
           type:
           - string
           - 'null'
-          description: >-
-            Which arm(s) flagged the session: below_floor, drift, or
-            below_floor+drift.
+          description: 'Which arm(s) flagged the session: below_floor, drift, or below_floor+drift.'
         reviewed_at:
           type:
           - string
@@ -284,9 +273,8 @@ components:
       - aggregate
     AuditRunSummary:
       type: object
-      description: >-
-        The run summary returned by the scoring job. mean_aggregate/flagged_count
-        are present only when status is 'completed'.
+      description: The run summary returned by the scoring job. mean_aggregate/flagged_count are present
+        only when status is 'completed'.
       properties:
         run_id:
           type: string
