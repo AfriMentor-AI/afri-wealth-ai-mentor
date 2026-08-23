@@ -96,9 +96,15 @@ def render_markdown(results: dict) -> str:
         label = CONDITION_LABELS.get(cid, cid)
         persona = cond.get("persona", "—")
         if cond.get("status") == "ok":
+            src = cond.get("source", "—")
+            model = cond.get("model")
+            if model:
+                src = f"{src} · `{model}`"
+                if cond.get("adapter"):
+                    src += f" + `{cond['adapter']}`"
             lines.append(f"| {label} | {persona} | ok | {cond.get('n_attacks', '—')} | "
                          f"{_pct(cond.get('harm_rate'))} | {_pct(cond.get('false_refusal_proxy'))} | "
-                         f"{cond.get('source', '—')} |")
+                         f"{src} |")
         else:
             lines.append(f"| {label} | {persona} | **pending** | — | — | — | "
                          f"{cond.get('reason', 'pending')} |")

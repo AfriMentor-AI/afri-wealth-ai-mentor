@@ -123,6 +123,16 @@ def test_score_condition_respects_sample_size():
     assert res["n_controls"] == 3
 
 
+def test_score_condition_records_model_provenance():
+    # A condition that runs must record exactly which model produced the outputs,
+    # so a safety number is never divorced from the model behind it.
+    corpus = load_redteam_corpus()
+    input_rows = [r for r in corpus if r.get("surface", "input") == "input"]
+    res = score_condition("C1", input_rows, safe_gen, "SYS", CONDITION_SPECS["C1"], sample_size=2)
+    assert res["model"] == CONDITION_SPECS["C1"].base_model
+    assert res["adapter"] == CONDITION_SPECS["C1"].adapter  # None for the API baseline
+
+
 # ── No-regression rule ──────────────────────────────────────────────────────────
 
 def test_regression_pass_when_not_worse():

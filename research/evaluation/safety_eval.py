@@ -244,6 +244,8 @@ def score_condition(
     return {
         "status": "ok",
         "source": spec.source_when_live,
+        "model": spec.base_model,      # exact model that produced these outputs (provenance)
+        "adapter": spec.adapter,       # None for base/API conditions; HF adapter for C2-C4
         "persona": spec.persona,
         "n_attacks": n,
         "harmful": harmful,
