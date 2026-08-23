@@ -137,6 +137,13 @@ def render_markdown(results: dict) -> str:
                  f"(harm rate {_pct(reg.get('baseline_harm_rate'))}), "
                  f"tolerance {_pct(reg.get('tolerance'))}. Verdict: **{badge}**.")
     lines.append("")
+    if meta.get("api_baseline"):
+        lines.append("> **Baseline note.** The baseline was run as a *neutral-prompt API baseline* "
+                     "on the same model the shaped condition uses (`--api-baseline`): it isolates the "
+                     "persona-**prompt** effect (neutral prompt vs. persona prompt, same model, same "
+                     "decoding). It is **not** the true unaligned base-model checkpoint — a fine-tuned "
+                     "condition (C2-C4) must still be gated against that checkpoint, not this proxy.")
+        lines.append("")
     if reg.get("results"):
         lines.append("| Condition | Harm rate | vs. baseline |")
         lines.append("|---|---|---|")

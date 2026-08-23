@@ -50,7 +50,7 @@ import logging
 import os
 import sys
 from collections.abc import Callable
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from pathlib import Path
 
 _RESEARCH_ROOT = Path(__file__).resolve().parents[1]
@@ -375,6 +375,21 @@ def _default_system_prompt(spec: ConditionSpec) -> str:
     return render_system_prompt(spec.persona)
 
 
+def _api_baseline_spec(spec: ConditionSpec) -> ConditionSpec:
+    """Recast a checkpoint baseline (C0) as an *API* neutral-prompt baseline on the
+    very model C1 uses, so C1's persona-*prompt* effect can be isolated when no GPU
+    base checkpoint is available: C0 (neutral prompt) vs C1 (persona prompt), same
+    model, same decoding — only the system prompt differs.
+
+    The persona stays ``neutral`` (→ ``NEUTRAL_SYSTEM_PROMPT``), the model becomes
+    the API model, and the source carries a **distinct** label so the artifact never
+    conflates this proxy with the true unaligned base-model checkpoint. Only sound as
+    a baseline for the prompt-based condition (C1); the fine-tuned conditions (C2-C4)
+    must still gate against the real base checkpoint, not this."""
+    return replace(spec, kind="api", base_model=C1_MODEL_ID,
+                   source_when_live="live_api_neutral_baseline")
+
+
 # ── Orchestration ──────────────────────────────────────────────────────────────
 
 def run(
@@ -384,6 +399,7 @@ def run(
     corpus_path: str | Path = CORPUS_PATH,
     baseline: str = "C0",
     tolerance: float = 0.0,
+    api_baseline: bool = False,
     conditions: list[str] | None = None,
     generators: dict[str, GenerateFn] | None = None,
     system_prompt_fn: Callable[[ConditionSpec], str] | None = None,
@@ -395,6 +411,10 @@ def run(
     ``generators`` injects a ``GenerateFn`` per condition id (used by tests and to
     plug real backends); any condition without one is auto-built from the
     environment and, failing that, recorded ``pending_generation``.
+
+    ``api_baseline`` recasts a checkpoint baseline (C0) into a neutral-prompt API
+    baseline on the same model C1 uses (see :func:`_api_baseline_spec`), so C1's
+    persona-prompt effect can be gated even without a GPU base checkpoint.
     """
     conditions = conditions or DEFAULT_CONDITIONS
     generators = generators or {}
@@ -417,6 +437,10 @@ def run(
     cond_results: dict[str, dict] = {}
     for cid in conditions:
         spec = CONDITION_SPECS[cid]
+        if api_baseline and cid == baseline and spec.kind != "api":
+            spec = _api_baseline_spec(spec)
+            logger.info("%s: running as API neutral-prompt baseline on %s (--api-baseline)",
+                        cid, spec.base_model)
         gen = generators.get(cid) or _build_generator(spec)
         if gen is None:
             reason = _pending_reason(spec)
@@ -450,6 +474,7 @@ def run(
             "rules_version": rules_version(),
             "baseline_condition": baseline,
             "harm_tolerance": tolerance,
+            "api_baseline": api_baseline,
             "generated_at": now or __import__("datetime").datetime.now().isoformat(),
             "note": (
                 "harm_rate = fraction of risky inputs whose generated model output is "
@@ -486,6 +511,10 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
                              "unaligned base model; use C1 for the prompt baseline).")
     parser.add_argument("--tolerance", type=float, default=0.0,
                         help="Allowed harm-rate increase over baseline before flagging regression.")
+    parser.add_argument("--api-baseline", action="store_true",
+                        help="Run the (checkpoint) baseline C0 as a neutral-prompt API baseline on "
+                             "the same model C1 uses, isolating C1's persona-prompt effect without a "
+                             "GPU. Recorded with a distinct 'live_api_neutral_baseline' source.")
     parser.add_argument("--conditions", default=",".join(DEFAULT_CONDITIONS),
                         help="Comma-separated condition ids to run.")
     parser.add_argument("--no-instrument", action="store_true",
@@ -501,6 +530,7 @@ def main(argv: list[str] | None = None) -> None:
         corpus_path=args.corpus,
         baseline=args.baseline,
         tolerance=args.tolerance,
+        api_baseline=args.api_baseline,
         conditions=[c.strip() for c in args.conditions.split(",") if c.strip()],
         run_instrument=not args.no_instrument,
     )

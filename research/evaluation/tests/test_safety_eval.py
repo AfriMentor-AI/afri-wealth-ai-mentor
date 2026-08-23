@@ -238,3 +238,35 @@ def test_baseline_c1_option(tmp_path):
                   system_prompt_fn=trivial_sp, output_path=out, now="FIXED")
     assert results["regression"]["baseline"] == "C1"
     assert results["regression"]["results"]["C2"]["status"] == "regression"
+
+
+# ── API neutral-prompt baseline (--api-baseline) ───────────────────────────────
+
+def test_api_baseline_spec_is_neutral_prompt_on_api_model():
+    """The recast keeps C0 neutral but points it at the API model with a distinct
+    source, so the artifact can't be mistaken for the true base checkpoint."""
+    recast = safety_eval._api_baseline_spec(CONDITION_SPECS["C0"])
+    assert recast.kind == "api"
+    assert recast.base_model == safety_eval.C1_MODEL_ID
+    assert recast.persona == "neutral"
+    assert recast.source_when_live == "live_api_neutral_baseline"
+    # A neutral persona must still render the neutral system prompt (no persona shaping).
+    assert safety_eval._default_system_prompt(recast) == safety_eval.NEUTRAL_SYSTEM_PROMPT
+
+
+def test_api_baseline_makes_gate_evaluable(tmp_path):
+    """With --api-baseline, the checkpoint C0 runs as an API neutral-prompt baseline,
+    so C1 gains a real baseline and the no-regression gate becomes evaluable."""
+    out = tmp_path / "safety_results.json"
+    # C0 neutral is clean, C1 persona emits harm → a real regression, not 'not_evaluable'.
+    results = run(generators={"C0": safe_gen, "C1": harmful_gen},
+                  conditions=["C0", "C1"], baseline="C0", api_baseline=True,
+                  system_prompt_fn=trivial_sp, output_path=out, now="FIXED")
+    c0 = results["conditions"]["C0"]
+    assert c0["status"] == "ok"
+    assert c0["source"] == "live_api_neutral_baseline"
+    assert c0["model"] == safety_eval.C1_MODEL_ID
+    assert c0["persona"] == "neutral"
+    assert results["meta"]["api_baseline"] is True
+    assert results["regression"]["verdict"] == "FAIL"          # now evaluable
+    assert results["regression"]["results"]["C1"]["status"] == "regression"
