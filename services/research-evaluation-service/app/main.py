@@ -32,17 +32,20 @@ import io
 import logging
 import os
 from datetime import UTC, date, datetime
+from typing import Literal
 
 from apscheduler.schedulers.background import BackgroundScheduler
 from fastapi import Depends, FastAPI, Header, HTTPException, Query
 from fastapi.responses import StreamingResponse
+from pydantic import BaseModel, Field
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from .config import get_settings
 from .consistency_job import run_consistency_job
 from .db.session import engine, get_db
-from .models import Base, ConsistencyRun, DriftAlert, ReviewStatus, SessionMetric
+from .models import ArmAssignment, Base, ConsistencyRun, DriftAlert, ReviewStatus, SessionMetric
+from .models.session_metric import anonymize_user_id
 from .observability import instrument
 from .rolling_aggregate import compute_rolling_24h_aggregates
 
@@ -680,15 +683,91 @@ def acknowledge_drift_alert(
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Pilot Data Export (card O4.4)
+# Pilot Data Export (card O4.4; arm assignment + filter added for card C4.5)
 # ─────────────────────────────────────────────────────────────────────────────
+
+
+class ArmAssignmentIn(BaseModel):
+    """One participant's allocated study arm, keyed by their real user id.
+
+    The real id is accepted here (never stored) so the caller — whoever holds
+    the offline allocation sequence, pilot plan §3.3 — never has to compute the
+    anonymized hash themselves; it's derived server-side with the same
+    ``anonymize_user_id`` C3.5 ingestion uses, so it joins to SessionMetric rows
+    for the same participant automatically.
+    """
+
+    user_id: str = Field(min_length=1)
+    arm: Literal["A", "B"]
+
+
+class ArmAssignmentsIn(BaseModel):
+    assignments: list[ArmAssignmentIn] = Field(min_length=1)
+
+
+@app.post("/api/v1/research/arm-assignments", tags=["research-console"])
+def record_arm_assignments(
+    body: ArmAssignmentsIn,
+    db: Session = Depends(get_db),
+    _admin: None = Depends(_require_admin),
+) -> dict:
+    """Record pilot participants' study-arm allocations (card C4.5).
+
+    Upsert by anonymized user_hash: re-submitting the same participant (e.g. the
+    enrolment sheet re-loaded) updates their arm rather than erroring, so this is
+    safe to re-run. Never echoes the raw user_id back.
+    """
+    settings = get_settings()
+    recorded: list[dict] = []
+    for item in body.assignments:
+        user_hash = anonymize_user_id(item.user_id, salt=settings.research_salt)
+        existing = db.query(ArmAssignment).filter(ArmAssignment.user_hash == user_hash).first()
+        if existing:
+            existing.arm = item.arm
+        else:
+            db.add(ArmAssignment(user_hash=user_hash, arm=item.arm))
+        recorded.append({"user_hash": user_hash, "arm": item.arm})
+    db.commit()
+    return {"recorded": recorded}
+
+
+@app.get("/api/v1/research/arm-assignments", tags=["research-console"])
+def list_arm_assignments(
+    db: Session = Depends(get_db),
+    _admin: None = Depends(_require_admin),
+) -> dict:
+    """Current arm roster and per-arm counts — sanity-check coverage before a pull."""
+    rows = db.query(ArmAssignment).order_by(ArmAssignment.assigned_at).all()
+    counts: dict[str, int] = {"A": 0, "B": 0}
+    for r in rows:
+        counts[r.arm] = counts.get(r.arm, 0) + 1
+    return {
+        "assignments": [
+            {
+                "user_hash": r.user_hash,
+                "arm": r.arm,
+                "assigned_at": r.assigned_at.isoformat() if r.assigned_at else None,
+            }
+            for r in rows
+        ],
+        "counts": counts,
+    }
+
 
 # Declared once so the header row and value rows can't drift apart (same
 # pattern as rag-corpus-service's CSV_COLUMNS). No raw user_id or
 # conversation_id column — user_hash is already anonymize_user_id()'s output,
 # and sessions are identified only by row order, not by their real id.
+#
+# Card C4.5: this is the *engagement* measure of the pilot's 3 required measures
+# (pilot plan §5.4/F4) plus persona-consistency scoring, joined by arm. The other
+# two — financial-knowledge (§5.2, Big-Three-adapted) and financial self-efficacy
+# (§5.3, FSES-modified) — are collected as oral pre/post survey instruments with
+# no ingestion path into this service; they are not in this export and must be
+# merged separately from Grace's survey tracking sheet. See
+# docs/implementation/C4_5_mid_pilot_checkpoint.md.
 PILOT_EXPORT_COLUMNS = [
-    "user_hash", "session_date", "session_duration_seconds", "message_count",
+    "user_hash", "arm", "session_date", "session_duration_seconds", "message_count",
     "persona_id", "prompt_to_line", "line_to_line", "qa_consistency",
     "aggregate", "consistency_delta_pct",
 ]
@@ -697,7 +776,16 @@ PILOT_EXPORT_COLUMNS = [
 @app.get("/api/v1/research/export/pilot-data.csv", tags=["research-console"])
 def export_pilot_data(
     start_date: date | None = Query(None, description="Filter from this date (inclusive)"),
-    end_date: date | None = Query(None, description="Filter to this date (inclusive)"),
+    end_date: date | None = Query(
+        None,
+        description=(
+            "Filter to this date (inclusive) — e.g. the pilot's midpoint date, "
+            "for a mid-pilot checkpoint (card C4.5)"
+        ),
+    ),
+    arm: Literal["A", "B"] | None = Query(
+        None, description="Filter to one study arm; omitted returns both (card C4.5)"
+    ),
     db: Session = Depends(get_db),
     _admin: None = Depends(_require_admin),
 ):
@@ -706,17 +794,26 @@ def export_pilot_data(
     One row per session: the C3.5 engagement measures (session length, message
     count) left-joined to that same session's C3.2 consistency score, when one
     exists (only a sampled subset of sessions get scored by the nightly job,
-    not every session — those columns are blank rather than fabricated).
-    Joined on conversation_id internally, but that id itself is never in the
-    output — only the already-anonymized user_hash identifies a row's user.
+    not every session — those columns are blank rather than fabricated), and
+    left-joined to the participant's C4.5 study-arm assignment, when recorded.
+    Joined on conversation_id / user_hash internally, but no raw id is ever in
+    the output — only the already-anonymized user_hash identifies a row's user.
+
+    Without ``arm``, rows from both arms are returned together (card C4.5 AC:
+    "all 3 measures for both groups") — pass ``end_date`` at the pilot's midpoint
+    and ``arm`` is left unset for the standard mid-pilot checkpoint pull.
     """
-    query = db.query(SessionMetric, ConsistencyRun).outerjoin(
-        ConsistencyRun, ConsistencyRun.conversation_id == SessionMetric.conversation_id
+    query = (
+        db.query(SessionMetric, ConsistencyRun, ArmAssignment)
+        .outerjoin(ConsistencyRun, ConsistencyRun.conversation_id == SessionMetric.conversation_id)
+        .outerjoin(ArmAssignment, ArmAssignment.user_hash == SessionMetric.user_hash)
     )
     if start_date:
         query = query.filter(SessionMetric.session_date >= start_date)
     if end_date:
         query = query.filter(SessionMetric.session_date <= end_date)
+    if arm:
+        query = query.filter(ArmAssignment.arm == arm)
     rows = query.order_by(SessionMetric.session_date).all()
 
     def generate():
@@ -724,11 +821,12 @@ def export_pilot_data(
         writer = csv.writer(buffer)
         writer.writerow(PILOT_EXPORT_COLUMNS)
         yield buffer.getvalue()
-        for metric, consistency in rows:
+        for metric, consistency, assignment in rows:
             buffer.seek(0)
             buffer.truncate(0)
             writer.writerow([
                 metric.user_hash,
+                assignment.arm if assignment else "",
                 metric.session_date.isoformat(),
                 metric.session_duration_seconds,
                 metric.message_count,

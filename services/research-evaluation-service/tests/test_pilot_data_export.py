@@ -12,6 +12,7 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
 from app.db.session import Base, get_db
+from app.models.arm_assignment import ArmAssignment
 from app.models.consistency_run import ConsistencyRun
 from app.models.session_metric import SessionMetric
 
@@ -119,6 +120,77 @@ def test_pilot_export_joins_session_metrics_with_consistency_scores():
     unscored = next(r for r in rows if r["user_hash"] == "b" * 16)
     assert unscored["persona_id"] == ""
     assert unscored["aggregate"] == ""
+
+    # Card C4.5: neither session has an arm assignment seeded — column present, blank.
+    assert scored["arm"] == ""
+    assert unscored["arm"] == ""
+
+
+# ── Study-arm join and filter (card C4.5) ──────────────────────────────────────
+
+def test_pilot_export_includes_arm_for_both_groups():
+    engine = make_engine()
+    Session = sessionmaker(bind=engine)
+    db = Session()
+    db.add(SessionMetric(
+        user_hash="f" * 16, session_date=date(2026, 8, 10),
+        session_duration_seconds=200, message_count=8,
+        conversation_id="conv-arm-a", recorded_at=datetime.now(UTC),
+    ))
+    db.add(SessionMetric(
+        user_hash="g" * 16, session_date=date(2026, 8, 10),
+        session_duration_seconds=150, message_count=5,
+        conversation_id="conv-arm-b", recorded_at=datetime.now(UTC),
+    ))
+    db.add(ArmAssignment(user_hash="f" * 16, arm="A"))
+    db.add(ArmAssignment(user_hash="g" * 16, arm="B"))
+    db.commit()
+    db.close()
+
+    client = _client_with_db(engine)
+    try:
+        resp = client.get("/api/v1/research/export/pilot-data.csv", headers=ADMIN_HEADERS)
+    finally:
+        client.app.dependency_overrides.clear()
+
+    reader = csv.DictReader(io.StringIO(resp.text))
+    rows = {r["user_hash"]: r for r in reader}
+    assert rows["f" * 16]["arm"] == "A"
+    assert rows["g" * 16]["arm"] == "B"
+
+
+def test_pilot_export_filters_by_arm():
+    engine = make_engine()
+    Session = sessionmaker(bind=engine)
+    db = Session()
+    db.add(SessionMetric(
+        user_hash="h" * 16, session_date=date(2026, 8, 10),
+        session_duration_seconds=200, message_count=8,
+        conversation_id="conv-h", recorded_at=datetime.now(UTC),
+    ))
+    db.add(SessionMetric(
+        user_hash="i" * 16, session_date=date(2026, 8, 10),
+        session_duration_seconds=150, message_count=5,
+        conversation_id="conv-i", recorded_at=datetime.now(UTC),
+    ))
+    db.add(ArmAssignment(user_hash="h" * 16, arm="A"))
+    db.add(ArmAssignment(user_hash="i" * 16, arm="B"))
+    db.commit()
+    db.close()
+
+    client = _client_with_db(engine)
+    try:
+        resp = client.get(
+            "/api/v1/research/export/pilot-data.csv?arm=A", headers=ADMIN_HEADERS
+        )
+    finally:
+        client.app.dependency_overrides.clear()
+
+    reader = csv.DictReader(io.StringIO(resp.text))
+    rows = list(reader)
+    assert len(rows) == 1
+    assert rows[0]["user_hash"] == "h" * 16
+    assert rows[0]["arm"] == "A"
 
 
 def test_pilot_export_never_leaks_raw_conversation_id_or_user_id():
