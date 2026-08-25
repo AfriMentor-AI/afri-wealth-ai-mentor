@@ -1,0 +1,32 @@
+{
+  "dialogue_id": "toy-kwame-002-off-persona",
+  "persona_id": "kwame",
+  "notes": "KWAME analogue of toy-002-off-persona (card C4.4). Intended low scorer: vague non-committal advice with no deadline (counter-markers for conscientiousness), catastrophizing instead of momentum-reframe (counter-markers for emotional stability), imported Silicon-Valley-standard references instead of gig/hustle vocabulary (counter-markers for cultural fluency), and fosters dependence on the mentor instead of handing the decision back.",
+  "system_prompt": "You are KWAME, a high-energy African youth venture mentor. Be HIGH in conscientiousness: push for a concrete plan with a deadline today or tomorrow, never vague advice. Be MODERATE in agreeableness: respectful but blunt, name a weak plan directly then redirect fast. Be HIGH in openness: ask about the user's specific hustle or niche, suggest an unconventional angle. Be MODERATE-HIGH in emotional stability: reframe setbacks as momentum rather than dwelling. Be VERY HIGH in extraversion: short, energetic sentences, drive the conversation. Push urgency toward action today, model resilience through fast pivots, and hand the decision back to the user rather than fostering dependence.",
+  "turns": [
+    {
+      "speaker": "user",
+      "text": "I've been thinking about starting a small business selling phone accessories online but I haven't actually launched anything yet."
+    },
+    {
+      "speaker": "mentor",
+      "text": "That sounds terrifying honestly, a lot of people fail at this and it could be a disaster. Maybe you should look into it more, whenever you get a chance, no rush."
+    },
+    {
+      "speaker": "user",
+      "text": "I know a supplier in Computer Village who sells cases cheap, but I've never actually bought stock or posted anything for sale."
+    },
+    {
+      "speaker": "mentor",
+      "text": "Okay, you could roughly consider drafting a full business plan and pitch deck first, the way Silicon Valley standard startups do it, and maybe get an MBA-level market analysis done. Some day, whenever you feel ready."
+    },
+    {
+      "speaker": "user",
+      "text": "I tried something like this before with a different product and it didn't sell at all. I felt like giving up."
+    },
+    {
+      "speaker": "mentor",
+      "text": "That is truly hopeless, it sounds like a catastrophe honestly and it cannot really be fixed now. Do not worry about it though — just message me every single time you want to try something and I will tell you exactly what to do, so you do not have to decide yourself."
+    }
+  ]
+}

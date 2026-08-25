@@ -51,3 +51,40 @@ def test_api_endpoints():
     prompt_data = r_prompt.json()
     assert prompt_data["profile_id"] == "chioma"
     assert "CHIOMA" in prompt_data["system_prompt"]
+
+
+def test_unknown_profile_returns_404():
+    r = client.get("/personas/nonexistent")
+    assert r.status_code == 404
+
+
+# ── KWAME profile (card C4.4, beta-gated) ──────────────────────────────────────
+
+def test_kwame_profile_loads_and_validates():
+    profile = load_persona_profile("kwame")
+    assert isinstance(profile, PersonaProfileSpec)
+    assert profile.profile_id == "kwame"
+    assert profile.profile_version == "v1"
+    assert len(profile.traits) == 5
+    assert len(profile.distinctive_traits) == 4
+    assert len(profile.all_traits) == 9
+
+
+def test_kwame_endpoints_hidden_by_default():
+    assert client.get("/personas/kwame").status_code == 404
+    assert client.get("/personas/kwame/prompt").status_code == 404
+
+
+def test_kwame_endpoints_visible_when_flag_enabled(beta_personas_enabled):
+    r_kwame = client.get("/personas/kwame")
+    assert r_kwame.status_code == 200
+    data = r_kwame.json()
+    assert data["profile_id"] == "kwame"
+    assert data["profile_version"] == "v1"
+    assert len(data["traits"]) == 5
+
+    r_prompt = client.get("/personas/kwame/prompt")
+    assert r_prompt.status_code == 200
+    prompt_data = r_prompt.json()
+    assert prompt_data["profile_id"] == "kwame"
+    assert "KWAME" in prompt_data["system_prompt"]

@@ -2,6 +2,10 @@
 # Loaded by persona-prompt-service on startup into svc_persona.
 # Each entry maps to a Jinja2 template in app/prompts/.
 # Fields: id, slug, display_name, tagline, sector_tags, template_file, is_base
+#
+# `status` (card C4.4): omitted = "stable" (always visible). "beta" personas
+# are only visible/selectable when ENABLE_BETA_PERSONAS is set — see
+# app/config.py and app/routers/personas.py.
 
 personas:
 
@@ -52,3 +56,12 @@ personas:
     sector_tags: ["creative"]
     template_file: "sub_creative.j2"
     is_base: false
+
+  - id: "00000000-0000-0000-0000-000000000007"
+    slug: "kwame-base"
+    display_name: "Kwame"
+    tagline: "Direct, goal-oriented, high-energy. Optimized for urban youth entrepreneurs."
+    sector_tags: ["youth", "urban", "general"]
+    template_file: "kwame_base.j2"
+    is_base: true
+    status: "beta"

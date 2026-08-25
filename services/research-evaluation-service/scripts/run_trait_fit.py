@@ -60,6 +60,7 @@ def run_experiment(
     name: str | None = None,
     probe_path: Path = DEFAULT_PROBE_PATH,
     dialogue_dir: Path = DEFAULT_DIALOGUE_DIR,
+    profile_path: Path | None = None,
     out_path: Path | None = None,
     live: bool | None = None,
     llm_config: LLMConfig | None = None,
@@ -76,9 +77,15 @@ def run_experiment(
 
     The mode is recorded on the run (``model_id`` is suffixed for fixture runs) so a
     stored report can never be mistaken for a real baseline.
+
+    ``profile_path`` defaults (via :func:`load_profile`) to the CHIOMA target
+    profile. Card C4.4 passes KWAME's profile here to run the identical scoring
+    code — ``score_probe_traits`` / ``score_dialogue`` — against a second persona;
+    :func:`~app.llm.fetch_system_prompt` then fetches that persona's own prompt
+    from persona-prompt-service, keyed off ``profile.profile_id``.
     """
     Base.metadata.create_all(bind=engine)
-    profile = load_profile()
+    profile = load_profile(profile_path)
 
     config = llm_config or LLMConfig.from_env()
     if live is None:
@@ -251,6 +258,22 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--model-id", default="baseline-lexical-v0")
     parser.add_argument("--name", default=None, help="Unique run name; auto-generated if omitted")
     parser.add_argument("--out", type=Path, default=None, help="Write JSON report to this path")
+    parser.add_argument(
+        "--profile-path",
+        type=Path,
+        default=None,
+        help=(
+            "Target profile JSON to score against (card C4.4). Defaults to the "
+            "CHIOMA profile; pass persona-prompt-service/data/kwame_profile.v1.json "
+            "to run this same suite against KWAME."
+        ),
+    )
+    parser.add_argument(
+        "--dialogue-dir",
+        type=Path,
+        default=DEFAULT_DIALOGUE_DIR,
+        help="Directory of toy dialogue JSON files to score (default: CHIOMA's).",
+    )
     mode = parser.add_mutually_exclusive_group()
     mode.add_argument(
         "--live",
@@ -272,6 +295,8 @@ def main(argv: list[str] | None = None) -> int:
         result = run_experiment(
             model_id=args.model_id,
             name=args.name,
+            dialogue_dir=args.dialogue_dir,
+            profile_path=args.profile_path,
             out_path=args.out,
             live=live_arg,
         )

@@ -55,6 +55,9 @@ services:
   persona-prompt-service:
     environment:
       APP_ENV: staging
+      # Card C4.4 — staging is the feature-flagged test environment where the
+      # KWAME beta persona is selectable; prod/dev stay default-off.
+      ENABLE_BETA_PERSONAS: "true"
 
   rag-corpus-service:
     environment:

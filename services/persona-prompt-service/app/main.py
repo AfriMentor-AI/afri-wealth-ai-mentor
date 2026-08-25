@@ -50,20 +50,37 @@ def root() -> dict:
     }
 
 
-@app.get("/personas/chioma", response_model=PersonaProfileSpec, tags=["personas"])
-def get_chioma_profile() -> PersonaProfileSpec:
-    """Return the canonical CHIOMA target personality profile specification (card C1.4)."""
+# card C4.4: profile ids gated behind ENABLE_BETA_PERSONAS until promoted to stable.
+_BETA_PROFILE_IDS = {"kwame"}
+
+
+def _check_profile_visible(profile_id: str) -> None:
+    if profile_id in _BETA_PROFILE_IDS and not get_settings().enable_beta_personas:
+        raise HTTPException(status_code=404, detail="Persona not found")
+
+
+@app.get("/personas/{profile_id}", response_model=PersonaProfileSpec, tags=["personas"])
+def get_persona_profile(profile_id: str) -> PersonaProfileSpec:
+    """Return the canonical target personality profile specification for a persona
+    (card C1.4 for CHIOMA, generalized under card C4.4 for additional personas)."""
+    _check_profile_visible(profile_id)
     try:
-        return load_persona_profile()
+        return load_persona_profile(profile_id)
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail="Persona not found") from exc
     except Exception as exc:
         raise HTTPException(status_code=500, detail=str(exc)) from exc
 
 
-@app.get("/personas/chioma/prompt", tags=["personas"])
-def get_chioma_prompt() -> dict[str, str]:
-    """Return the CHIOMA system prompt assembled from the target spec (card D1.3)."""
+@app.get("/personas/{profile_id}/prompt", tags=["personas"])
+def get_persona_prompt(profile_id: str) -> dict[str, str]:
+    """Return the system prompt assembled from a persona's target spec (card D1.3)."""
+    _check_profile_visible(profile_id)
     try:
-        profile = load_persona_profile()
+        profile = load_persona_profile(profile_id)
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail="Persona not found") from exc
+    try:
         prompt = build_system_prompt(profile)
         return {
             "profile_id": profile.profile_id,

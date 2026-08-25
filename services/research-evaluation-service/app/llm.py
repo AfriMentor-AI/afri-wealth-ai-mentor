@@ -38,7 +38,6 @@ logger = logging.getLogger(__name__)
 
 DEFAULT_BASE_URL = "https://api.groq.com/openai/v1"
 DEFAULT_MODEL = "Qwen/Qwen2.5-7B-Instruct"
-PERSONA_PROMPT_PATH = "/personas/chioma/prompt"
 
 #: Retried status codes: rate limiting and transient upstream faults. A probe set
 #: is 8+ sequential calls, so one 429 must not discard the whole run.
@@ -159,13 +158,17 @@ def fetch_system_prompt(
     when the service is unset or unreachable, and logs a warning on a profile-version
     mismatch: scoring answers against v1 targets when the model was prompted with a
     different version is a silent, invisible error.
+
+    The endpoint is built from ``profile.profile_id`` (card C4.4) rather than a fixed
+    "chioma" path, so this same call fetches any registered persona's prompt — e.g.
+    KWAME's, when scoring against ``kwame_profile.v1.json``.
     """
     url = persona_service_url or os.getenv("PERSONA_SERVICE_URL", "")
     if not url:
         logger.info("PERSONA_SERVICE_URL unset — building system prompt locally")
         return build_system_prompt_local(profile), "local"
 
-    endpoint = url.rstrip("/") + PERSONA_PROMPT_PATH
+    endpoint = url.rstrip("/") + f"/personas/{profile.profile_id}/prompt"
     try:
         response = httpx.get(endpoint, timeout=timeout)
         response.raise_for_status()

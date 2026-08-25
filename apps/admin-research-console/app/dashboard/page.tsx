@@ -236,11 +236,18 @@ function DashboardScreen() {
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {personas.map((p) => (
               <div key={p.id} className="rounded-md border border-border bg-surface-raised p-4">
-                <div className="mb-1 flex items-center justify-between">
+                <div className="mb-1 flex items-center justify-between gap-2">
                   <p className="font-semibold">{p.display_name}</p>
-                  {p.is_base && (
-                    <span className="rounded bg-accent/20 px-2 py-0.5 text-xs text-accent">Base</span>
-                  )}
+                  <div className="flex shrink-0 items-center gap-1">
+                    {p.is_base && (
+                      <span className="rounded bg-accent/20 px-2 py-0.5 text-xs text-accent">Base</span>
+                    )}
+                    {p.status === "beta" && (
+                      <span className="rounded bg-amber-500/20 px-2 py-0.5 text-xs text-amber-500">
+                        Beta
+                      </span>
+                    )}
+                  </div>
                 </div>
                 <p className="text-sm text-on-surface-dim">{p.tagline}</p>
                 <p className="mt-2 text-xs text-on-surface-dim">{p.sector_tags.join(", ")}</p>
