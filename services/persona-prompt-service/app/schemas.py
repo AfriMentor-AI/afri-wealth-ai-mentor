@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import Literal
+
 from pydantic import BaseModel
 
 
@@ -11,6 +13,7 @@ class PersonaMeta(BaseModel):
     sector_tags: list[str]
     template_file: str
     is_base: bool
+    status: Literal["stable", "beta"] = "stable"
 
 
 class SelectPersonaRequest(BaseModel):

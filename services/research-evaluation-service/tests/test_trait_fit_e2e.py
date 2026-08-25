@@ -1,5 +1,6 @@
 """C2.3 — Trait-fit metric end-to-end tests."""
 import json
+from pathlib import Path
 from unittest.mock import patch
 
 from app.metrics.profile import load_profile
@@ -12,6 +13,11 @@ from scripts.run_trait_fit import (
     load_probes,
     run_experiment,
 )
+
+# card C4.4 — same harness, pointed at the second persona.
+_SERVICES_ROOT = Path(__file__).resolve().parents[2]
+KWAME_PROFILE_PATH = _SERVICES_ROOT / "persona-prompt-service" / "data" / "kwame_profile.v1.json"
+KWAME_DIALOGUE_DIR = Path(__file__).resolve().parents[1] / "data" / "toy_dialogues_kwame"
 
 # ── Unit tests (no DB needed) ─────────────────────────────────────────────────
 
@@ -140,6 +146,39 @@ def test_run_experiment_probe_cosine_in_range(tmp_path):
 
     cosine = result["probe_trait_fit"]["cosine_similarity"]
     assert -1.0 <= cosine <= 1.0
+
+
+def test_run_experiment_scores_kwame_through_same_suite(tmp_path):
+    """Card C4.4 — the identical harness, pointed at KWAME's profile + dialogues."""
+    from sqlalchemy.orm import sessionmaker
+
+    engine = _make_in_memory_engine()
+    Session = sessionmaker(bind=engine)
+
+    with (
+        patch("scripts.run_trait_fit.engine", engine),
+        patch("scripts.run_trait_fit.SessionLocal", Session),
+    ):
+        result = run_experiment(
+            model_id="kwame-baseline-test",
+            name="kwame-test-run-001",
+            profile_path=KWAME_PROFILE_PATH,
+            dialogue_dir=KWAME_DIALOGUE_DIR,
+            live=False,  # fixture answers, not a real model call
+        )
+
+    assert result["status"] == "completed"
+    assert result["profile_id"] == "kwame"
+    cosine = result["probe_trait_fit"]["cosine_similarity"]
+    assert -1.0 <= cosine <= 1.0
+    # 3 dialogues (on-persona, off-persona, persona-drift), matching CHIOMA's set.
+    assert len(result["dialogue_reports"]) == 3
+    dialogue_ids = {d["dialogue_id"] for d in result["dialogue_reports"]}
+    assert dialogue_ids == {
+        "toy-kwame-001-on-persona",
+        "toy-kwame-002-off-persona",
+        "toy-kwame-003-persona-drift",
+    }
 
 
 def test_main_cli_runs_successfully(tmp_path):

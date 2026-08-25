@@ -23,8 +23,16 @@ _PERSONAS_FILE = Path(__file__).resolve().parents[1] / "prompts" / "personas.yam
 
 
 def _load_personas() -> list[PersonaMeta]:
+    """Load the full catalogue, then hide `status: beta` personas (card C4.4)
+    unless ENABLE_BETA_PERSONAS is set — applied once here so list/select/
+    preview/prompt all treat a hidden beta persona identically to an unknown
+    one (404), rather than each endpoint re-implementing the gate.
+    """
     data = yaml.safe_load(_PERSONAS_FILE.read_text(encoding="utf-8"))
-    return [PersonaMeta(**p) for p in data["personas"]]
+    personas = [PersonaMeta(**p) for p in data["personas"]]
+    if get_settings().enable_beta_personas:
+        return personas
+    return [p for p in personas if p.status != "beta"]
 
 
 def _find_persona(persona_id: str) -> PersonaMeta:

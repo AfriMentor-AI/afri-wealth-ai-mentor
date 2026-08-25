@@ -240,6 +240,7 @@ export interface PersonaMeta {
   sector_tags: string[];
   template_file: string;
   is_base: boolean;
+  status: "stable" | "beta";
 }
 
 export async function fetchPersonas(): Promise<PersonaMeta[]> {
