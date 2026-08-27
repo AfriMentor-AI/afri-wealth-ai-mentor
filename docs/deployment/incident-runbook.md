@@ -1,5 +1,8 @@
 # Incident runbook (card O4.5)
 
+> **Note for Production & Long-Term Maintenance:**  
+> For the comprehensive production SRE guide, Sev 1–4 incident management framework, service-by-service runbooks, and disaster recovery procedures beyond initial MVP staging, see **[docs/operations/operational-runbooks.md](../operations/operational-runbooks.md)**.
+
 Scope: what to do when something in staging (or, once it exists, production)
 is broken. Written for the current reality — no cloud environment yet, no
 alerting pipeline wired to a pager, a 4-person team — not aspirational
