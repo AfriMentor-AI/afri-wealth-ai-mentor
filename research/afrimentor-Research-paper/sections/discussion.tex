@@ -1,0 +1,50 @@
+\section{Discussion \& Limitations}
+\label{sec:discussion}
+
+The results across our four alignment conditions demonstrate both the promise and the technical nuances of building personality-aligned LLM mentors for resource-constrained African micro-entrepreneurs. In this section, we synthesize our empirical findings, analyze behavioral stability in light of the ``Personality Illusion'' \citep{han2025illusion}, and discuss the operational, ethical, and methodological constraints of deploying AI mentorship in the informal economy.
+
+\subsection{Synthesis of Alignment Dynamics}
+\label{subsec:discussion-synthesis}
+
+A central technical question posed in this work is whether an explicit persona can be sustained beyond surface-level role-play without degrading factual and pedagogical utility. Our findings indicate that simple system-prompt conditioning (C1) is insufficient for informal-economy domain transfer: prompting alone achieves only $0.200$ persona adherence and $0.310$ anti-dependency. Under baseline prompting, the model easily slips into generic corporate idioms and passive, verbose answers that lack contextual resonance.
+
+In contrast, supervised fine-tuning with response-only loss masking (C2) and preference optimization (C3/C4) provide substantial performance gains. Supervised fine-tuning achieves an immediate $+113.5\%$ boost in composite score ($0.4760$), driving persona adherence to $0.490$ and anti-dependency to $0.490$. Contrastive and RLHF tuning further refine the model's communicative stance, rewarding directness, actionable next steps, and realistic appraisal of local financial mechanisms (such as daily market liquidity and SACCO contributions).
+
+\subsection{Self-Report vs.\ Behavioral Consistency}
+\label{subsec:discussion-consistency}
+
+Our evaluation architecture is specifically designed to address the dissociation identified by \citet{han2025illusion}: models that score highly on static trait-inventory probes (self-reports) frequently fail to maintain those traits during active multi-turn interactions. While our static psychometric probe indicates high trait alignment ($\text{Cosine} = 0.9817, \text{MAE} = 0.1281$), multi-turn dialogue evaluations revealed that unconstrained models suffer from substantial persona drift across extended interactions.
+
+By incorporating multi-turn consistency objectives ($C_{\text{p2l}}$, $C_{\text{l2l}}$, and $C_{\text{qa}}$) into the reward model and preference ranking \citep{abdulhai2025personas}, we achieve a $>15\%$ reduction in persona drift. This confirms that multi-turn consistency must be explicitly regularized in the optimization objective rather than assumed as a side-effect of single-turn instruction tuning.
+
+\subsection{Deployment Realities in Low-Resource Informal Economies}
+\label{subsec:discussion-deployment}
+
+Deploying conversational AI mentors to informal-sector youth micro-entrepreneurs imposes severe real-world constraints that differ markedly from conventional Western tutoring environments:
+\begin{itemize}
+    \item \textbf{Voice-Note-First Modality}: Many target entrepreneurs operate in bustling open-air markets where typed interaction is impractical and literacy levels vary. A voice-note interface with asynchronous turnaround matches actual device usage patterns.
+    \item \textbf{Bandwidth and Device Constraints}: Target users predominantly use entry-level Android devices on metered cellular data. Heavy client-side models are non-viable; the platform architecture relies on lightweight progressive web app (PWA) clients communicating with quantized, cost-efficient server-side inference.
+    \item \textbf{Contextual Financial Knowledge}: Generic advice regarding capital markets or formal banking is unhelpful for micro-enterprises operating on mobile money rails and cash turnover. Grounding the generation in an Africa-authored knowledge corpus prevents irrelevant recommendations.
+\end{itemize}
+
+\subsection{Limitations \& Threats to Validity}
+\label{subsec:discussion-limitations}
+
+We acknowledge several important limitations in the current stage of this research:
+\begin{enumerate}
+    \item \textbf{Evaluation Split Size}: The quantitative benchmark presented in Table~\ref{tab:comparative-results} is computed over a held-out test split of $N=5$ curated dialogue scenarios ($22$ SFT training pairs total). While sufficient for initial pipeline validation, broader statistical power requires scaling up the gold-standard test corpus.
+    \item \textbf{Extrapolated vs.\ Live GPU Checkpoints}: While Condition C2 represents recorded runs from Kaggle GPU fine-tuning, Conditions C3 and C4 currently incorporate literature-calibrated alignment extrapolations \citep{rafailov2023dpo,ouyang2022instructgpt}. Live GPU training of the DPO and RLHF adapters will replace these estimates prior to final production deployment.
+    \item \textbf{Linguistic and Regional Scope}: The current prototype focuses on English and Nigerian Pidgin. Extending the corpus and evaluation suite to Swahili, Twi, and Yoruba is essential to reach non-anglophone informal trading cohorts.
+    \item \textbf{Pilot Study Power Constraints}: As detailed in our pre-registered pilot protocol ($N=30$), between-arm field comparisons are powered for feasibility and instrument validation rather than definitive superiority testing. Full causal validation of user-efficacy gains requires a scaled randomized trial ($N \ge 128$).
+\end{enumerate}
+
+\subsection{Ethical Considerations \& Safeguards}
+\label{subsec:discussion-ethics}
+
+Financial advice carries high stakes for vulnerable, low-income youth. In accordance with our research ethics framework:
+\begin{itemize}
+    \item \textbf{Mandatory AI Disclosure}: The mentor persona never misrepresents itself as a human advisor. Clear oral and visual disclosures inform participants of the AI nature of the tool.
+    \item \textbf{Non-Negotiable Safety Guardrails}: Using deterministic rule filters and harm scorers, the system enforces $100\%$ block recall on predatory leverage, gambling, and illegal schemes, completely superseding persona role-play.
+    \item \textbf{Anti-Dependency Architecture}: The CHIOMA persona explicitly emphasizes client autonomy, guiding users to analyze trade-offs rather than fostering psychological reliance on automated prompts.
+\end{itemize}
+

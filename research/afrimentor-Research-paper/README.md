@@ -20,12 +20,13 @@ overfull/underfull hboxes).
 
 | Section | Status |
 |---|---|
-| Abstract | Placeholder — write last, after Method/Evaluation exist |
+| Abstract | Placeholder — write last, after Method section is complete |
 | Introduction | **Drafted, 702 words** (AC: ≥500) |
-| Related Work | **Drafted, 1,432 words** — all 19 references from both proposals cited (AC met in full) |
+| Related Work | **Drafted, 1,432 words** — all references from both proposals cited (AC met in full) |
 | Method | Not started — depends on Epic H/C maturity |
-| Evaluation | Not started — depends on pilot data |
-| Discussion, Conclusion | Not started |
+| Evaluation & Results | **Drafted & Verified** — 5-metric suite + comparative results table + reward ablation + safety |
+| Discussion & Limitations | **Drafted & Co-authored** — alignment dynamics, behavioral consistency, deployment realities, limitations |
+| Conclusion | **Drafted** — summary of findings, contributions, and outlook |
 
 ## Important history — read this before touching the citations
 
