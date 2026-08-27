@@ -106,12 +106,23 @@ def test_stream_assembly_returns_first_chunk_without_waiting_for_tail():
 def test_parallel_prompt_and_rag_retrieval(monkeypatch):
     import app.llm as llm
 
+    prompt_start = 0.0
+    prompt_end = 0.0
+    rag_start = 0.0
+    rag_end = 0.0
+
     async def slow_prompt(persona_id):
-        await asyncio.sleep(0.05)
+        nonlocal prompt_start, prompt_end
+        prompt_start = time.perf_counter()
+        await asyncio.sleep(0.04)
+        prompt_end = time.perf_counter()
         return "You are Chioma."
 
     async def slow_rag(query, *, collection=None, top_k=3):
-        await asyncio.sleep(0.05)
+        nonlocal rag_start, rag_end
+        rag_start = time.perf_counter()
+        await asyncio.sleep(0.04)
+        rag_end = time.perf_counter()
         return [RagResult("knowledge content", "Test Source", 0.9)]
 
     monkeypatch.setattr(llm, "_get_system_prompt", slow_prompt)
@@ -129,8 +140,8 @@ def test_parallel_prompt_and_rag_retrieval(monkeypatch):
         return elapsed, citations
 
     elapsed, citations = asyncio.run(run())
-    # If sequential, it would take >= 0.10s. Since parallelized via asyncio.gather, it completes in ~0.05s (< 0.09s)
-    assert elapsed < 0.09
+    # Both async tasks overlap in time (concurrent execution via asyncio.gather)
+    assert max(prompt_start, rag_start) < min(prompt_end, rag_end)
     assert citations == [{"label": "Test Source"}]
 
 
