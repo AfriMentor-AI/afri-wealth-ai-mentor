@@ -80,6 +80,13 @@ async def retrieve(
         global _http_client
         if _http_client is None:
             _http_client = httpx.AsyncClient(timeout=httpx.Timeout(1.5, connect=0.3))
+            _http_client = httpx.AsyncClient(
+                timeout=httpx.Timeout(1.5, connect=0.3),
+                limits=httpx.Limits(
+                    max_connections=settings.http_pool_max_connections,
+                    max_keepalive_connections=settings.http_pool_max_keepalive,
+                ),
+            )
         response = await _http_client.post(
             f"{settings.rag_service_url}/api/v1/rag/query",
             json=payload,

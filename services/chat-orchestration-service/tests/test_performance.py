@@ -101,3 +101,81 @@ def test_stream_assembly_returns_first_chunk_without_waiting_for_tail():
     assert seen[0][0] == "first"
     assert seen[0][1] < 0.05
     assert "".join(token for token, _ in seen) == "first tail"
+
+
+def test_parallel_prompt_and_rag_retrieval(monkeypatch):
+    import app.llm as llm
+
+    prompt_start = 0.0
+    prompt_end = 0.0
+    rag_start = 0.0
+    rag_end = 0.0
+
+    async def slow_prompt(persona_id):
+        nonlocal prompt_start, prompt_end
+        prompt_start = time.perf_counter()
+        await asyncio.sleep(0.04)
+        prompt_end = time.perf_counter()
+        return "You are Chioma."
+
+    async def slow_rag(query, *, collection=None, top_k=3):
+        nonlocal rag_start, rag_end
+        rag_start = time.perf_counter()
+        await asyncio.sleep(0.04)
+        rag_end = time.perf_counter()
+        return [RagResult("knowledge content", "Test Source", 0.9)]
+
+    monkeypatch.setattr(llm, "_get_system_prompt", slow_prompt)
+    monkeypatch.setattr(llm, "retrieve", slow_rag)
+
+    async def run():
+        started = time.perf_counter()
+        stream, citations = await llm.stream_chat_completion(
+            history=[],
+            user_content="How do I save?",
+            persona_id="chioma-base",
+            rag_collection=None,
+        )
+        elapsed = time.perf_counter() - started
+        return elapsed, citations
+
+    elapsed, citations = asyncio.run(run())
+    # Both async tasks overlap in time (concurrent execution via asyncio.gather)
+    assert max(prompt_start, rag_start) < min(prompt_end, rag_end)
+    assert citations == [{"label": "Test Source"}]
+
+
+def test_concurrent_streaming_at_pilot_exit_concurrency():
+    """Simulate 60 concurrent streaming chat requests (2x pilot cohort = 60 users).
+
+    Verifies that async streaming pipelines and token generators handle 60 concurrent
+    streaming tasks cleanly with sub-second latencies and without resource starvation.
+    """
+    import app.llm as llm
+
+    async def run_concurrent():
+        async def stream_one(user_idx: int):
+            started = time.perf_counter()
+            stream, citations = await llm.stream_chat_completion(
+                history=[],
+                user_content=f"User query {user_idx}",
+                persona_id="chioma-base",
+                rag_collection=None,
+            )
+            tokens = []
+            async for token in stream:
+                tokens.append(token)
+            elapsed = time.perf_counter() - started
+            return elapsed, "".join(tokens)
+
+        tasks = [stream_one(i) for i in range(60)]
+        results = await asyncio.gather(*tasks)
+        return results
+
+    results = asyncio.run(run_concurrent())
+    assert len(results) == 60
+    # All 60 streams run concurrently and complete well within budget
+    for elapsed, text in results:
+        assert elapsed < 1.0
+        assert len(text) > 0
+

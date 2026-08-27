@@ -34,6 +34,9 @@ class Settings(BaseModel):
     )
     cache_ttl_seconds: float = float(os.getenv("CHAT_CACHE_TTL_SECONDS", "300"))
     cache_max_entries: int = int(os.getenv("CHAT_CACHE_MAX_ENTRIES", "256"))
+    http_pool_max_connections: int = int(os.getenv("HTTP_POOL_MAX_CONNECTIONS", "120"))
+    http_pool_max_keepalive: int = int(os.getenv("HTTP_POOL_MAX_KEEPALIVE", "60"))
+    guardrails_stream_check_interval: int = int(os.getenv("GUARDRAILS_STREAM_CHECK_INTERVAL", "4"))
 
     # RabbitMQ exchange (ADR-0001 §D3)
     amqp_exchange: str = "afrimentor.events"
