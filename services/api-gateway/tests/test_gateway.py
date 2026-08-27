@@ -101,10 +101,14 @@ def test_client_cannot_spoof_identity_header(client, token_factory, monkeypatch)
 
 
 def test_rate_limit_returns_429(client, monkeypatch):
+    from app import ratelimit
     _patch_upstream(monkeypatch)
+    # Freeze time so test is immune to minute-boundary rollovers
+    monkeypatch.setattr(ratelimit.time, "time", lambda: 1700000000.0)
     # public auth route limit is 20/min; hammer past it from one IP
     last = None
     for _ in range(25):
         last = client.post("/api/v1/auth/login", json={})
     assert last.status_code == 429
     assert last.headers.get("Retry-After")
+
