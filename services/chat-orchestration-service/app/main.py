@@ -60,6 +60,7 @@ def health() -> dict:
         "version": SERVICE_VERSION,
         "env": settings.env,
         "llm_model": settings.llm_model,
+        "chioma_alignment_condition": settings.chioma_alignment_condition,
     }
 
 
