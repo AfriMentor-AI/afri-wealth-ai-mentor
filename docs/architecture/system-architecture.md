@@ -182,7 +182,7 @@ sequenceDiagram
     end
 
     Chat->>Chat: Persist User Message & Assistant Reply in svc_chat DB
-    Chat->)RMQ: Publish domain event "chat.turn_completed" (Routing Key: chat.turn)
+    Chat-)RMQ: Publish domain event "chat.turn_completed" (Routing Key: chat.turn)
     
     note over RMQ,Chat: Async downstream processing does not block user response.
 ```

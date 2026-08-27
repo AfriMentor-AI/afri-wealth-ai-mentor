@@ -78,17 +78,13 @@ graph TD
 ### 3.1 Definition of Done (DoD) for Microservices
 No new service or major feature is accepted into `develop` or production without satisfying the following criteria:
 
-```mermaid
-checklist
-    title Microservice Acceptance Criteria
-    - [x] OpenAPI 3.1 contract documented in docs/api/<service>.yaml
-    - [x] Unit test coverage >= 85% with passing pytest suite
-    - [x] Healthcheck endpoint (/health) verifies internal DB/Redis connectivity
-    - [x] Structured JSON logging via app/observability.py with Correlation ID
-    - [x] Database migrations managed via Alembic (Zero-downtime expand/contract)
-    - [x] Dockerfile builds cleanly and runs as a non-root user
-    - [x] Prometheus metrics exposed on /metrics
-```
+- [x] **OpenAPI Contract:** OpenAPI 3.1 contract documented in `docs/api/<service>.yaml`
+- [x] **Test Coverage:** Unit test coverage $\ge$ 85% with passing pytest suite
+- [x] **Health Check:** Healthcheck endpoint (`/health`) verifies internal DB/Redis connectivity
+- [x] **Structured Logging:** Structured JSON logging via `app/observability.py` with Correlation ID
+- [x] **Schema Migrations:** Database migrations managed via Alembic (Zero-downtime expand/contract)
+- [x] **Container Security:** Dockerfile builds cleanly and runs as a non-root user
+- [x] **Telemetry:** Prometheus metrics exposed on `/metrics`
 
 ---
 
