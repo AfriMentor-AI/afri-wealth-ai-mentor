@@ -441,3 +441,4 @@ flowchart LR
    - All external connections require TLS 1.3.
    - Microservices communicate over isolated internal Docker networks.
    - PII (Phone numbers, National ID data, income brackets) is masked before persisting in evaluation traces or logging pipelines.
+

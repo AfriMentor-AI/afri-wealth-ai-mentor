@@ -150,3 +150,4 @@ The ARB consists of the four service area owners and convenes bi-weekly or upon 
 2. **Review Process:**
    - Author files markdown draft in `docs/adr/000X-<title>.md`.
    - Minimum 2 approvals required from domain peers prior to merge.
+

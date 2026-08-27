@@ -238,3 +238,4 @@ docker exec -it afrimentor-prod-postgres-1 psql -U afrimentor -d svc_chat -c "SE
 docker compose -p afrimentor-prod start api-gateway
 curl -f http://localhost:8000/health
 ```
+
