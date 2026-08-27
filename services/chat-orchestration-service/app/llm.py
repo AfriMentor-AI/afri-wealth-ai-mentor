@@ -4,6 +4,7 @@ Builds the messages list sent to the OpenAI-compatible API.
 """
 from __future__ import annotations
 
+import asyncio
 import logging
 import time
 from collections.abc import AsyncIterator
@@ -105,6 +106,13 @@ async def _get_system_prompt(persona_id: str | None) -> str:
         global _persona_http_client
         if _persona_http_client is None:
             _persona_http_client = httpx.AsyncClient(timeout=httpx.Timeout(1.5, connect=0.3))
+            _persona_http_client = httpx.AsyncClient(
+                timeout=httpx.Timeout(1.5, connect=0.3),
+                limits=httpx.Limits(
+                    max_connections=settings.http_pool_max_connections,
+                    max_keepalive_connections=settings.http_pool_max_keepalive,
+                ),
+            )
         resp = await _persona_http_client.get(
             f"{settings.persona_service_url}/api/v1/personas/{persona_id}/prompt",
         )
@@ -172,8 +180,10 @@ async def chat_completion(
     renderer; it is empty when no RAG chunks were retrieved.
     Falls back to a stub reply when LLM_API_KEY is not configured.
     """
-    system_prompt = await _get_system_prompt(persona_id)
-    chunks = await retrieve(user_content, collection=rag_collection)
+    system_prompt, chunks = await asyncio.gather(
+        _get_system_prompt(persona_id),
+        retrieve(user_content, collection=rag_collection),
+    )
 
     messages: list[dict] = [{"role": "system", "content": system_prompt}]
 
@@ -234,8 +244,10 @@ async def stream_chat_completion(
     rag_collection: str | None,
 ) -> tuple[AsyncIterator[str], list[dict]]:
     """Prepare a provider token stream and return it with its RAG citations."""
-    system_prompt = await _get_system_prompt(persona_id)
-    chunks = await retrieve(user_content, collection=rag_collection)
+    system_prompt, chunks = await asyncio.gather(
+        _get_system_prompt(persona_id),
+        retrieve(user_content, collection=rag_collection),
+    )
     messages: list[dict] = [{"role": "system", "content": system_prompt}]
     if chunks:
         messages.append({"role": "system", "content": _build_rag_system_message(chunks)})

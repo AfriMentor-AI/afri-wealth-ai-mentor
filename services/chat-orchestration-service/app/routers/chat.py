@@ -152,16 +152,25 @@ async def stream_message(
     if conv.status != "active":
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Session is not active")
 
+    # Snapshot history and session attributes before long async I/O
+    history_messages = [Message(role=m.role, content=m.content) for m in conv.messages]
+    persona_id = conv.persona_id
+    rag_collection = conv.rag_collection
     next_seq = len(conv.messages)
+
     user_msg = Message(
-        conversation_id=conv.id,
+        conversation_id=session_id,
         role="user",
         content=body.content,
         sequence=next_seq,
     )
     db.add(user_msg)
-    db.flush()
-    guardrails_on = get_settings().guardrails_enabled
+    # Commit user message immediately to release DB connection back to pool
+    db.commit()
+
+    settings = get_settings()
+    guardrails_on = settings.guardrails_enabled
+    check_interval = settings.guardrails_stream_check_interval
     input_decision = screen_input(body.content) if guardrails_on else ALLOWED
 
     async def events():
@@ -174,17 +183,23 @@ async def stream_message(
             yield f"event: token\ndata: {json.dumps({'text': reply_text})}\n\n"
         else:
             stream, citations = await stream_chat_completion(
-                history=conv.messages,
+                history=history_messages,
                 user_content=body.content,
-                persona_id=conv.persona_id,
-                rag_collection=conv.rag_collection,
+                persona_id=persona_id,
+                rag_collection=rag_collection,
             )
             parts: list[str] = []
+            token_count = 0
             async for token in stream:
                 parts.append(token)
-                partial_decision = screen_output("".join(parts)) if guardrails_on else ALLOWED
-                if partial_decision.blocked:
-                    break
+                token_count += 1
+                if guardrails_on and (
+                    token_count % check_interval == 0
+                    or any(c in token for c in ("\n", ".", "!", "?"))
+                ):
+                    partial_decision = screen_output("".join(parts))
+                    if partial_decision.blocked:
+                        break
                 yield f"event: token\ndata: {json.dumps({'text': token})}\n\n"
 
             reply_text = "".join(parts)
@@ -200,8 +215,9 @@ async def stream_message(
             candidate = is_commitment_candidate(body.content) and not decision.blocked
             prompt_tokens = completion_tokens = 0
 
+        # Persist assistant turn and update conversation counters
         assistant_msg = Message(
-            conversation_id=conv.id,
+            conversation_id=session_id,
             role="assistant",
             content=reply_text,
             sequence=next_seq + 1,
@@ -213,13 +229,16 @@ async def stream_message(
             guardrail_categories=list(decision.categories),
         )
         db.add(assistant_msg)
-        conv.total_prompt_tokens += prompt_tokens
-        conv.total_completion_tokens += completion_tokens
+        conv_record = db.get(Conversation, session_id)
+        if conv_record:
+            conv_record.total_prompt_tokens += prompt_tokens
+            conv_record.total_completion_tokens += completion_tokens
         db.commit()
         db.refresh(assistant_msg)
+
         if candidate:
             emit_commitment_tag_suggested(
-                conversation_id=conv.id,
+                conversation_id=session_id,
                 message_id=assistant_msg.id,
                 user_id=user_id,
                 content=reply_text,
@@ -254,54 +273,52 @@ async def send_message(
     if conv.status != "active":
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Session is not active")
 
-    # Persist the user turn
+    # Snapshot history and parameters
+    history_messages = [Message(role=m.role, content=m.content) for m in conv.messages]
+    persona_id = conv.persona_id
+    rag_collection = conv.rag_collection
     next_seq = len(conv.messages)
+
+    # Persist the user turn immediately and commit
     user_msg = Message(
-        conversation_id=conv.id,
+        conversation_id=session_id,
         role="user",
         content=body.content,
         sequence=next_seq,
     )
     db.add(user_msg)
-    db.flush()
+    db.commit()
 
     guardrails_on = get_settings().guardrails_enabled
 
     # Pre-hook (card C2.4): screen the user's message before anything expensive.
-    # A block here means the query never reaches the RAG corpus or the LLM, which
-    # is what "blocks retrieval of high-risk advice" requires — cheaper than
-    # generating a reply and discarding it, and it leaves no unsafe text to leak.
     input_decision = screen_input(body.content) if guardrails_on else ALLOWED
 
     if input_decision.blocked:
         logger.warning(
             "guardrail blocked user input: conversation=%s categories=%s",
-            conv.id,
+            session_id,
             list(input_decision.categories),
         )
         reply_text = refusal_message(input_decision)
         prompt_tokens = completion_tokens = 0
         citations: list = []
         decision = input_decision
-        # A refused turn must never become a tracked goal, even if the user
-        # phrased it as a commitment ("I will put my savings into crypto").
         candidate = False
     else:
-        # Call LLM (with RAG retrieval)
+        # Call LLM (with concurrent RAG and persona retrieval)
         reply_text, prompt_tokens, completion_tokens, citations = await chat_completion(
-            history=conv.messages,
+            history=history_messages,
             user_content=body.content,
-            persona_id=conv.persona_id,
-            rag_collection=conv.rag_collection,
+            persona_id=persona_id,
+            rag_collection=rag_collection,
         )
 
-        # Post-hook: screen the reply. Catches the model volunteering a specific
-        # instrument in answer to an innocuous question — invisible to the pre-hook.
         output_decision = screen_output(reply_text) if guardrails_on else ALLOWED
         if output_decision.blocked:
             logger.warning(
                 "guardrail blocked model output: conversation=%s categories=%s",
-                conv.id,
+                session_id,
                 list(output_decision.categories),
             )
             reply_text = refusal_message(output_decision)
@@ -309,20 +326,14 @@ async def send_message(
         else:
             reply_text = apply_disclaimer(reply_text, output_decision)
 
-        # Input severity is considered too: a disclaim-tier input (general
-        # investment talk) still earns a disclaimer when the reply itself reads clean.
         decision = most_severe(input_decision, output_decision)
         if decision.action is GuardrailAction.disclaim:
             reply_text = apply_disclaimer(reply_text, decision)
 
-        # Detect commitment from the user message — the commitment is expressed
-        # by the user, not the assistant. Chioma echoes it in third person which
-        # never matches user-voiced keywords. Sprint 4 replaces this with a
-        # structured LLM output field.
         candidate = is_commitment_candidate(body.content) and not decision.blocked
 
     assistant_msg = Message(
-        conversation_id=conv.id,
+        conversation_id=session_id,
         role="assistant",
         content=reply_text,
         sequence=next_seq + 1,
@@ -336,8 +347,10 @@ async def send_message(
     db.add(assistant_msg)
 
     # Update conversation token totals
-    conv.total_prompt_tokens += prompt_tokens
-    conv.total_completion_tokens += completion_tokens
+    conv_record = db.get(Conversation, session_id)
+    if conv_record:
+        conv_record.total_prompt_tokens += prompt_tokens
+        conv_record.total_completion_tokens += completion_tokens
 
     db.commit()
     db.refresh(assistant_msg)
@@ -345,7 +358,7 @@ async def send_message(
     # Emit domain event if the reply is a commitment candidate
     if candidate:
         emit_commitment_tag_suggested(
-            conversation_id=conv.id,
+            conversation_id=session_id,
             message_id=assistant_msg.id,
             user_id=user_id,
             content=reply_text,
