@@ -13,7 +13,10 @@ Repository: **[AfriMentor-AI/afri-wealth-ai-mentor](https://github.com/AfriMento
 
 13 backend microservices behind a single API gateway, decomposed by business capability.
 - **[docs/architecture/system-architecture.md](docs/architecture/system-architecture.md)** — Complete C4 container, sequence, event topology, storage, and security diagrams.
-- **[docs/retro-phase-1-tech-debt-backlog.md](docs/retro-phase-1-tech-debt-backlog.md)** — Phase 1 engineering retrospective and prioritized Phase 2 technical debt backlog.
+- **[docs/bug-triage-backlog.md](docs/bug-triage-backlog.md)** — Triaged bug backlog with P0–P3 priority labels ahead of Sprint 5 code freeze.
+- **[docs/tech-debt-log.md](docs/tech-debt-log.md)** — Prioritized technical debt log with story points, owners, and sprint allocation.
+- **[docs/architecture/sprint-5-hardening-architecture-review.md](docs/architecture/sprint-5-hardening-architecture-review.md)** — Architecture review with Olusegun for Sprint 5 hardening (mTLS, pooling, migrations, DLQ).
+- **[docs/retro-phase-1-tech-debt-backlog.md](docs/retro-phase-1-tech-debt-backlog.md)** — Phase 1 engineering retrospective and Phase 2 backlog.
 - **[docs/operations/operational-runbooks.md](docs/operations/operational-runbooks.md)** — Incident management (Sev 1–4), component runbooks, triage playbooks, and disaster recovery.
 - **[docs/governance/service-ownership.md](docs/governance/service-ownership.md)** — Service ownership RACI, SLOs/SLIs, tier classifications, on-call governance, and ARB processes.
 - **[docs/adr/0001-microservices-architecture.md](docs/adr/0001-microservices-architecture.md)** — Foundational architectural decision record.
