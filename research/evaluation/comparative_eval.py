@@ -91,7 +91,8 @@ def _run_c1_live(samples: list[dict], api_key: str) -> list[dict]:
         response_text = response.choices[0].message.content or ""
         result = evaluate_response(sample["user"], response_text, sample.get("reference"))
         rows.append({**result.to_dict(), "persona": sample["persona"],
-                     "composite_score": result.composite_score})
+                     "composite_score": result.composite_score,
+                     "user_message": sample["user"], "response": response_text})
         logger.info("  [C1] sample %d/%d persona=%-14s composite=%.3f",
                     i + 1, len(samples), sample["persona"], result.composite_score)
     return rows
@@ -110,7 +111,8 @@ def _run_checkpoint_condition(condition_id, base_model_id, adapter_path,
         response = generator(system_prompt, sample["user"])
         result = evaluate_response(sample["user"], response, sample.get("reference"))
         rows.append({**result.to_dict(), "persona": sample["persona"],
-                     "composite_score": result.composite_score})
+                     "composite_score": result.composite_score,
+                     "user_message": sample["user"], "response": response})
         logger.info("  [%s] sample %d/%d persona=%-14s composite=%.3f",
                     condition_id, i + 1, len(samples), sample["persona"],
                     result.composite_score)
