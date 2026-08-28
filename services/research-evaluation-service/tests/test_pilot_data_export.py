@@ -12,8 +12,10 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
 from app.db.session import Base, get_db
+from app.models.arm_assignment import ArmAssignment
 from app.models.consistency_run import ConsistencyRun
 from app.models.session_metric import SessionMetric
+from app.models.survey_score import SurveyScore
 
 ADMIN_HEADERS = {"X-User-Roles": "admin"}
 RESEARCHER_HEADERS = {"X-User-Roles": "researcher"}
@@ -120,6 +122,83 @@ def test_pilot_export_joins_session_metrics_with_consistency_scores():
     assert unscored["persona_id"] == ""
     assert unscored["aggregate"] == ""
 
+    # Card C4.5: neither session has an arm assignment or survey score seeded —
+    # columns present, blank.
+    assert scored["arm"] == ""
+    assert unscored["arm"] == ""
+    for row in (scored, unscored):
+        assert row["financial_knowledge_t0"] == ""
+        assert row["financial_knowledge_t1"] == ""
+        assert row["self_efficacy_t0"] == ""
+        assert row["self_efficacy_t1"] == ""
+
+
+# ── Study-arm join and filter (card C4.5) ──────────────────────────────────────
+
+def test_pilot_export_includes_arm_for_both_groups():
+    engine = make_engine()
+    Session = sessionmaker(bind=engine)
+    db = Session()
+    db.add(SessionMetric(
+        user_hash="f" * 16, session_date=date(2026, 8, 10),
+        session_duration_seconds=200, message_count=8,
+        conversation_id="conv-arm-a", recorded_at=datetime.now(UTC),
+    ))
+    db.add(SessionMetric(
+        user_hash="g" * 16, session_date=date(2026, 8, 10),
+        session_duration_seconds=150, message_count=5,
+        conversation_id="conv-arm-b", recorded_at=datetime.now(UTC),
+    ))
+    db.add(ArmAssignment(user_hash="f" * 16, arm="A"))
+    db.add(ArmAssignment(user_hash="g" * 16, arm="B"))
+    db.commit()
+    db.close()
+
+    client = _client_with_db(engine)
+    try:
+        resp = client.get("/api/v1/research/export/pilot-data.csv", headers=ADMIN_HEADERS)
+    finally:
+        client.app.dependency_overrides.clear()
+
+    reader = csv.DictReader(io.StringIO(resp.text))
+    rows = {r["user_hash"]: r for r in reader}
+    assert rows["f" * 16]["arm"] == "A"
+    assert rows["g" * 16]["arm"] == "B"
+
+
+def test_pilot_export_filters_by_arm():
+    engine = make_engine()
+    Session = sessionmaker(bind=engine)
+    db = Session()
+    db.add(SessionMetric(
+        user_hash="h" * 16, session_date=date(2026, 8, 10),
+        session_duration_seconds=200, message_count=8,
+        conversation_id="conv-h", recorded_at=datetime.now(UTC),
+    ))
+    db.add(SessionMetric(
+        user_hash="i" * 16, session_date=date(2026, 8, 10),
+        session_duration_seconds=150, message_count=5,
+        conversation_id="conv-i", recorded_at=datetime.now(UTC),
+    ))
+    db.add(ArmAssignment(user_hash="h" * 16, arm="A"))
+    db.add(ArmAssignment(user_hash="i" * 16, arm="B"))
+    db.commit()
+    db.close()
+
+    client = _client_with_db(engine)
+    try:
+        resp = client.get(
+            "/api/v1/research/export/pilot-data.csv?arm=A", headers=ADMIN_HEADERS
+        )
+    finally:
+        client.app.dependency_overrides.clear()
+
+    reader = csv.DictReader(io.StringIO(resp.text))
+    rows = list(reader)
+    assert len(rows) == 1
+    assert rows[0]["user_hash"] == "h" * 16
+    assert rows[0]["arm"] == "A"
+
 
 def test_pilot_export_never_leaks_raw_conversation_id_or_user_id():
     engine = make_engine()
@@ -146,6 +225,63 @@ def test_pilot_export_never_leaks_raw_conversation_id_or_user_id():
     header_row = resp.text.splitlines()[0]
     assert "conversation_id" not in header_row
     assert "user_id" not in header_row
+
+
+# ── Survey-score join: financial-knowledge + self-efficacy (card C4.5) ────────
+
+def test_pilot_export_includes_all_3_measures_for_both_groups():
+    """Card C4.5 acceptance criterion: engagement + both survey measures, both arms."""
+    engine = make_engine()
+    Session = sessionmaker(bind=engine)
+    db = Session()
+    db.add(SessionMetric(
+        user_hash="j" * 16, session_date=date(2026, 8, 12),
+        session_duration_seconds=200, message_count=8,
+        conversation_id="conv-arm-a-survey", recorded_at=datetime.now(UTC),
+    ))
+    db.add(SessionMetric(
+        user_hash="k" * 16, session_date=date(2026, 8, 12),
+        session_duration_seconds=150, message_count=5,
+        conversation_id="conv-arm-b-survey", recorded_at=datetime.now(UTC),
+    ))
+    db.add(ArmAssignment(user_hash="j" * 16, arm="A"))
+    db.add(ArmAssignment(user_hash="k" * 16, arm="B"))
+    # Participant j: T0 only (still mid-pilot — no exit survey yet).
+    db.add(SurveyScore(
+        user_hash="j" * 16, wave="T0", financial_knowledge_score=1, self_efficacy_score=11,
+    ))
+    # Participant k: both T0 and T1 (completed exit before the checkpoint cut).
+    db.add(SurveyScore(
+        user_hash="k" * 16, wave="T0", financial_knowledge_score=2, self_efficacy_score=14,
+    ))
+    db.add(SurveyScore(
+        user_hash="k" * 16, wave="T1", financial_knowledge_score=3, self_efficacy_score=19,
+    ))
+    db.commit()
+    db.close()
+
+    client = _client_with_db(engine)
+    try:
+        resp = client.get("/api/v1/research/export/pilot-data.csv", headers=ADMIN_HEADERS)
+    finally:
+        client.app.dependency_overrides.clear()
+
+    reader = csv.DictReader(io.StringIO(resp.text))
+    rows = {r["user_hash"]: r for r in reader}
+
+    arm_a = rows["j" * 16]
+    assert arm_a["arm"] == "A"
+    assert arm_a["financial_knowledge_t0"] == "1"
+    assert arm_a["financial_knowledge_t1"] == ""
+    assert arm_a["self_efficacy_t0"] == "11"
+    assert arm_a["self_efficacy_t1"] == ""
+
+    arm_b = rows["k" * 16]
+    assert arm_b["arm"] == "B"
+    assert arm_b["financial_knowledge_t0"] == "2"
+    assert arm_b["financial_knowledge_t1"] == "3"
+    assert arm_b["self_efficacy_t0"] == "14"
+    assert arm_b["self_efficacy_t1"] == "19"
 
 
 def test_pilot_export_respects_date_filters():
