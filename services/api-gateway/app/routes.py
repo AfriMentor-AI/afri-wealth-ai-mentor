@@ -37,6 +37,12 @@ ROUTES: list[Route] = [
     Route("/api/v1/personas", "PERSONA_SERVICE_URL", "http://localhost:8004"),
     Route("/api/v1/rag", "RAG_SERVICE_URL", "http://localhost:8005"),
     Route("/api/v1/goals", "GOALS_SERVICE_URL", "http://localhost:8006"),
+    # goals-milestones-service also mounts milestone-id-scoped routes
+    # (PATCH/complete/delete) under /api/v1/milestones, not nested under
+    # /api/v1/goals — no gateway route ever covered that prefix, so
+    # completing a milestone from the frontend 404'd at the gateway
+    # (card O5.1 / BUG-06 investigation).
+    Route("/api/v1/milestones", "GOALS_SERVICE_URL", "http://localhost:8006"),
     Route("/api/v1/progress", "PROGRESS_SERVICE_URL", "http://localhost:8007"),
     Route("/api/v1/insights", "INSIGHT_SERVICE_URL", "http://localhost:8008"),
     Route("/api/v1/feedback", "FEEDBACK_SERVICE_URL", "http://localhost:8009"),
