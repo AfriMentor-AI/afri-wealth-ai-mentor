@@ -115,6 +115,8 @@ export default function InsightLibraryPage() {
 
       <div className="flex-1 space-y-lg px-margin-mobile md:px-0">
         <section className="relative">
+          <label className="relative block">
+          <span className="sr-only">Search insights, sectors, or tools</span>
           <span className="pointer-events-none absolute inset-y-0 left-md flex items-center text-on-surface-variant">
             <Icon name="search" />
           </span>
@@ -125,6 +127,7 @@ export default function InsightLibraryPage() {
             placeholder="Search insights, sectors, or tools..."
             className="h-12 w-full rounded border-none bg-surface-container pl-12 pr-md font-body-md text-body-md placeholder:text-on-surface-variant/60 focus:outline-none focus:ring-2 focus:ring-primary md:max-w-md"
           />
+        </label>
         </section>
 
         {/* Mobile-only filter chips — same state as the desktop rail above. */}

@@ -141,24 +141,29 @@ export default function ProgressBoardPage() {
           {heatmap === null ? (
             <Skeleton className="h-24 w-full" />
           ) : (
-            <div className="flex gap-1 overflow-x-auto pb-sm md:gap-[3px]">
-              <div className="grid grid-rows-7 gap-1 pr-1 text-[8px] text-on-surface-variant md:gap-[3px] md:text-[10px] md:uppercase md:font-bold">
-                <div>M</div>
-                <div />
-                <div>W</div>
-                <div />
-                <div>F</div>
-                <div />
-                <div>S</div>
-              </div>
-              {heatmap.map((week, wi) => (
-                <div key={wi} className="grid grid-rows-7 gap-1 md:gap-[3px]">
-                  {week.map((intensity, di) => (
-                    <div key={di} className={`h-2.5 w-2.5 rounded-[2px] md:h-3 md:w-3 ${HEATMAP_INTENSITIES[intensity]}`} />
-                  ))}
+            <>
+              <p className="sr-only">
+                A heatmap of your daily action over the last 3 months, from less active to more active.
+              </p>
+              <div aria-hidden="true" className="flex gap-1 overflow-x-auto pb-sm md:gap-[3px]">
+                <div className="grid grid-rows-7 gap-1 pr-1 text-[8px] text-on-surface-variant md:gap-[3px] md:text-[10px] md:uppercase md:font-bold">
+                  <div>M</div>
+                  <div />
+                  <div>W</div>
+                  <div />
+                  <div>F</div>
+                  <div />
+                  <div>S</div>
                 </div>
-              ))}
-            </div>
+                {heatmap.map((week, wi) => (
+                  <div key={wi} className="grid grid-rows-7 gap-1 md:gap-[3px]">
+                    {week.map((intensity, di) => (
+                      <div key={di} className={`h-2.5 w-2.5 rounded-[2px] md:h-3 md:w-3 ${HEATMAP_INTENSITIES[intensity]}`} />
+                    ))}
+                  </div>
+                ))}
+              </div>
+            </>
           )}
           <div className="mt-md flex items-center justify-end gap-sm">
             <span className="text-[10px] text-on-surface-variant">Less</span>

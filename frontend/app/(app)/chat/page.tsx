@@ -416,7 +416,7 @@ export default function ChatPage() {
           <ThemeToggle />
         </div>
 
-      <div ref={scrollRef} className="flex-1 overflow-y-auto px-margin-mobile py-lg md:px-0">
+      <div ref={scrollRef} role="log" aria-label={`Chat with ${mentorName}`} className="flex-1 overflow-y-auto px-margin-mobile py-lg md:px-0">
         <div className="mx-auto flex max-w-3xl flex-col gap-lg md:px-lg">
           {chatMessages.map((m) => (
             <div key={m.id} className={`flex max-w-[85%] flex-col ${m.sender === "user" ? "items-end self-end" : "items-start"}`}>
@@ -485,6 +485,7 @@ export default function ChatPage() {
           value={chatDraft}
           onChange={(e) => dispatch({ type: "SET_CHAT_DRAFT", draft: e.target.value })}
           onKeyDown={(e) => e.key === "Enter" && send()}
+          aria-label={`Message ${mentorName}`}
           placeholder={isRecording ? "Recording... tap mic again to stop" : `Ask ${mentorName} anything`}
           className="flex-1 rounded-full border border-outline-variant bg-surface-container-lowest px-md py-sm font-body-md text-body-md text-on-surface outline-none focus-visible:outline-primary md:py-md"
         />

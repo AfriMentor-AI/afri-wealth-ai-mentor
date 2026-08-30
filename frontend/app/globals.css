@@ -1,5 +1,7 @@
-@import url("https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;600;700;800&family=Inter:wght@400;600&display=swap");
-@import url("https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap");
+/* Fonts are loaded through <link> tags in app/layout.tsx (preconnected,
+   parallel with the app CSS, display=swap) — loading them here via @import
+   as well would re-fetch them and serialize CSS parsing behind the font CSS.
+   Keep this file free of font @imports. */
 
 @tailwind base;
 @tailwind components;

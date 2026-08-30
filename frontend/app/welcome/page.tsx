@@ -60,7 +60,7 @@ export default function WelcomePage() {
 
       {/* Mobile: swipeable carousel */}
       <div className="mx-auto flex min-h-screen max-w-md flex-col justify-between px-margin-mobile py-xl md:hidden">
-        <div className="flex flex-1 flex-col items-center justify-center text-center">
+        <div className="flex flex-1 flex-col items-center justify-center text-center" aria-live="polite">
           <div className="mb-md inline-flex items-center justify-center rounded-full bg-primary-container p-lg">
             <Icon name={current.icon} filled size={48} className="text-on-primary-container" />
           </div>

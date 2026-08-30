@@ -123,13 +123,16 @@ export default function GoalsOverviewPage() {
       {showCreateForm ? (
         <div className="flex flex-col gap-sm rounded border border-outline-variant bg-surface-container-low p-md">
           {createError && <p role="alert" className="font-label-sm text-label-sm text-error">{createError}</p>}
-          <input
-            autoFocus
-            value={newGoalTitle}
-            onChange={(e) => setNewGoalTitle(e.target.value)}
-            placeholder="e.g. Start a Poultry Business"
-            className="w-full rounded border border-outline-variant bg-surface-container-lowest p-md font-body-md text-body-md text-on-surface outline-none focus-visible:outline-primary"
-          />
+          <label className="flex flex-col gap-sm">
+            <span className="font-label-sm text-label-sm text-on-surface-variant">Goal title</span>
+            <input
+              autoFocus
+              value={newGoalTitle}
+              onChange={(e) => setNewGoalTitle(e.target.value)}
+              placeholder="e.g. Start a Poultry Business"
+              className="w-full rounded border border-outline-variant bg-surface-container-lowest p-md font-body-md text-body-md text-on-surface outline-none focus-visible:outline-primary"
+            />
+          </label>
           <div className="flex gap-sm">
             <Button
               variant="primary"
