@@ -152,24 +152,33 @@ export default function IntakePage() {
 
           {step === 3 && (
             <div className="flex flex-col gap-md">
-              <input
-                value={answers.name}
-                onChange={(e) => setAnswers((a) => ({ ...a, name: e.target.value }))}
-                className="w-full rounded border border-outline-variant bg-surface-container-lowest p-md font-body-md text-body-md text-on-surface outline-none focus-visible:outline-primary"
-                placeholder="Your name, e.g. Kofi Mensah"
-              />
-              <input
-                value={answers.businessName}
-                onChange={(e) => setAnswers((a) => ({ ...a, businessName: e.target.value }))}
-                className="w-full rounded border border-outline-variant bg-surface-container-lowest p-md font-body-md text-body-md text-on-surface outline-none focus-visible:outline-primary"
-                placeholder="Business name, e.g. Poultry Business - Kumasi"
-              />
-              <input
-                value={answers.location}
-                onChange={(e) => setAnswers((a) => ({ ...a, location: e.target.value }))}
-                className="w-full rounded border border-outline-variant bg-surface-container-lowest p-md font-body-md text-body-md text-on-surface outline-none focus-visible:outline-primary"
-                placeholder="Location, e.g. Kumasi, Ghana"
-              />
+              <label className="flex flex-col gap-xs">
+                <span className="font-label-sm text-label-sm text-on-surface-variant">Your name</span>
+                <input
+                  value={answers.name}
+                  onChange={(e) => setAnswers((a) => ({ ...a, name: e.target.value }))}
+                  className="w-full rounded border border-outline-variant bg-surface-container-lowest p-md font-body-md text-body-md text-on-surface outline-none focus-visible:outline-primary"
+                  placeholder="e.g. Kofi Mensah"
+                />
+              </label>
+              <label className="flex flex-col gap-xs">
+                <span className="font-label-sm text-label-sm text-on-surface-variant">Business name</span>
+                <input
+                  value={answers.businessName}
+                  onChange={(e) => setAnswers((a) => ({ ...a, businessName: e.target.value }))}
+                  className="w-full rounded border border-outline-variant bg-surface-container-lowest p-md font-body-md text-body-md text-on-surface outline-none focus-visible:outline-primary"
+                  placeholder="e.g. Poultry Business - Kumasi"
+                />
+              </label>
+              <label className="flex flex-col gap-xs">
+                <span className="font-label-sm text-label-sm text-on-surface-variant">Location</span>
+                <input
+                  value={answers.location}
+                  onChange={(e) => setAnswers((a) => ({ ...a, location: e.target.value }))}
+                  className="w-full rounded border border-outline-variant bg-surface-container-lowest p-md font-body-md text-body-md text-on-surface outline-none focus-visible:outline-primary"
+                  placeholder="e.g. Kumasi, Ghana"
+                />
+              </label>
             </div>
           )}
         </div>

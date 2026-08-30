@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { Icon } from "./Icon";
 import { useAppDispatch, useAppState } from "@/lib/store";
@@ -13,6 +13,20 @@ export function FeedbackSurveyModal() {
   const [comment, setComment] = useState("");
   const [submitted, setSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
+
+  // Move focus into the dialog on open so keyboard/SR users don't land back
+  // on the page behind it, and close on Escape per the dialog pattern.
+  useEffect(() => {
+    if (!feedbackModalOpen) return;
+    closeButtonRef.current?.focus();
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") close();
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [feedbackModalOpen]);
 
   if (!feedbackModalOpen) return null;
 
@@ -45,6 +59,7 @@ export function FeedbackSurveyModal() {
                 <Image src="/images/chioma-avatar.png" alt="Chioma" fill className="object-cover" />
               </div>
               <button
+                ref={closeButtonRef}
                 onClick={close}
                 aria-label="Close feedback survey"
                 className="tap-target rounded-full p-xs text-on-surface-variant hover:bg-surface-variant"

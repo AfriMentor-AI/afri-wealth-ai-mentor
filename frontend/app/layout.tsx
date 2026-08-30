@@ -31,9 +31,23 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           href="/manifest.json"
           crossOrigin="use-credentials"
         />
+        {/* eslint-disable @next/next/no-page-custom-font */}
+        {/* Fonts load via <link> (not CSS @import) so the browser can start
+            fetching them in parallel with the app CSS instead of serially.
+            preconnect lets the font host handshake overlap the main document
+            fetch. The stylesheets were previously also duplicated via @import
+            in globals.css — that double-load is gone, and `display=swap` keeps
+            the icon ligatures readable (a fallback font can't render the
+            Material Symbols ligature names). */}
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link
           rel="stylesheet"
-          href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200"
+          href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;600;700;800&family=Inter:wght@400;600&display=swap"
+        />
+        <link
+          rel="stylesheet"
+          href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap"
         />
         {/* Runs before hydration so the correct theme is applied before
             first paint — without this, the page briefly flashes the
