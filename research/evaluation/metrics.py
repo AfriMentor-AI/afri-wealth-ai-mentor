@@ -20,6 +20,11 @@ def _get_judge() -> OpenAI:
 
 # Configured for openai/gpt-oss-120b
 _JUDGE_MODEL = os.getenv("EVAL_JUDGE_MODEL", "openai/gpt-oss-120b")
+# gpt-oss-120b spends a variable, invisible amount of its budget on internal
+# reasoning before emitting the JSON verdict (confirmed live: 512 truncates
+# mid-value on some calls, ~400-500 total tokens on others) — 512 was a
+# silent-failure risk, not a safe budget. 1536 leaves comfortable headroom.
+_JUDGE_MAX_TOKENS = int(os.getenv("EVAL_JUDGE_MAX_TOKENS", "1536"))
 
 @dataclass
 class EvalResult:
@@ -95,7 +100,7 @@ def score_all_dimensions(user_message: str, response: str) -> dict[str, float]:
                 messages=[
                     {"role": "user", "content": prompt}
                 ],
-                max_tokens=512,
+                max_tokens=_JUDGE_MAX_TOKENS,
                 temperature=0.0,
             )
 

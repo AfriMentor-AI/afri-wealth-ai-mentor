@@ -91,13 +91,99 @@ Running `comparative_eval.py --sample-size 3 --skip-c2 --skip-c3 --skip-c4`
 C3/C4 adapters aren't confirmed to exist) and then `freeze_results.py
 --version v1-partial` produces a freeze whose status is
 **`PARTIAL_MISSING_HUMAN_EVAL`**: C1 is labeled `live_groq` (real, not
-estimated), but see the critical finding below before trusting that label —
-and no human ratings exist yet. See
+estimated) and — as of the fix in the section below — that label is now
+trustworthy; no human ratings exist yet. See
 `evaluation/results/canonical/v1-partial/manifest.json` for the exact
 snapshot (gitignored — a local artifact, not committed; `results/` is
 excluded repo-wide per `.gitignore:35`).
 
-## Critical finding: C1's "live" output is not usable as-is
+## Critical finding: C1's "live" output is not usable as-is (RESOLVED)
+
+**Update:** Fixed. `comparative_eval.py`'s `_run_c1_live` and
+`safety_eval.py`'s `make_openai_generator` now pass
+`extra_body={"reasoning_format": "hidden"}` on the Groq call, and
+`LLM_MAX_TOKENS` was raised from 512 to 4096 (`.env`, `.env.example`,
+`docker-compose.yml`). Verified live against Groq: this model burns
+**~2000+ tokens on its hidden `<think>` trace before any visible answer**,
+even for trivial prompts — 512, 1024, and 2048 all still hit
+`finish_reason: length` with an empty `content` once reasoning is hidden;
+3072–4096 was reliably enough across tested prompts. A re-run of
+`comparative_eval.py --sample-size 3 --skip-c2 --skip-c3 --skip-c4` now
+produces clean, real persona responses (composite 0.843 / 0.883 / 0.880 —
+consistent, not the erratic 0.525/0.265/0.060 from the truncated-trace runs)
+with no `<think>` in `content`.
+
+The same bug existed in production: `chat-orchestration-service/app/llm.py`
+calls the identical model with the identical `max_tokens=512` pattern at all
+three of its Groq call sites (`chat_completion`, `stream_chat_completion`,
+`generate_daily_action_for_user`) — all three now carry the same
+`reasoning_format=hidden` fix and the raised token budget.
+`generate_daily_action_for_user` additionally had its own independent bug:
+its message list was system-role only, which Groq rejects outright
+("No user query found in messages"), so every call has been silently
+falling back to the stub task since this function was written. Fixed by
+splitting it into a proper system/user pair.
+
+**Cost/latency tradeoff, not free**: this model needs ~2000 completion
+tokens of hidden reasoning per response regardless of answer length — a
+real 4-8x increase in tokens billed and generation latency versus the
+512-token budget the D5.2 latency/cost optimization pass tuned around. That
+pass's assumptions no longer hold for this model and are worth revisiting
+(e.g. evaluating a non-reasoning model) — not done here since it's a
+product/quality call, not a mechanical fix, and the available non-reasoning
+alternatives on this Groq key (`allam-2-7b`, `groq/compound-mini`) either
+have unverified persona/cultural-fluency quality or materially different
+runtime behavior (compound models call tools/web-search internally).
+
+**Consequence for existing results**: every prior `live_groq` measurement in
+this repo (including anything already merged from D4.3/C4.3) was scoring a
+truncated reasoning trace, not a real answer, and should be treated as
+invalid — re-run before trusting any of it.
+
+**Update 2 (same day): moved off qwen entirely, onto `openai/gpt-oss-20b`.**
+Rather than keep paying the reasoning-trace tax above, tested
+`openai/gpt-oss-20b` (also available on this Groq key) as a direct C1
+replacement. It has no `<think>`-in-`content` behavior at all — verified
+across a trivial prompt and 5 varied financial-advice prompts, `content` is
+always the clean final answer, no `reasoning_format` needed. Token cost is
+far lower too: a trivial "say hello" used 55 completion tokens (vs.
+qwen's ~350 even with reasoning hidden), and 2048 `max_tokens` was
+sufficient on every one of 5 varied real dataset prompts (all finished with
+`finish_reason: stop`, none truncated) — no need for qwen's 4096.
+Composite scores on the 3 samples the judge scored cleanly: 0.740 / 0.770 /
+0.883, comparable to qwen's post-fix 0.843 / 0.883 / 0.880. `LLM_MODEL` is
+now `openai/gpt-oss-20b` and `LLM_MAX_TOKENS` is `2048` everywhere (`.env`,
+`.env.example`, `docker-compose.yml`, `chat-orchestration-service/app/config.py`
+default, and the `C1_MODEL_ID`/`C1_MAX_TOKENS` fallback defaults in
+`comparative_eval.py`/`safety_eval.py`). The `reasoning_format=hidden`
+`extra_body` was left in place at every call site rather than removed — it's
+a verified no-op for gpt-oss-20b (confirmed live: no error, param silently
+ignored) and guards against this exact bug recurring if `LLM_MODEL` is ever
+pointed back at a reasoning model.
+
+Two things noticed during the swap:
+- **2 of 5 test samples scored `composite=0.000`** in the comparison run —
+  not a gpt-oss-20b quality issue (the underlying persona responses were
+  substantive, 1000+ chars, ending cleanly). The LLM-judge itself
+  (`metrics.py::score_all_dimensions`) had a hardcoded `max_tokens=512` for
+  its own JSON-scoring call, which truncated before it finished emitting the
+  closing `}`. **Fixed**: root-caused by direct testing —
+  `openai/gpt-oss-120b` (the judge model) spends a variable, *invisible*
+  amount of its budget on internal reasoning that never surfaces in
+  `content` or `reasoning_content` (confirmed live: the same judge prompt
+  used all 512 tokens on one call and only ~475 on another, both mostly
+  hidden reasoning, with the visible JSON a small fraction of that). 512 was
+  a silent-failure risk, not a safe budget, regardless of which model C1
+  uses. Raised to a configurable `_JUDGE_MAX_TOKENS` (`EVAL_JUDGE_MAX_TOKENS`
+  env var, default 1536) in `metrics.py`. Re-ran the same 5-sample
+  comparison after the fix: all 5 samples scored cleanly (0.670 / 0.305 /
+  0.713 / 0.750 / 0.820), zero judge-side failures.
+- gpt-oss-20b hit more Groq `429` rate limits than qwen during the same
+  5-sample test run, suggesting tighter free-tier limits for this model on
+  this key. Not disqualifying, but worth watching if traffic increases.
+
+<details>
+<summary>Original finding (for context)</summary>
 
 Storing `response`/`user_message` on every row (this card's small addition to
 `comparative_eval.py`) immediately surfaced a bug invisible in every prior
@@ -127,11 +213,10 @@ assumption. **The generated `rating_packet.csv` from this run should not be
 sent to human raters as-is**; it contains truncated reasoning traces, not
 answers.
 
+</details>
+
 ## What's still blocking a real C5.1 completion
 
-0. **Fix the C1 reasoning-truncation bug (see above) before trusting any
-   `live_groq` result**, including the ones already in this repo from
-   D4.3/C4.3. This blocks C1 being genuinely "real," not just C3/C4.
 1. **C3/C4 real checkpoints.** Someone needs to actually run the GPU DPO/RLHF
    training jobs (`research/experiments/03_contrastive_learning/run.py`,
    `04_rlhf_preference_opt/run.py`) on a cloud GPU node and publish the
