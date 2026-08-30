@@ -4,7 +4,7 @@
 export * from "./mockApi";
 
 import { apiFetch, getCurrentUserId } from "./session";
-import type { ChatMessage, Commitment } from "./types";
+import type { ChatMessage, Commitment, Goal, Milestone } from "./types";
 
 interface BackendMessage {
   id: string;
@@ -100,4 +100,138 @@ export async function fetchChatSessions(): Promise<ChatSessionSummary[]> {
     lastMessageAt: s.last_message_at,
     updatedAt: s.updated_at,
   }));
+}
+
+// ── Goals & Milestones (goals-milestones-service, card O5.1 / BUG-06) ──────
+//
+// createGoal/fetchGoals/fetchMilestonesByGoal/fetchGoalById/completeMilestone/
+// fetchCommitmentsByGoal were still re-exported from mockApi.ts wholesale —
+// never overridden despite goals-milestones-service being live since O2.3/O2.4
+// — so goals appeared to save in the UI but were never persisted server-side.
+
+interface BackendGoal {
+  id: string;
+  user_id: string;
+  title: string;
+  description: string | null;
+  status: string;
+  deadline: string | null;
+  progress_pct: number;
+  created_at: string;
+  updated_at: string;
+}
+
+function toGoal(g: BackendGoal): Goal {
+  return {
+    id: g.id,
+    userId: g.user_id,
+    title: g.title,
+    progressPct: g.progress_pct,
+    deadline: g.deadline ?? undefined,
+    createdAt: g.created_at,
+    updatedAt: g.updated_at,
+  };
+}
+
+interface BackendMilestone {
+  id: string;
+  goal_id: string;
+  title: string;
+  status: Milestone["status"];
+  order: number;
+  created_at: string;
+  updated_at: string;
+}
+
+function toMilestone(m: BackendMilestone): Milestone {
+  return {
+    id: m.id,
+    goalId: m.goal_id,
+    title: m.title,
+    status: m.status,
+    order: m.order,
+    createdAt: m.created_at,
+    updatedAt: m.updated_at,
+  };
+}
+
+interface BackendCommitment {
+  id: string;
+  goal_id: string;
+  user_id: string;
+  conversation_id: string;
+  message_id: string;
+  content: string;
+  created_at: string;
+}
+
+/** goals-milestones-service's Commitment has no `status` field at all (it's
+ * just a tagged note, not a tracked done/in_progress/blocked item the way
+ * G1.3's contract models it) — mapped to "in_progress" here rather than
+ * inventing a status the backend doesn't actually track. Flagged as a real
+ * contract gap in docs/qa/sprint5-regression-report.md, not silently papered
+ * over; closing it properly means extending the backend schema, out of scope
+ * for this bug fix. */
+function toCommitment(c: BackendCommitment): Commitment {
+  return {
+    id: c.id,
+    goalId: c.goal_id,
+    title: c.content,
+    status: "in_progress",
+    sourceChatMessageId: c.message_id,
+    createdAt: c.created_at,
+    // No updated_at on the backend model either — commitments are write-once
+    // once tagged, so created_at is accurate, not a placeholder.
+    updatedAt: c.created_at,
+  };
+}
+
+/** GET /api/v1/goals */
+export async function fetchGoals(): Promise<Goal[]> {
+  const res = await apiFetch("/api/v1/goals");
+  if (!res.ok) throw new Error(`fetchGoals failed: ${res.status}`);
+  const body: BackendGoal[] = await res.json();
+  return body.map(toGoal);
+}
+
+/** GET /api/v1/goals/{goalId} */
+export async function fetchGoalById(goalId: string): Promise<Goal | undefined> {
+  const res = await apiFetch(`/api/v1/goals/${goalId}`);
+  if (res.status === 404) return undefined;
+  if (!res.ok) throw new Error(`fetchGoalById failed: ${res.status}`);
+  return toGoal(await res.json());
+}
+
+/** POST /api/v1/goals */
+export async function createGoal(input: { title: string; deadline?: string }): Promise<Goal> {
+  const res = await apiFetch("/api/v1/goals", {
+    method: "POST",
+    body: JSON.stringify({ title: input.title, deadline: input.deadline ?? null }),
+  });
+  if (!res.ok) throw new Error(`createGoal failed: ${res.status}`);
+  return toGoal(await res.json());
+}
+
+/** GET /api/v1/goals/{goalId}/milestones */
+export async function fetchMilestonesByGoal(goalId: string): Promise<Milestone[]> {
+  const res = await apiFetch(`/api/v1/goals/${goalId}/milestones`);
+  if (!res.ok) throw new Error(`fetchMilestonesByGoal failed: ${res.status}`);
+  const body: BackendMilestone[] = await res.json();
+  return body.map(toMilestone);
+}
+
+/** POST /api/v1/milestones/{milestoneId}/complete */
+export async function completeMilestone(milestoneId: string): Promise<Milestone | undefined> {
+  const res = await apiFetch(`/api/v1/milestones/${milestoneId}/complete`, { method: "POST" });
+  if (res.status === 404) return undefined;
+  if (!res.ok) throw new Error(`completeMilestone failed: ${res.status}`);
+  return toMilestone(await res.json());
+}
+
+/** GET /api/v1/goals/{goalId}/commitments */
+export async function fetchCommitmentsByGoal(goalId: string): Promise<Commitment[]> {
+  const res = await apiFetch(`/api/v1/goals/${goalId}/commitments`);
+  if (!res.ok) throw new Error(`fetchCommitmentsByGoal failed: ${res.status}`);
+  const body: BackendCommitment[] = await res.json();
+  return body.map(toCommitment);
 }

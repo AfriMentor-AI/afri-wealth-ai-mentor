@@ -1,9 +1,11 @@
 """Domain event publisher for goals-milestones-service."""
 from __future__ import annotations
 
+import asyncio
 import datetime as dt
 import json
 import logging
+import threading
 import uuid
 
 import pika
@@ -14,8 +16,19 @@ from .config import get_settings
 logger = logging.getLogger(__name__)
 settings = get_settings()
 
+# asyncio only holds a *weak* reference to a task created via create_task — with
+# nothing else referencing it, it can be garbage-collected mid-flight. Holding a
+# strong reference here (and dropping it via the done-callback) is the standard
+# fire-and-forget pattern per the asyncio docs.
+_background_tasks: set[asyncio.Task] = set()
 
-def _publish(routing_key: str, payload: dict) -> None:
+
+def _publish_blocking(routing_key: str, payload: dict) -> None:
+    """Open a transient connection, publish one message, close.
+
+    Synchronous (pika has no asyncio API) — always called via `_publish()`'s
+    off-thread dispatch, never directly from a route handler. See `_publish`.
+    """
     if not settings.rabbitmq_url:
         logger.debug("RABBITMQ_URL not set — skipping event %s", routing_key)
         return
@@ -36,6 +49,33 @@ def _publish(routing_key: str, payload: dict) -> None:
         conn.close()
     except pika.exceptions.AMQPError as exc:
         logger.warning("Event publish failed [%s]: %s", routing_key, exc)
+
+
+def _publish(routing_key: str, payload: dict) -> None:
+    """Schedule the blocking publish off-thread instead of running it inline
+    (card O5.1 / BUG-02). `pika.BlockingConnection` was previously called
+    directly from route handlers — the TCP/AMQP handshake and publish stalled
+    whichever thread called it for every other in-flight request on that
+    thread.
+
+    Callers may be `async def` handlers (event loop thread) or plain `def`
+    handlers (FastAPI worker thread, no running loop) — branch on whether a
+    loop is actually running rather than assuming one:
+    `asyncio.to_thread` + `create_task` from the loop thread, a plain daemon
+    `threading.Thread` otherwise. Either way this function itself stays
+    synchronous and immediate, so no caller needs to change to `await` it.
+    """
+    try:
+        loop = asyncio.get_running_loop()
+    except RuntimeError:
+        threading.Thread(
+            target=_publish_blocking, args=(routing_key, payload), daemon=True
+        ).start()
+        return
+
+    task = loop.create_task(asyncio.to_thread(_publish_blocking, routing_key, payload))
+    _background_tasks.add(task)
+    task.add_done_callback(_background_tasks.discard)
 
 
 def _envelope(event: str, actor: str, data: dict) -> dict:
