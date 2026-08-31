@@ -5,7 +5,7 @@ tests run without any external services.
 """
 from __future__ import annotations
 
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 from fastapi.testclient import TestClient
@@ -543,3 +543,72 @@ def test_invalid_llm_api_key_falls_back_to_stub(client, session_id):
     assert r.status_code == 201
     assert "LLM unavailable" in r.json()["content"]
     wrapped.assert_called_once()
+
+
+def test_strip_thinking_tags():
+    from app.llm import strip_thinking_tags
+
+    raw = "<think>\n1. Analyze input\n2. Apply Chioma persona\n</think>\nWelcome! Let's get down to business."
+    assert strip_thinking_tags(raw) == "Welcome! Let's get down to business."
+
+    unclosed = "<think>\nThinking in progress..."
+    assert strip_thinking_tags(unclosed) == ""
+
+    orphan = "Some thoughts...\n</think>\n\nHere is your financial advice."
+    assert strip_thinking_tags(orphan) == "Here is your financial advice."
+
+    plain = "No thinking tags here."
+    assert strip_thinking_tags(plain) == "No thinking tags here."
+
+
+@pytest.mark.asyncio
+async def test_filter_thinking_stream():
+    from app.llm import filter_thinking_stream
+
+    async def fake_stream():
+        tokens = ["<th", "ink>\n", "Step 1: Reasoning\n", "</th", "ink>\n\n", "Hello, ", "I am Chioma."]
+        for t in tokens:
+            yield t
+
+    filtered = [token async for token in filter_thinking_stream(fake_stream())]
+    assert "".join(filtered) == "Hello, I am Chioma."
+
+
+def test_chat_message_strips_thinking_tags(client, session_id):
+    """When the LLM response contains <think> tags, the returned message should have them stripped."""
+    async def _fake_create_with_think(*args, **kwargs):
+        mock_choice = MagicMock()
+        mock_choice.message.content = (
+            "<think>\n1. User said hello.\n2. Respond warmly.\n</think>\n"
+            "Welcome! I am Chioma. Let's look at your daily cash flow."
+        )
+        mock_resp = MagicMock()
+        mock_resp.choices = [mock_choice]
+        mock_resp.usage.prompt_tokens = 15
+        mock_resp.usage.completion_tokens = 25
+        return mock_resp
+
+    with (
+        patch("app.llm.retrieve", return_value=[]),
+        patch("app.llm.get_llm_client") as mock_client,
+        patch("app.llm.settings") as mock_settings,
+    ):
+        mock_client.return_value.chat.completions.create.side_effect = _fake_create_with_think
+        mock_settings.llm_api_key = "fake-key"
+        mock_settings.commitment_keywords = []
+        mock_settings.llm_model = "test-model"
+        mock_settings.llm_max_tokens = 512
+        mock_settings.llm_temperature = 0.7
+
+        r = client.post(
+            f"/api/v1/chat/sessions/{session_id}/messages",
+            json={"content": "Hello"},
+            headers=USER_HEADERS,
+        )
+
+    assert r.status_code == 201
+    body = r.json()
+    assert "<think>" not in body["content"]
+    assert "</think>" not in body["content"]
+    assert "User said hello" not in body["content"]
+    assert body["content"] == "Welcome! I am Chioma. Let's look at your daily cash flow."

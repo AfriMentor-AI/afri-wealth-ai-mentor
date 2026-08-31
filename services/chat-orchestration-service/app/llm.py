@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import re
 import time
 from collections.abc import AsyncIterator
 
@@ -163,6 +164,73 @@ def is_commitment_candidate(text: str) -> bool:
     return any(kw in lower for kw in settings.commitment_keywords)
 
 
+# ── Thinking tag stripper ─────────────────────────────────────────────────────
+
+def strip_thinking_tags(text: str) -> str:
+    """Remove <think>...</think> reasoning traces from model responses."""
+    if not text:
+        return ""
+    cleaned = re.sub(r"<think>[\s\S]*?</think>", "", text, flags=re.IGNORECASE)
+    cleaned = re.sub(r"<think>[\s\S]*$", "", cleaned, flags=re.IGNORECASE)
+    cleaned = re.sub(r"^[\s\S]*?</think>", "", cleaned, flags=re.IGNORECASE)
+    return cleaned.strip()
+
+
+async def filter_thinking_stream(stream: AsyncIterator[str]) -> AsyncIterator[str]:
+    """Yield tokens from stream while filtering out <think>...</think> blocks in real time."""
+    in_think = False
+    buffer = ""
+    async for token in stream:
+        buffer += token
+        while buffer:
+            if not in_think:
+                lower_buf = buffer.lower()
+                if "<think>" in lower_buf:
+                    idx = lower_buf.index("<think>")
+                    prefix = buffer[:idx]
+                    if prefix:
+                        yield prefix
+                    in_think = True
+                    buffer = buffer[idx + 7:]
+                else:
+                    match_partial = False
+                    for i in range(1, min(len("<think>"), len(buffer) + 1)):
+                        suffix = lower_buf[-i:]
+                        if "<think>".startswith(suffix):
+                            match_partial = True
+                            if len(buffer) > i:
+                                yield buffer[:-i]
+                                buffer = buffer[-i:]
+                            break
+                    if not match_partial:
+                        yield buffer
+                        buffer = ""
+                    else:
+                        break
+            else:
+                lower_buf = buffer.lower()
+                if "</think>" in lower_buf:
+                    idx = lower_buf.index("</think>")
+                    in_think = False
+                    buffer = buffer[idx + 8:].lstrip("\r\n ")
+                else:
+                    match_partial = False
+                    for i in range(1, min(len("</think>"), len(buffer) + 1)):
+                        suffix = lower_buf[-i:]
+                        if "</think>".startswith(suffix):
+                            buffer = buffer[-i:]
+                            match_partial = True
+                            break
+                    if not match_partial:
+                        buffer = ""
+                    break
+
+    if buffer and not in_think:
+        cleaned = strip_thinking_tags(buffer)
+        if cleaned:
+            yield cleaned
+
+
 # ── Message assembly & LLM call ───────────────────────────────────────────────
 
 async def chat_completion(
@@ -227,8 +295,10 @@ async def chat_completion(
 
     choice = response.choices[0]
     usage = response.usage
+    raw_content = choice.message.content or ""
+    content = strip_thinking_tags(raw_content)
     return (
-        choice.message.content or "",
+        content,
         usage.prompt_tokens if usage else 0,
         usage.completion_tokens if usage else 0,
         citations,
@@ -281,7 +351,7 @@ async def stream_chat_completion(
             logger.warning("LLM stream failed; using fallback response: %s", exc)
             yield "I hear you! Let's work through this together. (LLM unavailable.)"
 
-    return provider_stream(), citations
+    return filter_thinking_stream(provider_stream()), citations
 
 
 async def generate_daily_action_for_user(user_id: str, db) -> str:
@@ -331,5 +401,5 @@ async def generate_daily_action_for_user(user_id: str, db) -> str:
         return "Set aside 10% of your income for savings today. (LLM fallback)"
 
     choice = response.choices[0]
-    return choice.message.content or ""
+    return strip_thinking_tags(choice.message.content or "")
 
