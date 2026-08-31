@@ -548,7 +548,10 @@ def test_invalid_llm_api_key_falls_back_to_stub(client, session_id):
 def test_strip_thinking_tags():
     from app.llm import strip_thinking_tags
 
-    raw = "<think>\n1. Analyze input\n2. Apply Chioma persona\n</think>\nWelcome! Let's get down to business."
+    raw = (
+        "<think>\n1. Analyze input\n2. Apply Chioma persona\n</think>\n"
+        "Welcome! Let's get down to business."
+    )
     assert strip_thinking_tags(raw) == "Welcome! Let's get down to business."
 
     unclosed = "<think>\nThinking in progress..."
@@ -566,7 +569,10 @@ async def test_filter_thinking_stream():
     from app.llm import filter_thinking_stream
 
     async def fake_stream():
-        tokens = ["<th", "ink>\n", "Step 1: Reasoning\n", "</th", "ink>\n\n", "Hello, ", "I am Chioma."]
+        tokens = [
+            "<th", "ink>\n", "Step 1: Reasoning\n", "</th", "ink>\n\n",
+            "Hello, ", "I am Chioma.",
+        ]
         for t in tokens:
             yield t
 
@@ -575,7 +581,7 @@ async def test_filter_thinking_stream():
 
 
 def test_chat_message_strips_thinking_tags(client, session_id):
-    """When the LLM response contains <think> tags, the returned message should have them stripped."""
+    """When the LLM response contains <think> tags, the returned message should strip them."""
     async def _fake_create_with_think(*args, **kwargs):
         mock_choice = MagicMock()
         mock_choice.message.content = (
