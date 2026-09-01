@@ -52,10 +52,17 @@ app = FastAPI(
 
 instrument(app, SERVICE_NAME)
 
-# Mobile app + admin console origins (tighten in prod).
+# Mobile app + admin console origins (supports local, Codespaces, and Vercel).
+_cors_origins_raw = os.getenv("CORS_ORIGINS", "")
+_cors_origins = [o.strip() for o in _cors_origins_raw.split(",") if o.strip()] or [
+    "http://localhost:3000",
+    "http://localhost:3001",
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://localhost:3001"],
+    allow_origins=_cors_origins,
+    allow_origin_regex=r"https://.*\.app\.github\.dev|https://.*\.vercel\.app",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
