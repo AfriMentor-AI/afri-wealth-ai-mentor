@@ -1,5 +1,5 @@
 // Re-export all mock implementations, then override the ones that have
-// real backend implementations. This allows us to gradually migrate
+// real backend implementations. This allows us enough time to gradually migrate
 // from mock to real APIs without breaking the app.
 export * from "./mockApi";
 
