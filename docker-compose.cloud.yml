@@ -1,0 +1,226 @@
+# AfriMentor AI — Lightweight Cloud-Hybrid Compose Stack
+# Connects local stateless Python FastAPI microservices to managed Cloud services:
+# - Relational DB: Supabase (PostgreSQL with Supavisor Pooler)
+# - Vector DB: Qdrant Cloud
+# - LLM Inference: Groq Cloud (LPUs)
+# - Frontend: Vercel (or local Next.js on port 3000)
+#
+# Usage:
+#   docker compose -f docker-compose.cloud.yml --env-file .env.cloud up -d
+#
+# Run only core MVP services (Gateway, Auth, Chat, Persona, RAG):
+#   docker compose -f docker-compose.cloud.yml --env-file .env.cloud up -d \
+#     api-gateway auth-user-service chat-orchestration-service persona-prompt-service rag-corpus-service redis rabbitmq
+#
+name: afrimentor-cloud
+
+x-svc-defaults: &svc-defaults
+  restart: unless-stopped
+  init: true
+  networks: [afrimentor]
+  environment: &svc-env
+    APP_ENV: ${APP_ENV:-dev}
+
+services:
+  # ------------------------------------------------ lightweight local brokers
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    ports: ["127.0.0.1:6379:6379"]
+    command: ["redis-server", "--appendonly", "no", "--save", ""]
+    networks: [afrimentor]
+
+  rabbitmq:
+    image: rabbitmq:3-alpine
+    restart: unless-stopped
+    ports: ["127.0.0.1:5672:5672"]
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-afrimentor}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASS:-afrimentor}
+    networks: [afrimentor]
+
+  # ------------------------------------------------------------- edge: gateway
+  api-gateway:
+    <<: *svc-defaults
+    build: ./services/api-gateway
+    ports: ["8000:8000"]
+    environment:
+      <<: *svc-env
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
+      AUTH_SERVICE_URL: http://auth-user-service:8001
+      INTAKE_SERVICE_URL: http://intake-profiling-service:8002
+      CHAT_SERVICE_URL: http://chat-orchestration-service:8003
+      PERSONA_SERVICE_URL: http://persona-prompt-service:8004
+      RAG_SERVICE_URL: http://rag-corpus-service:8005
+      GOALS_SERVICE_URL: http://goals-milestones-service:8006
+      PROGRESS_SERVICE_URL: http://progress-gamification-service:8007
+      INSIGHT_SERVICE_URL: http://insight-library-service:8008
+      FEEDBACK_SERVICE_URL: http://feedback-service:8009
+      RESEARCH_SERVICE_URL: http://research-evaluation-service:8010
+      VOICE_SERVICE_URL: http://voice-service:8011
+      NOTIFICATION_SERVICE_URL: http://notification-service:8012
+    depends_on:
+      - redis
+      - auth-user-service
+
+  # ------------------------------------------------------- core capability services
+  auth-user-service:
+    <<: *svc-defaults
+    build: ./services/auth-user-service
+    ports: ["127.0.0.1:8001:8001"]
+    environment:
+      <<: *svc-env
+      DATABASE_URL: ${AUTH_DATABASE_URL:-${SUPABASE_DATABASE_URL}}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379/1}
+      DEV_KEY_DIR: /dev_keys
+    volumes:
+      - auth_dev_keys:/dev_keys
+    depends_on:
+      - redis
+
+  intake-profiling-service:
+    <<: *svc-defaults
+    build: ./services/intake-profiling-service
+    ports: ["127.0.0.1:8002:8002"]
+    environment:
+      <<: *svc-env
+      DATABASE_URL: ${INTAKE_DATABASE_URL:-${SUPABASE_DATABASE_URL}}
+      RABBITMQ_URL: ${RABBITMQ_URL:-amqp://afrimentor:afrimentor@rabbitmq:5672/}
+    depends_on:
+      - rabbitmq
+
+  chat-orchestration-service:
+    <<: *svc-defaults
+    build: ./services/chat-orchestration-service
+    ports: ["127.0.0.1:8003:8003"]
+    environment:
+      <<: *svc-env
+      DATABASE_URL: ${CHAT_DATABASE_URL:-${SUPABASE_DATABASE_URL}}
+      PERSONA_SERVICE_URL: http://persona-prompt-service:8004
+      RAG_SERVICE_URL: http://rag-corpus-service:8005
+      RABBITMQ_URL: ${RABBITMQ_URL:-amqp://afrimentor:afrimentor@rabbitmq:5672/}
+      LLM_API_KEY: ${LLM_API_KEY}
+      LLM_BASE_URL: ${LLM_BASE_URL:-https://api.groq.com/openai/v1}
+      LLM_MODEL: ${LLM_MODEL:-Qwen/Qwen2.5-7B-Instruct}
+      LLM_MAX_TOKENS: ${LLM_MAX_TOKENS:-512}
+      LLM_TEMPERATURE: ${LLM_TEMPERATURE:-0.7}
+      LLM_STREAMING_ENABLED: ${LLM_STREAMING_ENABLED:-true}
+      CHAT_CACHE_TTL_SECONDS: ${CHAT_CACHE_TTL_SECONDS:-300}
+      CHAT_CACHE_MAX_ENTRIES: ${CHAT_CACHE_MAX_ENTRIES:-256}
+      GUARDRAILS_ENABLED: ${GUARDRAILS_ENABLED:-true}
+    depends_on:
+      - persona-prompt-service
+      - rag-corpus-service
+      - rabbitmq
+
+  persona-prompt-service:
+    <<: *svc-defaults
+    build: ./services/persona-prompt-service
+    ports: ["127.0.0.1:8004:8004"]
+    environment:
+      <<: *svc-env
+      DATABASE_URL: ${PERSONA_DATABASE_URL:-${SUPABASE_DATABASE_URL}}
+
+  rag-corpus-service:
+    <<: *svc-defaults
+    build: ./services/rag-corpus-service
+    ports: ["127.0.0.1:8005:8005"]
+    environment:
+      <<: *svc-env
+      DATABASE_URL: ${RAG_DATABASE_URL:-${SUPABASE_DATABASE_URL}}
+      QDRANT_URL: ${QDRANT_URL:-}
+      QDRANT_API_KEY: ${QDRANT_API_KEY:-}
+      CHROMA_URL: ${CHROMA_URL:-http://chromadb:8000}
+
+  goals-milestones-service:
+    <<: *svc-defaults
+    build: ./services/goals-milestones-service
+    ports: ["127.0.0.1:8006:8006"]
+    environment:
+      <<: *svc-env
+      DATABASE_URL: ${GOALS_DATABASE_URL:-${SUPABASE_DATABASE_URL}}
+      RABBITMQ_URL: ${RABBITMQ_URL:-amqp://afrimentor:afrimentor@rabbitmq:5672/}
+    depends_on:
+      - rabbitmq
+
+  progress-gamification-service:
+    <<: *svc-defaults
+    build: ./services/progress-gamification-service
+    ports: ["127.0.0.1:8007:8007"]
+    environment:
+      <<: *svc-env
+      DATABASE_URL: ${PROGRESS_DATABASE_URL:-${SUPABASE_DATABASE_URL}}
+      RABBITMQ_URL: ${RABBITMQ_URL:-amqp://afrimentor:afrimentor@rabbitmq:5672/}
+    depends_on:
+      - rabbitmq
+
+  insight-library-service:
+    <<: *svc-defaults
+    build: ./services/insight-library-service
+    ports: ["127.0.0.1:8008:8008"]
+    environment:
+      <<: *svc-env
+      DATABASE_URL: ${INSIGHT_DATABASE_URL:-${SUPABASE_DATABASE_URL}}
+
+  feedback-service:
+    <<: *svc-defaults
+    build: ./services/feedback-service
+    ports: ["127.0.0.1:8009:8009"]
+    environment:
+      <<: *svc-env
+      DATABASE_URL: ${FEEDBACK_DATABASE_URL:-${SUPABASE_DATABASE_URL}}
+      RABBITMQ_URL: ${RABBITMQ_URL:-amqp://afrimentor:afrimentor@rabbitmq:5672/}
+    depends_on:
+      - rabbitmq
+
+  research-evaluation-service:
+    <<: *svc-defaults
+    build: ./services/research-evaluation-service
+    ports: ["127.0.0.1:8010:8010"]
+    environment:
+      <<: *svc-env
+      DATABASE_URL: ${RESEARCH_DATABASE_URL:-${SUPABASE_DATABASE_URL}}
+      CHAT_DB_URL: ${CHAT_DATABASE_URL:-${SUPABASE_DATABASE_URL}}
+      CONSISTENCY_INTERVAL_MINUTES: ${CONSISTENCY_INTERVAL_MINUTES:-0}
+      SESSION_IDLE_MINUTES: ${SESSION_IDLE_MINUTES:-10}
+      RABBITMQ_URL: ${RABBITMQ_URL:-amqp://afrimentor:afrimentor@rabbitmq:5672/}
+      PERSONA_SERVICE_URL: http://persona-prompt-service:8004
+      LLM_API_KEY: ${LLM_API_KEY}
+      LLM_BASE_URL: ${LLM_BASE_URL:-https://api.groq.com/openai/v1}
+      LLM_MODEL: ${LLM_MODEL:-Qwen/Qwen2.5-7B-Instruct}
+      PROBE_TEMPERATURE: ${PROBE_TEMPERATURE:-0.0}
+      PROBE_MAX_TOKENS: ${PROBE_MAX_TOKENS:-512}
+    depends_on:
+      - rabbitmq
+
+  voice-service:
+    <<: *svc-defaults
+    build: ./services/voice-service
+    ports: ["127.0.0.1:8011:8011"]
+    environment:
+      <<: *svc-env
+      DATABASE_URL: ${VOICE_DATABASE_URL:-${SUPABASE_DATABASE_URL}}
+    volumes:
+      - voicedata:/data/audio
+
+  notification-service:
+    <<: *svc-defaults
+    build: ./services/notification-service
+    ports: ["127.0.0.1:8012:8012"]
+    environment:
+      <<: *svc-env
+      DATABASE_URL: ${NOTIFICATION_DATABASE_URL:-${SUPABASE_DATABASE_URL}}
+      RABBITMQ_URL: ${RABBITMQ_URL:-amqp://afrimentor:afrimentor@rabbitmq:5672/}
+      PROGRESS_SERVICE_URL: http://progress-gamification-service:8007
+    depends_on:
+      - rabbitmq
+      - progress-gamification-service
+
+networks:
+  afrimentor:
+    driver: bridge
+
+volumes:
+  auth_dev_keys:
+  voicedata:
+
