@@ -188,6 +188,10 @@ export interface InsightItem {
    * once real content exists. */
   mediaUrl?: string;
   createdAt: ISODateTime;
+  /** Whether the current user has bookmarked this insight. Present on live
+   * API responses (insight-library-service embeds it per-request); absent
+   * from mock data, where favorites are tracked purely client-side. */
+  isFavorited?: boolean;
 }
 
 /** Per-user favorite marker — modeled as a separate join concept rather
@@ -268,3 +272,23 @@ export interface UserBadge {
  * state — what GET /progress/badges actually returns. Mirrors the
  * `BadgeWithStatus` schema in openapi.yaml. */
 export type BadgeWithStatus = Badge & { earnedAt: ISODateTime | null };
+
+/** One day's activity count — feeds the Progress Board's action heatmap.
+ * Mirrors progress-gamification-service's `HeatmapDay` schema. */
+export interface HeatmapDay {
+  date: ISODate;
+  count: number;
+}
+
+/** What GET /progress/summary/share returns — a pre-built, shareable
+ * recap of the caller's current week. Mirrors the `WeeklySummaryShare`
+ * schema in progress-gamification-service. */
+export interface WeeklySummaryShare {
+  userId: ID;
+  weekStart: ISODate;
+  weekEnd: ISODate;
+  actionsThisWeek: number;
+  currentStreakDays: number;
+  badgesEarnedThisWeek: ID[];
+  shareText: string;
+}

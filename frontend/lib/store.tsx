@@ -43,6 +43,7 @@ type Action =
   | { type: "CLOSE_FEEDBACK_MODAL" }
   | { type: "MARK_DAILY_ACTION_DONE" }
   | { type: "TOGGLE_LIBRARY_FAVORITE"; id: string }
+  | { type: "SET_LIBRARY_FAVORITES"; ids: string[] }
   | { type: "SET_LIBRARY_FILTER"; category: string | null };
 
 const initialState: AppState = {
@@ -106,6 +107,8 @@ function reducer(state: AppState, action: Action): AppState {
       else next.add(action.id);
       return { ...state, libraryFavorites: next };
     }
+    case "SET_LIBRARY_FAVORITES":
+      return { ...state, libraryFavorites: new Set(action.ids) };
     case "SET_LIBRARY_FILTER":
       return { ...state, libraryFilter: action.category };
     default:

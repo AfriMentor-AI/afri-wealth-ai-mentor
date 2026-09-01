@@ -1,14 +1,24 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Icon } from "@/components/Icon";
-import { fetchBadges, fetchStreak } from "@/lib/api";
-import type { BadgeWithStatus, StreakStat } from "@/lib/types";
+import { fetchProgressSummary, shareWeeklySummary } from "@/lib/api";
+import type { BadgeWithStatus, HeatmapDay, StreakStat } from "@/lib/types";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { useAppDispatch } from "@/lib/store";
 
-const WEEKDAY_BARS = [40, 60, 55, 85, 100, 95, 98]; // % height, matches reference chart shape
 const HEATMAP_INTENSITIES = ["bg-surface-container", "bg-secondary-fixed", "bg-secondary-container", "bg-secondary"];
+
+function intensityFor(count: number): number {
+  if (count <= 0) return 0;
+  if (count === 1) return 1;
+  if (count === 2) return 2;
+  return 3;
+}
+
+function weekdayLabel(isoDate: string): string {
+  return new Date(`${isoDate}T00:00:00`).toLocaleDateString(undefined, { weekday: "short" });
+}
 
 function BadgeTile({ badge, wide = false }: { badge: BadgeWithStatus; wide?: boolean }) {
   const earned = badge.earnedAt !== null;
@@ -38,25 +48,68 @@ function BadgeTile({ badge, wide = false }: { badge: BadgeWithStatus; wide?: boo
   );
 }
 
+type ShareStatus = "idle" | "loading" | "shared" | "copied" | "error";
+
 export default function ProgressBoardPage() {
   const dispatch = useAppDispatch();
   const [streak, setStreak] = useState<StreakStat | null>(null);
   const [badges, setBadges] = useState<BadgeWithStatus[] | null>(null);
-  const [heatmap, setHeatmap] = useState<number[][] | null>(null);
+  const [heatmapDays, setHeatmapDays] = useState<HeatmapDay[] | null>(null);
+  const [shareStatus, setShareStatus] = useState<ShareStatus>("idle");
 
   useEffect(() => {
-    fetchStreak().then(setStreak);
-    fetchBadges().then(setBadges);
-    // Generated client-side only to avoid SSR/client hydration mismatch —
-    // in production this is real per-day activity data from the API, not random.
-    const weeks = Array.from({ length: 13 }, () =>
-      Array.from({ length: 7 }, () => Math.floor(Math.random() * HEATMAP_INTENSITIES.length))
-    );
-    setHeatmap(weeks);
+    fetchProgressSummary().then((summary) => {
+      setStreak(summary.streak);
+      setBadges(summary.badges);
+      setHeatmapDays(summary.heatmap);
+    });
   }, []);
 
   const earnedCount = badges?.filter((b) => b.earnedAt !== null).length ?? null;
   const lockedCount = badges ? badges.length - (earnedCount ?? 0) : null;
+
+  const weeks = useMemo(() => {
+    if (!heatmapDays) return null;
+    const chunks: HeatmapDay[][] = [];
+    for (let i = 0; i < heatmapDays.length; i += 7) chunks.push(heatmapDays.slice(i, i + 7));
+    return chunks;
+  }, [heatmapDays]);
+
+  const lastWeek = heatmapDays ? heatmapDays.slice(-7) : null;
+  const lastWeekMax = lastWeek ? Math.max(1, ...lastWeek.map((d) => d.count)) : 1;
+
+  async function handleShare() {
+    setShareStatus("loading");
+    try {
+      const summary = await shareWeeklySummary();
+      if (typeof navigator !== "undefined" && navigator.share) {
+        await navigator.share({ title: "My AfriMentor AI progress", text: summary.shareText });
+        setShareStatus("shared");
+      } else if (typeof navigator !== "undefined" && navigator.clipboard) {
+        await navigator.clipboard.writeText(summary.shareText);
+        setShareStatus("copied");
+      } else {
+        setShareStatus("error");
+      }
+    } catch (error) {
+      if (error instanceof Error && error.name === "AbortError") {
+        setShareStatus("idle");
+        return;
+      }
+      console.error("Failed to share weekly summary:", error);
+      setShareStatus("error");
+    } finally {
+      setTimeout(() => setShareStatus("idle"), 2500);
+    }
+  }
+
+  const shareLabel: Record<ShareStatus, string> = {
+    idle: "Share weekly summary",
+    loading: "Sharing...",
+    shared: "Shared!",
+    copied: "Copied to clipboard!",
+    error: "Couldn't share — try again",
+  };
 
   return (
     <main className="space-y-xl px-margin-mobile pb-24 pt-md md:mx-auto md:max-w-6xl md:space-y-lg md:px-lg md:pb-lg md:pt-lg">
@@ -64,12 +117,12 @@ export default function ProgressBoardPage() {
         <h2 className="font-headline-lg-mobile text-headline-lg-mobile text-on-surface md:font-headline-lg md:text-headline-lg">
           Your Growth
         </h2>
-        <p className="font-body-md text-on-surface-variant">Consistent action builds lasting wealth, Kofi.</p>
+        <p className="font-body-md text-on-surface-variant">Consistent action builds lasting wealth.</p>
       </section>
 
-      {/* Desktop hero stats row — real streak/badge numbers, not the
-          mockup's fabricated "Global Rank"/"Knowledge Points" (no such
-          data exists). */}
+      {/* Desktop hero stats row — real streak/badge numbers from
+          progress-gamification-service, not fabricated "Global Rank"/
+          "Knowledge Points" stats. */}
       <section className="hidden gap-lg md:grid md:grid-cols-3">
         <div className="flex flex-col gap-sm rounded-xl border border-outline-variant/30 bg-secondary-container p-lg">
           <span className="font-label-sm text-label-sm uppercase tracking-widest text-on-secondary-container">
@@ -104,7 +157,7 @@ export default function ProgressBoardPage() {
         </div>
       </section>
 
-      {streak === null ? (
+      {streak === null || lastWeek === null ? (
         <Skeleton className="h-40 w-full rounded md:hidden" />
       ) : (
         <div className="rounded border border-outline-variant bg-surface-container-low p-md shadow-sm md:hidden">
@@ -116,17 +169,21 @@ export default function ProgressBoardPage() {
             <p className="font-label-sm text-label-sm text-on-surface-variant">Top Streak: {streak.longestStreakDays}</p>
           </div>
           <div className="flex h-24 items-end justify-between gap-xs px-xs">
-            {WEEKDAY_BARS.map((h, i) => (
-              <div
-                key={i}
-                className={`w-full rounded-t-sm ${h >= 85 ? "bg-secondary" : "bg-secondary-container"}`}
-                style={{ height: `${h}%` }}
-              />
-            ))}
+            {lastWeek.map((day) => {
+              const h = Math.round(20 + (day.count / lastWeekMax) * 80);
+              return (
+                <div
+                  key={day.date}
+                  className={`w-full rounded-t-sm ${day.count >= lastWeekMax && day.count > 0 ? "bg-secondary" : "bg-secondary-container"}`}
+                  style={{ height: `${h}%` }}
+                  title={`${day.date}: ${day.count} action${day.count === 1 ? "" : "s"}`}
+                />
+              );
+            })}
           </div>
           <div className="mt-sm flex justify-between font-label-sm text-[10px] text-on-surface-variant">
-            {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((d) => (
-              <span key={d}>{d}</span>
+            {lastWeek.map((day) => (
+              <span key={day.date}>{weekdayLabel(day.date)}</span>
             ))}
           </div>
         </div>
@@ -138,7 +195,7 @@ export default function ProgressBoardPage() {
           <span className="font-label-sm text-label-sm text-on-surface-variant">Last 3 Months</span>
         </div>
         <div className="rounded border border-outline-variant bg-surface-container-lowest p-md md:p-lg">
-          {heatmap === null ? (
+          {weeks === null ? (
             <Skeleton className="h-24 w-full" />
           ) : (
             <>
@@ -155,10 +212,14 @@ export default function ProgressBoardPage() {
                   <div />
                   <div>S</div>
                 </div>
-                {heatmap.map((week, wi) => (
+                {weeks.map((week, wi) => (
                   <div key={wi} className="grid grid-rows-7 gap-1 md:gap-[3px]">
-                    {week.map((intensity, di) => (
-                      <div key={di} className={`h-2.5 w-2.5 rounded-[2px] md:h-3 md:w-3 ${HEATMAP_INTENSITIES[intensity]}`} />
+                    {week.map((day) => (
+                      <div
+                        key={day.date}
+                        title={`${day.date}: ${day.count} action${day.count === 1 ? "" : "s"}`}
+                        className={`h-2.5 w-2.5 rounded-[2px] md:h-3 md:w-3 ${HEATMAP_INTENSITIES[intensityFor(day.count)]}`}
+                      />
                     ))}
                   </div>
                 ))}
@@ -178,7 +239,7 @@ export default function ProgressBoardPage() {
       </section>
 
       <section className="space-y-md">
-        <h3 className="font-title-md text-title-md text-on-surface">Milestones Reached</h3>
+        <h3 className="font-title-md text-title-md text-on-surface">Badges Earned</h3>
         <div className="grid grid-cols-2 gap-md md:grid-cols-4 lg:grid-cols-6">
           {badges === null
             ? Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-32 w-full rounded" />)
@@ -186,13 +247,22 @@ export default function ProgressBoardPage() {
         </div>
       </section>
 
-      <button
-        onClick={() => dispatch({ type: "OPEN_FEEDBACK_MODAL" })}
-        className="flex w-full items-center justify-center gap-sm rounded-full bg-primary py-md text-on-primary shadow-md transition-transform active:scale-95 hover:opacity-90 md:w-auto md:px-xl"
-      >
-        <Icon name="share" />
-        <span className="font-title-md text-title-md">Share weekly summary</span>
-      </button>
+      <div className="flex flex-col items-center gap-sm md:items-start">
+        <button
+          onClick={handleShare}
+          disabled={shareStatus === "loading"}
+          className="flex w-full items-center justify-center gap-sm rounded-full bg-primary py-md text-on-primary shadow-md transition-transform active:scale-95 hover:opacity-90 disabled:opacity-70 md:w-auto md:px-xl"
+        >
+          <Icon name={shareStatus === "copied" || shareStatus === "shared" ? "check" : "share"} />
+          <span className="font-title-md text-title-md">{shareLabel[shareStatus]}</span>
+        </button>
+        <button
+          onClick={() => dispatch({ type: "OPEN_FEEDBACK_MODAL" })}
+          className="font-label-sm text-label-sm text-on-surface-variant underline underline-offset-2 hover:text-on-surface"
+        >
+          Give feedback on your journey
+        </button>
+      </div>
 
       <p className="pb-lg text-center font-body-md text-[13px] italic text-on-surface-variant">
         Inspired by the Sankofa bird: Looking back to move forward.

@@ -4,7 +4,17 @@
 export * from "./mockApi";
 
 import { apiFetch, getCurrentUserId } from "./session";
-import type { ChatMessage, Commitment, Goal, Milestone } from "./types";
+import type {
+  BadgeWithStatus,
+  ChatMessage,
+  Commitment,
+  Goal,
+  HeatmapDay,
+  InsightItem,
+  Milestone,
+  StreakStat,
+  WeeklySummaryShare,
+} from "./types";
 
 interface BackendMessage {
   id: string;
@@ -234,4 +244,179 @@ export async function fetchCommitmentsByGoal(goalId: string): Promise<Commitment
   if (!res.ok) throw new Error(`fetchCommitmentsByGoal failed: ${res.status}`);
   const body: BackendCommitment[] = await res.json();
   return body.map(toCommitment);
+}
+
+// ── Insight Library (insight-library-service, O3.2) ────────────────────────
+//
+// fetchInsights was still re-exported from mockApi.ts wholesale, and
+// favoriting only ever dispatched local store state — never persisted
+// server-side despite insight-library-service's bookmark endpoints being
+// live since O3.2.
+
+interface BackendInsight {
+  id: string;
+  title: string;
+  summary: string;
+  category: string;
+  duration_minutes: number;
+  is_audio: boolean;
+  media_url: string | null;
+  created_at: string;
+  is_favorited: boolean;
+}
+
+function toInsight(i: BackendInsight): InsightItem {
+  return {
+    id: i.id,
+    title: i.title,
+    summary: i.summary,
+    category: i.category,
+    durationMinutes: i.duration_minutes,
+    isAudio: i.is_audio,
+    mediaUrl: i.media_url ?? undefined,
+    createdAt: i.created_at,
+    isFavorited: i.is_favorited,
+  };
+}
+
+/** GET /api/v1/insights — the full catalog, each item flagged with whether
+ * this user has favorited it. Search/category/audio filtering happens
+ * client-side over this list (small, catalog-sized dataset) rather than
+ * round-tripping per keystroke. */
+export async function fetchInsights(): Promise<InsightItem[]> {
+  const res = await apiFetch("/api/v1/insights");
+  if (!res.ok) throw new Error(`fetchInsights failed: ${res.status}`);
+  const body: BackendInsight[] = await res.json();
+  return body.map(toInsight);
+}
+
+/** POST/DELETE /api/v1/insights/{id}/bookmark */
+export async function setInsightFavorited(insightId: string, favorited: boolean): Promise<void> {
+  const res = await apiFetch(`/api/v1/insights/${insightId}/bookmark`, {
+    method: favorited ? "POST" : "DELETE",
+  });
+  if (!res.ok) throw new Error(`setInsightFavorited failed: ${res.status}`);
+}
+
+// ── Progress & Gamification (progress-gamification-service, O3.1) ──────────
+//
+// fetchStreak/fetchBadges were still re-exported from mockApi.ts wholesale,
+// the Progress board's heatmap was generated with Math.random() despite the
+// service's real /api/v1/progress endpoint returning genuine per-day
+// activity, and "Share weekly summary" opened the NPS feedback modal
+// instead of calling the real share endpoint.
+
+interface BackendStreak {
+  user_id: string;
+  current_streak_days: number;
+  longest_streak_days: number;
+  actions_completed_total: number;
+  updated_at: string;
+}
+
+function toStreak(s: BackendStreak): StreakStat {
+  return {
+    userId: s.user_id,
+    currentStreakDays: s.current_streak_days,
+    longestStreakDays: s.longest_streak_days,
+    actionsCompletedTotal: s.actions_completed_total,
+    updatedAt: s.updated_at,
+  };
+}
+
+interface BackendBadge {
+  id: string;
+  label: string;
+  description: string;
+  icon_name: string;
+  earned_at: string | null;
+}
+
+function toBadge(b: BackendBadge): BadgeWithStatus {
+  return { id: b.id, label: b.label, description: b.description, iconName: b.icon_name, earnedAt: b.earned_at };
+}
+
+interface BackendHeatmapDay {
+  date: string;
+  count: number;
+}
+
+interface BackendProgressSummary {
+  streak: BackendStreak;
+  heatmap: BackendHeatmapDay[];
+  badges: BackendBadge[];
+}
+
+export interface ProgressSummary {
+  streak: StreakStat;
+  heatmap: HeatmapDay[];
+  badges: BadgeWithStatus[];
+}
+
+/** GET /api/v1/progress/streak */
+export async function fetchStreak(): Promise<StreakStat> {
+  const res = await apiFetch("/api/v1/progress/streak");
+  if (!res.ok) throw new Error(`fetchStreak failed: ${res.status}`);
+  return toStreak(await res.json());
+}
+
+/** GET /api/v1/progress/badges */
+export async function fetchBadges(): Promise<BadgeWithStatus[]> {
+  const res = await apiFetch("/api/v1/progress/badges");
+  if (!res.ok) throw new Error(`fetchBadges failed: ${res.status}`);
+  const body: BackendBadge[] = await res.json();
+  return body.map(toBadge);
+}
+
+/** GET /api/v1/progress — streak + heatmap + badges in one call. Used by the
+ * Progress board so it doesn't issue three separate requests for data the
+ * backend already returns together. */
+export async function fetchProgressSummary(): Promise<ProgressSummary> {
+  const res = await apiFetch("/api/v1/progress");
+  if (!res.ok) throw new Error(`fetchProgressSummary failed: ${res.status}`);
+  const body: BackendProgressSummary = await res.json();
+  return {
+    streak: toStreak(body.streak),
+    heatmap: body.heatmap.map((h) => ({ date: h.date, count: h.count })),
+    badges: body.badges.map(toBadge),
+  };
+}
+
+export type ProgressActionKind = "daily_action" | "insight_completed" | "savings_goal_met";
+
+/** POST /api/v1/progress/actions — recording the same (day, kind) twice is a
+ * server-side no-op, not an error, so callers don't need to guard against
+ * double-firing. */
+export async function recordProgressAction(kind: ProgressActionKind): Promise<void> {
+  const res = await apiFetch("/api/v1/progress/actions", {
+    method: "POST",
+    body: JSON.stringify({ kind }),
+  });
+  if (!res.ok) throw new Error(`recordProgressAction failed: ${res.status}`);
+}
+
+interface BackendWeeklySummaryShare {
+  user_id: string;
+  week_start: string;
+  week_end: string;
+  actions_this_week: number;
+  current_streak_days: number;
+  badges_earned_this_week: string[];
+  share_text: string;
+}
+
+/** POST /api/v1/progress/summary/share */
+export async function shareWeeklySummary(): Promise<WeeklySummaryShare> {
+  const res = await apiFetch("/api/v1/progress/summary/share", { method: "POST" });
+  if (!res.ok) throw new Error(`shareWeeklySummary failed: ${res.status}`);
+  const body: BackendWeeklySummaryShare = await res.json();
+  return {
+    userId: body.user_id,
+    weekStart: body.week_start,
+    weekEnd: body.week_end,
+    actionsThisWeek: body.actions_this_week,
+    currentStreakDays: body.current_streak_days,
+    badgesEarnedThisWeek: body.badges_earned_this_week,
+    shareText: body.share_text,
+  };
 }
