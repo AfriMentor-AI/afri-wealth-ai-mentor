@@ -18,6 +18,9 @@ x-svc-defaults: &svc-defaults
   restart: unless-stopped
   init: true
   networks: [afrimentor]
+  dns:
+    - 8.8.8.8
+    - 1.1.1.1
   environment: &svc-env
     APP_ENV: ${APP_ENV:-dev}
 
