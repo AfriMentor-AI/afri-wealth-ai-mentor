@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import re
 import time
 from collections.abc import AsyncIterator
 
@@ -22,6 +23,17 @@ settings = get_settings()
 _client: AsyncOpenAI | None = None
 _persona_http_client: httpx.AsyncClient | None = None
 _prompt_cache: dict[tuple[str, str], tuple[float, str]] = {}
+
+# ── Think-tag stripping ───────────────────────────────────────────────────────
+# Qwen/Qwen2.5 (and other reasoning models) emit an internal chain-of-thought
+# wrapped in <think>…</think> before the actual reply.  We strip the entire
+# block so it is never stored or returned to clients.
+_THINK_RE = re.compile(r"<think>.*?</think>", re.DOTALL | re.IGNORECASE)
+
+
+def _strip_think_tags(text: str) -> str:
+    """Remove <think>…</think> reasoning blocks from model output."""
+    return _THINK_RE.sub("", text).lstrip("\n")
 
 
 def get_llm_client() -> AsyncOpenAI:
@@ -228,7 +240,7 @@ async def chat_completion(
     choice = response.choices[0]
     usage = response.usage
     return (
-        choice.message.content or "",
+        _strip_think_tags(choice.message.content or ""),
         usage.prompt_tokens if usage else 0,
         usage.completion_tokens if usage else 0,
         citations,
@@ -274,9 +286,32 @@ async def stream_chat_completion(
                 temperature=settings.llm_temperature,
                 stream=True,
             )
+            # Buffer tokens until we've consumed any <think>…</think> block.
+            # Qwen/Qwen2.5 reasoning models emit thinking content first; we must
+            # not yield any of it to SSE clients.
+            buffer = ""
+            think_done = False  # set True once </think> has been seen (or never appeared)
             async for chunk in response:
-                if chunk.choices and chunk.choices[0].delta.content:
-                    yield chunk.choices[0].delta.content
+                if not (chunk.choices and chunk.choices[0].delta.content):
+                    continue
+                token = chunk.choices[0].delta.content
+                if think_done:
+                    yield token
+                else:
+                    buffer += token
+                    if "<think>" not in buffer:
+                        # No thinking block started — safe to yield everything so far
+                        think_done = True
+                        yield buffer
+                        buffer = ""
+                    elif "</think>" in buffer:
+                        # Thinking block is complete — strip it and yield the remainder
+                        think_done = True
+                        remainder = _strip_think_tags(buffer)
+                        if remainder:
+                            yield remainder
+                        buffer = ""
+                    # else: still inside <think>…</think>, keep buffering
         except Exception as exc:  # pragma: no cover - provider failures need integration coverage
             logger.warning("LLM stream failed; using fallback response: %s", exc)
             yield "I hear you! Let's work through this together. (LLM unavailable.)"

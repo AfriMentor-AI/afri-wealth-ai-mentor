@@ -6,7 +6,7 @@ import { ConversationList } from "@/components/ConversationList";
 import { Icon } from "@/components/Icon";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { useAppDispatch, useAppState } from "@/lib/store";
-import { fetchChatMessages, sendMessage, tagCommitment } from "@/lib/api";
+import { fetchChatMessages, sendMessageStream, tagCommitment } from "@/lib/api";
 import type { ChatMessage } from "@/lib/types";
 
 function formatTime(iso: string) {
@@ -286,13 +286,31 @@ function MentorMessageContent({ content }: Readonly<{ content: string }>) {
   );
 }
 
+/** Three animated dots shown while waiting for the first streaming token. */
+function TypingIndicator() {
+  return (
+    <div className="flex items-center gap-[5px] px-md py-sm">
+      {[0, 1, 2].map((i) => (
+        <span
+          key={i}
+          className="h-2 w-2 rounded-full bg-on-surface-variant animate-bounce"
+          style={{ animationDelay: `${i * 0.18}s`, animationDuration: "0.9s" }}
+        />
+      ))}
+    </div>
+  );
+}
+
 export default function ChatPage() {
   const { chatMessages, chatDraft, profile, chatSessionId, activeGoalId, selectedPersona } = useAppState();
   const dispatch = useAppDispatch();
   const [isRecording, setIsRecording] = useState(false);
   const [commitmentTagged, setCommitmentTagged] = useState(false);
   const [showConversations, setShowConversations] = useState(false);
+  const [isTyping, setIsTyping] = useState(false);
+  const [streamingContent, setStreamingContent] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const abortStreamRef = useRef<(() => void) | null>(null);
 
   useEffect(() => {
     if (chatSessionId && chatMessages.length === 0) {
@@ -306,8 +324,17 @@ export default function ChatPage() {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [chatMessages.length]);
 
-  async function send() {
-    if (!chatDraft.trim() || !chatSessionId) return;
+  useEffect(() => {
+    if (streamingContent !== null) {
+      scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
+    }
+  }, [streamingContent]);
+
+  function send() {
+    if (!chatDraft.trim() || !chatSessionId || isTyping) return;
+
+    // Abort any in-flight stream before starting a new one
+    abortStreamRef.current?.();
 
     const userMessage: ChatMessage = {
       id: `local-${Date.now()}`,
@@ -319,13 +346,33 @@ export default function ChatPage() {
     dispatch({ type: "APPEND_CHAT_MESSAGE", message: userMessage });
     dispatch({ type: "SET_CHAT_DRAFT", draft: "" });
 
-    try {
-      const assistantMessage = await sendMessage(chatSessionId, userMessage.content);
-      dispatch({ type: "APPEND_CHAT_MESSAGE", message: assistantMessage });
-    } catch (error) {
-      console.error("Failed to send message:", error);
-      // Optional: show error message in UI, maybe as a special chat message
-    }
+    setIsTyping(true);
+    setStreamingContent(null);
+
+    const abort = sendMessageStream(
+      chatSessionId,
+      userMessage.content,
+      (chunk) => {
+        // First token — replace dots with the streaming bubble
+        setIsTyping(false);
+        setStreamingContent((prev) => (prev ?? "") + chunk);
+      },
+      (assistantMessage) => {
+        // Stream complete — swap streaming bubble for the final persisted message
+        setStreamingContent(null);
+        setIsTyping(false);
+        dispatch({ type: "APPEND_CHAT_MESSAGE", message: assistantMessage });
+        abortStreamRef.current = null;
+      },
+      (error) => {
+        console.error("Stream error:", error);
+        setStreamingContent(null);
+        setIsTyping(false);
+        abortStreamRef.current = null;
+      },
+    );
+
+    abortStreamRef.current = abort;
   }
 
   async function handleTagCommitment() {
@@ -443,6 +490,25 @@ export default function ChatPage() {
             </div>
           ))}
 
+          {/* Typing indicator — three dots while waiting for first token */}
+          {isTyping && (
+            <div className="flex max-w-[85%] flex-col items-start">
+              <div className="rounded rounded-tl-none border border-outline-variant bg-surface-container-low shadow-sm md:rounded-tl-xl">
+                <TypingIndicator />
+              </div>
+            </div>
+          )}
+
+          {/* Streaming bubble — grows token-by-token */}
+          {streamingContent !== null && (
+            <div className="flex max-w-[85%] flex-col items-start">
+              <div className="rounded rounded-tl-none border border-outline-variant bg-surface-container-low p-md text-body-md text-on-surface shadow-sm md:rounded-tl-xl">
+                <MentorMessageContent content={streamingContent} />
+                <span className="inline-block h-3 w-0.5 animate-pulse bg-primary align-middle ml-0.5" aria-hidden />
+              </div>
+            </div>
+          )}
+
           {lastIsMentor && chatMessages[chatMessages.length - 1].is_commitment_candidate && !commitmentTagged && (
             <div className="flex items-center justify-between gap-md rounded border border-secondary bg-secondary-container p-md md:rounded-xl">
               <div className="flex items-center gap-sm">
@@ -493,7 +559,7 @@ export default function ChatPage() {
           type="button"
           aria-label="Send message"
           onClick={send}
-          disabled={!chatDraft.trim()}
+          disabled={!chatDraft.trim() || isTyping || streamingContent !== null}
           className="tap-target flex items-center justify-center rounded-full bg-primary text-on-primary disabled:opacity-40"
         >
           <Icon name="send" />

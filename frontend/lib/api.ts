@@ -49,6 +49,95 @@ export async function sendMessage(chatSessionId: string, text: string): Promise<
   return toChatMessage(body, await getCurrentUserId());
 }
 
+/** POST /api/v1/chat/sessions/{id}/messages/stream — streams assistant tokens
+ * via SSE.
+ *
+ * - `onToken(chunk)` is called for each incremental text chunk.
+ * - `onComplete(message)` is called once with the fully-persisted ChatMessage.
+ * - Returns a cleanup function that aborts the stream if called early.
+ */
+export function sendMessageStream(
+  chatSessionId: string,
+  text: string,
+  onToken: (chunk: string) => void,
+  onComplete: (message: ChatMessage) => void,
+  onError?: (err: Error) => void,
+): () => void {
+  const controller = new AbortController();
+
+  (async () => {
+    const userId = await getCurrentUserId();
+    const res = await apiFetch(`/api/v1/chat/sessions/${chatSessionId}/messages/stream`, {
+      method: "POST",
+      body: JSON.stringify({ content: text }),
+      signal: controller.signal,
+    } as RequestInit & { signal: AbortSignal });
+
+    if (!res.ok) {
+      onError?.(new Error(`sendMessageStream failed: ${res.status}`));
+      return;
+    }
+
+    const reader = res.body?.getReader();
+    if (!reader) {
+      onError?.(new Error("No response body"));
+      return;
+    }
+
+    const decoder = new TextDecoder();
+    let buffer = "";
+
+    try {
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n");
+        // Keep the last (potentially incomplete) line in the buffer
+        buffer = lines.pop() ?? "";
+
+        for (const line of lines) {
+          if (line.startsWith("event: token")) continue; // event type line
+          if (line.startsWith("event: complete")) continue;
+          if (!line.startsWith("data: ")) continue;
+
+          const jsonStr = line.slice("data: ".length).trim();
+          if (!jsonStr) continue;
+
+          try {
+            const parsed = JSON.parse(jsonStr) as Record<string, unknown>;
+            if ("text" in parsed && typeof parsed.text === "string") {
+              onToken(parsed.text);
+            } else if ("id" in parsed) {
+              // This is the complete event payload — build the final ChatMessage
+              const msg: BackendMessage = {
+                id: parsed.id as string,
+                role: "assistant",
+                content: parsed.content as string,
+                is_commitment_candidate: false,
+                citations: (parsed.citations as Array<{ label: string }>) ?? [],
+                created_at: new Date().toISOString(),
+              };
+              onComplete(toChatMessage(msg, userId));
+            }
+          } catch {
+            // Malformed SSE data line — ignore
+          }
+        }
+      }
+    } catch (err) {
+      if ((err as Error).name !== "AbortError") {
+        onError?.(err as Error);
+      }
+    } finally {
+      reader.releaseLock();
+    }
+  })();
+
+  return () => controller.abort();
+}
+
 /** POST /api/v1/chat/sessions/{sessionId}/messages/{messageId}/tag */
 export async function tagCommitment(chatSessionId: string, chatMessageId: string, goalId?: string): Promise<Commitment> {
   const res = await apiFetch(`/api/v1/chat/sessions/${chatSessionId}/messages/${chatMessageId}/tag`, {
