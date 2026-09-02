@@ -5,6 +5,7 @@ upstream with a trusted identity header. See docs/adr/0001-microservices-archite
 """
 from __future__ import annotations
 
+import os
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
