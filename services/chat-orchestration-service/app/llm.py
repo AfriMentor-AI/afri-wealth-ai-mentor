@@ -41,6 +41,13 @@ def _strip_think_tags(text: str) -> str:
     return cleaned.lstrip("\n")
 
 
+def _get_extra_body() -> dict | None:
+    """On Groq, suppress reasoning tokens natively so the token budget is preserved."""
+    if "groq.com" in settings.llm_base_url.lower():
+        return {"reasoning_format": "hidden"}
+    return None
+
+
 def get_llm_client() -> AsyncOpenAI:
     global _client
     if _client is None:
@@ -233,6 +240,7 @@ async def chat_completion(
             messages=messages,  # type: ignore[arg-type]
             max_tokens=settings.llm_max_tokens,
             temperature=settings.llm_temperature,
+            extra_body=_get_extra_body(),
         )
     except Exception as exc:  # pragma: no cover - exercised via integration tests with bad creds
         logger.warning("LLM request failed; falling back to stub reply: %s", exc)
@@ -292,6 +300,7 @@ async def stream_chat_completion(
                 max_tokens=settings.llm_max_tokens,
                 temperature=settings.llm_temperature,
                 stream=True,
+                extra_body=_get_extra_body(),
             )
             # Buffer tokens to suppress any <think>…</think> reasoning blocks.
             # Reasoning models (e.g. Qwen / DeepSeek) emit thinking content first;

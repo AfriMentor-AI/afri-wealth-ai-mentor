@@ -26,7 +26,7 @@ class Settings(BaseModel):
     # LLM — OpenAI-compatible (Groq / Together AI / local vLLM)
     llm_api_key: str = os.getenv("LLM_API_KEY", "")
     llm_base_url: str = os.getenv("LLM_BASE_URL", "https://api.groq.com/openai/v1")
-    llm_model: str = os.getenv("LLM_MODEL", "Qwen/Qwen2.5-7B-Instruct")
+    llm_model: str = os.getenv("LLM_MODEL", "openai/gpt-oss-20b")
     llm_max_tokens: int = int(os.getenv("LLM_MAX_TOKENS", "1024"))
     llm_temperature: float = float(os.getenv("LLM_TEMPERATURE", "0.7"))
     llm_streaming_enabled: bool = (
