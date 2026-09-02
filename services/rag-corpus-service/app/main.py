@@ -31,10 +31,14 @@ def create_tables():
     max_retries = 10
     for attempt in range(max_retries):
         try:
-            Base.metadata.create_all(bind=engine)
+            Base.metadata.create_all(bind=engine, checkfirst=True)
             logger.info("Database tables created successfully.")
             return
         except Exception as e:
+            err_msg = str(e).lower()
+            if "already exists" in err_msg or "duplicateobject" in err_msg or "duplicatetable" in err_msg:
+                logger.info("Database tables/enums already exist, proceeding.")
+                return
             if attempt < max_retries - 1:
                 logger.warning("DB not ready, retrying in 3s... (%s)", e)
                 time.sleep(3)
