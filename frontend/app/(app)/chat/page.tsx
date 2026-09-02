@@ -6,7 +6,7 @@ import { ConversationList } from "@/components/ConversationList";
 import { Icon } from "@/components/Icon";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { useAppDispatch, useAppState } from "@/lib/store";
-import { fetchChatMessages, sendMessageStream, tagCommitment } from "@/lib/api";
+import { fetchChatMessages, sendMessageStream, stripThinkTags, tagCommitment } from "@/lib/api";
 import type { ChatMessage } from "@/lib/types";
 
 function formatTime(iso: string) {
@@ -186,7 +186,8 @@ function parseMentorBlocks(content: string): MentorBlock[] {
 }
 
 function MentorMessageContent({ content }: Readonly<{ content: string }>) {
-  const blocks = parseMentorBlocks(content);
+  const cleanContent = stripThinkTags(content);
+  const blocks = parseMentorBlocks(cleanContent);
 
   return (
     <div className="space-y-sm">
@@ -490,8 +491,8 @@ export default function ChatPage() {
             </div>
           ))}
 
-          {/* Typing indicator — three dots while waiting for first token */}
-          {isTyping && (
+          {/* Typing indicator — three dots while waiting for first token or while model is thinking */}
+          {(isTyping || (streamingContent !== null && !stripThinkTags(streamingContent))) && (
             <div className="flex max-w-[85%] flex-col items-start">
               <div className="rounded rounded-tl-none border border-outline-variant bg-surface-container-low shadow-sm md:rounded-tl-xl">
                 <TypingIndicator />
@@ -499,8 +500,8 @@ export default function ChatPage() {
             </div>
           )}
 
-          {/* Streaming bubble — grows token-by-token */}
-          {streamingContent !== null && (
+          {/* Streaming bubble — grows token-by-token once real content is available */}
+          {streamingContent !== null && Boolean(stripThinkTags(streamingContent)) && (
             <div className="flex max-w-[85%] flex-col items-start">
               <div className="rounded rounded-tl-none border border-outline-variant bg-surface-container-low p-md text-body-md text-on-surface shadow-sm md:rounded-tl-xl">
                 <MentorMessageContent content={streamingContent} />

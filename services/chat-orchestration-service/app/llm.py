@@ -26,14 +26,19 @@ _prompt_cache: dict[tuple[str, str], tuple[float, str]] = {}
 
 # ── Think-tag stripping ───────────────────────────────────────────────────────
 # Qwen/Qwen2.5 (and other reasoning models) emit an internal chain-of-thought
-# wrapped in <think>…</think> before the actual reply.  We strip the entire
+# wrapped in <think>…</think> before the actual reply. We strip the entire
 # block so it is never stored or returned to clients.
-_THINK_RE = re.compile(r"<think>.*?</think>", re.DOTALL | re.IGNORECASE)
+_THINK_RE = re.compile(r"<think>(?:.*?</think>|[\s\S]*$)", re.DOTALL | re.IGNORECASE)
+_STRAY_CLOSING_RE = re.compile(r"</think>", re.IGNORECASE)
 
 
 def _strip_think_tags(text: str) -> str:
-    """Remove <think>…</think> reasoning blocks from model output."""
-    return _THINK_RE.sub("", text).lstrip("\n")
+    """Remove <think>…</think> reasoning blocks from model output.
+    Also handles unclosed <think>... blocks if truncated by max_tokens,
+    and removes any stray closing tags."""
+    cleaned = _THINK_RE.sub("", text)
+    cleaned = _STRAY_CLOSING_RE.sub("", cleaned)
+    return cleaned.lstrip("\n")
 
 
 def get_llm_client() -> AsyncOpenAI:
@@ -101,7 +106,9 @@ async def _get_system_prompt(persona_id: str | None) -> str:
         "('I will…', 'I plan to…', 'My goal is…'), explicitly name it as a commitment "
         "and confirm it back so they feel the weight of accountability. "
         "(4) Short replies on mobile — default to 3–5 short paragraphs; bullet points "
-        "only for step lists; no walls of text."
+        "only for step lists; no walls of text. "
+        "(5) Direct response only — do not include any <think> tags, internal monologue, "
+        "reasoning scratchpad, or planning commentary. Begin immediately with your response to the user."
         # ── ALIGNMENT PROVENANCE ──────────────────────────────────────────────
         # This prompt embodies Condition C4 (RLHF / Preference Optimization),
         # the Sprint 4 best-performing alignment condition (composite 0.654).
@@ -286,32 +293,57 @@ async def stream_chat_completion(
                 temperature=settings.llm_temperature,
                 stream=True,
             )
-            # Buffer tokens until we've consumed any <think>…</think> block.
-            # Qwen/Qwen2.5 reasoning models emit thinking content first; we must
-            # not yield any of it to SSE clients.
+            # Buffer tokens to suppress any <think>…</think> reasoning blocks.
+            # Reasoning models (e.g. Qwen / DeepSeek) emit thinking content first;
+            # we must not yield any of it to SSE clients.
             buffer = ""
-            think_done = False  # set True once </think> has been seen (or never appeared)
+            in_think = False
+            think_done = False
+
             async for chunk in response:
                 if not (chunk.choices and chunk.choices[0].delta.content):
                     continue
                 token = chunk.choices[0].delta.content
+
                 if think_done:
                     yield token
-                else:
-                    buffer += token
-                    if "<think>" not in buffer:
-                        # No thinking block started — safe to yield everything so far
+                    continue
+
+                buffer += token
+
+                if not in_think:
+                    stripped = buffer.lstrip()
+                    lower_stripped = stripped.lower()
+                    if not lower_stripped:
+                        # Only leading whitespace so far — keep buffering
+                        continue
+                    if "<think>" in lower_stripped:
+                        in_think = True
+                    elif any("<think>".startswith(lower_stripped[:i]) for i in range(1, len(lower_stripped) + 1)):
+                        # Matches prefix of "<think>" (e.g. "<", "<th", etc.) — keep buffering
+                        continue
+                    else:
+                        # Definitely not a think block — flush buffer and stream normally
                         think_done = True
                         yield buffer
                         buffer = ""
-                    elif "</think>" in buffer:
-                        # Thinking block is complete — strip it and yield the remainder
+                        continue
+
+                if in_think:
+                    lower_buffer = buffer.lower()
+                    if "</think>" in lower_buffer:
+                        # Thinking completed — extract any text after </think>
+                        close_idx = lower_buffer.find("</think>") + len("</think>")
+                        remainder = buffer[close_idx:].lstrip("\n")
                         think_done = True
-                        remainder = _strip_think_tags(buffer)
+                        in_think = False
+                        buffer = ""
                         if remainder:
                             yield remainder
-                        buffer = ""
-                    # else: still inside <think>…</think>, keep buffering
+
+            # If stream finished without think block, flush any buffered non-think text
+            if buffer and not in_think and not think_done:
+                yield buffer
         except Exception as exc:  # pragma: no cover - provider failures need integration coverage
             logger.warning("LLM stream failed; using fallback response: %s", exc)
             yield "I hear you! Let's work through this together. (LLM unavailable.)"

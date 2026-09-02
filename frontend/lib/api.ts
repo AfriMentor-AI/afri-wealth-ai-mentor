@@ -15,12 +15,20 @@ interface BackendMessage {
   created_at: string;
 }
 
+export function stripThinkTags(text: string): string {
+  if (!text) return "";
+  return text
+    .replace(/<think>(?:[\s\S]*?<\/think>|[\s\S]*$)/gi, "")
+    .replace(/<\/think>/gi, "")
+    .trimStart();
+}
+
 function toChatMessage(m: BackendMessage, userId: string): ChatMessage {
   return {
     id: m.id,
     userId,
     sender: m.role === "user" ? "user" : "mentor",
-    content: m.content,
+    content: stripThinkTags(m.content),
     citations: m.citations,
     is_commitment_candidate: m.is_commitment_candidate,
     created_at: m.created_at,

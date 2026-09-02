@@ -44,3 +44,14 @@ class TestStripThinkTags:
         raw = "<think>reasoning only</think>"
         assert _strip_think_tags(raw) == ""
 
+    def test_unclosed_think_block_truncated(self):
+        """If max_tokens cuts off generation inside <think>, entire think block is stripped."""
+        raw = "\n<think>\nHere is a thinking process:\n1. Step 1\nTruncated mid thought"
+        assert _strip_think_tags(raw) == ""
+
+    def test_stray_closing_tag(self):
+        """Stray </think> without opening tag is removed."""
+        raw = "</think>Actual answer here"
+        assert _strip_think_tags(raw) == "Actual answer here"
+
+
