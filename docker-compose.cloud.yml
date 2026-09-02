@@ -18,6 +18,8 @@ x-svc-defaults: &svc-defaults
   restart: unless-stopped
   init: true
   networks: [afrimentor]
+  extra_hosts:
+    - "aws-0-eu-central-1.pooler.supabase.com:18.198.30.239"
   environment: &svc-env
     APP_ENV: ${APP_ENV:-dev}
 
