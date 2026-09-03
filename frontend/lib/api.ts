@@ -2,9 +2,11 @@
 // real backend implementations. This allows us to gradually migrate
 // from mock to real APIs without breaking the app.
 export * from "./mockApi";
+export * from "./voice";
 
 import { apiFetch, getCurrentUserId } from "./session";
-import type { ChatMessage, Commitment, Goal, Milestone } from "./types";
+import type { ChatMessage, Commitment, Goal, Milestone, Profile } from "./types";
+import { mockProfile } from "./mockData";
 
 interface BackendMessage {
   id: string;
@@ -15,12 +17,20 @@ interface BackendMessage {
   created_at: string;
 }
 
+export function stripThinkTags(text: string): string {
+  if (!text) return "";
+  return text
+    .replace(/<think>(?:[\s\S]*?<\/think>|[\s\S]*$)/gi, "")
+    .replace(/<\/think>/gi, "")
+    .trimStart();
+}
+
 function toChatMessage(m: BackendMessage, userId: string): ChatMessage {
   return {
     id: m.id,
     userId,
     sender: m.role === "user" ? "user" : "mentor",
-    content: m.content,
+    content: stripThinkTags(m.content),
     citations: m.citations,
     is_commitment_candidate: m.is_commitment_candidate,
     created_at: m.created_at,
@@ -47,6 +57,95 @@ export async function sendMessage(chatSessionId: string, text: string): Promise<
   if (!res.ok) throw new Error(`sendMessage failed: ${res.status}`);
   const body: BackendMessage = await res.json();
   return toChatMessage(body, await getCurrentUserId());
+}
+
+/** POST /api/v1/chat/sessions/{id}/messages/stream — streams assistant tokens
+ * via SSE.
+ *
+ * - `onToken(chunk)` is called for each incremental text chunk.
+ * - `onComplete(message)` is called once with the fully-persisted ChatMessage.
+ * - Returns a cleanup function that aborts the stream if called early.
+ */
+export function sendMessageStream(
+  chatSessionId: string,
+  text: string,
+  onToken: (chunk: string) => void,
+  onComplete: (message: ChatMessage) => void,
+  onError?: (err: Error) => void,
+): () => void {
+  const controller = new AbortController();
+
+  (async () => {
+    const userId = await getCurrentUserId();
+    const res = await apiFetch(`/api/v1/chat/sessions/${chatSessionId}/messages/stream`, {
+      method: "POST",
+      body: JSON.stringify({ content: text }),
+      signal: controller.signal,
+    } as RequestInit & { signal: AbortSignal });
+
+    if (!res.ok) {
+      onError?.(new Error(`sendMessageStream failed: ${res.status}`));
+      return;
+    }
+
+    const reader = res.body?.getReader();
+    if (!reader) {
+      onError?.(new Error("No response body"));
+      return;
+    }
+
+    const decoder = new TextDecoder();
+    let buffer = "";
+
+    try {
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n");
+        // Keep the last (potentially incomplete) line in the buffer
+        buffer = lines.pop() ?? "";
+
+        for (const line of lines) {
+          if (line.startsWith("event: token")) continue; // event type line
+          if (line.startsWith("event: complete")) continue;
+          if (!line.startsWith("data: ")) continue;
+
+          const jsonStr = line.slice("data: ".length).trim();
+          if (!jsonStr) continue;
+
+          try {
+            const parsed = JSON.parse(jsonStr) as Record<string, unknown>;
+            if ("text" in parsed && typeof parsed.text === "string") {
+              onToken(parsed.text);
+            } else if ("id" in parsed) {
+              // This is the complete event payload — build the final ChatMessage
+              const msg: BackendMessage = {
+                id: parsed.id as string,
+                role: "assistant",
+                content: parsed.content as string,
+                is_commitment_candidate: false,
+                citations: (parsed.citations as Array<{ label: string }>) ?? [],
+                created_at: new Date().toISOString(),
+              };
+              onComplete(toChatMessage(msg, userId));
+            }
+          } catch {
+            // Malformed SSE data line — ignore
+          }
+        }
+      }
+    } catch (err) {
+      if ((err as Error).name !== "AbortError") {
+        onError?.(err as Error);
+      }
+    } finally {
+      reader.releaseLock();
+    }
+  })();
+
+  return () => controller.abort();
 }
 
 /** POST /api/v1/chat/sessions/{sessionId}/messages/{messageId}/tag */
@@ -234,4 +333,153 @@ export async function fetchCommitmentsByGoal(goalId: string): Promise<Commitment
   if (!res.ok) throw new Error(`fetchCommitmentsByGoal failed: ${res.status}`);
   const body: BackendCommitment[] = await res.json();
   return body.map(toCommitment);
+}
+
+// ---------------------------------------------------------------------------
+// Intake & Profiling (intake-profiling-service)
+// ---------------------------------------------------------------------------
+
+interface BackendDiagnosticProfile {
+  user_id: string;
+  name: string;
+  business_name: string;
+  location: string;
+  sector: string;
+  education_level: string;
+  time_available_per_week: string;
+  constraints: string[];
+  updated_at: string;
+}
+
+function toProfile(d: BackendDiagnosticProfile, personaId: string | null = null): Profile {
+  return {
+    userId: d.user_id,
+    name: d.name,
+    businessName: d.business_name,
+    location: d.location || "",
+    sector: d.sector,
+    educationLevel: d.education_level,
+    timeAvailablePerWeek: d.time_available_per_week,
+    constraints: d.constraints || [],
+    personaId,
+    createdAt: d.updated_at,
+    updatedAt: d.updated_at,
+  };
+}
+
+/**
+ * POST /api/v1/intake/sessions
+ * Submits the 4-step answers and completes the intake session in intake-profiling-service.
+ */
+export async function submitIntake(
+  intake: Partial<Profile> | Record<string, unknown>
+): Promise<Profile> {
+  const i = intake as Record<string, unknown>;
+  const sector = (i.sector as string) || "Trader";
+  const educationLevel = (i.educationLevel || i.education_level || "Secondary school") as string;
+  const timeAvailablePerWeek = (i.timeAvailablePerWeek || i.time_available_per_week || "6-10 hours") as string;
+  const constraints = (i.constraints as string[]) || [];
+  const name = (i.name as string) || "User";
+  const businessName = (i.businessName || i.business_name || "My Business") as string;
+  const location = (i.location as string) || "";
+
+  // 1. Start or resume intake session
+  const sessionRes = await apiFetch("/api/v1/intake/sessions", {
+    method: "POST",
+  });
+  if (!sessionRes.ok) {
+    throw new Error(`Failed to start intake session: ${sessionRes.status}`);
+  }
+  const sessionData = await sessionRes.json();
+  const sessionId = sessionData.id;
+
+  // 2. Submit answers for each step
+  await apiFetch(`/api/v1/intake/sessions/${sessionId}/answers`, {
+    method: "POST",
+    body: JSON.stringify({
+      step: "sector",
+      payload: { sector },
+    }),
+  });
+
+  await apiFetch(`/api/v1/intake/sessions/${sessionId}/answers`, {
+    method: "POST",
+    body: JSON.stringify({
+      step: "education_time",
+      payload: {
+        education_level: educationLevel,
+        time_available_per_week: timeAvailablePerWeek,
+      },
+    }),
+  });
+
+  await apiFetch(`/api/v1/intake/sessions/${sessionId}/answers`, {
+    method: "POST",
+    body: JSON.stringify({
+      step: "constraints",
+      payload: { constraints },
+    }),
+  });
+
+  await apiFetch(`/api/v1/intake/sessions/${sessionId}/answers`, {
+    method: "POST",
+    body: JSON.stringify({
+      step: "confirm",
+      payload: {
+        name,
+        business_name: businessName,
+        location,
+      },
+    }),
+  });
+
+  // 3. Complete session
+  const completeRes = await apiFetch(`/api/v1/intake/sessions/${sessionId}/complete`, {
+    method: "POST",
+  });
+  if (!completeRes.ok && completeRes.status !== 409) {
+    throw new Error(`Failed to complete intake session: ${completeRes.status}`);
+  }
+
+  // 4. Retrieve diagnostic profile or fallback to local representation
+  const userId = await getCurrentUserId();
+  try {
+    const profileRes = await apiFetch(`/api/v1/profiles/${userId}/diagnostic`);
+    if (profileRes.ok) {
+      const profileData: BackendDiagnosticProfile = await profileRes.json();
+      return toProfile(profileData);
+    }
+  } catch {
+    // Non-fatal, construct Profile below
+  }
+
+  const now = new Date().toISOString();
+  return {
+    userId,
+    name,
+    businessName,
+    location,
+    sector,
+    educationLevel,
+    timeAvailablePerWeek,
+    constraints,
+    personaId: null,
+    createdAt: sessionData.started_at || now,
+    updatedAt: now,
+  };
+}
+
+/** GET /api/v1/profiles/{userId}/diagnostic */
+export async function fetchProfile(): Promise<Profile> {
+  const userId = await getCurrentUserId();
+  try {
+    const res = await apiFetch(`/api/v1/profiles/${userId}/diagnostic`);
+    if (res.ok) {
+      const data: BackendDiagnosticProfile = await res.json();
+      return toProfile(data);
+    }
+  } catch {
+    // Fall back to mock profile if backend profile is not yet initialized
+  }
+  return mockProfile;
 }

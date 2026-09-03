@@ -28,16 +28,20 @@ instrument(app, SERVICE_NAME)
 
 @app.on_event("startup")
 def create_tables():
-    max_retries = 10
+    max_retries = 30          # 30 × 5 s = 150 s total wait — enough for slow Codespaces DNS
     for attempt in range(max_retries):
         try:
-            Base.metadata.create_all(bind=engine)
+            Base.metadata.create_all(bind=engine, checkfirst=True)
             logger.info("Database tables created successfully.")
             return
         except Exception as e:
+            err_msg = str(e).lower()
+            if "already exists" in err_msg or "duplicateobject" in err_msg or "duplicatetable" in err_msg:
+                logger.info("Database tables/enums already exist, proceeding.")
+                return
             if attempt < max_retries - 1:
-                logger.warning("DB not ready, retrying in 3s... (%s)", e)
-                time.sleep(3)
+                logger.warning("DB not ready, retrying in 5s... (%s)", e)
+                time.sleep(5)
             else:
                 logger.error("Failed to create tables after %d attempts.", max_retries)
                 raise
