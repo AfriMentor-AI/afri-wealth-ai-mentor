@@ -6,8 +6,9 @@ import { ConversationList } from "@/components/ConversationList";
 import { Icon } from "@/components/Icon";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { useAppDispatch, useAppState } from "@/lib/store";
-import { fetchChatMessages, sendMessage, tagCommitment } from "@/lib/api";
+import { fetchChatMessages, sendMessageStream, stripThinkTags, tagCommitment } from "@/lib/api";
 import type { ChatMessage } from "@/lib/types";
+import { startAudioRecording, playTextToSpeech, stopCurrentSpeech, type ActiveRecording } from "@/lib/voice";
 
 function formatTime(iso: string) {
   return new Date(iso).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
@@ -196,7 +197,8 @@ function parseMentorBlocks(content: string): MentorBlock[] {
 }
 
 function MentorMessageContent({ content }: Readonly<{ content: string }>) {
-  const blocks = parseMentorBlocks(content);
+  const cleanContent = stripThinkTags(content);
+  const blocks = parseMentorBlocks(cleanContent);
 
   return (
     <div className="space-y-sm">
@@ -296,13 +298,97 @@ function MentorMessageContent({ content }: Readonly<{ content: string }>) {
   );
 }
 
+/** Three animated dots shown while waiting for the first streaming token. */
+function TypingIndicator() {
+  return (
+    <div className="flex items-center gap-[5px] px-md py-sm">
+      {[0, 1, 2].map((i) => (
+        <span
+          key={i}
+          className="h-2 w-2 rounded-full bg-on-surface-variant animate-bounce"
+          style={{ animationDelay: `${i * 0.18}s`, animationDuration: "0.9s" }}
+        />
+      ))}
+    </div>
+  );
+}
+
 export default function ChatPage() {
   const { chatMessages, chatDraft, profile, chatSessionId, activeGoalId, selectedPersona } = useAppState();
   const dispatch = useAppDispatch();
   const [isRecording, setIsRecording] = useState(false);
+  const [isTranscribing, setIsTranscribing] = useState(false);
+  const [playingAudioMessageId, setPlayingAudioMessageId] = useState<string | null>(null);
+  const activeRecordingRef = useRef<ActiveRecording | null>(null);
   const [commitmentTagged, setCommitmentTagged] = useState(false);
   const [showConversations, setShowConversations] = useState(false);
+  const [isTyping, setIsTyping] = useState(false);
+  const [streamingContent, setStreamingContent] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const abortStreamRef = useRef<(() => void) | null>(null);
+
+  function cleanTextForSpeech(text: string): string {
+    return stripThinkTags(text)
+      .replace(/[#*_`~]/g, "")
+      .replace(/\|[-:\s|]+\|/g, "")
+      .replace(/\|/g, ", ")
+      .replace(/\n+/g, ". ")
+      .trim();
+  }
+
+  async function toggleVoiceRecording() {
+    if (isRecording) {
+      setIsRecording(false);
+      setIsTranscribing(true);
+      try {
+        if (activeRecordingRef.current) {
+          const text = await activeRecordingRef.current.stop();
+          activeRecordingRef.current = null;
+          if (text && text.trim()) {
+            // Send the voice message immediately and automatically speak the mentor's reply!
+            send(text.trim(), true);
+          }
+        }
+      } catch (err) {
+        console.error("Voice transcription error:", err);
+      } finally {
+        setIsTranscribing(false);
+      }
+    } else {
+      try {
+        const recording = await startAudioRecording((interim) => {
+          if (interim) {
+            dispatch({ type: "SET_CHAT_DRAFT", draft: interim });
+          }
+        });
+        activeRecordingRef.current = recording;
+        setIsRecording(true);
+      } catch (err) {
+        console.error("Microphone access error:", err);
+        alert("Please enable microphone permissions in your browser to record voice notes.");
+      }
+    }
+  }
+
+  async function handlePlayTTS(messageId: string, text: string) {
+    if (playingAudioMessageId === messageId) {
+      stopCurrentSpeech();
+      setPlayingAudioMessageId(null);
+      return;
+    }
+    const clean = cleanTextForSpeech(text);
+    if (!clean) return;
+
+    try {
+      setPlayingAudioMessageId(messageId);
+      await playTextToSpeech(clean, selectedPersona?.id || "chioma", () => {
+        setPlayingAudioMessageId(null);
+      });
+    } catch (err) {
+      console.error("TTS playback error:", err);
+      setPlayingAudioMessageId(null);
+    }
+  }
 
   useEffect(() => {
     if (chatSessionId && chatMessages.length === 0) {
@@ -316,26 +402,61 @@ export default function ChatPage() {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [chatMessages.length]);
 
-  async function send() {
-    if (!chatDraft.trim() || !chatSessionId) return;
+  useEffect(() => {
+    if (streamingContent !== null) {
+      scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
+    }
+  }, [streamingContent]);
+
+  function send(customText?: string, autoPlayVoiceReply = false) {
+    const textToSend = (customText ?? chatDraft).trim();
+    if (!textToSend || !chatSessionId || isTyping) return;
+
+    // Abort any in-flight stream before starting a new one
+    abortStreamRef.current?.();
 
     const userMessage: ChatMessage = {
       id: `local-${Date.now()}`,
       userId: profile?.userId ?? "local-user",
       sender: "user",
-      content: chatDraft.trim(),
+      content: textToSend,
       created_at: new Date().toISOString(),
     };
     dispatch({ type: "APPEND_CHAT_MESSAGE", message: userMessage });
     dispatch({ type: "SET_CHAT_DRAFT", draft: "" });
 
-    try {
-      const assistantMessage = await sendMessage(chatSessionId, userMessage.content);
-      dispatch({ type: "APPEND_CHAT_MESSAGE", message: assistantMessage });
-    } catch (error) {
-      console.error("Failed to send message:", error);
-      // Optional: show error message in UI, maybe as a special chat message
-    }
+    setIsTyping(true);
+    setStreamingContent(null);
+
+    const abort = sendMessageStream(
+      chatSessionId,
+      userMessage.content,
+      (chunk) => {
+        // First token — replace dots with the streaming bubble
+        setIsTyping(false);
+        setStreamingContent((prev) => (prev ?? "") + chunk);
+      },
+      (assistantMessage) => {
+        // Stream complete — swap streaming bubble for the final persisted message
+        setStreamingContent(null);
+        setIsTyping(false);
+        dispatch({ type: "APPEND_CHAT_MESSAGE", message: assistantMessage });
+        abortStreamRef.current = null;
+
+        // Auto-play mentor's audio reply if message was sent via voice!
+        if (autoPlayVoiceReply && assistantMessage.content) {
+          handlePlayTTS(assistantMessage.id, assistantMessage.content);
+        }
+      },
+      (error) => {
+        console.error("Stream error:", error);
+        setStreamingContent(null);
+        setIsTyping(false);
+        abortStreamRef.current = null;
+      },
+    );
+
+    abortStreamRef.current = abort;
   }
 
   async function handleTagCommitment() {
@@ -423,7 +544,23 @@ export default function ChatPage() {
               </p>
             </div>
           </div>
-          <ThemeToggle />
+          <div className="flex items-center gap-sm">
+            {playingAudioMessageId && (
+              <button
+                type="button"
+                onClick={() => {
+                  stopCurrentSpeech();
+                  setPlayingAudioMessageId(null);
+                }}
+                className="flex items-center gap-1.5 rounded-full bg-primary/15 border border-primary/30 px-3 py-1 text-[11px] font-semibold text-primary animate-pulse hover:bg-primary/25 transition-colors"
+                aria-label="Stop audio reply"
+              >
+                <Icon name="volume_up" size={14} />
+                <span>Speaking... (tap to mute)</span>
+              </button>
+            )}
+            <ThemeToggle />
+          </div>
         </div>
 
       <div ref={scrollRef} role="log" aria-label={`Chat with ${mentorName}`} className="flex-1 overflow-y-auto px-margin-mobile py-lg md:px-0">
@@ -449,9 +586,41 @@ export default function ChatPage() {
                   </div>
                 )}
               </div>
-              <span className="mt-xs font-label-sm text-[10px] text-on-surface-variant">{formatTime(m.created_at)}</span>
+              <div className="mt-xs flex items-center gap-sm">
+                <span className="font-label-sm text-[10px] text-on-surface-variant">{formatTime(m.created_at)}</span>
+                {m.sender === "mentor" && (
+                  <button
+                    type="button"
+                    aria-label={playingAudioMessageId === m.id ? "Stop voice playback" : "Listen to mentor reply"}
+                    onClick={() => handlePlayTTS(m.id, m.content)}
+                    className="inline-flex items-center gap-1 rounded-full border border-outline-variant/60 bg-surface-container-high px-2 py-0.5 text-[11px] font-medium text-on-surface-variant hover:bg-surface-container-highest hover:text-primary transition-colors"
+                  >
+                    <Icon name={playingAudioMessageId === m.id ? "stop" : "volume_up"} size={14} />
+                    <span>{playingAudioMessageId === m.id ? "Stop" : "Listen"}</span>
+                  </button>
+                )}
+              </div>
             </div>
           ))}
+
+          {/* Typing indicator — three dots while waiting for first token or while model is thinking */}
+          {(isTyping || (streamingContent !== null && !stripThinkTags(streamingContent))) && (
+            <div className="flex max-w-[85%] flex-col items-start">
+              <div className="rounded rounded-tl-none border border-outline-variant bg-surface-container-low shadow-sm md:rounded-tl-xl">
+                <TypingIndicator />
+              </div>
+            </div>
+          )}
+
+          {/* Streaming bubble — grows token-by-token once real content is available */}
+          {streamingContent !== null && Boolean(stripThinkTags(streamingContent)) && (
+            <div className="flex max-w-[85%] flex-col items-start">
+              <div className="rounded rounded-tl-none border border-outline-variant bg-surface-container-low p-md text-body-md text-on-surface shadow-sm md:rounded-tl-xl">
+                <MentorMessageContent content={streamingContent} />
+                <span className="inline-block h-3 w-0.5 animate-pulse bg-primary align-middle ml-0.5" aria-hidden />
+              </div>
+            </div>
+          )}
 
           {lastIsMentor && chatMessages[chatMessages.length - 1].is_commitment_candidate && !commitmentTagged && (
             <div className="flex items-center justify-between gap-md rounded border border-secondary bg-secondary-container p-md md:rounded-xl">
@@ -483,27 +652,44 @@ export default function ChatPage() {
         </button>
         <button
           type="button"
-          aria-label={isRecording ? "Stop recording voice note" : "Record a voice note"}
-          onClick={() => setIsRecording((r) => !r)}
-          className={`tap-target flex items-center justify-center rounded-full ${
-            isRecording ? "animate-pulse bg-error text-on-error" : "text-on-surface-variant hover:bg-surface-container-low"
+          aria-label={
+            isTranscribing
+              ? "Transcribing voice note..."
+              : isRecording
+              ? "Stop recording voice note"
+              : "Record a voice note"
+          }
+          onClick={toggleVoiceRecording}
+          disabled={isTranscribing}
+          className={`tap-target flex items-center justify-center rounded-full transition-all ${
+            isRecording
+              ? "animate-pulse bg-error text-on-error shadow-md ring-2 ring-error/40"
+              : isTranscribing
+              ? "bg-surface-container-high text-primary"
+              : "text-on-surface-variant hover:bg-surface-container-low"
           }`}
         >
-          <Icon name="mic" />
+          <Icon name={isTranscribing ? "hourglass_empty" : isRecording ? "graphic_eq" : "mic"} />
         </button>
         <input
           value={chatDraft}
           onChange={(e) => dispatch({ type: "SET_CHAT_DRAFT", draft: e.target.value })}
           onKeyDown={(e) => e.key === "Enter" && send()}
           aria-label={`Message ${mentorName}`}
-          placeholder={isRecording ? "Recording... tap mic again to stop" : `Ask ${mentorName} anything`}
+          placeholder={
+            isRecording
+              ? "Recording voice note... tap the red button to finish"
+              : isTranscribing
+              ? "Transcribing your voice note..."
+              : `Ask ${mentorName} anything`
+          }
           className="flex-1 rounded-full border border-outline-variant bg-surface-container-lowest px-md py-sm font-body-md text-body-md text-on-surface outline-none focus-visible:outline-primary md:py-md"
         />
         <button
           type="button"
           aria-label="Send message"
-          onClick={send}
-          disabled={!chatDraft.trim()}
+          onClick={() => send()}
+          disabled={!chatDraft.trim() || isTyping || streamingContent !== null || isRecording || isTranscribing}
           className="tap-target flex items-center justify-center rounded-full bg-primary text-on-primary disabled:opacity-40"
         >
           <Icon name="send" />

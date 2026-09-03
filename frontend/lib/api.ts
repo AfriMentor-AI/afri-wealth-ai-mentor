@@ -2,6 +2,7 @@
 // real backend implementations. This allows us to gradually migrate
 // from mock to real APIs without breaking the app.
 export * from "./mockApi";
+export * from "./voice";
 
 import { apiFetch, getCurrentUserId } from "./session";
 import type {
@@ -10,11 +11,12 @@ import type {
   Commitment,
   Goal,
   HeatmapDay,
-  InsightItem,
   Milestone,
+  Profile,
   StreakStat,
   WeeklySummaryShare,
 } from "./types";
+import { mockProfile } from "./mockData";
 
 interface BackendMessage {
   id: string;
@@ -25,12 +27,20 @@ interface BackendMessage {
   created_at: string;
 }
 
+export function stripThinkTags(text: string): string {
+  if (!text) return "";
+  return text
+    .replace(/<think>(?:[\s\S]*?<\/think>|[\s\S]*$)/gi, "")
+    .replace(/<\/think>/gi, "")
+    .trimStart();
+}
+
 function toChatMessage(m: BackendMessage, userId: string): ChatMessage {
   return {
     id: m.id,
     userId,
     sender: m.role === "user" ? "user" : "mentor",
-    content: m.content,
+    content: stripThinkTags(m.content),
     citations: m.citations,
     is_commitment_candidate: m.is_commitment_candidate,
     created_at: m.created_at,
@@ -57,6 +67,95 @@ export async function sendMessage(chatSessionId: string, text: string): Promise<
   if (!res.ok) throw new Error(`sendMessage failed: ${res.status}`);
   const body: BackendMessage = await res.json();
   return toChatMessage(body, await getCurrentUserId());
+}
+
+/** POST /api/v1/chat/sessions/{id}/messages/stream — streams assistant tokens
+ * via SSE.
+ *
+ * - `onToken(chunk)` is called for each incremental text chunk.
+ * - `onComplete(message)` is called once with the fully-persisted ChatMessage.
+ * - Returns a cleanup function that aborts the stream if called early.
+ */
+export function sendMessageStream(
+  chatSessionId: string,
+  text: string,
+  onToken: (chunk: string) => void,
+  onComplete: (message: ChatMessage) => void,
+  onError?: (err: Error) => void,
+): () => void {
+  const controller = new AbortController();
+
+  (async () => {
+    const userId = await getCurrentUserId();
+    const res = await apiFetch(`/api/v1/chat/sessions/${chatSessionId}/messages/stream`, {
+      method: "POST",
+      body: JSON.stringify({ content: text }),
+      signal: controller.signal,
+    } as RequestInit & { signal: AbortSignal });
+
+    if (!res.ok) {
+      onError?.(new Error(`sendMessageStream failed: ${res.status}`));
+      return;
+    }
+
+    const reader = res.body?.getReader();
+    if (!reader) {
+      onError?.(new Error("No response body"));
+      return;
+    }
+
+    const decoder = new TextDecoder();
+    let buffer = "";
+
+    try {
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n");
+        // Keep the last (potentially incomplete) line in the buffer
+        buffer = lines.pop() ?? "";
+
+        for (const line of lines) {
+          if (line.startsWith("event: token")) continue; // event type line
+          if (line.startsWith("event: complete")) continue;
+          if (!line.startsWith("data: ")) continue;
+
+          const jsonStr = line.slice("data: ".length).trim();
+          if (!jsonStr) continue;
+
+          try {
+            const parsed = JSON.parse(jsonStr) as Record<string, unknown>;
+            if ("text" in parsed && typeof parsed.text === "string") {
+              onToken(parsed.text);
+            } else if ("id" in parsed) {
+              // This is the complete event payload — build the final ChatMessage
+              const msg: BackendMessage = {
+                id: parsed.id as string,
+                role: "assistant",
+                content: parsed.content as string,
+                is_commitment_candidate: false,
+                citations: (parsed.citations as Array<{ label: string }>) ?? [],
+                created_at: new Date().toISOString(),
+              };
+              onComplete(toChatMessage(msg, userId));
+            }
+          } catch {
+            // Malformed SSE data line — ignore
+          }
+        }
+      }
+    } catch (err) {
+      if ((err as Error).name !== "AbortError") {
+        onError?.(err as Error);
+      }
+    } finally {
+      reader.releaseLock();
+    }
+  })();
+
+  return () => controller.abort();
 }
 
 /** POST /api/v1/chat/sessions/{sessionId}/messages/{messageId}/tag */
@@ -246,67 +345,156 @@ export async function fetchCommitmentsByGoal(goalId: string): Promise<Commitment
   return body.map(toCommitment);
 }
 
-// ── Insight Library (insight-library-service, O3.2) ────────────────────────
-//
-// fetchInsights was still re-exported from mockApi.ts wholesale, and
-// favoriting only ever dispatched local store state — never persisted
-// server-side despite insight-library-service's bookmark endpoints being
-// live since O3.2.
+// ---------------------------------------------------------------------------
+// Intake & Profiling (intake-profiling-service)
+// ---------------------------------------------------------------------------
 
-interface BackendInsight {
-  id: string;
-  title: string;
-  summary: string;
-  category: string;
-  duration_minutes: number;
-  is_audio: boolean;
-  media_url: string | null;
-  created_at: string;
-  is_favorited: boolean;
+interface BackendDiagnosticProfile {
+  user_id: string;
+  name: string;
+  business_name: string;
+  location: string;
+  sector: string;
+  education_level: string;
+  time_available_per_week: string;
+  constraints: string[];
+  updated_at: string;
 }
 
-function toInsight(i: BackendInsight): InsightItem {
+function toProfile(d: BackendDiagnosticProfile, personaId: string | null = null): Profile {
   return {
-    id: i.id,
-    title: i.title,
-    summary: i.summary,
-    category: i.category,
-    durationMinutes: i.duration_minutes,
-    isAudio: i.is_audio,
-    mediaUrl: i.media_url ?? undefined,
-    createdAt: i.created_at,
-    isFavorited: i.is_favorited,
+    userId: d.user_id,
+    name: d.name,
+    businessName: d.business_name,
+    location: d.location || "",
+    sector: d.sector,
+    educationLevel: d.education_level,
+    timeAvailablePerWeek: d.time_available_per_week,
+    constraints: d.constraints || [],
+    personaId,
+    createdAt: d.updated_at,
+    updatedAt: d.updated_at,
   };
 }
 
-/** GET /api/v1/insights — the full catalog, each item flagged with whether
- * this user has favorited it. Search/category/audio filtering happens
- * client-side over this list (small, catalog-sized dataset) rather than
- * round-tripping per keystroke. */
-export async function fetchInsights(): Promise<InsightItem[]> {
-  const res = await apiFetch("/api/v1/insights");
-  if (!res.ok) throw new Error(`fetchInsights failed: ${res.status}`);
-  const body: BackendInsight[] = await res.json();
-  return body.map(toInsight);
-}
+/**
+ * POST /api/v1/intake/sessions
+ * Submits the 4-step answers and completes the intake session in intake-profiling-service.
+ */
+export async function submitIntake(
+  intake: Partial<Profile> | Record<string, unknown>
+): Promise<Profile> {
+  const i = intake as Record<string, unknown>;
+  const sector = (i.sector as string) || "Trader";
+  const educationLevel = (i.educationLevel || i.education_level || "Secondary school") as string;
+  const timeAvailablePerWeek = (i.timeAvailablePerWeek || i.time_available_per_week || "6-10 hours") as string;
+  const constraints = (i.constraints as string[]) || [];
+  const name = (i.name as string) || "User";
+  const businessName = (i.businessName || i.business_name || "My Business") as string;
+  const location = (i.location as string) || "";
 
-/** POST/DELETE /api/v1/insights/{id}/bookmark */
-export async function setInsightFavorited(insightId: string, favorited: boolean): Promise<void> {
-  const res = await apiFetch(`/api/v1/insights/${insightId}/bookmark`, {
-    method: favorited ? "POST" : "DELETE",
+  // 1. Start or resume intake session
+  const sessionRes = await apiFetch("/api/v1/intake/sessions", {
+    method: "POST",
   });
-  if (!res.ok) throw new Error(`setInsightFavorited failed: ${res.status}`);
+  if (!sessionRes.ok) {
+    throw new Error(`Failed to start intake session: ${sessionRes.status}`);
+  }
+  const sessionData = await sessionRes.json();
+  const sessionId = sessionData.id;
+
+  // 2. Submit answers for each step
+  await apiFetch(`/api/v1/intake/sessions/${sessionId}/answers`, {
+    method: "POST",
+    body: JSON.stringify({
+      step: "sector",
+      payload: { sector },
+    }),
+  });
+
+  await apiFetch(`/api/v1/intake/sessions/${sessionId}/answers`, {
+    method: "POST",
+    body: JSON.stringify({
+      step: "education_time",
+      payload: {
+        education_level: educationLevel,
+        time_available_per_week: timeAvailablePerWeek,
+      },
+    }),
+  });
+
+  await apiFetch(`/api/v1/intake/sessions/${sessionId}/answers`, {
+    method: "POST",
+    body: JSON.stringify({
+      step: "constraints",
+      payload: { constraints },
+    }),
+  });
+
+  await apiFetch(`/api/v1/intake/sessions/${sessionId}/answers`, {
+    method: "POST",
+    body: JSON.stringify({
+      step: "confirm",
+      payload: {
+        name,
+        business_name: businessName,
+        location,
+      },
+    }),
+  });
+
+  // 3. Complete session
+  const completeRes = await apiFetch(`/api/v1/intake/sessions/${sessionId}/complete`, {
+    method: "POST",
+  });
+  if (!completeRes.ok && completeRes.status !== 409) {
+    throw new Error(`Failed to complete intake session: ${completeRes.status}`);
+  }
+
+  // 4. Retrieve diagnostic profile or fallback to local representation
+  const userId = await getCurrentUserId();
+  try {
+    const profileRes = await apiFetch(`/api/v1/profiles/${userId}/diagnostic`);
+    if (profileRes.ok) {
+      const profileData: BackendDiagnosticProfile = await profileRes.json();
+      return toProfile(profileData);
+    }
+  } catch {
+    // Non-fatal, construct Profile below
+  }
+
+  const now = new Date().toISOString();
+  return {
+    userId,
+    name,
+    businessName,
+    location,
+    sector,
+    educationLevel,
+    timeAvailablePerWeek,
+    constraints,
+    personaId: null,
+    createdAt: sessionData.started_at || now,
+    updatedAt: now,
+  };
 }
 
-// ── Progress & Gamification (progress-gamification-service, O3.1) ──────────
-//
-// fetchStreak/fetchBadges were still re-exported from mockApi.ts wholesale,
-// the Progress board's heatmap was generated with Math.random() despite the
-// service's real /api/v1/progress endpoint returning genuine per-day
-// activity, and "Share weekly summary" opened the NPS feedback modal
-// instead of calling the real share endpoint.
+/** GET /api/v1/profiles/{userId}/diagnostic */
+export async function fetchProfile(): Promise<Profile> {
+  const userId = await getCurrentUserId();
+  try {
+    const res = await apiFetch(`/api/v1/profiles/${userId}/diagnostic`);
+    if (res.ok) {
+      const data: BackendDiagnosticProfile = await res.json();
+      return toProfile(data);
+    }
+  } catch {
+    // Fall back to mock profile if backend profile is not yet initialized
+  }
+  return mockProfile;
+}
 
-interface BackendStreak {
+interface BackendStreakStat {
   user_id: string;
   current_streak_days: number;
   longest_streak_days: number;
@@ -314,85 +502,86 @@ interface BackendStreak {
   updated_at: string;
 }
 
-function toStreak(s: BackendStreak): StreakStat {
-  return {
-    userId: s.user_id,
-    currentStreakDays: s.current_streak_days,
-    longestStreakDays: s.longest_streak_days,
-    actionsCompletedTotal: s.actions_completed_total,
-    updatedAt: s.updated_at,
-  };
-}
-
-interface BackendBadge {
-  id: string;
-  label: string;
-  description: string;
-  icon_name: string;
-  earned_at: string | null;
-}
-
-function toBadge(b: BackendBadge): BadgeWithStatus {
-  return { id: b.id, label: b.label, description: b.description, iconName: b.icon_name, earnedAt: b.earned_at };
-}
-
 interface BackendHeatmapDay {
   date: string;
   count: number;
 }
 
-interface BackendProgressSummary {
-  streak: BackendStreak;
-  heatmap: BackendHeatmapDay[];
-  badges: BackendBadge[];
+interface BackendBadgeWithStatus {
+  id: string;
+  label: string;
+  description?: string;
+  icon_name?: string;
+  earned_at: string | null;
 }
 
-export interface ProgressSummary {
+interface BackendProgressSummary {
+  streak: BackendStreakStat;
+  heatmap: BackendHeatmapDay[];
+  badges: BackendBadgeWithStatus[];
+}
+
+interface ProgressSummary {
   streak: StreakStat;
   heatmap: HeatmapDay[];
   badges: BadgeWithStatus[];
 }
 
-/** GET /api/v1/progress/streak */
-export async function fetchStreak(): Promise<StreakStat> {
-  const res = await apiFetch("/api/v1/progress/streak");
-  if (!res.ok) throw new Error(`fetchStreak failed: ${res.status}`);
-  return toStreak(await res.json());
-}
-
-/** GET /api/v1/progress/badges */
-export async function fetchBadges(): Promise<BadgeWithStatus[]> {
-  const res = await apiFetch("/api/v1/progress/badges");
-  if (!res.ok) throw new Error(`fetchBadges failed: ${res.status}`);
-  const body: BackendBadge[] = await res.json();
-  return body.map(toBadge);
-}
-
-/** GET /api/v1/progress — streak + heatmap + badges in one call. Used by the
- * Progress board so it doesn't issue three separate requests for data the
- * backend already returns together. */
-export async function fetchProgressSummary(): Promise<ProgressSummary> {
-  const res = await apiFetch("/api/v1/progress");
-  if (!res.ok) throw new Error(`fetchProgressSummary failed: ${res.status}`);
-  const body: BackendProgressSummary = await res.json();
+function toStreakStat(streak: BackendStreakStat): StreakStat {
   return {
-    streak: toStreak(body.streak),
-    heatmap: body.heatmap.map((h) => ({ date: h.date, count: h.count })),
-    badges: body.badges.map(toBadge),
+    userId: streak.user_id,
+    currentStreakDays: streak.current_streak_days,
+    longestStreakDays: streak.longest_streak_days,
+    actionsCompletedTotal: streak.actions_completed_total,
+    updatedAt: streak.updated_at,
   };
 }
 
-export type ProgressActionKind = "daily_action" | "insight_completed" | "savings_goal_met";
+function toBadgeWithStatus(badge: BackendBadgeWithStatus): BadgeWithStatus {
+  return {
+    id: badge.id,
+    label: badge.label,
+    description: badge.description,
+    iconName: badge.icon_name,
+    earnedAt: badge.earned_at,
+  };
+}
 
-/** POST /api/v1/progress/actions — recording the same (day, kind) twice is a
- * server-side no-op, not an error, so callers don't need to guard against
- * double-firing. */
-export async function recordProgressAction(kind: ProgressActionKind): Promise<void> {
+/**
+ * GET /api/v1/progress — streak, heatmap, and badges for Progress page.
+ */
+export async function fetchProgressSummary(): Promise<ProgressSummary> {
+  const res = await apiFetch("/api/v1/progress");
+  if (!res.ok) throw new Error(`fetchProgressSummary failed: ${res.status}`);
+
+  const body = (await res.json()) as BackendProgressSummary;
+  return {
+    streak: toStreakStat(body.streak),
+    heatmap: body.heatmap.map((day) => ({ date: day.date, count: day.count })),
+    badges: body.badges.map(toBadgeWithStatus),
+  };
+}
+
+/**
+ * POST /api/v1/progress/actions — records completed product actions.
+ */
+export async function recordProgressAction(
+  kind: "daily_action" | "insight_completed" | "savings_goal_met"
+): Promise<void> {
   const res = await apiFetch("/api/v1/progress/actions", {
     method: "POST",
     body: JSON.stringify({ kind }),
   });
   if (!res.ok) throw new Error(`recordProgressAction failed: ${res.status}`);
+}
+
+/**
+ * POST/DELETE /api/v1/insights/{id}/bookmark — toggle favorite state.
+ */
+export async function setInsightFavorited(insightId: string, favorited: boolean): Promise<void> {
+  const method = favorited ? "POST" : "DELETE";
+  const res = await apiFetch(`/api/v1/insights/${insightId}/bookmark`, { method });
+  if (!res.ok) throw new Error(`setInsightFavorited failed: ${res.status}`);
 }
 
 interface BackendWeeklySummaryShare {
@@ -405,11 +594,14 @@ interface BackendWeeklySummaryShare {
   share_text: string;
 }
 
-/** POST /api/v1/progress/summary/share */
+/**
+ * POST /api/v1/progress/summary/share — share-ready weekly summary text.
+ */
 export async function shareWeeklySummary(): Promise<WeeklySummaryShare> {
   const res = await apiFetch("/api/v1/progress/summary/share", { method: "POST" });
   if (!res.ok) throw new Error(`shareWeeklySummary failed: ${res.status}`);
-  const body: BackendWeeklySummaryShare = await res.json();
+
+  const body = (await res.json()) as BackendWeeklySummaryShare;
   return {
     userId: body.user_id,
     weekStart: body.week_start,

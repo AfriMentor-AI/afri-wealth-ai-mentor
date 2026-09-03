@@ -44,5 +44,9 @@ def build_system_prompt(profile: PersonaProfileSpec | None = None) -> str:
         "4. Empower Independence: Build user capability; "
         "teach decision frameworks rather than fostering artificial dependency."
     )
+    add(
+        "5. Direct Response: Never output internal monologue, reasoning scratchpads, "
+        "or <think> tags. Begin immediately with your direct response to the user."
+    )
 
     return "\n".join(lines)

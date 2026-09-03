@@ -54,3 +54,6 @@ infra/keys/
 .github/workflows/claude-review.yml
 .github/workflows/claude.yml
 .claude/
+
+# Local deployment overrides
+docker-compose.cloud.yml

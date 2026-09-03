@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { Icon } from "@/components/Icon";
@@ -9,6 +9,7 @@ import { Chip } from "@/components/ui/Chip";
 import { Button } from "@/components/ui/Button";
 import { useAppDispatch } from "@/lib/store";
 import { submitIntake } from "@/lib/api";
+import { startAudioRecording, type ActiveRecording } from "@/lib/voice";
 
 const SECTORS_LIST = [
   { name: "Trader", icon: "storefront", desc: "Retail shops, market trading, imports/exports" },
@@ -66,6 +67,8 @@ export default function IntakePage() {
   const dispatch = useAppDispatch();
   const [step, setStep] = useState(0);
   const [isRecording, setIsRecording] = useState(false);
+  const [isTranscribing, setIsTranscribing] = useState(false);
+  const activeRecordingRef = useRef<ActiveRecording | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [answers, setAnswers] = useState<IntakeAnswers>({
@@ -77,6 +80,60 @@ export default function IntakePage() {
     businessName: "",
     location: "",
   });
+
+  async function toggleIntakeVoice() {
+    if (isRecording) {
+      setIsRecording(false);
+      setIsTranscribing(true);
+      try {
+        if (activeRecordingRef.current) {
+          const text = await activeRecordingRef.current.stop();
+          activeRecordingRef.current = null;
+          if (text) {
+            handleVoiceResult(text);
+          }
+        }
+      } catch (err) {
+        console.error("Voice intake transcription error:", err);
+      } finally {
+        setIsTranscribing(false);
+      }
+    } else {
+      try {
+        const rec = await startAudioRecording();
+        activeRecordingRef.current = rec;
+        setIsRecording(true);
+      } catch (err) {
+        console.error("Microphone access error:", err);
+        alert("Please allow microphone permissions to answer using your voice.");
+      }
+    }
+  }
+
+  function handleVoiceResult(text: string) {
+    const lower = text.toLowerCase();
+    if (step === 0) {
+      const match = SECTORS.find((s) => lower.includes(s.toLowerCase()));
+      if (match) setAnswers((a) => ({ ...a, sector: match }));
+    } else if (step === 1) {
+      const eduMatch = EDUCATION_LEVELS.find((e) => lower.includes(e.toLowerCase()));
+      if (eduMatch) setAnswers((a) => ({ ...a, educationLevel: eduMatch }));
+      const timeMatch = TIME_OPTIONS.find((t) => lower.includes(t.toLowerCase()));
+      if (timeMatch) setAnswers((a) => ({ ...a, timeAvailablePerWeek: timeMatch }));
+    } else if (step === 2) {
+      CONSTRAINT_OPTIONS.forEach((c) => {
+        if (lower.includes(c.toLowerCase()) || (lower.includes("capital") && c.includes("capital"))) {
+          toggleConstraint(c);
+        }
+      });
+    } else if (step === 3) {
+      if (!answers.name) {
+        setAnswers((a) => ({ ...a, name: text }));
+      } else {
+        setAnswers((a) => ({ ...a, businessName: text }));
+      }
+    }
+  }
 
   function toggleConstraint(option: string) {
     setAnswers((a) => ({
@@ -240,14 +297,31 @@ export default function IntakePage() {
             <>
               <div className="flex items-center gap-sm rounded-full border border-outline-variant bg-surface-container-lowest px-sm py-xs">
                 <button
-                  aria-label={isRecording ? "Stop voice input" : "Answer with your voice"}
-                  onClick={() => setIsRecording((r) => !r)}
-                  className={`tap-target flex items-center justify-center rounded-full ${isRecording ? "animate-pulse bg-error text-on-error" : "bg-primary text-on-primary"}`}
+                  aria-label={
+                    isTranscribing
+                      ? "Transcribing voice input..."
+                      : isRecording
+                      ? "Stop voice input"
+                      : "Answer with your voice"
+                  }
+                  onClick={toggleIntakeVoice}
+                  disabled={isTranscribing}
+                  className={`tap-target flex items-center justify-center rounded-full transition-all ${
+                    isRecording
+                      ? "animate-pulse bg-error text-on-error shadow-md ring-2 ring-error/40"
+                      : isTranscribing
+                      ? "bg-surface-container-high text-primary"
+                      : "bg-primary text-on-primary"
+                  }`}
                 >
-                  <Icon name={isRecording ? "graphic_eq" : "mic"} />
+                  <Icon name={isTranscribing ? "hourglass_empty" : isRecording ? "graphic_eq" : "mic"} />
                 </button>
                 <span className="flex-1 font-body-md text-body-md text-on-surface-variant">
-                  {answers.sector || answers.educationLevel || "Tap a chip or use your voice to respond."}
+                  {isTranscribing
+                    ? "Transcribing..."
+                    : isRecording
+                    ? "Listening... tap button when done"
+                    : answers.sector || answers.educationLevel || "Tap a chip or use your voice to respond."}
                 </span>
                 <button
                   aria-label="Continue"
@@ -453,14 +527,31 @@ export default function IntakePage() {
             <div className="flex items-center gap-sm">
               <button
                 type="button"
-                aria-label={isRecording ? "Stop voice input" : "Answer with your voice"}
-                onClick={() => setIsRecording((r) => !r)}
+                aria-label={
+                  isTranscribing
+                    ? "Transcribing voice input..."
+                    : isRecording
+                    ? "Stop voice input"
+                    : "Answer with your voice"
+                }
+                onClick={toggleIntakeVoice}
+                disabled={isTranscribing}
                 className={`tap-target flex items-center gap-xs rounded-full px-md py-sm font-label-sm text-label-sm transition-all ${
-                  isRecording ? "animate-pulse bg-error text-on-error" : "bg-secondary-container text-on-secondary-container hover:bg-secondary-container/80"
+                  isRecording
+                    ? "animate-pulse bg-error text-on-error shadow-md ring-2 ring-error/40"
+                    : isTranscribing
+                    ? "bg-surface-container-high text-primary"
+                    : "bg-secondary-container text-on-secondary-container hover:bg-secondary-container/80"
                 }`}
               >
-                <Icon name={isRecording ? "graphic_eq" : "mic"} />
-                <span>{isRecording ? "Listening..." : "Voice Input"}</span>
+                <Icon name={isTranscribing ? "hourglass_empty" : isRecording ? "graphic_eq" : "mic"} />
+                <span>
+                  {isTranscribing
+                    ? "Transcribing..."
+                    : isRecording
+                    ? "Listening (tap to stop)"
+                    : "Voice Input"}
+                </span>
               </button>
 
               <span className="text-sm text-on-surface-variant ml-sm">

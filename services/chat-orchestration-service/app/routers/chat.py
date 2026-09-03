@@ -22,7 +22,12 @@ from ..guardrails import (
     screen_input,
     screen_output,
 )
-from ..llm import chat_completion, is_commitment_candidate, stream_chat_completion
+from ..llm import (
+    _strip_think_tags,
+    chat_completion,
+    is_commitment_candidate,
+    stream_chat_completion,
+)
 from ..models import Conversation, Message
 from ..schemas import (
     ConversationCreate,
@@ -202,7 +207,9 @@ async def stream_message(
                         break
                 yield f"event: token\ndata: {json.dumps({'text': token})}\n\n"
 
-            reply_text = "".join(parts)
+            reply_text = _strip_think_tags("".join(parts))
+            if not reply_text.strip():
+                reply_text = "I hear you! Let's work through this together."
             output_decision = screen_output(reply_text) if guardrails_on else ALLOWED
             if output_decision.blocked:
                 reply_text = refusal_message(output_decision)
