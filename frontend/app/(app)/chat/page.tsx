@@ -8,7 +8,7 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { useAppDispatch, useAppState } from "@/lib/store";
 import { fetchChatMessages, sendMessageStream, stripThinkTags, tagCommitment } from "@/lib/api";
 import type { ChatMessage } from "@/lib/types";
-import { startAudioRecording, transcribeAudio, playTextToSpeech, type ActiveRecording } from "@/lib/voice";
+import { startAudioRecording, transcribeAudio, playTextToSpeech, stopCurrentSpeech, type ActiveRecording } from "@/lib/voice";
 
 function formatTime(iso: string) {
   return new Date(iso).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
@@ -318,6 +318,15 @@ export default function ChatPage() {
   const scrollRef = useRef<HTMLDivElement>(null);
   const abortStreamRef = useRef<(() => void) | null>(null);
 
+  function cleanTextForSpeech(text: string): string {
+    return stripThinkTags(text)
+      .replace(/[#*_`~]/g, "")
+      .replace(/\|[-:\s|]+\|/g, "")
+      .replace(/\|/g, ", ")
+      .replace(/\n+/g, ". ")
+      .trim();
+  }
+
   async function toggleVoiceRecording() {
     if (isRecording) {
       setIsRecording(false);
@@ -326,11 +335,9 @@ export default function ChatPage() {
         if (activeRecordingRef.current) {
           const text = await activeRecordingRef.current.stop();
           activeRecordingRef.current = null;
-          if (text) {
-            dispatch({
-              type: "SET_CHAT_DRAFT",
-              draft: chatDraft.trim() ? `${chatDraft.trim()} ${text}` : text,
-            });
+          if (text && text.trim()) {
+            // Send the voice message immediately and automatically speak the mentor's reply!
+            send(text.trim(), true);
           }
         }
       } catch (err) {
@@ -356,19 +363,18 @@ export default function ChatPage() {
 
   async function handlePlayTTS(messageId: string, text: string) {
     if (playingAudioMessageId === messageId) {
-      activeAudioRef.current?.pause();
+      stopCurrentSpeech();
       setPlayingAudioMessageId(null);
       return;
     }
+    const clean = cleanTextForSpeech(text);
+    if (!clean) return;
+
     try {
-      activeAudioRef.current?.pause();
       setPlayingAudioMessageId(messageId);
-      const audio = await playTextToSpeech(text, selectedPersona?.id || "chioma");
-      activeAudioRef.current = audio;
-      audio.onended = () => {
+      await playTextToSpeech(clean, selectedPersona?.id || "chioma", () => {
         setPlayingAudioMessageId(null);
-        activeAudioRef.current = null;
-      };
+      });
     } catch (err) {
       console.error("TTS playback error:", err);
       setPlayingAudioMessageId(null);
@@ -393,8 +399,9 @@ export default function ChatPage() {
     }
   }, [streamingContent]);
 
-  function send() {
-    if (!chatDraft.trim() || !chatSessionId || isTyping) return;
+  function send(customText?: string, autoPlayVoiceReply = false) {
+    const textToSend = (customText ?? chatDraft).trim();
+    if (!textToSend || !chatSessionId || isTyping) return;
 
     // Abort any in-flight stream before starting a new one
     abortStreamRef.current?.();
@@ -403,7 +410,7 @@ export default function ChatPage() {
       id: `local-${Date.now()}`,
       userId: profile?.userId ?? "local-user",
       sender: "user",
-      content: chatDraft.trim(),
+      content: textToSend,
       created_at: new Date().toISOString(),
     };
     dispatch({ type: "APPEND_CHAT_MESSAGE", message: userMessage });
@@ -426,6 +433,11 @@ export default function ChatPage() {
         setIsTyping(false);
         dispatch({ type: "APPEND_CHAT_MESSAGE", message: assistantMessage });
         abortStreamRef.current = null;
+
+        // Auto-play mentor's audio reply if message was sent via voice!
+        if (autoPlayVoiceReply && assistantMessage.content) {
+          handlePlayTTS(assistantMessage.id, assistantMessage.content);
+        }
       },
       (error) => {
         console.error("Stream error:", error);
@@ -523,7 +535,23 @@ export default function ChatPage() {
               </p>
             </div>
           </div>
-          <ThemeToggle />
+          <div className="flex items-center gap-sm">
+            {playingAudioMessageId && (
+              <button
+                type="button"
+                onClick={() => {
+                  stopCurrentSpeech();
+                  setPlayingAudioMessageId(null);
+                }}
+                className="flex items-center gap-1.5 rounded-full bg-primary/15 border border-primary/30 px-3 py-1 text-[11px] font-semibold text-primary animate-pulse hover:bg-primary/25 transition-colors"
+                aria-label="Stop audio reply"
+              >
+                <Icon name="volume_up" size={14} />
+                <span>Speaking... (tap to mute)</span>
+              </button>
+            )}
+            <ThemeToggle />
+          </div>
         </div>
 
       <div ref={scrollRef} role="log" aria-label={`Chat with ${mentorName}`} className="flex-1 overflow-y-auto px-margin-mobile py-lg md:px-0">

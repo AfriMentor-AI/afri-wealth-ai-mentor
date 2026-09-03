@@ -5,11 +5,14 @@ Health endpoint is live so docker-compose health checks pass.
 """
 import os
 import io
+import logging
 import speech_recognition as sr
 from fastapi import FastAPI, UploadFile, File
-from fastapi.responses import StreamingResponse
+from fastapi.responses import StreamingResponse, Response
 from gtts import gTTS
 from pydantic import BaseModel
+
+logger = logging.getLogger("voice-service")
 
 
 from .observability import instrument
@@ -44,21 +47,42 @@ def health() -> dict:
 def root() -> dict:
     return {"service": SERVICE_NAME, "message": "Voice Service online", "docs": "/docs"}
 
+VOICE_MAP = {
+    "chioma": "en-NG-EzinneNeural",  # Warm, authentic Nigerian female mentor
+    "kwame": "en-GH-KwameNeural",    # Authentic Ghanaian male mentor
+    "abeo": "en-NG-AbeoNeural",      # Nigerian male
+    "nana": "en-GH-NanaNeural",      # Ghanaian female
+}
+
 @app.post("/tts", tags=["voice"])
 @app.post("/api/v1/voice/tts", tags=["voice"])
 @app.post("/api/v1/voice/synthesize", tags=["voice"])
 async def text_to_speech(req: TTSRequest):
-    """Converts text to speech."""
-    # The persona parameter can be used to select different voices.
-    # For now, we'll use the default gTTS voice.
-    # In a real implementation, this could map to different voice models.
+    """Converts text to speech using African Microsoft Neural voices with gTTS fallback."""
+    voice_name = VOICE_MAP.get((req.persona or "chioma").lower(), "en-NG-EzinneNeural")
+    spoken_text = req.text.strip()
+
+    # 1. Try Microsoft Neural African Voice (edge-tts)
+    try:
+        import edge_tts
+
+        communicate = edge_tts.Communicate(spoken_text, voice_name)
+        mp3_bytes = bytearray()
+        async for chunk in communicate.stream():
+            if chunk["type"] == "audio":
+                mp3_bytes.extend(chunk["data"])
+
+        if mp3_bytes:
+            return Response(content=bytes(mp3_bytes), media_type="audio/mpeg")
+    except Exception as exc:
+        logger.warning("edge-tts synthesis notice: %s. Using gTTS fallback.", exc)
+
+    # 2. Fallback to gTTS if edge-tts is unavailable
     lang = "en"
-    if req.persona == "chioma":
-        # Example of persona-based voice selection
-        lang = "en-gh"
+    tld = "com.ng" if (req.persona or "").lower() == "chioma" else "com.gh"
+    capped_text = spoken_text[:350] if len(spoken_text) > 350 else spoken_text
 
-
-    tts = gTTS(req.text, lang=lang)
+    tts = gTTS(capped_text, lang=lang, tld=tld)
     mp3_fp = io.BytesIO()
     tts.write_to_fp(mp3_fp)
     mp3_fp.seek(0)

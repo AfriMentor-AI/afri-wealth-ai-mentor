@@ -212,23 +212,81 @@ export async function transcribeAudio(audioBlob: Blob): Promise<string> {
   return (data.text || "").trim();
 }
 
-/**
- * Text-to-Speech: sends text to voice-service and plays audio back.
- */
-export async function playTextToSpeech(text: string, persona = "chioma"): Promise<HTMLAudioElement> {
-  const res = await apiFetch("/api/v1/voice/tts", {
-    method: "POST",
-    body: JSON.stringify({ text, persona }),
-  });
+let currentSpeechAudio: HTMLAudioElement | null = null;
 
-  if (!res.ok) {
-    throw new Error(`Text-to-speech failed with status: ${res.status}`);
+export function stopCurrentSpeech() {
+  if (typeof window !== "undefined" && window.speechSynthesis) {
+    window.speechSynthesis.cancel();
+  }
+  if (currentSpeechAudio) {
+    currentSpeechAudio.pause();
+    currentSpeechAudio = null;
+  }
+}
+
+/**
+ * Text-to-Speech: synthesizes audio using native browser SpeechSynthesis (instant, zero timeout)
+ * and falls back to voice-service backend if unsupported.
+ */
+export async function playTextToSpeech(
+  text: string,
+  persona = "chioma",
+  onEnd?: () => void
+): Promise<void> {
+  stopCurrentSpeech();
+
+  // 1. First priority: Authentic African Neural Voice from voice-service
+  // Chioma -> en-NG-EzinneNeural (Nigerian English)
+  // Kwame  -> en-GH-KwameNeural (Ghanaian English)
+  try {
+    const res = await apiFetch("/api/v1/voice/tts", {
+      method: "POST",
+      body: JSON.stringify({ text, persona }),
+    });
+
+    if (res.ok) {
+      const blob = await res.blob();
+      if (blob.size > 0) {
+        const audioUrl = URL.createObjectURL(blob);
+        const audio = new Audio(audioUrl);
+        currentSpeechAudio = audio;
+        audio.onended = () => {
+          URL.revokeObjectURL(audioUrl);
+          currentSpeechAudio = null;
+          onEnd?.();
+        };
+        audio.onerror = () => {
+          URL.revokeObjectURL(audioUrl);
+          currentSpeechAudio = null;
+          onEnd?.();
+        };
+        await audio.play();
+        return;
+      }
+    }
+  } catch (err) {
+    console.warn("Backend African neural voice unavailable, falling back to local synthesis:", err);
   }
 
-  const blob = await res.blob();
-  const audioUrl = URL.createObjectURL(blob);
-  const audio = new Audio(audioUrl);
-  audio.onended = () => URL.revokeObjectURL(audioUrl);
-  await audio.play();
-  return audio;
+  // 2. Fallback to browser local SpeechSynthesis if backend is unavailable
+  if (typeof window !== "undefined" && window.speechSynthesis) {
+    const utterance = new SpeechSynthesisUtterance(text);
+    const voices = window.speechSynthesis.getVoices();
+
+    const voice =
+      voices.find((v) => v.lang.startsWith("en") && (v.name.includes("Nigeria") || v.name.includes("Ghana") || v.name.includes("South Africa"))) ||
+      voices.find((v) => v.lang.startsWith("en") && (v.name.includes("Female") || v.name.includes("Natural") || v.name.includes("Zira") || v.name.includes("Samantha"))) ||
+      voices.find((v) => v.lang.startsWith("en"));
+
+    if (voice) utterance.voice = voice;
+    utterance.rate = 1.0;
+    utterance.pitch = 1.05;
+    utterance.onend = () => onEnd?.();
+    utterance.onerror = () => onEnd?.();
+
+    window.speechSynthesis.speak(utterance);
+    return;
+  }
+
+  onEnd?.();
 }
