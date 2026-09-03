@@ -1,6 +1,5 @@
 """Unit tests for _strip_think_tags — ensures Qwen reasoning blocks are never
 surfaced to clients via either the non-streaming or streaming LLM path."""
-import pytest
 
 from app.llm import _strip_think_tags
 
