@@ -63,7 +63,7 @@ _cors_origins = [o.strip() for o in _cors_origins_raw.split(",") if o.strip()] o
 app.add_middleware(
     CORSMiddleware,
     allow_origins=_cors_origins,
-    allow_origin_regex=r"https://.*\.app\.github\.dev|https://.*\.vercel\.app",
+    allow_origin_regex=r"^https://.*\.app\.github\.dev$|^https://.*\.vercel\.app$"
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
