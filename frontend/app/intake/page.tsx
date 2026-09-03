@@ -9,7 +9,7 @@ import { Chip } from "@/components/ui/Chip";
 import { Button } from "@/components/ui/Button";
 import { useAppDispatch } from "@/lib/store";
 import { submitIntake } from "@/lib/api";
-import { startAudioRecording, transcribeAudio, type ActiveRecording } from "@/lib/voice";
+import { startAudioRecording, type ActiveRecording } from "@/lib/voice";
 
 const SECTORS_LIST = [
   { name: "Trader", icon: "storefront", desc: "Retail shops, market trading, imports/exports" },

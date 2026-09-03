@@ -15,6 +15,45 @@ export interface ActiveRecording {
   cancel: () => void;
 }
 
+type SpeechRecognitionResultAlternativeLike = {
+  transcript: string;
+};
+
+type SpeechRecognitionResultLike = {
+  [index: number]: SpeechRecognitionResultAlternativeLike;
+  length: number;
+};
+
+type SpeechRecognitionResultListLike = {
+  [index: number]: SpeechRecognitionResultLike;
+  length: number;
+};
+
+type SpeechRecognitionEventLike = {
+  results: SpeechRecognitionResultListLike;
+};
+
+type SpeechRecognitionErrorLike = {
+  error?: string;
+};
+
+type SpeechRecognitionLike = {
+  continuous: boolean;
+  interimResults: boolean;
+  lang: string;
+  onresult: ((event: SpeechRecognitionEventLike) => void) | null;
+  onerror: ((err: SpeechRecognitionErrorLike) => void) | null;
+  start: () => void;
+  stop: () => void;
+};
+
+type SpeechRecognitionCtor = new () => SpeechRecognitionLike;
+
+type SpeechRecognitionWindow = Window & {
+  SpeechRecognition?: SpeechRecognitionCtor;
+  webkitSpeechRecognition?: SpeechRecognitionCtor;
+};
+
 function writeString(view: DataView, offset: number, str: string) {
   for (let i = 0; i < str.length; i++) {
     view.setUint8(offset + i, str.charCodeAt(i));
@@ -71,11 +110,10 @@ export async function startAudioRecording(
   });
 
   // 1. Check for browser native SpeechRecognition
-  const SpeechRec =
-    (window as unknown as { SpeechRecognition?: any }).SpeechRecognition ||
-    (window as unknown as { webkitSpeechRecognition?: any }).webkitSpeechRecognition;
+  const speechWindow = window as SpeechRecognitionWindow;
+  const SpeechRec = speechWindow.SpeechRecognition || speechWindow.webkitSpeechRecognition;
 
-  let nativeRecognition: any = null;
+  let nativeRecognition: SpeechRecognitionLike | null = null;
   let nativeTranscript = "";
 
   if (SpeechRec) {
@@ -85,7 +123,7 @@ export async function startAudioRecording(
       nativeRecognition.interimResults = true;
       nativeRecognition.lang = "en-US";
 
-      nativeRecognition.onresult = (event: any) => {
+      nativeRecognition.onresult = (event: SpeechRecognitionEventLike) => {
         let current = "";
         for (let i = 0; i < event.results.length; i++) {
           current += event.results[i][0].transcript;
@@ -94,7 +132,7 @@ export async function startAudioRecording(
         onInterimText?.(current);
       };
 
-      nativeRecognition.onerror = (err: any) => {
+      nativeRecognition.onerror = (err: SpeechRecognitionErrorLike) => {
         console.warn("Native speech recognition notice:", err.error || err);
       };
 

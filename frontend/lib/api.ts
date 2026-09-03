@@ -5,7 +5,17 @@ export * from "./mockApi";
 export * from "./voice";
 
 import { apiFetch, getCurrentUserId } from "./session";
-import type { ChatMessage, Commitment, Goal, Milestone, Profile } from "./types";
+import type {
+  BadgeWithStatus,
+  ChatMessage,
+  Commitment,
+  Goal,
+  HeatmapDay,
+  Milestone,
+  Profile,
+  StreakStat,
+  WeeklySummaryShare,
+} from "./types";
 import { mockProfile } from "./mockData";
 
 interface BackendMessage {
@@ -482,4 +492,123 @@ export async function fetchProfile(): Promise<Profile> {
     // Fall back to mock profile if backend profile is not yet initialized
   }
   return mockProfile;
+}
+
+interface BackendStreakStat {
+  user_id: string;
+  current_streak_days: number;
+  longest_streak_days: number;
+  actions_completed_total: number;
+  updated_at: string;
+}
+
+interface BackendHeatmapDay {
+  date: string;
+  count: number;
+}
+
+interface BackendBadgeWithStatus {
+  id: string;
+  label: string;
+  description?: string;
+  icon_name?: string;
+  earned_at: string | null;
+}
+
+interface BackendProgressSummary {
+  streak: BackendStreakStat;
+  heatmap: BackendHeatmapDay[];
+  badges: BackendBadgeWithStatus[];
+}
+
+interface ProgressSummary {
+  streak: StreakStat;
+  heatmap: HeatmapDay[];
+  badges: BadgeWithStatus[];
+}
+
+function toStreakStat(streak: BackendStreakStat): StreakStat {
+  return {
+    userId: streak.user_id,
+    currentStreakDays: streak.current_streak_days,
+    longestStreakDays: streak.longest_streak_days,
+    actionsCompletedTotal: streak.actions_completed_total,
+    updatedAt: streak.updated_at,
+  };
+}
+
+function toBadgeWithStatus(badge: BackendBadgeWithStatus): BadgeWithStatus {
+  return {
+    id: badge.id,
+    label: badge.label,
+    description: badge.description,
+    iconName: badge.icon_name,
+    earnedAt: badge.earned_at,
+  };
+}
+
+/**
+ * GET /api/v1/progress — streak, heatmap, and badges for Progress page.
+ */
+export async function fetchProgressSummary(): Promise<ProgressSummary> {
+  const res = await apiFetch("/api/v1/progress");
+  if (!res.ok) throw new Error(`fetchProgressSummary failed: ${res.status}`);
+
+  const body = (await res.json()) as BackendProgressSummary;
+  return {
+    streak: toStreakStat(body.streak),
+    heatmap: body.heatmap.map((day) => ({ date: day.date, count: day.count })),
+    badges: body.badges.map(toBadgeWithStatus),
+  };
+}
+
+/**
+ * POST /api/v1/progress/actions — records completed product actions.
+ */
+export async function recordProgressAction(
+  kind: "daily_action" | "insight_completed" | "savings_goal_met"
+): Promise<void> {
+  const res = await apiFetch("/api/v1/progress/actions", {
+    method: "POST",
+    body: JSON.stringify({ kind }),
+  });
+  if (!res.ok) throw new Error(`recordProgressAction failed: ${res.status}`);
+}
+
+/**
+ * POST/DELETE /api/v1/insights/{id}/bookmark — toggle favorite state.
+ */
+export async function setInsightFavorited(insightId: string, favorited: boolean): Promise<void> {
+  const method = favorited ? "POST" : "DELETE";
+  const res = await apiFetch(`/api/v1/insights/${insightId}/bookmark`, { method });
+  if (!res.ok) throw new Error(`setInsightFavorited failed: ${res.status}`);
+}
+
+interface BackendWeeklySummaryShare {
+  user_id: string;
+  week_start: string;
+  week_end: string;
+  actions_this_week: number;
+  current_streak_days: number;
+  badges_earned_this_week: string[];
+  share_text: string;
+}
+
+/**
+ * POST /api/v1/progress/summary/share — share-ready weekly summary text.
+ */
+export async function shareWeeklySummary(): Promise<WeeklySummaryShare> {
+  const res = await apiFetch("/api/v1/progress/summary/share", { method: "POST" });
+  if (!res.ok) throw new Error(`shareWeeklySummary failed: ${res.status}`);
+
+  const body = (await res.json()) as BackendWeeklySummaryShare;
+  return {
+    userId: body.user_id,
+    weekStart: body.week_start,
+    weekEnd: body.week_end,
+    actionsThisWeek: body.actions_this_week,
+    currentStreakDays: body.current_streak_days,
+    badgesEarnedThisWeek: body.badges_earned_this_week,
+    shareText: body.share_text,
+  };
 }

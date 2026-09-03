@@ -8,7 +8,7 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { useAppDispatch, useAppState } from "@/lib/store";
 import { fetchChatMessages, sendMessageStream, stripThinkTags, tagCommitment } from "@/lib/api";
 import type { ChatMessage } from "@/lib/types";
-import { startAudioRecording, transcribeAudio, playTextToSpeech, stopCurrentSpeech, type ActiveRecording } from "@/lib/voice";
+import { startAudioRecording, playTextToSpeech, stopCurrentSpeech, type ActiveRecording } from "@/lib/voice";
 
 function formatTime(iso: string) {
   return new Date(iso).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
@@ -320,7 +320,6 @@ export default function ChatPage() {
   const [isTranscribing, setIsTranscribing] = useState(false);
   const [playingAudioMessageId, setPlayingAudioMessageId] = useState<string | null>(null);
   const activeRecordingRef = useRef<ActiveRecording | null>(null);
-  const activeAudioRef = useRef<HTMLAudioElement | null>(null);
   const [commitmentTagged, setCommitmentTagged] = useState(false);
   const [showConversations, setShowConversations] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
@@ -689,7 +688,7 @@ export default function ChatPage() {
         <button
           type="button"
           aria-label="Send message"
-          onClick={send}
+          onClick={() => send()}
           disabled={!chatDraft.trim() || isTyping || streamingContent !== null || isRecording || isTranscribing}
           className="tap-target flex items-center justify-center rounded-full bg-primary text-on-primary disabled:opacity-40"
         >
