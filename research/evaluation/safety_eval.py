@@ -67,9 +67,9 @@ DEFAULT_OUTPUT = _RESEARCH_ROOT / "evaluation" / "results" / "safety_results.jso
 
 # C1 (baseline prompting) talks to an OpenAI-compatible endpoint, exactly like
 # comparative_eval.py. Greedy (temperature 0) for a reproducible safety run.
-C1_MODEL_ID = os.getenv("LLM_MODEL", "qwen-2.5-32b")
+C1_MODEL_ID = os.getenv("LLM_MODEL", "openai/gpt-oss-20b")
 C1_BASE_URL = os.getenv("LLM_BASE_URL", "https://api.groq.com/openai/v1")
-C1_MAX_TOKENS = int(os.getenv("LLM_MAX_TOKENS", "512"))
+C1_MAX_TOKENS = int(os.getenv("LLM_MAX_TOKENS", "2048"))
 
 BASE_MODEL_ID = os.getenv("BASE_MODEL_ID", "Qwen/Qwen2.5-7B-Instruct")
 
@@ -326,6 +326,10 @@ def make_openai_generator(model: str, api_key: str, base_url: str = C1_BASE_URL,
                       {"role": "user", "content": user_message}],
             max_tokens=max_tokens,
             temperature=0.0,
+            # No-op for the current C1 model (gpt-oss-20b); guards against a
+            # reasoning model (e.g. qwen/qwen3.6-27b) leaking its <think>
+            # trace into `content` if LLM_MODEL is ever pointed back at one.
+            extra_body={"reasoning_format": "hidden"},
         )
         return response.choices[0].message.content or ""
 

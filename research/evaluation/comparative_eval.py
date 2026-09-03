@@ -29,9 +29,9 @@ logging.basicConfig(level=logging.INFO, format="%(levelname)s %(message)s")
 SPLITS_DIR = _RESEARCH_ROOT / "datasets" / "splits"
 DEFAULT_OUTPUT = _RESEARCH_ROOT / "evaluation" / "results" / "comparative_results.json"
 
-C1_MODEL_ID = os.getenv("LLM_MODEL", "qwen-2.5-32b")
+C1_MODEL_ID = os.getenv("LLM_MODEL", "openai/gpt-oss-20b")
 C1_BASE_URL = os.getenv("LLM_BASE_URL", "https://api.groq.com/openai/v1")
-C1_MAX_TOKENS = int(os.getenv("LLM_MAX_TOKENS", "512"))
+C1_MAX_TOKENS = int(os.getenv("LLM_MAX_TOKENS", "2048"))
 C1_TEMPERATURE = float(os.getenv("LLM_TEMPERATURE", "0.7"))
 
 C2_RECORDED = {
@@ -87,11 +87,17 @@ def _run_c1_live(samples: list[dict], api_key: str) -> list[dict]:
         response = client.chat.completions.create(
             model=C1_MODEL_ID, messages=messages,
             max_tokens=C1_MAX_TOKENS, temperature=C1_TEMPERATURE,
+            # No-op for the current C1 model (gpt-oss-20b); kept as a guard in
+            # case LLM_MODEL points back at a reasoning model like
+            # qwen/qwen3.6-27b, which otherwise leaks a raw <think> trace into
+            # `content` (see docs/implementation/C5_1_final_evaluation.md).
+            extra_body={"reasoning_format": "hidden"},
         )
         response_text = response.choices[0].message.content or ""
         result = evaluate_response(sample["user"], response_text, sample.get("reference"))
         rows.append({**result.to_dict(), "persona": sample["persona"],
-                     "composite_score": result.composite_score})
+                     "composite_score": result.composite_score,
+                     "user_message": sample["user"], "response": response_text})
         logger.info("  [C1] sample %d/%d persona=%-14s composite=%.3f",
                     i + 1, len(samples), sample["persona"], result.composite_score)
     return rows
@@ -110,7 +116,8 @@ def _run_checkpoint_condition(condition_id, base_model_id, adapter_path,
         response = generator(system_prompt, sample["user"])
         result = evaluate_response(sample["user"], response, sample.get("reference"))
         rows.append({**result.to_dict(), "persona": sample["persona"],
-                     "composite_score": result.composite_score})
+                     "composite_score": result.composite_score,
+                     "user_message": sample["user"], "response": response})
         logger.info("  [%s] sample %d/%d persona=%-14s composite=%.3f",
                     condition_id, i + 1, len(samples), sample["persona"],
                     result.composite_score)

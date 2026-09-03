@@ -158,8 +158,7 @@ def _build_rag_system_message(chunks: list[RagResult]) -> str:
     """Format retrieved chunks into the context-injection system message.
 
     Each chunk is prefixed with its source label so the LLM can attribute
-    claims. The template is intentionally terse to stay within the 512-token
-    LLM_MAX_TOKENS budget.
+    claims. The template is intentionally terse to keep prompt size down.
     """
     lines = ["Use the following knowledge to inform your response:"]
     for i, chunk in enumerate(chunks, 1):
@@ -187,6 +186,73 @@ def is_commitment_candidate(text: str) -> bool:
     """
     lower = text.lower()
     return any(kw in lower for kw in settings.commitment_keywords)
+
+
+# ── Thinking tag stripper ─────────────────────────────────────────────────────
+
+def strip_thinking_tags(text: str) -> str:
+    """Remove <think>...</think> reasoning traces from model responses."""
+    if not text:
+        return ""
+    cleaned = re.sub(r"<think>[\s\S]*?</think>", "", text, flags=re.IGNORECASE)
+    cleaned = re.sub(r"<think>[\s\S]*$", "", cleaned, flags=re.IGNORECASE)
+    cleaned = re.sub(r"^[\s\S]*?</think>", "", cleaned, flags=re.IGNORECASE)
+    return cleaned.strip()
+
+
+async def filter_thinking_stream(stream: AsyncIterator[str]) -> AsyncIterator[str]:
+    """Yield tokens from stream while filtering out <think>...</think> blocks in real time."""
+    in_think = False
+    buffer = ""
+    async for token in stream:
+        buffer += token
+        while buffer:
+            if not in_think:
+                lower_buf = buffer.lower()
+                if "<think>" in lower_buf:
+                    idx = lower_buf.index("<think>")
+                    prefix = buffer[:idx]
+                    if prefix:
+                        yield prefix
+                    in_think = True
+                    buffer = buffer[idx + 7:]
+                else:
+                    match_partial = False
+                    for i in range(1, min(len("<think>"), len(buffer) + 1)):
+                        suffix = lower_buf[-i:]
+                        if "<think>".startswith(suffix):
+                            match_partial = True
+                            if len(buffer) > i:
+                                yield buffer[:-i]
+                                buffer = buffer[-i:]
+                            break
+                    if not match_partial:
+                        yield buffer
+                        buffer = ""
+                    else:
+                        break
+            else:
+                lower_buf = buffer.lower()
+                if "</think>" in lower_buf:
+                    idx = lower_buf.index("</think>")
+                    in_think = False
+                    buffer = buffer[idx + 8:].lstrip("\r\n ")
+                else:
+                    match_partial = False
+                    for i in range(1, min(len("</think>"), len(buffer) + 1)):
+                        suffix = lower_buf[-i:]
+                        if "</think>".startswith(suffix):
+                            buffer = buffer[-i:]
+                            match_partial = True
+                            break
+                    if not match_partial:
+                        buffer = ""
+                    break
+
+    if buffer and not in_think:
+        cleaned = strip_thinking_tags(buffer)
+        if cleaned:
+            yield cleaned
 
 
 # ── Message assembly & LLM call ───────────────────────────────────────────────
@@ -254,6 +320,8 @@ async def chat_completion(
 
     choice = response.choices[0]
     usage = response.usage
+    raw_content = choice.message.content or ""
+    content = strip_thinking_tags(raw_content)
     return (
         _strip_think_tags(choice.message.content or ""),
         usage.prompt_tokens if usage else 0,
@@ -357,7 +425,7 @@ async def stream_chat_completion(
             logger.warning("LLM stream failed; using fallback response: %s", exc)
             yield "I hear you! Let's work through this together. (LLM unavailable.)"
 
-    return provider_stream(), citations
+    return filter_thinking_stream(provider_stream()), citations
 
 
 async def generate_daily_action_for_user(user_id: str, db) -> str:
@@ -373,20 +441,22 @@ async def generate_daily_action_for_user(user_id: str, db) -> str:
     logger.info(f"User {user_id} has active goals: {active_goals}")
 
     # 2. Construct the prompt
-    prompt = (
-        "You are Chioma, a warm and direct African financial mentor. "
-        "Your task is to generate a single, specific, and actionable financial task "
-        "for a user based on their goals. "
-        "The task should be something they can do today. "
-        "Here are the user's active goals:\n"
+    system_prompt = "You are Chioma, a warm and direct African financial mentor."
+    user_prompt = (
+        "Generate a single, specific, and actionable financial task for a user "
+        "based on their goals, something they can do today. Here are the user's "
+        "active goals:\n" +
         "\n".join(f"- {goal}" for goal in active_goals) +
-        "\n\n"
-        "Generate a single, specific, and actionable financial task for the user."
-        "The response should be just the task itself, without any preamble."
+        "\n\nRespond with just the task itself, without any preamble. "
         "For example: 'Set aside 10% of your income for savings today.'"
     )
 
-    messages = [{"role": "system", "content": prompt}]
+    # A system-only messages list makes Groq reject the request outright
+    # ("No user query found in messages"), so this always fell back silently.
+    messages = [
+        {"role": "system", "content": system_prompt},
+        {"role": "user", "content": user_prompt},
+    ]
 
     # 3. Call the LLM
     if not settings.llm_api_key:
@@ -399,8 +469,11 @@ async def generate_daily_action_for_user(user_id: str, db) -> str:
         response = await client.chat.completions.create(
             model=settings.llm_model,
             messages=messages,  # type: ignore[arg-type]
-            max_tokens=100,
+            # Was hardcoded to 100 — never enough once a reasoning model was
+            # in play, and tight even for gpt-oss-20b's one-line answer.
+            max_tokens=settings.llm_max_tokens,
             temperature=settings.llm_temperature,
+            extra_body={"reasoning_format": "hidden"},
         )
     except Exception as exc:  # pragma: no cover - provider-auth errors are handled here
         logger.warning("Daily action LLM request failed; using fallback action: %s", exc)

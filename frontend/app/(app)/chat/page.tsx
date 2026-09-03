@@ -158,8 +158,18 @@ function collectParagraphLines(lines: string[], startIndex: number) {
   return { paragraphLines, nextIndex: index };
 }
 
+function stripThinkingTags(content: string): string {
+  if (!content) return "";
+  return content
+    .replace(/<think>[\s\S]*?<\/think>/gi, "")
+    .replace(/<think>[\s\S]*$/gi, "")
+    .replace(/^[\s\S]*?<\/think>/gi, "")
+    .trim();
+}
+
 function parseMentorBlocks(content: string): MentorBlock[] {
-  const lines = content.split("\n");
+  const cleanedContent = stripThinkingTags(content);
+  const lines = cleanedContent.split("\n");
   const blocks: MentorBlock[] = [];
   let i = 0;
 

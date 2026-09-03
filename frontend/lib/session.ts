@@ -25,12 +25,20 @@ function resolveApiBase(): string {
       const gatewayHost = host.replace(/-\d+\.app\.github\.dev$/, "-8000.app.github.dev");
       return `${window.location.protocol}//${gatewayHost}`;
     }
+
+    // Only default to the local gateway when actually running on localhost.
+    // Any other deployed host (e.g. Vercel) with NEXT_PUBLIC_API_BASE_URL unset
+    // must fall through to same-origin relative paths so next.config.js's
+    // rewrites() proxy handles the request — a hardcoded localhost fallback here
+    // would otherwise make every deployed browser try to reach its own machine.
+    const isLocalhost = host === "localhost" || host.startsWith("localhost:") || host.startsWith("127.0.0.1");
+    if (!isLocalhost) {
+      return "";
+    }
   }
 
   return "http://localhost:8000";
 }
-
-const API_BASE = resolveApiBase();
 
 const ACCESS_TOKEN_KEY = "afrimentor-access-token";
 const REFRESH_TOKEN_KEY = "afrimentor-refresh-token";
@@ -100,7 +108,7 @@ function deviceCredentials(): { email: string; password: string } {
 }
 
 async function signupDeviceAccount(): Promise<TokenPair> {
-  const res = await fetch(`${API_BASE}/api/v1/auth/signup`, {
+  const res = await fetch(`${resolveApiBase()}/api/v1/auth/signup`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(deviceCredentials()),
@@ -117,7 +125,7 @@ async function signupDeviceAccount(): Promise<TokenPair> {
  * or auth-user-service restarted and rotated its dev-mode signing key,
  * invalidating every outstanding token. */
 async function loginDeviceAccount(): Promise<TokenPair> {
-  const res = await fetch(`${API_BASE}/api/v1/auth/login`, {
+  const res = await fetch(`${resolveApiBase()}/api/v1/auth/login`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(deviceCredentials()),
@@ -131,7 +139,7 @@ async function refreshSession(): Promise<TokenPair> {
   const existing = readStoredTokens();
   if (!existing) return signupDeviceAccount();
 
-  const res = await fetch(`${API_BASE}/api/v1/auth/refresh`, {
+  const res = await fetch(`${resolveApiBase()}/api/v1/auth/refresh`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ refresh_token: existing.refreshToken }),
@@ -188,7 +196,7 @@ export async function apiFetch(path: string, init: RequestInit = {}): Promise<Re
   const isFormData = typeof FormData !== "undefined" && init.body instanceof FormData;
   const attempt = async (accessToken: string) => {
     const userId = await getCurrentUserId();
-    return fetch(`${API_BASE}${path}`, {
+    return fetch(`${resolveApiBase()}${path}`, {
       ...init,
       headers: {
         ...(init.body && !isFormData ? { "Content-Type": "application/json" } : {}),
