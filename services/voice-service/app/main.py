@@ -45,6 +45,8 @@ def root() -> dict:
     return {"service": SERVICE_NAME, "message": "Voice Service online", "docs": "/docs"}
 
 @app.post("/tts", tags=["voice"])
+@app.post("/api/v1/voice/tts", tags=["voice"])
+@app.post("/api/v1/voice/synthesize", tags=["voice"])
 async def text_to_speech(req: TTSRequest):
     """Converts text to speech."""
     # The persona parameter can be used to select different voices.
@@ -65,11 +67,19 @@ async def text_to_speech(req: TTSRequest):
 
 
 @app.post("/stt", tags=["voice"])
+@app.post("/api/v1/voice/stt", tags=["voice"])
+@app.post("/api/v1/voice/transcribe", tags=["voice"])
 async def speech_to_text(file: UploadFile = File(...)):
     """Converts speech to text."""
     r = sr.Recognizer()
-    with sr.AudioFile(io.BytesIO(file.file.read())) as source:
-        audio = r.record(source)
+    raw_data = await file.read()
+
+    try:
+        with sr.AudioFile(io.BytesIO(raw_data)) as source:
+            audio = r.record(source)
+    except Exception as exc:
+        return {"text": "", "error": f"Audio processing error: {exc}"}
+
     try:
         text = r.recognize_google(audio)
         return {"text": text}

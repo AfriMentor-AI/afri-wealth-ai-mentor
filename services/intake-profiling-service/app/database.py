@@ -15,10 +15,15 @@ from .observability import instrument_db
 
 settings = get_settings()
 
-_connect_args = (
-    {"check_same_thread": False} if settings.database_url.startswith("sqlite") else {}
+db_url = (
+    settings.database_url
+    if (settings.database_url and settings.database_url.strip())
+    else "sqlite+pysqlite:///./intake_dev.db"
 )
-engine = create_engine(settings.database_url, connect_args=_connect_args, future=True)
+_connect_args = (
+    {"check_same_thread": False} if db_url.startswith("sqlite") else {}
+)
+engine = create_engine(db_url, connect_args=_connect_args, future=True)
 instrument_db(engine)
 SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False)
 
