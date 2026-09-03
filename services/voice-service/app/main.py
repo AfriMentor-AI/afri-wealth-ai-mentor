@@ -3,19 +3,19 @@
 Generated for card O1.2. Real implementation lands in later sprints.
 Health endpoint is live so docker-compose health checks pass.
 """
-import os
 import io
 import logging
+import os
+
 import speech_recognition as sr
-from fastapi import FastAPI, UploadFile, File
-from fastapi.responses import StreamingResponse, Response
+from fastapi import FastAPI, File, UploadFile
+from fastapi.responses import Response, StreamingResponse
 from gtts import gTTS
 from pydantic import BaseModel
 
-logger = logging.getLogger("voice-service")
-
-
 from .observability import instrument
+
+logger = logging.getLogger("voice-service")
 
 SERVICE_NAME = "voice-service"
 SERVICE_VERSION = "0.1.0"

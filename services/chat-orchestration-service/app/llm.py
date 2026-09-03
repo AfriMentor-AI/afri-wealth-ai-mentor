@@ -115,7 +115,8 @@ async def _get_system_prompt(persona_id: str | None) -> str:
         "(4) Short replies on mobile — default to 3–5 short paragraphs; bullet points "
         "only for step lists; no walls of text. "
         "(5) Direct response only — do not include any <think> tags, internal monologue, "
-        "reasoning scratchpad, or planning commentary. Begin immediately with your response to the user."
+        "reasoning scratchpad, or planning commentary. "
+        "Begin immediately with your response to the user."
         # ── ALIGNMENT PROVENANCE ──────────────────────────────────────────────
         # This prompt embodies Condition C4 (RLHF / Preference Optimization),
         # the Sprint 4 best-performing alignment condition (composite 0.654).
@@ -321,9 +322,9 @@ async def chat_completion(
     choice = response.choices[0]
     usage = response.usage
     raw_content = choice.message.content or ""
-    content = strip_thinking_tags(raw_content)
+    cleaned_content = _strip_think_tags(raw_content)
     return (
-        _strip_think_tags(choice.message.content or ""),
+        cleaned_content,
         usage.prompt_tokens if usage else 0,
         usage.completion_tokens if usage else 0,
         citations,
@@ -396,7 +397,10 @@ async def stream_chat_completion(
                         continue
                     if "<think>" in lower_stripped:
                         in_think = True
-                    elif any("<think>".startswith(lower_stripped[:i]) for i in range(1, len(lower_stripped) + 1)):
+                    elif any(
+                        "<think>".startswith(lower_stripped[:i])
+                        for i in range(1, len(lower_stripped) + 1)
+                    ):
                         # Matches prefix of "<think>" (e.g. "<", "<th", etc.) — keep buffering
                         continue
                     else:
