@@ -38,18 +38,17 @@ async def check_rate_limit(identity: str, prefix: str, limit: int, window: int) 
     key = f"rl:{identity}:{prefix}"
 
     if _redis is not None:
-        cutoff = now - window
-        # Evict anything outside the window, record this request, count what's
-        # left. Not wrapped in a Lua script/transaction — a rate limiter doesn't
-        # need perfect atomicity, and this keeps the fix minimal (a full
-        # aio-pika-style rewrite is Phase 2 material, see docs/tech-debt-log.md).
-        pipe = _redis.pipeline()
-        pipe.zremrangebyscore(key, 0, cutoff)
-        pipe.zadd(key, {f"{now}-{uuid.uuid4().hex}": now})
-        pipe.zcard(key)
-        pipe.expire(key, window)
-        _, _, count, _ = await pipe.execute()
-        return count <= limit
+        try:
+            cutoff = now - window
+            pipe = _redis.pipeline()
+            pipe.zremrangebyscore(key, 0, cutoff)
+            pipe.zadd(key, {f"{now}-{uuid.uuid4().hex}": now})
+            pipe.zcard(key)
+            pipe.expire(key, window)
+            _, _, count, _ = await pipe.execute()
+            return count <= limit
+        except Exception:
+            pass  # Fall back to in-memory counter if redis is offline or unreachable
 
     timestamps = [t for t in _local.get(key, []) if t > now - window]
     timestamps.append(now)
