@@ -6,7 +6,7 @@ import { ConversationList } from "@/components/ConversationList";
 import { Icon } from "@/components/Icon";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { useAppDispatch, useAppState } from "@/lib/store";
-import { fetchChatMessages, sendMessageStream, stripThinkTags, tagCommitment } from "@/lib/api";
+import { fetchChatMessages, sendMessageStream, stripThinkTags, tagCommitment, createGoal, fetchGoals } from "@/lib/api";
 import type { ChatMessage } from "@/lib/types";
 import { startAudioRecording, playTextToSpeech, stopCurrentSpeech, type ActiveRecording } from "@/lib/voice";
 
@@ -158,18 +158,8 @@ function collectParagraphLines(lines: string[], startIndex: number) {
   return { paragraphLines, nextIndex: index };
 }
 
-function stripThinkingTags(content: string): string {
-  if (!content) return "";
-  return content
-    .replace(/<think>[\s\S]*?<\/think>/gi, "")
-    .replace(/<think>[\s\S]*$/gi, "")
-    .replace(/^[\s\S]*?<\/think>/gi, "")
-    .trim();
-}
-
 function parseMentorBlocks(content: string): MentorBlock[] {
-  const cleanedContent = stripThinkingTags(content);
-  const lines = cleanedContent.split("\n");
+  const lines = content.split("\n");
   const blocks: MentorBlock[] = [];
   let i = 0;
 
@@ -460,9 +450,8 @@ export default function ChatPage() {
   }
 
   async function handleTagCommitment() {
-    if (!chatSessionId || !activeGoalId || chatMessages.length === 0) {
-      // Maybe show a notification to the user that they need to select a goal first.
-      console.error("Cannot tag commitment without a session, active goal, and a message.");
+    if (!chatSessionId || chatMessages.length === 0) {
+      console.error("Cannot tag commitment without a chat session and messages.");
       return;
     }
     const lastMessage = chatMessages[chatMessages.length - 1];
@@ -470,12 +459,35 @@ export default function ChatPage() {
       return;
     }
 
+    let targetGoalId = activeGoalId;
+    if (!targetGoalId) {
+      try {
+        const goals = await fetchGoals();
+        if (goals && goals.length > 0) {
+          targetGoalId = goals[0].id;
+        } else {
+          const newGoal = await createGoal({
+            title: "Build Business Emergency Reserve",
+            description: "Target 10% daily reserve for operational cushion",
+          });
+          targetGoalId = newGoal.id;
+        }
+        dispatch({ type: "SET_ACTIVE_GOAL_ID", goalId: targetGoalId });
+      } catch (e) {
+        console.warn("Could not retrieve or create default goal:", e);
+      }
+    }
+
+    if (!targetGoalId) {
+      console.error("No active goal available to attach commitment to.");
+      return;
+    }
+
     try {
-      await tagCommitment(chatSessionId, lastMessage.id, activeGoalId);
+      await tagCommitment(chatSessionId, lastMessage.id, targetGoalId);
       setCommitmentTagged(true);
     } catch (error) {
       console.error("Failed to tag commitment:", error);
-      // Optional: show an error message to the user
     }
   }
 
