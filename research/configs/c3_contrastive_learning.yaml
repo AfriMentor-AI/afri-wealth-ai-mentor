@@ -8,11 +8,20 @@ experiment:
 
 model:
   base_model_id: "Qwen/Qwen2.5-7B-Instruct"
-  sft_checkpoint: "research/experiments/02_supervised_finetuning/checkpoints/final"
+  # Daniel's confirmed-canonical C2 checkpoint on HF Hub (2026-08-31 reconciliation,
+  # see docs/implementation/C5_1_final_evaluation.md) — PeftModel.from_pretrained
+  # resolves a Hub repo ID the same way it resolves a local path.
+  sft_checkpoint: "Danleon56/chioma-sft-v1"
   adapter_type: "dpo"
   output_dir: "research/experiments/03_contrastive_learning/checkpoints"
-  hub_repo: "afrimentor/chioma-dpo-v1"
+  hub_repo: "AfriMentor/chioma-dpo-v1"
 
+# Currently unused by run.py: DPO continues training sft_checkpoint's existing
+# LoRA adapter directly rather than creating a fresh one (see run.py's DPOTrainer
+# comment — passing a peft_config alongside an already-loaded PeftModel makes
+# trl merge_and_unload() first, unsupported on a 4-bit quantized base). Left
+# here as a record of the originally-intended hyperparameters, not dead weight
+# to silently delete, in case a fresh-adapter DPO variant is wanted later.
 lora:
   r: 16
   lora_alpha: 32
@@ -23,7 +32,9 @@ lora:
 
 quantization:
   load_in_4bit: true
-  bnb_4bit_compute_dtype: "bfloat16"
+  # float16, not bfloat16: BF16 tensor-core acceleration needs Ampere (SM 8.0+);
+  # a T4 (Turing, SM 7.5) hits `ValueError: doesn't support bf16` at Trainer init.
+  bnb_4bit_compute_dtype: "float16"
   bnb_4bit_quant_type: "nf4"
   bnb_4bit_use_double_quant: true
 
@@ -42,7 +53,8 @@ training:
   learning_rate: 5.0e-5
   lr_scheduler_type: "cosine"
   warmup_ratio: 0.05
-  bf16: true
+  fp16: true
+  bf16: false
   logging_steps: 10
   eval_steps: 50
   save_steps: 100

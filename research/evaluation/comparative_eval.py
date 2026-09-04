@@ -20,6 +20,7 @@ _RESEARCH_ROOT = Path(__file__).resolve().parents[1]
 if str(_RESEARCH_ROOT) not in sys.path:
     sys.path.insert(0, str(_RESEARCH_ROOT))
 
+from evaluation.checkpoint_eval import avg_scores as _avg_scores
 from evaluation.checkpoint_eval import load_eval_samples, render_system_prompt
 from evaluation.metrics import evaluate_response
 
@@ -67,11 +68,10 @@ C4_ESTIMATED = {
 }
 
 
-def _avg_scores(rows: list[dict]) -> dict:
-    if not rows:
-        return {}
-    keys = [k for k, v in rows[0].items() if isinstance(v, (int, float))]
-    return {k: sum(r[k] for r in rows) / len(rows) for k in keys}
+# _avg_scores is checkpoint_eval.avg_scores (imported above): rows where the
+# LLM judge failed (metrics.py's "judge_failed" metadata) get excluded
+# instead of silently averaged in as zeros — reused here instead of
+# duplicating that logic, so the fix applies uniformly to C1-C4.
 
 
 def _run_c1_live(samples: list[dict], api_key: str) -> list[dict]:
@@ -193,7 +193,7 @@ def run(sample_size: int = 5, output_path: str | Path = DEFAULT_OUTPUT,
         c3_rows = None
         try:
             c3_rows = _run_checkpoint_condition(
-                "C3", "Qwen/Qwen2.5-7B-Instruct", "afrimentor/chioma-dpo-v1", samples)
+                "C3", "Qwen/Qwen2.5-7B-Instruct", "AfriMentor/chioma-dpo-v1", samples)
         except Exception as e:
             logger.warning("C3 adapter unavailable: %s", e)
         if c3_rows:
@@ -210,7 +210,7 @@ def run(sample_size: int = 5, output_path: str | Path = DEFAULT_OUTPUT,
         c4_rows = None
         try:
             c4_rows = _run_checkpoint_condition(
-                "C4", "Qwen/Qwen2.5-7B-Instruct", "afrimentor/chioma-rlhf-v1", samples)
+                "C4", "Qwen/Qwen2.5-7B-Instruct", "AfriMentor/chioma-rlhf-v1", samples)
         except Exception as e:
             logger.warning("C4 adapter unavailable: %s", e)
         if c4_rows:

@@ -264,13 +264,17 @@ def run_dpo(cfg: dict, probe=None) -> tuple[str | None, dict]:
     # Quantization config
     bnb_config = BitsAndBytesConfig(
         load_in_4bit=bnb_cfg["load_in_4bit"],
-        bnb_4bit_compute_dtype=torch.bfloat16,
+        bnb_4bit_compute_dtype=getattr(torch, bnb_cfg["bnb_4bit_compute_dtype"]),
         bnb_4bit_quant_type=bnb_cfg["bnb_4bit_quant_type"],
         bnb_4bit_use_double_quant=bnb_cfg["bnb_4bit_use_double_quant"],
     )
 
-    # Load base model + prior checkpoint (C3 DPO adapter)
-    prior_ckpt = _resolve(model_cfg["prior_checkpoint"])
+    # Load base model + prior checkpoint (C3 DPO adapter). prior_checkpoint may
+    # be a local path or a HF Hub repo ID — PeftModel.from_pretrained resolves
+    # either the same way, so try it directly rather than pre-checking a local
+    # Path.exists() (which would always be False for a Hub ID like
+    # "AfriMentor/chioma-dpo-v1", silently skipping the warm-start).
+    prior_ref = model_cfg["prior_checkpoint"]
     base_model_id = model_cfg["base_model_id"]
 
     base_model = AutoModelForCausalLM.from_pretrained(
@@ -279,12 +283,16 @@ def run_dpo(cfg: dict, probe=None) -> tuple[str | None, dict]:
         device_map="auto",
     )
 
-    if prior_ckpt.exists():
-        logger.info("Warm-starting from C3 DPO adapter: %s", prior_ckpt)
-        model = PeftModel.from_pretrained(base_model, str(prior_ckpt))
-    else:
+    try:
+        # is_trainable=True: from_pretrained defaults to inference mode
+        # (requires_grad=False on every adapter param) otherwise — same bug
+        # 03_contrastive_learning/run.py hit before this was added there.
+        model = PeftModel.from_pretrained(base_model, prior_ref, is_trainable=True)
+        logger.info("Warm-started from prior checkpoint: %s", prior_ref)
+    except Exception as e:
         logger.warning(
-            "C3 DPO adapter not found at %s — DPO starts from base model.", prior_ckpt
+            "Prior checkpoint %s unavailable (%s) — DPO starts from base model.",
+            prior_ref, e,
         )
         model = base_model
 
@@ -308,6 +316,14 @@ def run_dpo(cfg: dict, probe=None) -> tuple[str | None, dict]:
     dataset = load_dataset("json", data_files=data_files)
 
     output_dir = _resolve(model_cfg["output_dir"])
+
+    # Same gap as 03_contrastive_learning: no prepare_model_for_kbit_training
+    # call means gradient checkpointing isn't on by default, but its recompute
+    # doesn't reliably match shapes when device_map="auto" shards the model
+    # across multiple GPUs (confirmed live: CheckpointError: Recomputed
+    # values ... have different metadata) — only safe on a single GPU.
+    use_grad_checkpointing = torch.cuda.device_count() <= 1
+
     dpo_config = DPOConfig(
         output_dir=str(output_dir),
         num_train_epochs=train_cfg["num_train_epochs"],
@@ -317,6 +333,9 @@ def run_dpo(cfg: dict, probe=None) -> tuple[str | None, dict]:
         lr_scheduler_type=train_cfg["lr_scheduler_type"],
         warmup_ratio=train_cfg["warmup_ratio"],
         bf16=train_cfg["bf16"],
+        fp16=train_cfg["fp16"],
+        gradient_checkpointing=use_grad_checkpointing,
+        gradient_checkpointing_kwargs={"use_reentrant": False} if use_grad_checkpointing else None,
         logging_steps=train_cfg["logging_steps"],
         eval_steps=train_cfg["eval_steps"] if has_val else None,
         eval_strategy="steps" if has_val else "no",
@@ -329,13 +348,21 @@ def run_dpo(cfg: dict, probe=None) -> tuple[str | None, dict]:
         report_to="none",
     )
 
+    # peft_config only when `model` is still the plain base model (warm-start
+    # unavailable): trl would create a fresh adapter via get_peft_model for
+    # that case, which is needed since otherwise nothing would be trainable.
+    # When warm-started, `model` is already a PeftModel with is_trainable=True
+    # — passing peft_config too would make trl call merge_and_unload() first,
+    # unsupported on this 4-bit quantized base (same issue fixed in
+    # 03_contrastive_learning/run.py, confirmed via trl source).
+    is_warm_started = isinstance(model, PeftModel)
     trainer = DPOTrainer(
         model=model,
         args=dpo_config,
         train_dataset=dataset["train"],
         eval_dataset=dataset["validation"] if has_val else None,
-        tokenizer=tokenizer,
-        peft_config=lora_config,
+        processing_class=tokenizer,
+        peft_config=None if is_warm_started else lora_config,
     )
 
     trainer.train()

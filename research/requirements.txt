@@ -27,7 +27,11 @@ datasets==3.2.0         # HuggingFace datasets for preference data
 
 # ── Data handling ─────────────────────────────────────────────────────────────
 pandas==2.2.3
-numpy==1.26.4
+# Range, not an exact pin: 1.26.4 has no prebuilt wheel on Python 3.13 (e.g. a
+# fresh Colab GPU node), forcing a slow, disconnect-prone source build. Kept
+# under 2.2 since that's as far as pandas==2.2.3/scikit-learn==1.6.1 etc. above
+# were verified against.
+numpy>=1.26,<2.2
 pyyaml==6.0.2
 
 # ── Notebooks ─────────────────────────────────────────────────────────────────

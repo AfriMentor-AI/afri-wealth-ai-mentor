@@ -22,10 +22,12 @@ experiment:
 
 model:
   base_model_id: "Qwen/Qwen2.5-7B-Instruct"
-  # Warm-start from the C3 DPO checkpoint if available; otherwise uses base model.
-  prior_checkpoint: "research/experiments/03_contrastive_learning/checkpoints/final"
+  # C3's real, published checkpoint (trained + pushed 2026-09-01, see
+  # docs/implementation/C5_1_final_evaluation.md). Warm-starts if reachable;
+  # falls back to the base model otherwise (run.py's run_dpo try/except).
+  prior_checkpoint: "AfriMentor/chioma-dpo-v1"
   output_dir: "research/experiments/04_rlhf_preference_opt/checkpoints"
-  hub_repo: "afrimentor/chioma-rlhf-v1"
+  hub_repo: "AfriMentor/chioma-rlhf-v1"
 
 reward_model:
   # Preference datasets — expanded to 50/12/10 pairs in this sprint.
@@ -92,7 +94,9 @@ lora:
 
 quantization:
   load_in_4bit: true
-  bnb_4bit_compute_dtype: "bfloat16"
+  # float16, not bfloat16: BF16 tensor-core acceleration needs Ampere (SM 8.0+);
+  # a T4 (Turing, SM 7.5) hits `ValueError: doesn't support bf16` at Trainer init.
+  bnb_4bit_compute_dtype: "float16"
   bnb_4bit_quant_type: "nf4"
   bnb_4bit_use_double_quant: true
 
@@ -103,7 +107,8 @@ training:
   learning_rate: 5.0e-5
   lr_scheduler_type: "cosine"
   warmup_ratio: 0.05
-  bf16: true
+  fp16: true
+  bf16: false
   logging_steps: 10
   eval_steps: 50
   save_steps: 100
