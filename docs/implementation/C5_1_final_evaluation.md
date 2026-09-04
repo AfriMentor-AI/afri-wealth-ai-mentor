@@ -339,20 +339,49 @@ C3 (`AfriMentor/chioma-dpo-v1`, composite 0.598), C4
 C2→C3→C4 improvement curve, consistent with what the alignment pipeline is
 supposed to do at each stage.
 
+## First real 4-condition comparative_eval.py run (2026-09-01)
+
+With C2/C3/C4 all real HF Hub checkpoints, `comparative_eval.py --sample-size
+5` was run for the first time ever producing **live, non-fallback results for
+all four conditions in one reproducible pass** — same harness, same held-out
+samples, same judge, confirming the eval-harness fix (above) behaves
+correctly in the full pipeline, not just the offline test suite:
+
+| Condition | Composite | Source |
+| :--- | :---: | :--- |
+| C1 | 0.697 | `live_groq` |
+| C2 | 0.585 | `live_hf_adapter` (`Danleon56/chioma-sft-v1`) |
+| C3 | 0.589 | `live_hf_adapter` (`AfriMentor/chioma-dpo-v1`) |
+| C4 | 0.616 | `live_hf_adapter` (`AfriMentor/chioma-rlhf-v1`) |
+
+This is the first time C2 has been live-measured through this exact
+pipeline rather than relying on Daniel's originally recorded 0.476 — a
+different number (5-sample set here vs. his larger held-out split there),
+not a contradiction, just a second independent measurement of the same
+checkpoint. C3/C4 land close to their individual-script measurements
+(0.598/0.632), small-N variance accounted for.
+
+`human_eval_sampler.py` then built the blinded rating packet from this run:
+**20 samples, all 4 conditions ratable** (`rating_packet.csv` +
+`rating_key.json`, both downloaded from Kaggle; `comparative_results.json`
+kept alongside as the audit trail). Handed off to human raters — **not
+something this session can do itself**.
+
 ## What's still blocking a real C5.1 completion
 
-1. ~~The eval-harness silent-zero-dilution gap~~ — **fixed** (above).
-   Worth re-verifying on the next `comparative_eval.py` run that it behaves
-   as expected in the full pipeline, not just the offline test suite.
-2. **A real human-evaluation panel.** `human_eval_rubric.md` and the
-   sampler/aggregator are ready to use the moment `comparative_eval.py` has
-   produced ratable text for a condition — but actual human raters (2+ per
-   sample) need to do the rating.
+1. ~~The eval-harness silent-zero-dilution gap~~ — **fixed and verified**
+   (above) in the actual 4-condition pipeline, not just offline tests.
+2. **The human-evaluation panel itself.** The blinded packet exists and is
+   with raters (Grace's field team or another qualified reviewer per
+   `human_eval_rubric.md` — informal-sector/micro-enterprise familiarity in
+   Nigeria/Ghana/Kenya). Need 2+ completed `rating_packet.csv` copies back,
+   then `human_eval_aggregate.py rater1.csv rater2.csv` (pure CSV/JSON, runs
+   locally, no GPU/API needed) to produce `human_eval_results.json`.
 3. **G3.4** (a listed dependency for this card) does not exist anywhere in
    this repository — no commit, doc, or card with a "G" prefix. Treated as
    external/not blocking per product-owner direction, but worth confirming
    its actual status doesn't reintroduce a real dependency later.
-4. Once 1-3 are addressed, re-run `freeze_results.py --version v2 --tag` — it
+4. Once 2-3 are addressed, re-run `freeze_results.py --version v2 --tag` — it
    will only report `PUBLICATION_READY` when every condition is genuinely
    measured and rated, which is the actual bar this card's acceptance
    criterion sets.
