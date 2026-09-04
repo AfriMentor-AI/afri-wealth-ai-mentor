@@ -700,7 +700,7 @@ export default function ChatPage() {
         <button
           type="button"
           aria-label="Send message"
-          onClick={send}
+          onClick={() => send()}
           disabled={!chatDraft.trim() || isTyping || streamingContent !== null || isRecording || isTranscribing}
           className="tap-target flex items-center justify-center rounded-full bg-primary text-on-primary disabled:opacity-40"
         >

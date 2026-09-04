@@ -225,6 +225,7 @@ function toGoal(g: BackendGoal): Goal {
     id: g.id,
     userId: g.user_id,
     title: g.title,
+    description: g.description ?? undefined,
     progressPct: g.progress_pct,
     deadline: g.deadline ?? undefined,
     createdAt: g.created_at,
@@ -302,10 +303,18 @@ export async function fetchGoalById(goalId: string): Promise<Goal | undefined> {
 }
 
 /** POST /api/v1/goals */
-export async function createGoal(input: { title: string; deadline?: string }): Promise<Goal> {
+export async function createGoal(input: {
+  title: string;
+  description?: string;
+  deadline?: string;
+}): Promise<Goal> {
   const res = await apiFetch("/api/v1/goals", {
     method: "POST",
-    body: JSON.stringify({ title: input.title, deadline: input.deadline ?? null }),
+    body: JSON.stringify({
+      title: input.title,
+      description: input.description ?? null,
+      deadline: input.deadline ?? null,
+    }),
   });
   if (!res.ok) throw new Error(`createGoal failed: ${res.status}`);
   return toGoal(await res.json());

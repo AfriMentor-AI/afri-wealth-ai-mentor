@@ -198,11 +198,16 @@ export async function completeMilestone(milestoneId: string): Promise<Milestone 
   return resolveAfterLatency(updated);
 }
 
-export async function createGoal(input: { title: string; deadline?: string }): Promise<Goal> {
+export async function createGoal(input: {
+  title: string;
+  description?: string;
+  deadline?: string;
+}): Promise<Goal> {
   const goal: Goal = {
     id: `goal-${Date.now()}`,
     userId: mockUser.id,
     title: input.title,
+    description: input.description,
     progressPct: 0,
     deadline: input.deadline,
     createdAt: new Date().toISOString(),

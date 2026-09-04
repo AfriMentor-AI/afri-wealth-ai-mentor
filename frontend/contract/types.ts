@@ -105,6 +105,7 @@ export interface Goal {
   id: ID;
   userId: ID;
   title: string;
+  description?: string;
   /** Server-computed from this goal's milestones — the client should
    * treat this as read-only, never derive/send it. */
   progressPct: number;
