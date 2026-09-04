@@ -633,10 +633,12 @@ export async function recordAction(
   const data = await res.json();
   return {
     streak: toStreakStat(data.streak),
-    newlyEarnedBadges: (data.newly_earned_badges || []).map((b: any) => ({
-      badgeId: b.badge_id,
-      label: b.label,
-    })),
+    newlyEarnedBadges: (data.newly_earned_badges || []).map(
+      (b: { badge_id: string; label: string }) => ({
+        badgeId: b.badge_id,
+        label: b.label,
+      })
+    ),
   };
 }
 
