@@ -5,8 +5,8 @@ export * from "./mockApi";
 export * from "./voice";
 
 import { apiFetch, getCurrentUserId } from "./session";
-import type { ChatMessage, Commitment, Goal, Milestone, Profile } from "./types";
-import { mockProfile } from "./mockData";
+import type { ChatMessage, Commitment, Goal, Milestone, Profile, StreakStat, BadgeWithStatus, InsightItem } from "./types";
+import { mockProfile, mockInsights } from "./mockData";
 
 interface BackendMessage {
   id: string;
@@ -483,4 +483,224 @@ export async function fetchProfile(): Promise<Profile> {
   }
   return mockProfile;
 }
+
+// ---------------------------------------------------------------------------
+// Progress & Gamification (progress-gamification-service)
+// ---------------------------------------------------------------------------
+
+interface BackendStreak {
+  user_id: string;
+  current_streak_days: number;
+  longest_streak_days: number;
+  actions_completed_total: number;
+  updated_at: string;
+}
+
+function toStreakStat(b: BackendStreak): StreakStat {
+  return {
+    userId: b.user_id,
+    currentStreakDays: b.current_streak_days,
+    longestStreakDays: b.longest_streak_days,
+    actionsCompletedTotal: b.actions_completed_total,
+    updatedAt: b.updated_at,
+  };
+}
+
+interface BackendBadge {
+  id: string;
+  label: string;
+  description: string;
+  icon_name: string;
+  earned_at: string | null;
+}
+
+function toBadgeWithStatus(b: BackendBadge): BadgeWithStatus {
+  return {
+    id: b.id,
+    label: b.label,
+    description: b.description,
+    iconName: b.icon_name,
+    earnedAt: b.earned_at,
+  };
+}
+
+export interface BackendHeatmapDay {
+  date: string;
+  count: number;
+}
+
+interface BackendProgressSummary {
+  streak: BackendStreak;
+  heatmap: BackendHeatmapDay[];
+  badges: BackendBadge[];
+}
+
+/** GET /api/v1/progress - fetches summary in 1 call */
+export async function fetchProgressSummary(): Promise<{
+  streak: StreakStat;
+  badges: BadgeWithStatus[];
+  heatmap: BackendHeatmapDay[];
+}> {
+  try {
+    const res = await apiFetch("/api/v1/progress");
+    if (res.ok) {
+      const data: BackendProgressSummary = await res.json();
+      return {
+        streak: toStreakStat(data.streak),
+        badges: (data.badges || []).map(toBadgeWithStatus),
+        heatmap: data.heatmap || [],
+      };
+    }
+  } catch (err) {
+    console.warn("fetchProgressSummary error:", err);
+  }
+  const userId = await getCurrentUserId();
+  return {
+    streak: {
+      userId,
+      currentStreakDays: 0,
+      longestStreakDays: 0,
+      actionsCompletedTotal: 0,
+      updatedAt: new Date().toISOString(),
+    },
+    badges: [],
+    heatmap: [],
+  };
+}
+
+/** GET /api/v1/progress/streak */
+export async function fetchStreak(): Promise<StreakStat> {
+  try {
+    const res = await apiFetch("/api/v1/progress/streak");
+    if (res.ok) {
+      const data: BackendStreak = await res.json();
+      return toStreakStat(data);
+    }
+  } catch (err) {
+    console.warn("fetchStreak error, fallback to default:", err);
+  }
+  const userId = await getCurrentUserId();
+  return {
+    userId,
+    currentStreakDays: 0,
+    longestStreakDays: 0,
+    actionsCompletedTotal: 0,
+    updatedAt: new Date().toISOString(),
+  };
+}
+
+/** GET /api/v1/progress/badges */
+export async function fetchBadges(): Promise<BadgeWithStatus[]> {
+  try {
+    const res = await apiFetch("/api/v1/progress/badges");
+    if (res.ok) {
+      const data: BackendBadge[] = await res.json();
+      return data.map(toBadgeWithStatus);
+    }
+  } catch (err) {
+    console.warn("fetchBadges error:", err);
+  }
+  return [];
+}
+
+/** GET /api/v1/progress/heatmap */
+export async function fetchHeatmap(): Promise<BackendHeatmapDay[]> {
+  try {
+    const res = await apiFetch("/api/v1/progress/heatmap");
+    if (res.ok) {
+      return await res.json();
+    }
+  } catch (err) {
+    console.warn("fetchHeatmap error:", err);
+  }
+  return [];
+}
+
+/** POST /api/v1/progress/actions */
+export async function recordAction(
+  kind: "daily_action" | "insight_completed" | "savings_goal_met" = "daily_action"
+): Promise<{
+  streak: StreakStat;
+  newlyEarnedBadges: Array<{ badgeId: string; label: string }>;
+}> {
+  const res = await apiFetch("/api/v1/progress/actions", {
+    method: "POST",
+    body: JSON.stringify({ kind }),
+  });
+  if (!res.ok) {
+    throw new Error(`recordAction failed: ${res.status}`);
+  }
+  const data = await res.json();
+  return {
+    streak: toStreakStat(data.streak),
+    newlyEarnedBadges: (data.newly_earned_badges || []).map((b: any) => ({
+      badgeId: b.badge_id,
+      label: b.label,
+    })),
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Insight Library (insight-library-service)
+// ---------------------------------------------------------------------------
+
+export interface BackendInsightItem {
+  id: string;
+  title: string;
+  summary: string;
+  category: string;
+  duration_minutes: number;
+  is_audio: boolean;
+  media_url: string | null;
+  created_at: string;
+  is_favorited: boolean;
+}
+
+function toInsightItem(b: BackendInsightItem): InsightItem {
+  return {
+    id: b.id,
+    title: b.title,
+    summary: b.summary,
+    category: b.category,
+    durationMinutes: b.duration_minutes,
+    isAudio: b.is_audio,
+    mediaUrl: b.media_url ?? undefined,
+    createdAt: b.created_at,
+  };
+}
+
+/** GET /api/v1/insights */
+export async function fetchInsights(options?: {
+  search?: string;
+  category?: string;
+  isAudio?: boolean;
+}): Promise<InsightItem[]> {
+  try {
+    const params = new URLSearchParams();
+    if (options?.search) params.set("search", options.search);
+    if (options?.category) params.set("category", options.category);
+    if (options?.isAudio !== undefined) params.set("is_audio", String(options.isAudio));
+
+    const query = params.toString() ? `?${params.toString()}` : "";
+    const res = await apiFetch(`/api/v1/insights${query}`);
+    if (res.ok) {
+      const data: BackendInsightItem[] = await res.json();
+      return data.map(toInsightItem);
+    }
+  } catch (err) {
+    console.warn("fetchInsights error, fallback to mock:", err);
+  }
+  return mockInsights;
+}
+
+/** POST or DELETE /api/v1/insights/{insightId}/favorite */
+export async function toggleInsightFavorite(insightId: string, shouldFavorite: boolean): Promise<boolean> {
+  const method = shouldFavorite ? "POST" : "DELETE";
+  let res = await apiFetch(`/api/v1/insights/${insightId}/favorite`, { method });
+  if (!res.ok && res.status === 404) {
+    res = await apiFetch(`/api/v1/insights/${insightId}/bookmark`, { method });
+  }
+  return res.ok;
+}
+
 

@@ -105,6 +105,9 @@ def create_insight(
 @router.post(
     "/{insight_id}/bookmark", status_code=status.HTTP_204_NO_CONTENT, response_class=Response
 )
+@router.post(
+    "/{insight_id}/favorite", status_code=status.HTTP_204_NO_CONTENT, response_class=Response
+)
 def bookmark_insight(
     insight_id: str,
     user_id: str = Depends(_get_user),
@@ -123,6 +126,9 @@ def bookmark_insight(
 @router.delete(
     "/{insight_id}/bookmark", status_code=status.HTTP_204_NO_CONTENT, response_class=Response
 )
+@router.delete(
+    "/{insight_id}/favorite", status_code=status.HTTP_204_NO_CONTENT, response_class=Response
+)
 def unbookmark_insight(
     insight_id: str,
     user_id: str = Depends(_get_user),
@@ -133,3 +139,4 @@ def unbookmark_insight(
         db.delete(existing)
         db.commit()
     return Response(status_code=status.HTTP_204_NO_CONTENT)
+

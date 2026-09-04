@@ -108,6 +108,7 @@ def get_progress_summary(
 
 
 @router.get("/streak", response_model=StreakStatResponse)
+@router.get("/streaks", response_model=StreakStatResponse)
 def get_streak(
     user_id: str = Depends(_get_user),
     db: Session = Depends(get_db),
@@ -121,6 +122,16 @@ def list_badges(
     db: Session = Depends(get_db),
 ) -> list[BadgeWithStatus]:
     return _badges_response(db, user_id)
+
+
+@router.get("/heatmap", response_model=list[HeatmapDay])
+def get_heatmap(
+    user_id: str = Depends(_get_user),
+    db: Session = Depends(get_db),
+) -> list[HeatmapDay]:
+    dates = get_action_dates(db, user_id)
+    heatmap = build_heatmap(dates, window_days=settings.heatmap_window_days)
+    return [HeatmapDay(**d) for d in heatmap]
 
 
 @router.post("/actions", response_model=ActionRecordResponse, status_code=status.HTTP_201_CREATED)

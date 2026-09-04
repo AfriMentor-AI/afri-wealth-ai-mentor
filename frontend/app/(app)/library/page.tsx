@@ -2,10 +2,11 @@
 
 import { useEffect, useState } from "react";
 import { Icon } from "@/components/Icon";
-import { fetchInsights } from "@/lib/api";
+import { fetchInsights, toggleInsightFavorite } from "@/lib/api";
 import type { InsightItem } from "@/lib/types";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { useAppDispatch, useAppState } from "@/lib/store";
+import { InsightReaderModal } from "@/components/InsightReaderModal";
 
 const FILTERS = [
   { label: "Sector", icon: "expand_more" },
@@ -20,13 +21,18 @@ function InsightCard({
   item,
   isFavorite,
   onToggleFavorite,
+  onOpen,
 }: {
   item: InsightItem;
   isFavorite: boolean;
   onToggleFavorite: () => void;
+  onOpen: () => void;
 }) {
   return (
-    <div className="group relative flex flex-col gap-sm rounded border border-outline-variant/30 bg-surface-container-low p-md transition-all duration-300 hover:border-primary/30 md:rounded-xl md:p-lg">
+    <div
+      onClick={onOpen}
+      className="group relative flex cursor-pointer flex-col gap-sm rounded border border-outline-variant/30 bg-surface-container-low p-md transition-all duration-300 hover:border-primary/40 hover:shadow-md active:scale-[0.99] md:rounded-xl md:p-lg"
+    >
       <div className="flex items-start justify-between">
         <div className="flex flex-col gap-xs">
           <span className="inline-flex w-fit items-center gap-xs rounded-full bg-secondary-container px-sm py-1 text-[10px] font-bold uppercase tracking-wider text-on-secondary-container">
@@ -36,8 +42,12 @@ function InsightCard({
           <h3 className="font-title-md text-title-md pt-xs leading-tight text-on-surface">{item.title}</h3>
         </div>
         <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onOpen();
+          }}
           aria-label={item.isAudio ? "Play audio insight" : "Read article"}
-          className="rounded-full bg-primary/10 p-sm text-primary"
+          className="rounded-full bg-primary/10 p-sm text-primary transition-transform hover:scale-110 active:scale-95"
         >
           <Icon name={item.isAudio ? "play_circle" : "menu_book"} filled={item.isAudio} />
         </button>
@@ -53,8 +63,11 @@ function InsightCard({
         </div>
         <button
           aria-label={isFavorite ? "Remove from favorites" : "Save to favorites"}
-          onClick={onToggleFavorite}
-          className="tap-target ml-auto flex items-center justify-center rounded-full text-primary"
+          onClick={(e) => {
+            e.stopPropagation();
+            onToggleFavorite();
+          }}
+          className="tap-target ml-auto flex items-center justify-center rounded-full text-primary transition-transform hover:scale-110 active:scale-95"
         >
           <Icon name="favorite" filled={isFavorite} size={18} />
         </button>
@@ -67,8 +80,10 @@ export default function InsightLibraryPage() {
   const { libraryFavorites } = useAppState();
   const dispatch = useAppDispatch();
   const [insights, setInsights] = useState<InsightItem[] | null>(null);
+  const [selectedItem, setSelectedItem] = useState<InsightItem | null>(null);
   const [activeFilter, setActiveFilter] = useState("Sector");
   const [search, setSearch] = useState("");
+
 
   useEffect(() => {
     fetchInsights().then(setInsights);
@@ -83,7 +98,15 @@ export default function InsightLibraryPage() {
   const curated = filtered.slice(0, 2);
   const recommended = filtered.slice(2);
 
-  const toggleFavorite = (id: string) => dispatch({ type: "TOGGLE_LIBRARY_FAVORITE", id });
+  const toggleFavorite = async (id: string) => {
+    const isFav = libraryFavorites.has(id);
+    dispatch({ type: "TOGGLE_LIBRARY_FAVORITE", id });
+    try {
+      await toggleInsightFavorite(id, !isFav);
+    } catch (err) {
+      console.warn("Could not sync favorite to backend:", err);
+    }
+  };
 
   return (
     <main className="pb-24 pt-md md:flex md:min-h-full md:gap-lg md:px-lg md:pb-lg md:pt-lg">
@@ -159,6 +182,7 @@ export default function InsightLibraryPage() {
                     item={item}
                     isFavorite={libraryFavorites.has(item.id)}
                     onToggleFavorite={() => toggleFavorite(item.id)}
+                    onOpen={() => setSelectedItem(item)}
                   />
                 ))}
           </div>
@@ -174,7 +198,11 @@ export default function InsightLibraryPage() {
             {insights === null
               ? Array.from({ length: 2 }).map((_, i) => <Skeleton key={i} className="h-40 w-44 shrink-0 rounded" />)
               : recommended.map((item, i) => (
-                  <div key={item.id} className="w-44 shrink-0 overflow-hidden rounded border border-outline-variant/30 bg-surface-container-low">
+                  <div
+                    key={item.id}
+                    onClick={() => setSelectedItem(item)}
+                    className="w-44 shrink-0 cursor-pointer overflow-hidden rounded border border-outline-variant/30 bg-surface-container-low transition-all duration-300 hover:border-primary/40 active:scale-[0.98]"
+                  >
                     <div className="relative flex h-24 items-center justify-center bg-gradient-to-br from-primary-container to-secondary-container">
                       <Icon name={i === 0 ? "storefront" : "agriculture"} filled size={32} className="text-on-primary-container" />
                       <span className="absolute left-2 top-2 rounded-full bg-inverse-surface/80 px-sm py-[2px] text-[10px] font-bold text-inverse-on-surface">
@@ -199,11 +227,21 @@ export default function InsightLibraryPage() {
                     item={item}
                     isFavorite={libraryFavorites.has(item.id)}
                     onToggleFavorite={() => toggleFavorite(item.id)}
+                    onOpen={() => setSelectedItem(item)}
                   />
                 ))}
           </div>
         </section>
       </div>
+
+      {/* Interactive Reader & Audio Player Modal */}
+      <InsightReaderModal
+        item={selectedItem}
+        isFavorite={selectedItem ? libraryFavorites.has(selectedItem.id) : false}
+        onClose={() => setSelectedItem(null)}
+        onToggleFavorite={() => selectedItem && toggleFavorite(selectedItem.id)}
+      />
     </main>
   );
 }
+

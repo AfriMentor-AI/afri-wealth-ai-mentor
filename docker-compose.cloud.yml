@@ -101,6 +101,7 @@ services:
       DATABASE_URL: ${CHAT_DATABASE_URL:-${SUPABASE_DATABASE_URL}}
       PERSONA_SERVICE_URL: http://persona-prompt-service:8004
       RAG_SERVICE_URL: http://rag-corpus-service:8005
+      GOALS_SERVICE_URL: http://goals-milestones-service:8006
       RABBITMQ_URL: ${RABBITMQ_URL:-amqp://afrimentor:afrimentor@rabbitmq:5672/}
       LLM_API_KEY: ${LLM_API_KEY}
       LLM_BASE_URL: ${LLM_BASE_URL:-https://api.groq.com/openai/v1}
