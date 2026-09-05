@@ -274,6 +274,59 @@ export interface UserBadge {
  * `BadgeWithStatus` schema in openapi.yaml. */
 export type BadgeWithStatus = Badge & { earnedAt: ISODateTime | null };
 
+// ---------------------------------------------------------------------------
+// RAG Corpus (Knowledge & Retrieval)
+// ---------------------------------------------------------------------------
+
+export interface RagChunkMetadata {
+  title?: string;
+  author?: string;
+  sector?: string;
+  market?: string;
+  source_origin?: string;
+  channel?: string;
+  filename?: string;
+  content_type?: string;
+  tier?: number;
+}
+
+export interface RagChunk {
+  chunk_id: string;
+  doc_id?: string;
+  content: string;
+  score: number;
+  metadata: RagChunkMetadata;
+  retrieval_method?: string;
+}
+
+export interface RagQueryResponse {
+  query: string;
+  results: RagChunk[];
+  total: number;
+}
+
+export interface RagCorpusStats {
+  documents: {
+    total: number;
+    total_chunks: number;
+    by_status: Record<string, number>;
+    by_country: Record<string, number>;
+    by_sector: Record<string, number>;
+    by_tier?: Record<string, number>;
+  };
+  vectors: {
+    active_count: number | null;
+    collection: string | null;
+    embedding_dim: number;
+  };
+  index_size: {
+    document_bytes: number;
+    vector_bytes: number | null;
+    total_bytes: number | null;
+  };
+  latency_ms?: Record<string, number>;
+}
+
 /** One day's activity count — feeds the Progress Board's action heatmap.
  * Mirrors progress-gamification-service's `HeatmapDay` schema. */
 export interface HeatmapDay {
