@@ -257,6 +257,8 @@ services:
     environment:
       <<: *svc-env
       DATABASE_URL: postgresql+psycopg://afrimentor:afrimentor@postgres:5432/svc_rag
+      QDRANT_URL: ${QDRANT_URL:-}
+      QDRANT_API_KEY: ${QDRANT_API_KEY:-}
       CHROMA_URL: http://chromadb:8000
     depends_on:
       postgres: {condition: service_healthy}
