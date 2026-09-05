@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 import json, os, sys, urllib.request, urllib.error
 
-API_URL      = os.getenv("RAG_API_URL", "http://localhost:8005")
+API_URL      = os.getenv("RAG_API_URL", "http://127.0.0.1:8005")
 USER_ID      = "system-ingest-001"
 CORPUS_JSONL = "corpus/data/corpus.jsonl"
 
@@ -51,7 +51,7 @@ def ingest_record(record):
         method="POST",
     )
     try:
-        with urllib.request.urlopen(req, timeout=60) as resp:
+        with urllib.request.urlopen(req, timeout=600) as resp:
             return json.loads(resp.read())
     except urllib.error.HTTPError as e:
         print("  ERROR " + str(e.code) + ": " + e.read().decode())
@@ -60,14 +60,29 @@ def ingest_record(record):
         print("  ERROR: " + str(e))
         return {}
 
+def find_corpus_file():
+    candidates = [
+        os.getenv("CORPUS_JSONL", ""),
+        "corpus/data/corpus.jsonl",
+        "services/rag-corpus-service/corpus/data/corpus.jsonl",
+        "/app/corpus/data/corpus.jsonl",
+    ]
+    for c in candidates:
+        if c and os.path.exists(c):
+            return c
+    return "corpus/data/corpus.jsonl"
+
+
 def main():
-    if not os.path.exists(CORPUS_JSONL):
-        print("ERROR: " + CORPUS_JSONL + " not found.")
+    corpus_file = find_corpus_file()
+    if not os.path.exists(corpus_file):
+        print("ERROR: " + corpus_file + " not found.")
         sys.exit(1)
-    with open(CORPUS_JSONL, "r", encoding="utf-8") as f:
+    with open(corpus_file, "r", encoding="utf-8") as f:
         records = [json.loads(line) for line in f if line.strip()]
     print("AfriMentor RAG Corpus Ingestion")
     print("Target:  " + API_URL)
+    print("Corpus:  " + corpus_file)
     print("Records: " + str(len(records)))
     print()
     success, failed = 0, 0
@@ -84,11 +99,14 @@ def main():
             print("  OK — chunks=" + str(result["chunk_count"]) + "  id=" + result["id"])
             success += 1
         else:
+            err = result.get("error_message") or result.get("detail") or "Unknown error"
+            print(f"  FAILED — {err}")
             failed += 1
         print()
     print("=" * 50)
     print("Done: " + str(success) + " ingested / " + str(failed) + " failed / " + str(len(records)) + " total")
     sys.exit(0 if success == len(records) else 1)
+
 
 if __name__ == "__main__":
     main()

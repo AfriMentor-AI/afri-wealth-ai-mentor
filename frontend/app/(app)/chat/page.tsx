@@ -9,6 +9,8 @@ import { useAppDispatch, useAppState } from "@/lib/store";
 import { fetchChatMessages, sendMessageStream, stripThinkTags, tagCommitment, createGoal, fetchGoals } from "@/lib/api";
 import type { ChatMessage } from "@/lib/types";
 import { startAudioRecording, transcribeAudio, playTextToSpeech, stopCurrentSpeech, type ActiveRecording } from "@/lib/voice";
+import { CitationViewerModal } from "@/components/CitationViewerModal";
+
 
 function formatTime(iso: string) {
   return new Date(iso).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
@@ -315,7 +317,12 @@ export default function ChatPage() {
   const [showConversations, setShowConversations] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
   const [streamingContent, setStreamingContent] = useState<string | null>(null);
+  const [activeCitation, setActiveCitation] = useState<{
+    label: string;
+    messageContext: string;
+  } | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+
   const abortStreamRef = useRef<(() => void) | null>(null);
 
   function cleanTextForSpeech(text: string): string {
@@ -399,8 +406,8 @@ export default function ChatPage() {
     }
   }, [streamingContent]);
 
-  function send(customText?: string, autoPlayVoiceReply = false) {
-    const textToSend = (customText ?? chatDraft).trim();
+  function send(customText?: string | React.MouseEvent, autoPlayVoiceReply = false) {
+    const textToSend = (typeof customText === "string" ? customText : chatDraft).trim();
     if (!textToSend || !chatSessionId || isTyping) return;
 
     // Abort any in-flight stream before starting a new one
@@ -593,11 +600,25 @@ export default function ChatPage() {
                   <p className="font-body-md whitespace-pre-line">{m.content}</p>
                 )}
                 {m.citations && m.citations.length > 0 && (
-                  <div className="mt-sm inline-flex items-center gap-xs rounded-full border border-outline-variant bg-surface-container-highest px-sm py-xs">
-                    <Icon name="auto_stories" size={16} />
-                    <span className="font-label-sm text-[11px] text-on-surface-variant">{m.citations[0].label}</span>
-                  </div>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setActiveCitation({
+                        label: m.citations![0].label,
+                        messageContext: m.content,
+                      })
+                    }
+                    className="mt-sm inline-flex items-center gap-xs rounded-full border border-outline-variant bg-surface-container-highest px-sm py-xs text-left transition-all hover:border-primary/50 hover:bg-primary-container/30 active:scale-95 cursor-pointer shadow-xs"
+                    title="Click to view verified RAG knowledge source"
+                  >
+                    <Icon name="auto_stories" size={16} className="text-primary" />
+                    <span className="font-label-sm text-[11px] font-semibold text-on-surface">
+                      Based on {m.citations[0].label}
+                    </span>
+                    <Icon name="info" size={14} className="text-primary/70" />
+                  </button>
                 )}
+
               </div>
               <div className="mt-xs flex items-center gap-sm">
                 <span className="font-label-sm text-[10px] text-on-surface-variant">{formatTime(m.created_at)}</span>
@@ -701,7 +722,7 @@ export default function ChatPage() {
         <button
           type="button"
           aria-label="Send message"
-          onClick={send}
+          onClick={() => send()}
           disabled={!chatDraft.trim() || isTyping || streamingContent !== null || isRecording || isTranscribing}
           className="tap-target flex items-center justify-center rounded-full bg-primary text-on-primary disabled:opacity-40"
         >
@@ -709,6 +730,18 @@ export default function ChatPage() {
         </button>
       </div>
       </div>
+
+      {/* Citation / RAG Knowledge Viewer Modal */}
+      <CitationViewerModal
+        citationLabel={activeCitation?.label ?? null}
+        messageContext={activeCitation?.messageContext}
+        onClose={() => setActiveCitation(null)}
+        onAskFollowUp={(prompt) => {
+          setActiveCitation(null);
+          dispatch({ type: "SET_CHAT_DRAFT", draft: prompt });
+        }}
+      />
     </div>
   );
 }
+
