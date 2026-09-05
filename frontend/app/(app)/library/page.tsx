@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import { Icon } from "@/components/Icon";
 import { fetchInsights, toggleInsightFavorite, queryRag, fetchRagStats } from "@/lib/api";
 import type { InsightItem, RagChunk, RagCorpusStats } from "@/lib/types";

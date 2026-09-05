@@ -14,7 +14,6 @@ import type {
   StreakStat,
   BadgeWithStatus,
   InsightItem,
-  RagChunk,
   RagQueryResponse,
   RagCorpusStats,
 } from "./types";
@@ -733,7 +732,7 @@ export async function toggleInsightFavorite(insightId: string, shouldFavorite: b
 /** POST /api/v1/rag/query - retrieve relevant knowledge chunks for a query */
 export async function queryRag(
   queryText: string,
-  options?: { topK?: number; filters?: Record<string, any> }
+  options?: { topK?: number; filters?: Record<string, unknown> }
 ): Promise<RagQueryResponse> {
   try {
     const res = await apiFetch("/api/v1/rag/query", {

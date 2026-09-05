@@ -23,7 +23,9 @@ def get_embedding_fn():
 
 
 class QdrantCollectionAdapter:
-    """Adapts Qdrant REST API to ChromaDB collection interface with retries and connection pooling."""
+    """Adapts Qdrant REST API to ChromaDB collection interface with retries
+    and connection pooling.
+    """
 
     def __init__(self, name: str, url: str, api_key: str | None = None):
         self.name = name
@@ -252,7 +254,10 @@ def get_chroma_collection(collection_name: str = "afrimentor_corpus"):
             _cached_adapters[collection_name] = coll
             return coll
         except Exception as exc:
-            logger.warning("Remote Chroma connection failed: %s, falling back to persistent client", exc)
+            logger.warning(
+                "Remote Chroma connection failed: %s, falling back to persistent client",
+                exc,
+            )
 
     client = chromadb.PersistentClient(path=os.getenv("CHROMA_PERSIST_DIR", "/app/chroma_data"))
     coll = client.get_or_create_collection(
