@@ -5,7 +5,18 @@ export * from "./mockApi";
 export * from "./voice";
 
 import { apiFetch, getCurrentUserId } from "./session";
-import type { ChatMessage, Commitment, Goal, Milestone, Profile, StreakStat, BadgeWithStatus, InsightItem } from "./types";
+import type {
+  ChatMessage,
+  Commitment,
+  Goal,
+  Milestone,
+  Profile,
+  StreakStat,
+  BadgeWithStatus,
+  InsightItem,
+  RagQueryResponse,
+  RagCorpusStats,
+} from "./types";
 import { mockProfile, mockInsights } from "./mockData";
 
 interface BackendMessage {
@@ -714,3 +725,42 @@ export async function toggleInsightFavorite(insightId: string, shouldFavorite: b
   return res.ok;
 }
 
+// ---------------------------------------------------------------------------
+// RAG Corpus Service (rag-corpus-service, port 8005)
+// ---------------------------------------------------------------------------
+
+/** POST /api/v1/rag/query - retrieve relevant knowledge chunks for a query */
+export async function queryRag(
+  queryText: string,
+  options?: { topK?: number; filters?: Record<string, unknown> }
+): Promise<RagQueryResponse> {
+  try {
+    const res = await apiFetch("/api/v1/rag/query", {
+      method: "POST",
+      body: JSON.stringify({
+        query: queryText,
+        top_k: options?.topK ?? 4,
+        filters: options?.filters,
+      }),
+    });
+    if (res.ok) {
+      return await res.json();
+    }
+  } catch (err) {
+    console.warn("queryRag error, returning empty results:", err);
+  }
+  return { query: queryText, results: [], total: 0 };
+}
+
+/** GET /api/v1/rag/stats - fetch corpus and index telemetry */
+export async function fetchRagStats(): Promise<RagCorpusStats | null> {
+  try {
+    const res = await apiFetch("/api/v1/rag/stats");
+    if (res.ok) {
+      return await res.json();
+    }
+  } catch (err) {
+    console.warn("fetchRagStats error:", err);
+  }
+  return null;
+}
