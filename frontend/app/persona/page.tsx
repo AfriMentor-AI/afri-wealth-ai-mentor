@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { Icon } from "@/components/Icon";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { Button } from "@/components/ui/Button";
-import { fetchPersonas, startChatSession } from "@/lib/api";
+import { fetchPersonas, startChatSession, selectPersona } from "@/lib/api";
 import type { Persona } from "@/lib/types";
 import { useAppDispatch } from "@/lib/store";
 import { Skeleton } from "@/components/ui/Skeleton";
@@ -43,6 +43,10 @@ export default function PersonaSelectionPage() {
     try {
       const sessionId = await startChatSession(persona.id);
       dispatch({ type: "SET_CHAT_SESSION_ID", sessionId });
+      // Notify persona-prompt-service of the session binding
+      selectPersona(persona.id, sessionId).catch((err) =>
+        console.warn("selectPersona notice:", err)
+      );
       router.push("/chat");
     } catch (error) {
       console.error("Failed to start chat session:", error);

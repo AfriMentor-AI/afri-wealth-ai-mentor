@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Icon } from "./Icon";
 import { ThemeToggle } from "./ThemeToggle";
+import { NotificationPopover } from "./NotificationPopover";
 
 const tabs = [
   { href: "/chat", label: "Chat", icon: "chat_bubble" },
@@ -41,6 +42,7 @@ export function TopNav() {
         );
       })}
       <span aria-hidden className="mx-xs h-6 w-px shrink-0 bg-outline-variant" />
+      <NotificationPopover />
       <ThemeToggle />
     </nav>
   );
