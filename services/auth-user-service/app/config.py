@@ -15,8 +15,8 @@ class Settings(BaseModel):
     service_name: str = "auth-user-service"
     env: str = os.getenv("APP_ENV", "dev")
 
-    database_url: str = os.getenv(
-        "DATABASE_URL", "sqlite+pysqlite:///./auth_dev.db"
+    database_url: str = (
+        os.getenv("DATABASE_URL") or "sqlite+pysqlite:///./auth_dev.db"
     )
     redis_url: str = os.getenv("REDIS_URL", "")
 
