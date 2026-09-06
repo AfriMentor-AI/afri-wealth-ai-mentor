@@ -11,8 +11,8 @@ class Settings(BaseModel):
     service_name: str = "intake-profiling-service"
     env: str = os.getenv("APP_ENV", "dev")
 
-    database_url: str = os.getenv(
-        "DATABASE_URL", "sqlite+pysqlite:///./intake_dev.db"
+    database_url: str = (
+        os.getenv("DATABASE_URL") or "sqlite+pysqlite:///./intake_dev.db"
     )
 
 
