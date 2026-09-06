@@ -45,7 +45,7 @@ infra/keys/
 # Local pg_dump output from scripts/backup/backup-postgres.sh (card O4.5) —
 # real service data, never committed.
 /backups/
-
+/extracted_onnx
 # Audio data and uploads
 *.mp3
 *.wav

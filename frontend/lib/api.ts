@@ -16,8 +16,11 @@ import type {
   InsightItem,
   RagQueryResponse,
   RagCorpusStats,
+  Persona,
+  DailyAction,
+  FeedbackSurvey,
 } from "./types";
-import { mockProfile, mockInsights } from "./mockData";
+import { mockProfile, mockInsights, mockPersonas, mockDailyAction } from "./mockData";
 
 interface BackendMessage {
   id: string;
@@ -763,4 +766,228 @@ export async function fetchRagStats(): Promise<RagCorpusStats | null> {
     console.warn("fetchRagStats error:", err);
   }
   return null;
+}
+
+// ---------------------------------------------------------------------------
+// Persona Prompt Service (persona-prompt-service, port 8004)
+// ---------------------------------------------------------------------------
+
+export interface BackendPersonaMeta {
+  id: string;
+  slug: string;
+  display_name: string;
+  tagline: string;
+  sector_tags: string[];
+  template_file: string;
+  is_base: boolean;
+  status: "stable" | "beta";
+}
+
+function toPersona(b: BackendPersonaMeta): Persona {
+  return {
+    id: b.slug || b.id,
+    name: b.display_name,
+    tagline: b.tagline,
+    isRecommended: b.is_base || false,
+  };
+}
+
+/** GET /api/v1/personas - catalogue of mentor personas */
+export async function fetchPersonas(): Promise<Persona[]> {
+  try {
+    const res = await apiFetch("/api/v1/personas");
+    if (res.ok) {
+      const data: BackendPersonaMeta[] = await res.json();
+      if (data && data.length > 0) {
+        return data.map(toPersona);
+      }
+    }
+  } catch (err) {
+    console.warn("fetchPersonas error, fallback to mock:", err);
+  }
+  return mockPersonas;
+}
+
+/** POST /api/v1/personas/{personaId}/select - binds a persona to a chat session */
+export async function selectPersona(personaId: string, sessionId: string): Promise<boolean> {
+  try {
+    const res = await apiFetch(`/api/v1/personas/${personaId}/select`, {
+      method: "POST",
+      body: JSON.stringify({ session_id: sessionId }),
+    });
+    return res.ok;
+  } catch (err) {
+    console.warn("selectPersona error:", err);
+    return false;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Feedback Service (feedback-service, port 8009)
+// ---------------------------------------------------------------------------
+
+interface BackendFeedbackResponse {
+  id: string;
+  user_id: string;
+  nps_score: number;
+  comment: string | null;
+  voice_note_url: string | null;
+  trigger: string;
+  context_ref: string | null;
+  submitted_at: string;
+}
+
+/** POST /api/v1/feedback - submit user rating & comments */
+export async function submitFeedback(input: {
+  npsScore: number;
+  comment?: string;
+  voiceNoteUrl?: string;
+  trigger?: string;
+  contextRef?: string;
+}): Promise<FeedbackSurvey> {
+  const userId = await getCurrentUserId();
+  try {
+    const res = await apiFetch("/api/v1/feedback", {
+      method: "POST",
+      body: JSON.stringify({
+        nps_score: input.npsScore,
+        comment: input.comment ?? null,
+        voice_note_url: input.voiceNoteUrl ?? null,
+        trigger: input.trigger ?? "manual",
+        context_ref: input.contextRef ?? null,
+      }),
+    });
+    if (res.ok) {
+      const data: BackendFeedbackResponse = await res.json();
+      return {
+        id: data.id,
+        userId: data.user_id,
+        npsScore: data.nps_score,
+        comment: data.comment ?? undefined,
+        submittedAt: data.submitted_at,
+      };
+    }
+  } catch (err) {
+    console.warn("submitFeedback error, fallback to client survey:", err);
+  }
+  return {
+    id: `fb-${Date.now()}`,
+    userId,
+    npsScore: input.npsScore,
+    comment: input.comment,
+    submittedAt: new Date().toISOString(),
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Daily Action (chat-orchestration-service)
+// ---------------------------------------------------------------------------
+
+interface BackendDailyAction {
+  id: string;
+  user_id: string;
+  action_text: string;
+  is_completed: boolean;
+  created_at: string;
+}
+
+/** GET /api/v1/chat/daily-action - fetch user's personalized daily action */
+export async function fetchDailyAction(): Promise<DailyAction> {
+  try {
+    const res = await apiFetch("/api/v1/chat/daily-action");
+    if (res.ok) {
+      const data: BackendDailyAction = await res.json();
+      const dateStr = data.created_at ? data.created_at.split("T")[0] : new Date().toISOString().split("T")[0];
+      return {
+        id: data.id,
+        userId: data.user_id,
+        date: dateStr,
+        title: data.action_text,
+        description: data.action_text,
+        estimatedMinutes: 10,
+        linkedGoalId: "goal-daily",
+        done: data.is_completed,
+        createdAt: data.created_at,
+        updatedAt: data.created_at,
+      };
+    }
+  } catch (err) {
+    console.warn("fetchDailyAction error, fallback to mock:", err);
+  }
+  return mockDailyAction;
+}
+
+// ---------------------------------------------------------------------------
+// Notification Service (notification-service, port 8012)
+// ---------------------------------------------------------------------------
+
+export interface AppNotification {
+  id: string;
+  userId: string;
+  kind: string;
+  title: string;
+  body: string;
+  createdAt: string;
+  readAt: string | null;
+  deliveredAt: string;
+}
+
+interface BackendNotification {
+  id: string;
+  user_id: string;
+  kind: string;
+  title: string;
+  body: string;
+  created_at: string;
+  read_at: string | null;
+  delivered_at: string;
+}
+
+function toAppNotification(b: BackendNotification): AppNotification {
+  return {
+    id: b.id,
+    userId: b.user_id,
+    kind: b.kind,
+    title: b.title,
+    body: b.body,
+    createdAt: b.created_at,
+    readAt: b.read_at,
+    deliveredAt: b.delivered_at,
+  };
+}
+
+/** GET /api/v1/notifications - list notifications for current user */
+export async function fetchNotifications(): Promise<AppNotification[]> {
+  try {
+    const res = await apiFetch("/api/v1/notifications");
+    if (res.ok) {
+      const data: BackendNotification[] = await res.json();
+      return data.map(toAppNotification);
+    }
+  } catch (err) {
+    console.warn("fetchNotifications error:", err);
+  }
+  return [];
+}
+
+/** POST /api/v1/notifications/{id}/read - mark a notification as read */
+export async function markNotificationRead(notificationId: string): Promise<boolean> {
+  try {
+    const res = await apiFetch(`/api/v1/notifications/${notificationId}/read`, { method: "POST" });
+    return res.ok;
+  } catch (err) {
+    console.warn("markNotificationRead error:", err);
+    return false;
+  }
+}
+
+/** POST /api/v1/notifications/read-all - mark all unread notifications as read */
+export async function markAllNotificationsRead(): Promise<boolean> {
+  try {
+    const res = await apiFetch("/api/v1/notifications/read-all", { method: "POST" });
+    return res.ok;
+  } catch (err) {
+    console.warn("markAllNotificationsRead error:", err);
+    return false;
+  }
 }

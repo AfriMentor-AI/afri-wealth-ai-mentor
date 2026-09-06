@@ -37,7 +37,7 @@ def _load_personas() -> list[PersonaMeta]:
 
 def _find_persona(persona_id: str) -> PersonaMeta:
     for p in _load_personas():
-        if p.id == persona_id:
+        if p.id == persona_id or p.slug == persona_id:
             return p
     raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Persona not found")
 
