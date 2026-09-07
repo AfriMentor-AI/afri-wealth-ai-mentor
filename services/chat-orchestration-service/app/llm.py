@@ -180,13 +180,15 @@ def _deduplicate_labels(chunks: list[RagResult]) -> list[str]:
 
 # ── Commitment detection ──────────────────────────────────────────────────────
 
-def is_commitment_candidate(text: str) -> bool:
-    """Heuristic: does the text contain a user-voiced commitment phrase?
+def is_commitment_candidate(user_text: str, assistant_text: str = "") -> bool:
+    """Heuristic: does the user message or Chioma's reply contain a commitment phrase?
 
+    Checks both sides — the user may voice the commitment directly, or Chioma
+    (per her system prompt) may name it back to confirm accountability.
     Sprint 4 — replace with a dedicated classifier or structured LLM output field.
     """
-    lower = text.lower()
-    return any(kw in lower for kw in settings.commitment_keywords)
+    combined = (user_text + " " + assistant_text).lower()
+    return any(kw in combined for kw in settings.commitment_keywords)
 
 
 # ── Thinking tag stripper ─────────────────────────────────────────────────────
@@ -438,10 +440,29 @@ async def generate_daily_action_for_user(user_id: str, db) -> str:
     """
     logger.info(f"Generating daily action for user {user_id}...")
 
-    # TODO: Replace this placeholder with an actual HTTP request to the goals-milestones-service
-    # 1. Fetch user's active goals from the goals-milestones-service
-    #    (This is a placeholder, actual implementation will make an HTTP request)
-    active_goals = ["Save money for a new car", "Invest in the stock market"]
+    active_goals: list[str] = []
+    if settings.goals_service_url:
+        try:
+            global _persona_http_client
+            if _persona_http_client is None:
+                _persona_http_client = httpx.AsyncClient(
+                    timeout=httpx.Timeout(5.0, connect=2.0),
+                    limits=httpx.Limits(
+                        max_connections=settings.http_pool_max_connections,
+                        max_keepalive_connections=settings.http_pool_max_keepalive,
+                    ),
+                )
+            resp = await _persona_http_client.get(
+                f"{settings.goals_service_url}/api/v1/goals",
+                headers={"X-User-Id": user_id},
+            )
+            resp.raise_for_status()
+            active_goals = [g["title"] for g in resp.json() if g.get("status") == "active"]
+        except Exception as exc:
+            logger.warning("Could not fetch goals for user %s: %s", user_id, exc)
+
+    if not active_goals:
+        active_goals = ["build financial stability", "grow savings consistently"]
     logger.info(f"User {user_id} has active goals: {active_goals}")
 
     # 2. Construct the prompt
