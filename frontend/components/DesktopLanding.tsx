@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Icon } from "@/components/Icon";
 import { SankofaMotif } from "@/components/SankofaMotif";
@@ -26,6 +27,11 @@ const desktopFeatures = [
 
 export function DesktopLanding() {
   const router = useRouter();
+  const [returning, setReturning] = useState(false);
+
+  useEffect(() => {
+    setReturning(!!localStorage.getItem("afrimentor-device-id"));
+  }, []);
 
   return (
     <div className="min-h-screen bg-surface">
@@ -54,9 +60,9 @@ export function DesktopLanding() {
             <Button
               variant="primary"
               className="h-10 px-lg text-[14px]"
-              onClick={() => router.push("/intake")}
+              onClick={() => router.push(returning ? "/chat" : "/intake")}
             >
-              Get Started
+              {returning ? "Continue" : "Get Started"}
             </Button>
           </div>
         </div>
@@ -79,9 +85,9 @@ export function DesktopLanding() {
             <Button
               variant="cta"
               className="h-14 px-xl text-[18px]"
-              onClick={() => router.push("/intake")}
+              onClick={() => router.push(returning ? "/chat" : "/intake")}
             >
-              Get Started
+              {returning ? "Continue to Chat" : "Get Started"}
               <Icon name="arrow_forward" />
             </Button>
             <Button
