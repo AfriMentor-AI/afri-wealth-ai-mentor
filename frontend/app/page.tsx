@@ -29,10 +29,9 @@ const mobileSlides = [
 ];
 
 const DEVICE_ID_KEY = "afrimentor-device-id";
-const ACCESS_TOKEN_KEY = "afrimentor-access-token";
 
 function isDeviceRegistered(): boolean {
-  return !!(localStorage.getItem(DEVICE_ID_KEY) && localStorage.getItem(ACCESS_TOKEN_KEY));
+  return !!localStorage.getItem(DEVICE_ID_KEY);
 }
 
 export default function SplashPage() {
