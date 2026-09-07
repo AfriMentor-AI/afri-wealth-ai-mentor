@@ -219,7 +219,7 @@ async def stream_message(
             decision = most_severe(input_decision, output_decision)
             if decision.action is GuardrailAction.disclaim:
                 reply_text = apply_disclaimer(reply_text, decision)
-            candidate = is_commitment_candidate(body.content) and not decision.blocked
+            candidate = is_commitment_candidate(body.content, reply_text) and not decision.blocked
             prompt_tokens = completion_tokens = 0
 
         # Persist assistant turn and update conversation counters
@@ -337,7 +337,7 @@ async def send_message(
         if decision.action is GuardrailAction.disclaim:
             reply_text = apply_disclaimer(reply_text, decision)
 
-        candidate = is_commitment_candidate(body.content) and not decision.blocked
+        candidate = is_commitment_candidate(body.content, reply_text) and not decision.blocked
 
     assistant_msg = Message(
         conversation_id=session_id,

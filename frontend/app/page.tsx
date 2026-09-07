@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { SankofaMotif } from "@/components/SankofaMotif";
@@ -28,11 +28,23 @@ const mobileSlides = [
   },
 ];
 
+const DEVICE_ID_KEY = "afrimentor-device-id";
+const ACCESS_TOKEN_KEY = "afrimentor-access-token";
+
+function isDeviceRegistered(): boolean {
+  return !!(localStorage.getItem(DEVICE_ID_KEY) && localStorage.getItem(ACCESS_TOKEN_KEY));
+}
+
 export default function SplashPage() {
   const router = useRouter();
   const [slide, setSlide] = useState(0);
+  const [returning, setReturning] = useState(false);
   const isLast = slide === mobileSlides.length - 1;
   const current = mobileSlides[slide];
+
+  useEffect(() => {
+    setReturning(isDeviceRegistered());
+  }, []);
 
   return (
     <main className="relative min-h-screen bg-surface">
@@ -111,14 +123,25 @@ export default function SplashPage() {
             ))}
           </div>
 
-          <Button
-            variant="cta"
-            className="h-14 w-full text-[20px]"
-            onClick={() => (isLast ? router.push("/intake") : setSlide((s) => s + 1))}
-          >
-            {slide === 0 ? "Get Started" : isLast ? "Tell us about your business" : "Continue"}
-            <Icon name="arrow_forward" />
-          </Button>
+          {returning && slide === 0 ? (
+            <Button
+              variant="cta"
+              className="h-14 w-full text-[20px]"
+              onClick={() => router.push("/chat")}
+            >
+              Continue to Chat
+              <Icon name="arrow_forward" />
+            </Button>
+          ) : (
+            <Button
+              variant="cta"
+              className="h-14 w-full text-[20px]"
+              onClick={() => (isLast ? router.push("/intake") : setSlide((s) => s + 1))}
+            >
+              {slide === 0 ? "Get Started" : isLast ? "Tell us about your business" : "Continue"}
+              <Icon name="arrow_forward" />
+            </Button>
+          )}
           <p className="mt-md text-center font-label-sm text-label-sm text-on-surface-variant/70">
             Secure • Communal • Tailored for You
           </p>
