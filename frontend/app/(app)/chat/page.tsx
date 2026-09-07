@@ -313,6 +313,7 @@ export default function ChatPage() {
   const activeRecordingRef = useRef<ActiveRecording | null>(null);
   const [commitmentTagged, setCommitmentTagged] = useState(false);
   const [showConversations, setShowConversations] = useState(false);
+  const [desktopSidebarOpen, setDesktopSidebarOpen] = useState(true);
   const [isTyping, setIsTyping] = useState(false);
   const [streamingContent, setStreamingContent] = useState<string | null>(null);
   const [activeCitation, setActiveCitation] = useState<{
@@ -503,10 +504,8 @@ export default function ChatPage() {
 
   return (
     <div className="flex h-full md:flex-row">
-      {/* Desktop: persistent conversation list pane, real personas/sessions
-          (no fabricated "Mama Beatrice"/group-chat entries — every row here
-          is a real session from GET /api/v1/chat/sessions). */}
-      <aside className="hidden w-80 shrink-0 border-r border-outline-variant md:block">
+      {/* Desktop: collapsible conversation list pane */}
+      <aside className={`hidden shrink-0 border-r border-outline-variant md:block transition-all duration-200 ${desktopSidebarOpen ? "w-72" : "w-0 overflow-hidden border-r-0"}`}>
         <ConversationList />
       </aside>
 
@@ -535,6 +534,7 @@ export default function ChatPage() {
       <div className="flex h-full flex-1 flex-col bg-surface-bright md:bg-surface">
         <div className="flex shrink-0 items-center justify-between border-b border-outline-variant px-margin-mobile py-md md:px-lg">
           <div className="flex items-center gap-sm md:gap-md">
+            {/* Mobile: open slide-over */}
             <button
               type="button"
               aria-label="Show conversations"
@@ -542,6 +542,15 @@ export default function ChatPage() {
               className="tap-target flex items-center justify-center rounded-full text-on-surface-variant hover:bg-surface-container-low md:hidden"
             >
               <Icon name="forum" />
+            </button>
+            {/* Desktop: toggle sidebar */}
+            <button
+              type="button"
+              aria-label={desktopSidebarOpen ? "Hide sidebar" : "Show sidebar"}
+              onClick={() => setDesktopSidebarOpen((v) => !v)}
+              className="tap-target hidden items-center justify-center rounded-full text-on-surface-variant hover:bg-surface-container-low md:flex"
+            >
+              <Icon name={desktopSidebarOpen ? "menu_open" : "menu"} />
             </button>
             <div className="relative h-11 w-11 shrink-0 overflow-hidden rounded-full border-2 border-primary">
               <Image src="/images/chioma-avatar.png" alt={mentorName} fill className="object-cover" />
