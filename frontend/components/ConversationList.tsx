@@ -64,7 +64,7 @@ function ArchiveConfirmDialog({
 
         {/* Title */}
         <h2 className="mb-sm text-center font-title-lg text-title-lg text-on-surface">
-          Archive this chat?
+          Delete this chat?
         </h2>
 
         {/* Preview */}
@@ -72,7 +72,7 @@ function ArchiveConfirmDialog({
           &ldquo;{preview}&rdquo;
         </p>
         <p className="mb-lg text-center font-body-sm text-body-sm text-on-surface-variant">
-          This chat will be hidden from your list. Your commitments and goals linked to it are kept safe.
+          Are you sure you want to delete this chat? This action cannot be undone.
         </p>
 
         {/* Actions */}
@@ -89,7 +89,7 @@ function ArchiveConfirmDialog({
             onClick={onConfirm}
             className="flex-1 rounded-full bg-secondary py-sm font-label-lg text-label-lg text-on-secondary transition-colors hover:bg-secondary/90 active:scale-95"
           >
-            Archive
+            Delete
           </button>
         </div>
       </div>
@@ -158,7 +158,7 @@ function SessionRow({
             className="flex flex-col items-center gap-[2px] text-on-error"
           >
             <Icon name="archive" size={20} />
-            <span className="text-[10px]">Archive</span>
+            <span className="text-[10px]">Delete</span>
           </button>
         </div>
       </div>
@@ -210,7 +210,7 @@ function SessionRow({
                 className="flex w-full items-center gap-sm px-md py-sm text-left font-body-md text-body-md text-on-surface hover:bg-surface-variant"
               >
                 <Icon name="archive" size={16} />
-                Archive
+                Delete
               </button>
             </div>,
             document.body,
