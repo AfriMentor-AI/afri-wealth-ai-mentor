@@ -14,6 +14,35 @@ import { MilestoneRoad } from "@/components/ui/MilestoneRoad";
 import { Skeleton } from "@/components/ui/Skeleton";
 
 import { useAppDispatch } from "@/lib/store";
+import { Fragment } from "react";
+
+/** Strip markdown and render <br> as line breaks for commitment content. */
+function sanitizeCommitmentContent(text: string): React.ReactNode {
+  const cleaned = text
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/\*\*(.+?)\*\*/g, "$1")  // strip bold
+    .replace(/\*(.+?)\*/g, "$1")       // strip italic
+    .replace(/#{1,6}\s+/g, "")         // strip headings
+    .replace(/\|[-:\s|]+\|/g, "")      // strip table dividers
+    .trim();
+
+  const segments = cleaned.split(/<br\s*\/?>/i);
+  if (segments.length === 1) return cleaned;
+  return (
+    <>
+      {segments.map((seg, i) => (
+        <Fragment key={i}>
+          {i > 0 && <br />}
+          {seg}
+        </Fragment>
+      ))}
+    </>
+  );
+}
 
 const commitmentStyles: Record<
   string,
@@ -171,7 +200,7 @@ export default function GoalMilestonePathPage({
                               />
 
                               <span className="font-body-md text-body-md text-on-surface">
-                                {c.title}
+                                {sanitizeCommitmentContent(c.title)}
                               </span>
                             </div>
 
