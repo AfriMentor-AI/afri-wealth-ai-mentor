@@ -37,7 +37,10 @@ async def generate_daily_actions_job():
                             json={"user_id": user_id, "action_title": action_text[:80]},
                         )
                 except Exception:
-                    logger.warning("Could not notify user %s — notification-service unreachable", user_id)
+                    logger.warning(
+                        "Could not notify user %s — notification-service unreachable",
+                        user_id,
+                    )
 
     finally:
         db.close()

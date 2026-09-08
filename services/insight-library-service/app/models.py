@@ -38,7 +38,9 @@ class InsightItem(Base):
     duration_seconds: Mapped[int] = mapped_column(Integer, nullable=False)
     language: Mapped[str] = mapped_column(String(10), index=True, nullable=False, default="en")
     # "beginner" | "intermediate" | "advanced"
-    difficulty: Mapped[str] = mapped_column(String(12), index=True, nullable=False, default="beginner")
+    difficulty: Mapped[str] = mapped_column(
+        String(12), index=True, nullable=False, default="beginner"
+    )
     media_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
     thumbnail_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
     # Low-bandwidth / accessibility fallback for audio and video

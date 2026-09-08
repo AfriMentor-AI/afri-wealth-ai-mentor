@@ -10,7 +10,9 @@ SEED_ITEMS = [
     # ── Text ──────────────────────────────────────────────────────────────────
     {
         "title": "How to price your trade",
-        "summary": "A practical framework for setting prices that cover costs and leave room for profit.",
+        "summary": (
+            "A practical framework for setting prices that cover costs and leave room for profit."
+        ),
         "category": "Pricing",
         "media_type": "text",
         "duration_seconds": 360,

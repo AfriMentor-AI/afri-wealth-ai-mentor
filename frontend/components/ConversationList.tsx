@@ -69,7 +69,7 @@ function ArchiveConfirmDialog({
 
         {/* Preview */}
         <p className="mb-xs text-center font-body-md text-body-md text-on-surface-variant">
-          "{preview}"
+          &ldquo;{preview}&rdquo;
         </p>
         <p className="mb-lg text-center font-body-sm text-body-sm text-on-surface-variant">
           This chat will be hidden from your list. Your commitments and goals linked to it are kept safe.

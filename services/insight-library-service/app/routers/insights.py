@@ -21,7 +21,9 @@ router = APIRouter(prefix="/api/v1/insights", tags=["insights"])
 
 def _get_user(x_user_id: str = Header(..., alias="X-User-Id")) -> str:
     if not x_user_id:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Missing identity header")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Missing identity header"
+        )
     return x_user_id
 
 
@@ -33,7 +35,9 @@ def _require_admin(x_user_roles: str = Header("", alias="X-User-Roles")) -> None
 
 def _favorited_ids(db: Session, user_id: str) -> set[str]:
     return set(
-        db.scalars(select(InsightFavorite.insight_id).where(InsightFavorite.user_id == user_id)).all()
+        db.scalars(
+            select(InsightFavorite.insight_id).where(InsightFavorite.user_id == user_id)
+        ).all()
     )
 
 
@@ -117,8 +121,12 @@ def create_insight(
 
 # ── Bookmarks / favorites ─────────────────────────────────────────────────────
 
-@router.post("/{insight_id}/bookmark", status_code=status.HTTP_204_NO_CONTENT, response_class=Response)
-@router.post("/{insight_id}/favorite", status_code=status.HTTP_204_NO_CONTENT, response_class=Response)
+@router.post(
+    "/{insight_id}/bookmark", status_code=status.HTTP_204_NO_CONTENT, response_class=Response
+)
+@router.post(
+    "/{insight_id}/favorite", status_code=status.HTTP_204_NO_CONTENT, response_class=Response
+)
 def bookmark_insight(
     insight_id: str,
     user_id: str = Depends(_get_user),
@@ -131,8 +139,12 @@ def bookmark_insight(
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
-@router.delete("/{insight_id}/bookmark", status_code=status.HTTP_204_NO_CONTENT, response_class=Response)
-@router.delete("/{insight_id}/favorite", status_code=status.HTTP_204_NO_CONTENT, response_class=Response)
+@router.delete(
+    "/{insight_id}/bookmark", status_code=status.HTTP_204_NO_CONTENT, response_class=Response
+)
+@router.delete(
+    "/{insight_id}/favorite", status_code=status.HTTP_204_NO_CONTENT, response_class=Response
+)
 def unbookmark_insight(
     insight_id: str,
     user_id: str = Depends(_get_user),
