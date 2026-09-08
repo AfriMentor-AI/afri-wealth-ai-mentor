@@ -169,6 +169,8 @@ export async function tagCommitment(chatSessionId: string, chatMessageId: string
     method: "POST",
     body: JSON.stringify({ goal_id: goalId }),
   });
+  // 409 means this message was already tagged — treat as success (idempotent)
+  if (res.status === 409) return { id: "", status: "in_progress" } as unknown as Commitment;
   if (!res.ok) throw new Error(`tagCommitment failed: ${res.status}`);
   return (await res.json()) as Commitment;
 }
