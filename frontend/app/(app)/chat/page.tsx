@@ -335,6 +335,7 @@ export default function ChatPage() {
   const [playingAudioMessageId, setPlayingAudioMessageId] = useState<string | null>(null);
   const activeRecordingRef = useRef<ActiveRecording | null>(null);
   const [commitmentTagged, setCommitmentTagged] = useState(false);
+  const [goalPickerGoals, setGoalPickerGoals] = useState<{ id: string; title: string }[] | null>(null);
   const [showConversations, setShowConversations] = useState(false);
   const [desktopSidebarOpen, setDesktopSidebarOpen] = useState(true);
   const [isTyping, setIsTyping] = useState(false);
@@ -481,41 +482,39 @@ export default function ChatPage() {
   }
 
   async function handleTagCommitment() {
-    if (!chatSessionId || chatMessages.length === 0) {
-      console.error("Cannot tag commitment without a chat session and messages.");
-      return;
-    }
+    if (!chatSessionId || chatMessages.length === 0) return;
     const lastMessage = chatMessages[chatMessages.length - 1];
-    if (lastMessage.sender !== "mentor" || !lastMessage.is_commitment_candidate) {
-      return;
-    }
+    if (lastMessage.sender !== "mentor" || !lastMessage.is_commitment_candidate) return;
 
-    let targetGoalId = activeGoalId;
-    if (!targetGoalId) {
-      try {
-        const goals = await fetchGoals();
-        if (goals && goals.length > 0) {
-          targetGoalId = goals[0].id;
-        } else {
-          const newGoal = await createGoal({
-            title: "Build Business Emergency Reserve",
-            description: "Target 10% daily reserve for operational cushion",
-          });
-          targetGoalId = newGoal.id;
-        }
-        dispatch({ type: "SET_ACTIVE_GOAL_ID", goalId: targetGoalId });
-      } catch (e) {
-        console.warn("Could not retrieve or create default goal:", e);
-      }
-    }
-
-    if (!targetGoalId) {
-      console.error("No active goal available to attach commitment to.");
+    if (activeGoalId) {
+      await confirmTagWithGoal(activeGoalId);
       return;
     }
 
     try {
-      await tagCommitment(chatSessionId, lastMessage.id, targetGoalId);
+      const goals = await fetchGoals();
+      if (goals.length === 1) {
+        dispatch({ type: "SET_ACTIVE_GOAL_ID", goalId: goals[0].id });
+        await confirmTagWithGoal(goals[0].id);
+      } else if (goals.length > 1) {
+        setGoalPickerGoals(goals.map((g) => ({ id: g.id, title: g.title })));
+      } else {
+        const newGoal = await createGoal({ title: "My Financial Goal", description: null });
+        dispatch({ type: "SET_ACTIVE_GOAL_ID", goalId: newGoal.id });
+        await confirmTagWithGoal(newGoal.id);
+      }
+    } catch (e) {
+      console.warn("Could not retrieve goals:", e);
+    }
+  }
+
+  async function confirmTagWithGoal(goalId: string) {
+    if (!chatSessionId || chatMessages.length === 0) return;
+    const lastMessage = chatMessages[chatMessages.length - 1];
+    setGoalPickerGoals(null);
+    try {
+      await tagCommitment(chatSessionId, lastMessage.id, goalId);
+      dispatch({ type: "SET_ACTIVE_GOAL_ID", goalId });
       setCommitmentTagged(true);
     } catch (error) {
       console.error("Failed to tag commitment:", error);
@@ -687,20 +686,41 @@ export default function ChatPage() {
           )}
 
           {lastIsMentor && chatMessages[chatMessages.length - 1].is_commitment_candidate && !commitmentTagged && (
-            <div className="flex items-center justify-between gap-md rounded border border-secondary bg-secondary-container p-md md:rounded-xl">
-              <div className="flex items-center gap-sm">
-                <Icon name="workspace_premium" filled className="text-secondary" />
-                <span className="font-body-md text-body-md font-semibold text-on-secondary-container">
-                  Tag 10% daily reserve as a commitment?
-                </span>
-              </div>
-              <button
-                type="button"
-                onClick={handleTagCommitment}
-                className="tap-target rounded-full bg-secondary px-md py-sm font-label-sm text-label-sm text-on-secondary transition-transform active:scale-95"
-              >
-                Yes, Tag It
-              </button>
+            <div className="rounded border border-secondary bg-secondary-container p-md md:rounded-xl">
+              {goalPickerGoals ? (
+                <div className="flex flex-col gap-sm">
+                  <span className="font-body-md text-body-md font-semibold text-on-secondary-container">Which goal should this go under?</span>
+                  {goalPickerGoals.map((g) => (
+                    <button
+                      key={g.id}
+                      type="button"
+                      onClick={() => confirmTagWithGoal(g.id)}
+                      className="tap-target rounded-full bg-secondary px-md py-sm text-left font-label-sm text-label-sm text-on-secondary transition-transform active:scale-95"
+                    >
+                      {g.title}
+                    </button>
+                  ))}
+                  <button type="button" onClick={() => setGoalPickerGoals(null)} className="font-label-sm text-label-sm text-outline">
+                    Cancel
+                  </button>
+                </div>
+              ) : (
+                <div className="flex items-center justify-between gap-md">
+                  <div className="flex items-center gap-sm">
+                    <Icon name="workspace_premium" filled className="text-secondary" />
+                    <span className="font-body-md text-body-md font-semibold text-on-secondary-container">
+                      Tag this as a commitment?
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleTagCommitment}
+                    className="tap-target rounded-full bg-secondary px-md py-sm font-label-sm text-label-sm text-on-secondary transition-transform active:scale-95"
+                  >
+                    Yes, Tag It
+                  </button>
+                </div>
+              )}
             </div>
           )}
         </div>
