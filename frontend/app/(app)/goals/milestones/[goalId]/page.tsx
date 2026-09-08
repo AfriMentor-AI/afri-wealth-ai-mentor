@@ -44,34 +44,7 @@ function sanitizeCommitmentContent(text: string): React.ReactNode {
   );
 }
 
-const commitmentStyles: Record<
-  string,
-  {
-    icon: string;
-    badge: string;
-    card: string;
-    label: string;
-  }
-> = {
-  done: {
-    icon: "check_circle",
-    badge: "bg-secondary-container text-on-secondary-container",
-    card: "border-outline-variant bg-surface-container-low",
-    label: "Done",
-  },
-  in_progress: {
-    icon: "pending",
-    badge: "bg-primary-container text-on-primary-container",
-    card: "border-outline-variant bg-surface-container-low",
-    label: "In Progress",
-  },
-  blocked: {
-    icon: "block",
-    badge: "bg-error-container text-on-error-container",
-    card: "border-error/40 bg-error-container/20",
-    label: "Blocked",
-  },
-};
+
 
 export default function GoalMilestonePathPage({
   params,
@@ -175,61 +148,26 @@ export default function GoalMilestonePathPage({
                         className="h-16 w-full rounded"
                       />
                     ))
-                  : commitments.map((c) => {
-                      const style = commitmentStyles[c.status];
-
-                      if (!style) {
-                        return null;
-                      }
-
-                      return (
-                        <div
-                          key={c.id}
-                          className={`rounded border p-md ${style.card}`}
-                        >
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-sm">
-                              <Icon
-                                name={style.icon}
-                                filled={c.status !== "blocked"}
-                                className={
-                                  c.status === "blocked"
-                                    ? "text-error"
-                                    : "text-secondary"
-                                }
-                              />
-
-                              <span className="font-body-md text-body-md text-on-surface">
-                                {sanitizeCommitmentContent(c.title)}
-                              </span>
-                            </div>
-
-                            <span
-                              className={`rounded-full px-sm py-xs font-label-sm text-[11px] font-bold ${style.badge}`}
-                            >
-                              {style.label}
-                            </span>
-                          </div>
-
-                          {c.status === "blocked" && c.mentorHelpNote && (
-                            <>
-                              <button className="tap-target mt-md flex w-full items-center justify-center gap-xs rounded-full bg-primary py-sm font-label-sm text-label-sm text-on-primary transition-transform active:scale-95">
-                                <Icon
-                                  name="smart_toy"
-                                  filled
-                                  size={18}
-                                />
-                                CHIOMA CAN HELP
-                              </button>
-
-                              <p className="mt-xs text-center text-[12px] italic text-on-surface-variant">
-                                &ldquo;{c.mentorHelpNote}&rdquo;
-                              </p>
-                            </>
-                          )}
+                  : commitments.map((c) => (
+                      <div
+                        key={c.id}
+                        className="rounded border border-outline-variant bg-surface-container-low p-md"
+                      >
+                        <div className="flex items-start gap-sm">
+                          <Icon
+                            name="bookmark"
+                            filled
+                            className="mt-[2px] shrink-0 text-secondary"
+                          />
+                          <span className="font-body-md text-body-md text-on-surface">
+                            {sanitizeCommitmentContent(c.title)}
+                          </span>
                         </div>
-                      );
-                    })}
+                        <p className="mt-xs font-label-sm text-[11px] text-on-surface-variant">
+                          Tagged {new Date(c.createdAt).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" })}
+                        </p>
+                      </div>
+                    ))}
               </div>
             </section>
           </>
