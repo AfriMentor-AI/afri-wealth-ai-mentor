@@ -32,8 +32,12 @@ async def generate_daily_actions_job():
             if settings.notification_service_url:
                 try:
                     async with httpx.AsyncClient(timeout=5) as client:
+                        url = (
+                            f"{settings.notification_service_url}"
+                            "/api/v1/notifications/trigger/daily-action-reminder"
+                        )
                         await client.post(
-                            f"{settings.notification_service_url}/api/v1/notifications/trigger/daily-action-reminder",
+                            url,
                             json={"user_id": user_id, "action_title": action_text[:80]},
                         )
                 except Exception:
