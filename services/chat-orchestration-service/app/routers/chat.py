@@ -254,6 +254,7 @@ async def stream_message(
             "id": assistant_msg.id,
             "content": reply_text,
             "citations": citations,
+            "is_commitment_candidate": candidate,
             "guardrail_action": decision.action.value if guardrails_on else None,
         }) + "\n\n"
 

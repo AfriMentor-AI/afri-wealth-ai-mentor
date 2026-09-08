@@ -438,6 +438,7 @@ export default function ChatPage() {
         setStreamingContent(null);
         setIsTyping(false);
         dispatch({ type: "APPEND_CHAT_MESSAGE", message: assistantMessage });
+        setCommitmentTagged(false);
         abortStreamRef.current = null;
 
         // Auto-play mentor's audio reply if message was sent via voice!
