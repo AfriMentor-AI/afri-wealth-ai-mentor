@@ -20,7 +20,30 @@ type MentorBlock =
   | { type: "table"; headers: string[]; rows: string[][] };
 
 function normalizeInlineText(value: string) {
-  return value.replaceAll("`", "").trim();
+  return value
+    .replaceAll("`", "")
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .trim();
+}
+
+function renderCellContent(value: string) {
+  // Split on <br> variants so bullet lists inside table cells render on separate lines
+  const segments = value.split(/<br\s*\/?>/i);
+  if (segments.length === 1) return renderInlineText(value);
+  return (
+    <>
+      {segments.map((seg, i) => (
+        <Fragment key={i}>
+          {i > 0 && <br />}
+          {renderInlineText(seg)}
+        </Fragment>
+      ))}
+    </>
+  );
 }
 
 function parseInlineStrong(text: string) {
@@ -225,7 +248,7 @@ function MentorMessageContent({ content }: Readonly<{ content: string }>) {
                           key={`cell-${blockIndex}-${rowIndex}-${colIndex}`}
                           className="border-b border-outline-variant/70 px-sm py-xs font-body-md text-body-md text-on-surface"
                         >
-                          {renderInlineText(row[colIndex] ?? "-")}
+                          {renderCellContent(row[colIndex] ?? "-")}
                         </td>
                       ))}
                     </tr>
