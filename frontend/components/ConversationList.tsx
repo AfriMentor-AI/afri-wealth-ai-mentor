@@ -28,6 +28,76 @@ function timeAgo(iso: string | null): string {
   return `${Math.floor(hours / 24)}d ago`;
 }
 
+function ArchiveConfirmDialog({
+  preview,
+  onConfirm,
+  onCancel,
+}: {
+  preview: string;
+  onConfirm: () => void;
+  onCancel: () => void;
+}) {
+  // Trap focus & close on Escape
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") onCancel();
+    }
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [onCancel]);
+
+  return createPortal(
+    <div
+      className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40 px-md backdrop-blur-sm"
+      onClick={onCancel}
+    >
+      <div
+        className="w-full max-w-sm rounded-2xl bg-surface p-lg shadow-xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Icon */}
+        <div className="mb-md flex justify-center">
+          <div className="flex h-14 w-14 items-center justify-center rounded-full bg-secondary-container">
+            <Icon name="archive" size={28} className="text-secondary" />
+          </div>
+        </div>
+
+        {/* Title */}
+        <h2 className="mb-sm text-center font-title-lg text-title-lg text-on-surface">
+          Archive this chat?
+        </h2>
+
+        {/* Preview */}
+        <p className="mb-xs text-center font-body-md text-body-md text-on-surface-variant">
+          "{preview}"
+        </p>
+        <p className="mb-lg text-center font-body-sm text-body-sm text-on-surface-variant">
+          This chat will be hidden from your list. Your commitments and goals linked to it are kept safe.
+        </p>
+
+        {/* Actions */}
+        <div className="flex gap-sm">
+          <button
+            type="button"
+            onClick={onCancel}
+            className="flex-1 rounded-full border border-outline py-sm font-label-lg text-label-lg text-on-surface transition-colors hover:bg-surface-variant active:scale-95"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            onClick={onConfirm}
+            className="flex-1 rounded-full bg-secondary py-sm font-label-lg text-label-lg text-on-secondary transition-colors hover:bg-secondary/90 active:scale-95"
+          >
+            Archive
+          </button>
+        </div>
+      </div>
+    </div>,
+    document.body,
+  );
+}
+
 function SessionRow({
   s,
   isActive,
@@ -46,7 +116,6 @@ function SessionRow({
   const menuRef = useRef<HTMLDivElement>(null);
   const btnRef = useRef<HTMLButtonElement>(null);
 
-  // Close menu on outside click
   useEffect(() => {
     if (!menuOpen) return;
     function handler(e: MouseEvent) {
@@ -66,7 +135,7 @@ function SessionRow({
   }
   function onTouchEnd() {
     if (swipeX < -50) {
-      // Swiped far enough — show archive button revealed underneath
+      // reveal stays — tap the red button to confirm
     } else {
       setSwipeX(0);
     }
@@ -79,9 +148,9 @@ function SessionRow({
 
   return (
     <div className="relative">
-      {/* Archive action revealed by swipe (mobile) — clipped to row bounds */}
+      {/* Swipe-reveal layer (mobile) */}
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
-        <div className="absolute inset-y-0 right-0 flex w-20 items-center justify-center bg-error pointer-events-auto">
+        <div className="pointer-events-auto absolute inset-y-0 right-0 flex w-20 items-center justify-center bg-error">
           <button
             type="button"
             aria-label="Archive"
@@ -94,7 +163,7 @@ function SessionRow({
         </div>
       </div>
 
-      {/* Row — slides left on swipe */}
+      {/* Row */}
       <div
         style={{ transform: `translateX(${swipeX}px)`, transition: swipeX === 0 ? "transform 0.2s" : "none" }}
         onTouchStart={onTouchStart}
@@ -132,7 +201,7 @@ function SessionRow({
           {menuOpen && menuPos && createPortal(
             <div
               ref={menuRef}
-              style={{ position: "fixed", top: menuPos.top, right: menuPos.right, zIndex: 9999 }}
+              style={{ position: "fixed", top: menuPos.top, right: menuPos.right, zIndex: 9998 }}
               className="min-w-[120px] rounded-md border border-outline-variant bg-surface-container shadow-md"
             >
               <button
@@ -144,7 +213,7 @@ function SessionRow({
                 Archive
               </button>
             </div>,
-            document.body
+            document.body,
           )}
         </div>
       </div>
@@ -157,6 +226,7 @@ export function ConversationList({ onSelect }: { onSelect?: () => void }) {
   const dispatch = useAppDispatch();
   const [personas, setPersonas] = useState<Persona[] | null>(null);
   const [expandedPersonas, setExpandedPersonas] = useState<Set<string>>(new Set());
+  const [pendingArchive, setPendingArchive] = useState<{ id: string; preview: string } | null>(null);
 
   useEffect(() => {
     fetchPersonas().then((ps) => {
@@ -203,13 +273,19 @@ export function ConversationList({ onSelect }: { onSelect?: () => void }) {
     onSelect?.();
   }
 
-  async function handleArchive(sessionId: string) {
-    dispatch({ type: "REMOVE_CHAT_SESSION", sessionId });
+  function requestArchive(sessionId: string, preview: string) {
+    setPendingArchive({ id: sessionId, preview });
+  }
+
+  async function confirmArchive() {
+    if (!pendingArchive) return;
+    const { id } = pendingArchive;
+    setPendingArchive(null);
+    dispatch({ type: "REMOVE_CHAT_SESSION", sessionId: id });
     try {
-      await archiveChatSession(sessionId);
+      await archiveChatSession(id);
     } catch (e) {
       console.error("Failed to archive session:", e);
-      // Re-fetch to restore if the API call failed
       fetchChatSessions()
         .then((sessions) => dispatch({ type: "SET_CHAT_SESSIONS", sessions }))
         .catch(() => {});
@@ -287,7 +363,7 @@ export function ConversationList({ onSelect }: { onSelect?: () => void }) {
                     s={s}
                     isActive={s.id === chatSessionId}
                     onOpen={() => openConversation(s.id)}
-                    onArchive={() => handleArchive(s.id)}
+                    onArchive={() => requestArchive(s.id, s.lastMessagePreview?.slice(0, 40) ?? "New conversation")}
                   />
                 ))}
             </div>
@@ -300,10 +376,18 @@ export function ConversationList({ onSelect }: { onSelect?: () => void }) {
             s={s}
             isActive={s.id === chatSessionId}
             onOpen={() => openConversation(s.id)}
-            onArchive={() => handleArchive(s.id)}
+            onArchive={() => requestArchive(s.id, s.lastMessagePreview?.slice(0, 40) ?? "New conversation")}
           />
         ))}
       </div>
+
+      {pendingArchive && (
+        <ArchiveConfirmDialog
+          preview={pendingArchive.preview}
+          onConfirm={confirmArchive}
+          onCancel={() => setPendingArchive(null)}
+        />
+      )}
     </div>
   );
 }
