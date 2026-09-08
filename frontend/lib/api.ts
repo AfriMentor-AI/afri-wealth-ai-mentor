@@ -36,6 +36,7 @@ export function stripThinkTags(text: string): string {
   return text
     .replace(/<think>(?:[\s\S]*?<\/think>|[\s\S]*$)/gi, "")
     .replace(/<\/think>/gi, "")
+    .replace(/<br\s*\/?>/gi, "\n")
     .trimStart();
 }
 
@@ -139,7 +140,7 @@ export function sendMessageStream(
                 id: parsed.id as string,
                 role: "assistant",
                 content: parsed.content as string,
-                is_commitment_candidate: false,
+                is_commitment_candidate: (parsed.is_commitment_candidate as boolean) ?? false,
                 citations: (parsed.citations as Array<{ label: string }>) ?? [],
                 created_at: new Date().toISOString(),
               };

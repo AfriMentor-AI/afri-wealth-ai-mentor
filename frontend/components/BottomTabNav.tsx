@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Icon } from "./Icon";
+import { NotificationPopover } from "./NotificationPopover";
 
 const tabs = [
   { href: "/chat", label: "Chat", icon: "chat_bubble" },
@@ -41,6 +42,8 @@ export function BottomTabNav() {
           </Link>
         );
       })}
+      <span aria-hidden className="hidden h-6 w-px shrink-0 bg-outline-variant md:block" />
+      <NotificationPopover />
     </nav>
   );
 }
