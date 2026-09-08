@@ -8,6 +8,7 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { Button } from "@/components/ui/Button";
 import { Icon } from "@/components/Icon";
 import { DesktopLanding } from "@/components/DesktopLanding";
+import { isIntakeCompleted } from "@/lib/session";
 
 const mobileSlides = [
   {
@@ -28,12 +29,6 @@ const mobileSlides = [
   },
 ];
 
-const DEVICE_ID_KEY = "afrimentor-device-id";
-
-function isDeviceRegistered(): boolean {
-  return !!localStorage.getItem(DEVICE_ID_KEY);
-}
-
 export default function SplashPage() {
   const router = useRouter();
   const [slide, setSlide] = useState(0);
@@ -42,7 +37,11 @@ export default function SplashPage() {
   const current = mobileSlides[slide];
 
   useEffect(() => {
-    setReturning(isDeviceRegistered());
+    // A device is "returning" (skip to chat) only once it has BOTH been
+    // provisioned and actually completed intake. Simply having a device id
+    // is not enough — a device id gets written during signup, which can
+    // happen partway through intake.
+    setReturning(isIntakeCompleted());
   }, []);
 
   return (

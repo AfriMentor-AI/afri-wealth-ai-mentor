@@ -6,6 +6,7 @@ import { Icon } from "@/components/Icon";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { Button } from "@/components/ui/Button";
 import { DesktopLanding } from "@/components/DesktopLanding";
+import { isIntakeCompleted } from "@/lib/session";
 
 const slides = [
   {
@@ -61,9 +62,15 @@ export default function WelcomePage() {
           <Button
             variant="cta"
             className="h-14 w-full text-[20px]"
-            onClick={() => (isLast ? router.push("/intake") : setSlide((s) => s + 1))}
+            onClick={() =>
+              isIntakeCompleted()
+                ? router.push("/chat")
+                : isLast
+                ? router.push("/intake")
+                : setSlide((s) => s + 1)
+            }
           >
-            {isLast ? "Tell us about your business" : "Continue"}
+            {isIntakeCompleted() ? "Continue to Chat" : isLast ? "Tell us about your business" : "Continue"}
             <Icon name="arrow_forward" />
           </Button>
         </div>
