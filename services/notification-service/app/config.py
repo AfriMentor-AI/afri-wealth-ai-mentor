@@ -11,6 +11,8 @@ class Settings(BaseModel):
     env: str = os.getenv("APP_ENV", "dev")
     database_url: str = os.getenv("DATABASE_URL") or "sqlite+pysqlite:///./notification_dev.db"
     progress_service_url: str = os.getenv("PROGRESS_SERVICE_URL", "http://localhost:8007")
+    rabbitmq_url: str = os.getenv("RABBITMQ_URL", "")
+    notification_service_url: str = os.getenv("NOTIFICATION_SERVICE_URL", "http://localhost:8012")
     # v0 scaffold (card O3.4): how often the background sweep runs. Long default
     # in prod; override low in dev/demo to see it fire without waiting.
     sweep_interval_seconds: int = int(os.getenv("SWEEP_INTERVAL_SECONDS", "3600"))
