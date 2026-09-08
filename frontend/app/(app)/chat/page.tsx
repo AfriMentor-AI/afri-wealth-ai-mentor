@@ -500,7 +500,7 @@ export default function ChatPage() {
       } else if (goals.length > 1) {
         setGoalPickerGoals(goals.map((g) => ({ id: g.id, title: g.title })));
       } else {
-        const newGoal = await createGoal({ title: "My Financial Goal", description: null });
+        const newGoal = await createGoal({ title: "My Financial Goal", description: undefined });
         dispatch({ type: "SET_ACTIVE_GOAL_ID", goalId: newGoal.id });
         await confirmTagWithGoal(newGoal.id);
       }
