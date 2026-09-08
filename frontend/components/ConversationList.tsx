@@ -75,18 +75,20 @@ function SessionRow({
     : "New conversation";
 
   return (
-    <div className="relative overflow-hidden">
-      {/* Archive action revealed by swipe (mobile) */}
-      <div className="absolute inset-y-0 right-0 flex w-20 items-center justify-center bg-error">
-        <button
-          type="button"
-          aria-label="Archive"
-          onClick={onArchive}
-          className="flex flex-col items-center gap-[2px] text-on-error"
-        >
-          <Icon name="archive" size={20} />
-          <span className="text-[10px]">Archive</span>
-        </button>
+    <div className="relative">
+      {/* Archive action revealed by swipe (mobile) — clipped to row bounds */}
+      <div className="pointer-events-none absolute inset-0 overflow-hidden">
+        <div className="absolute inset-y-0 right-0 flex w-20 items-center justify-center bg-error pointer-events-auto">
+          <button
+            type="button"
+            aria-label="Archive"
+            onClick={onArchive}
+            className="flex flex-col items-center gap-[2px] text-on-error"
+          >
+            <Icon name="archive" size={20} />
+            <span className="text-[10px]">Archive</span>
+          </button>
+        </div>
       </div>
 
       {/* Row — slides left on swipe */}
