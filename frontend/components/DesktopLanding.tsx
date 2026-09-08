@@ -78,9 +78,11 @@ export function DesktopLanding() {
       {/* Hero */}
       <main className="relative flex min-h-screen flex-col overflow-hidden pt-20">
         <section className="relative mx-auto flex w-full max-w-[1440px] flex-grow items-center px-xl py-xl">
+          {/* Full-width gradient: surface solid on left, fades to transparent at 65% so image bleeds through */}
+          <div className="pointer-events-none absolute inset-0 z-10 bg-gradient-to-r from-surface from-[35%] via-surface/80 via-[50%] to-transparent" />
 
           {/* Content — sits on top of the gradient fade */}
-          <div className="relative z-10 flex w-full flex-col gap-lg md:w-1/2">
+          <div className="relative z-20 flex w-full flex-col gap-lg md:w-1/2">
             <div className="inline-flex w-fit items-center gap-sm rounded-full bg-secondary-container/30 px-md py-xs text-on-secondary-container">
               <Icon name="verified" size={18} />
               <span className="font-label-sm text-label-sm">Communal Wisdom Powered by AI</span>
@@ -133,10 +135,8 @@ export function DesktopLanding() {
             </div>
           </div>
 
-          {/* sage.jpg — absolute right, overlapping, with gradient fade */}
+          {/* sage.jpg — absolute right, overlapping */}
           <div className="absolute right-0 top-0 hidden h-full w-3/5 select-none md:block">
-            {/* gradient fade: surface → transparent, matching stitch hero-gradient */}
-            <div className="absolute inset-0 z-10 bg-gradient-to-r from-surface via-surface/60 to-transparent" />
             <div className="h-full w-full overflow-hidden rounded-bl-[120px] bg-surface-container">
               <Image
                 src="/images/sage.jpg"
@@ -147,7 +147,7 @@ export function DesktopLanding() {
               />
             </div>
             {/* Decorative Sankofa dot pattern bottom-right */}
-            <div className="absolute bottom-xl right-xl z-20 h-32 w-32 opacity-20">
+            <div className="absolute bottom-xl right-xl z-30 h-32 w-32 opacity-20">
               <svg viewBox="0 0 60 60" className="h-full w-full text-primary" fill="currentColor">
                 <path d="M30 5c-5 0-9 4-9 9s4 9 9 9 9-4 9-9-4-9-9-9zm0 14c-2.8 0-5-2.2-5-5s2.2-5 5-5 5 2.2 5 5-2.2 5-5 5zm0 10c-11 0-20 9-20 20h5c0-8.3 6.7-15 15-15s15 6.7 15 15h5c0-11-9-20-20-20z" />
               </svg>
