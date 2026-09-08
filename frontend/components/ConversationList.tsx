@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import Link from "next/link";
 import { Icon } from "./Icon";
 import { archiveChatSession, fetchChatMessages, fetchChatSessions, fetchPersonas } from "@/lib/api";
@@ -39,9 +40,11 @@ function SessionRow({
   onArchive: () => void;
 }) {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [menuPos, setMenuPos] = useState<{ top: number; right: number } | null>(null);
   const [swipeX, setSwipeX] = useState(0);
   const touchStartX = useRef<number | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
+  const btnRef = useRef<HTMLButtonElement>(null);
 
   // Close menu on outside click
   useEffect(() => {
@@ -113,13 +116,25 @@ function SessionRow({
           <button
             type="button"
             aria-label="More options"
-            onClick={(e) => { e.stopPropagation(); setMenuOpen((v) => !v); }}
+            ref={btnRef}
+            onClick={(e) => {
+              e.stopPropagation();
+              if (!menuOpen && btnRef.current) {
+                const r = btnRef.current.getBoundingClientRect();
+                setMenuPos({ top: r.bottom + 4, right: window.innerWidth - r.right });
+              }
+              setMenuOpen((v) => !v);
+            }}
             className="flex items-center justify-center rounded-full p-[2px] text-on-surface-variant hover:bg-surface-container-high"
           >
             <Icon name="more_vert" size={16} />
           </button>
-          {menuOpen && (
-            <div className="absolute right-0 top-6 z-20 min-w-[120px] rounded-md border border-outline-variant bg-surface-container shadow-md">
+          {menuOpen && menuPos && createPortal(
+            <div
+              ref={menuRef}
+              style={{ position: "fixed", top: menuPos.top, right: menuPos.right, zIndex: 9999 }}
+              className="min-w-[120px] rounded-md border border-outline-variant bg-surface-container shadow-md"
+            >
               <button
                 type="button"
                 onClick={() => { setMenuOpen(false); onArchive(); }}
@@ -128,7 +143,8 @@ function SessionRow({
                 <Icon name="archive" size={16} />
                 Archive
               </button>
-            </div>
+            </div>,
+            document.body
           )}
         </div>
       </div>
