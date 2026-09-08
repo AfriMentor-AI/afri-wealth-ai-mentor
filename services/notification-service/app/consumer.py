@@ -28,16 +28,15 @@ def _handle(routing_key: str, body: dict, base_url: str) -> None:
         return
 
     if routing_key == "commitment.created":
-        httpx.post(
+        r = httpx.post(
             f"{base_url}/api/v1/notifications/trigger/daily-action-reminder",
-            json={"user_id": user_id, "action_title": body.get("content", "")[:80]},
+            json={"user_id": user_id, "action_title": body.get("content_preview", "")[:80]},
             timeout=5,
         )
+        logger.info("trigger daily-action-reminder for %s: %s", user_id, r.status_code)
     elif routing_key == "session.completed":
-        httpx.post(
-            f"{base_url}/api/v1/notifications/sweep",
-            timeout=10,
-        )
+        r = httpx.post(f"{base_url}/api/v1/notifications/sweep", timeout=10)
+        logger.info("triggered sweep: %s", r.status_code)
 
 
 def _run(rabbitmq_url: str, base_url: str) -> None:
@@ -70,9 +69,11 @@ def start_consumer() -> None:
     if not settings.rabbitmq_url:
         logger.warning("RABBITMQ_URL not set — notification consumer disabled")
         return
+    # Use localhost — consumer runs inside this container, no need for external DNS
+    base_url = "http://localhost:8012"
     t = threading.Thread(
         target=_run,
-        args=(settings.rabbitmq_url, settings.notification_service_url),
+        args=(settings.rabbitmq_url, base_url),
         daemon=True,
         name="notification-consumer",
     )

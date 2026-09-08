@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { Icon } from "./Icon";
-import { fetchChatMessages, fetchChatSessions, fetchPersonas } from "@/lib/api";
+import { archiveChatSession, fetchChatMessages, fetchChatSessions, fetchPersonas } from "@/lib/api";
 import type { Persona } from "@/lib/types";
 import { useAppDispatch, useAppState } from "@/lib/store";
 
@@ -27,6 +27,113 @@ function timeAgo(iso: string | null): string {
   return `${Math.floor(hours / 24)}d ago`;
 }
 
+function SessionRow({
+  s,
+  isActive,
+  onOpen,
+  onArchive,
+}: {
+  s: { id: string; lastMessagePreview: string | null; lastMessageAt: string | null };
+  isActive: boolean;
+  onOpen: () => void;
+  onArchive: () => void;
+}) {
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [swipeX, setSwipeX] = useState(0);
+  const touchStartX = useRef<number | null>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  // Close menu on outside click
+  useEffect(() => {
+    if (!menuOpen) return;
+    function handler(e: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) setMenuOpen(false);
+    }
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [menuOpen]);
+
+  function onTouchStart(e: React.TouchEvent) {
+    touchStartX.current = e.touches[0].clientX;
+  }
+  function onTouchMove(e: React.TouchEvent) {
+    if (touchStartX.current === null) return;
+    const dx = e.touches[0].clientX - touchStartX.current;
+    if (dx < 0) setSwipeX(Math.max(dx, -80));
+  }
+  function onTouchEnd() {
+    if (swipeX < -50) {
+      // Swiped far enough — show archive button revealed underneath
+    } else {
+      setSwipeX(0);
+    }
+    touchStartX.current = null;
+  }
+
+  const preview = s.lastMessagePreview
+    ? s.lastMessagePreview.slice(0, 30) + (s.lastMessagePreview.length > 30 ? "…" : "")
+    : "New conversation";
+
+  return (
+    <div className="relative overflow-hidden">
+      {/* Archive action revealed by swipe (mobile) */}
+      <div className="absolute inset-y-0 right-0 flex w-20 items-center justify-center bg-error">
+        <button
+          type="button"
+          aria-label="Archive"
+          onClick={onArchive}
+          className="flex flex-col items-center gap-[2px] text-on-error"
+        >
+          <Icon name="archive" size={20} />
+          <span className="text-[10px]">Archive</span>
+        </button>
+      </div>
+
+      {/* Row — slides left on swipe */}
+      <div
+        style={{ transform: `translateX(${swipeX}px)`, transition: swipeX === 0 ? "transform 0.2s" : "none" }}
+        onTouchStart={onTouchStart}
+        onTouchMove={onTouchMove}
+        onTouchEnd={onTouchEnd}
+        className={`group relative flex w-full items-start gap-sm border-b border-outline-variant/20 bg-surface py-sm pl-14 pr-md text-left transition-colors ${
+          isActive ? "border-l-4 border-l-primary bg-surface-container" : "hover:bg-surface-variant/30"
+        }`}
+      >
+        <button type="button" onClick={onOpen} className="flex flex-1 flex-col overflow-hidden">
+          <div className="flex items-center justify-between">
+            <span className="truncate text-[12px] font-medium text-on-surface">{preview}</span>
+            <span className="ml-2 shrink-0 text-[10px] text-on-surface-variant">{timeAgo(s.lastMessageAt)}</span>
+          </div>
+        </button>
+
+        {/* Desktop: ... menu on hover */}
+        <div ref={menuRef} className="relative hidden shrink-0 group-hover:block">
+          <button
+            type="button"
+            aria-label="More options"
+            onClick={(e) => { e.stopPropagation(); setMenuOpen((v) => !v); }}
+            className="flex items-center justify-center rounded-full p-[2px] text-on-surface-variant hover:bg-surface-container-high"
+          >
+            <Icon name="more_vert" size={16} />
+          </button>
+          {menuOpen && (
+            <div className="absolute right-0 top-6 z-20 min-w-[120px] rounded-md border border-outline-variant bg-surface-container shadow-md">
+              <button
+                type="button"
+                onClick={() => { setMenuOpen(false); onArchive(); }}
+                className="flex w-full items-center gap-sm px-md py-sm text-left font-body-md text-body-md text-on-surface hover:bg-surface-variant"
+              >
+                <Icon name="archive" size={16} />
+                Archive
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function ConversationList({ onSelect }: { onSelect?: () => void }) {
   const { chatSessions, chatSessionId } = useAppState();
   const dispatch = useAppDispatch();
@@ -36,14 +143,12 @@ export function ConversationList({ onSelect }: { onSelect?: () => void }) {
   useEffect(() => {
     fetchPersonas().then((ps) => {
       setPersonas(ps);
-      // Auto-expand the persona that owns the active session
       if (ps && chatSessionId) {
         const activeSession = chatSessions.find((s) => s.id === chatSessionId);
         if (activeSession?.personaId) {
           setExpandedPersonas(new Set([activeSession.personaId]));
-        } else {
-          // Expand first persona by default
-          if (ps[0]) setExpandedPersonas(new Set([ps[0].id]));
+        } else if (ps[0]) {
+          setExpandedPersonas(new Set([ps[0].id]));
         }
       } else if (ps?.[0]) {
         setExpandedPersonas(new Set([ps[0].id]));
@@ -80,7 +185,19 @@ export function ConversationList({ onSelect }: { onSelect?: () => void }) {
     onSelect?.();
   }
 
-  // Group sessions by personaId
+  async function handleArchive(sessionId: string) {
+    dispatch({ type: "REMOVE_CHAT_SESSION", sessionId });
+    try {
+      await archiveChatSession(sessionId);
+    } catch (e) {
+      console.error("Failed to archive session:", e);
+      // Re-fetch to restore if the API call failed
+      fetchChatSessions()
+        .then((sessions) => dispatch({ type: "SET_CHAT_SESSIONS", sessions }))
+        .catch(() => {});
+    }
+  }
+
   const sessionsByPersona = new Map<string, typeof chatSessions>();
   const unknownSessions: typeof chatSessions = [];
 
@@ -94,7 +211,6 @@ export function ConversationList({ onSelect }: { onSelect?: () => void }) {
     }
   }
 
-  // Ordered list of personas that have sessions, plus any with no sessions if loaded
   const personaList = personas ?? [];
 
   return (
@@ -117,7 +233,6 @@ export function ConversationList({ onSelect }: { onSelect?: () => void }) {
           </p>
         )}
 
-        {/* Sessions grouped under their mentor */}
         {personaList.map((persona) => {
           const sessions = sessionsByPersona.get(persona.id) ?? [];
           if (sessions.length === 0) return null;
@@ -126,7 +241,6 @@ export function ConversationList({ onSelect }: { onSelect?: () => void }) {
 
           return (
             <div key={persona.id}>
-              {/* Mentor header row — click to expand/collapse */}
               <button
                 type="button"
                 onClick={() => togglePersona(persona.id)}
@@ -145,72 +259,32 @@ export function ConversationList({ onSelect }: { onSelect?: () => void }) {
                     {sessions.length} {sessions.length === 1 ? "chat" : "chats"}
                   </span>
                 </div>
-                <Icon
-                  name={isExpanded ? "expand_less" : "expand_more"}
-                  size={20}
-                  className="shrink-0 text-on-surface-variant"
-                />
+                <Icon name={isExpanded ? "expand_less" : "expand_more"} size={20} className="shrink-0 text-on-surface-variant" />
               </button>
 
-              {/* Session rows under this mentor */}
               {isExpanded &&
-                sessions.map((s) => {
-                  const isActive = s.id === chatSessionId;
-                  return (
-                    <button
-                      key={s.id}
-                      onClick={() => openConversation(s.id)}
-                      className={`flex w-full items-start gap-sm border-b border-outline-variant/20 py-sm pl-14 pr-md text-left transition-colors ${
-                        isActive
-                          ? "border-l-4 border-l-primary bg-surface-container"
-                          : "hover:bg-surface-variant/30"
-                      }`}
-                    >
-                      <div className="flex flex-1 flex-col overflow-hidden">
-                        <div className="flex items-center justify-between">
-                          <span className="truncate text-[12px] font-medium text-on-surface">
-                            {s.lastMessagePreview
-                              ? s.lastMessagePreview.slice(0, 30) + (s.lastMessagePreview.length > 30 ? "…" : "")
-                              : "New conversation"}
-                          </span>
-                          <span className="ml-2 shrink-0 text-[10px] text-on-surface-variant">
-                            {timeAgo(s.lastMessageAt)}
-                          </span>
-                        </div>
-                      </div>
-                    </button>
-                  );
-                })}
+                sessions.map((s) => (
+                  <SessionRow
+                    key={s.id}
+                    s={s}
+                    isActive={s.id === chatSessionId}
+                    onOpen={() => openConversation(s.id)}
+                    onArchive={() => handleArchive(s.id)}
+                  />
+                ))}
             </div>
           );
         })}
 
-        {/* Sessions with no known persona */}
-        {unknownSessions.map((s) => {
-          const isActive = s.id === chatSessionId;
-          return (
-            <button
-              key={s.id}
-              onClick={() => openConversation(s.id)}
-              className={`flex w-full items-center gap-md border-b border-outline-variant/30 p-md text-left transition-colors ${
-                isActive ? "border-l-4 border-l-primary bg-surface-container" : "hover:bg-surface-variant/30"
-              }`}
-            >
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-surface-container-high font-label-sm text-[13px] text-on-surface-variant">
-                ?
-              </div>
-              <div className="flex flex-1 flex-col overflow-hidden">
-                <div className="flex items-center justify-between">
-                  <span className="truncate text-sm text-on-surface">Unknown mentor</span>
-                  <span className="shrink-0 text-[10px] text-on-surface-variant">{timeAgo(s.lastMessageAt)}</span>
-                </div>
-                <p className="truncate text-sm text-on-surface-variant">
-                  {s.lastMessagePreview ?? "No messages yet"}
-                </p>
-              </div>
-            </button>
-          );
-        })}
+        {unknownSessions.map((s) => (
+          <SessionRow
+            key={s.id}
+            s={s}
+            isActive={s.id === chatSessionId}
+            onOpen={() => openConversation(s.id)}
+            onArchive={() => handleArchive(s.id)}
+          />
+        ))}
       </div>
     </div>
   );

@@ -189,6 +189,7 @@ export async function startChatSession(personaId?: string): Promise<string> {
 export interface ChatSessionSummary {
   id: string;
   personaId: string | null;
+  status: string;
   lastMessagePreview: string | null;
   lastMessageAt: string | null;
   updatedAt: string;
@@ -197,14 +198,12 @@ export interface ChatSessionSummary {
 interface BackendConversationSummary {
   id: string;
   persona_id: string | null;
+  status: string;
   last_message_preview: string | null;
   last_message_at: string | null;
   updated_at: string;
 }
 
-/** GET /api/v1/chat/sessions — every conversation this user has started,
- * across mentors, newest activity first. Powers the multi-mentor
- * conversation list. */
 export async function fetchChatSessions(): Promise<ChatSessionSummary[]> {
   const res = await apiFetch("/api/v1/chat/sessions");
   if (!res.ok) throw new Error(`fetchChatSessions failed: ${res.status}`);
@@ -212,10 +211,16 @@ export async function fetchChatSessions(): Promise<ChatSessionSummary[]> {
   return body.map((s) => ({
     id: s.id,
     personaId: s.persona_id,
+    status: s.status,
     lastMessagePreview: s.last_message_preview,
     lastMessageAt: s.last_message_at,
     updatedAt: s.updated_at,
   }));
+}
+
+export async function archiveChatSession(sessionId: string): Promise<void> {
+  const res = await apiFetch(`/api/v1/chat/sessions/${sessionId}/archive`, { method: "POST" });
+  if (!res.ok) throw new Error(`archiveChatSession failed: ${res.status}`);
 }
 
 // ── Goals & Milestones (goals-milestones-service, card O5.1 / BUG-06) ──────

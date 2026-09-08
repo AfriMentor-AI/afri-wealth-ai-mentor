@@ -67,19 +67,13 @@ def create_session(
 @router.get("/sessions", response_model=list[ConversationSummary])
 def list_sessions(
     user_id: str = Depends(get_current_user),
+    include_archived: bool = False,
     db: Session = Depends(get_db),
 ) -> list[ConversationSummary]:
-    """Multi-mentor conversation list — one row per session the user has ever
-    started (with any persona), newest activity first. Powers the desktop/
-    mobile conversation-list UI; each conversation may be with a different
-    persona (Conversation.persona_id already supports this — no schema
-    change needed, a user was never restricted to one concurrent session)."""
-    convs = (
-        db.query(Conversation)
-        .filter(Conversation.user_id == user_id)
-        .order_by(Conversation.updated_at.desc())
-        .all()
-    )
+    q = db.query(Conversation).filter(Conversation.user_id == user_id)
+    if not include_archived:
+        q = q.filter(Conversation.status != "archived")
+    convs = q.order_by(Conversation.updated_at.desc()).all()
     summaries: list[ConversationSummary] = []
     for conv in convs:
         last_message = (
@@ -92,6 +86,7 @@ def list_sessions(
             ConversationSummary(
                 id=conv.id,
                 persona_id=conv.persona_id,
+                status=conv.status,
                 last_message_preview=last_message.content[:140] if last_message else None,
                 last_message_at=last_message.created_at if last_message else None,
                 updated_at=conv.updated_at,
@@ -109,6 +104,22 @@ def get_session(
     conv = db.get(Conversation, session_id)
     if not conv or conv.user_id != user_id:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Session not found")
+    return conv
+
+
+@router.post("/sessions/{session_id}/archive", response_model=ConversationResponse)
+def archive_session(
+    session_id: str,
+    user_id: str = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> Conversation:
+    conv = db.get(Conversation, session_id)
+    if not conv or conv.user_id != user_id:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Session not found")
+    conv.status = "archived"
+    db.add(conv)
+    db.commit()
+    db.refresh(conv)
     return conv
 
 
