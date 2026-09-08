@@ -441,6 +441,7 @@ def tag_commitment(
             detail=f"Goals service error: {exc.response.text}",
         ) from exc
     except httpx.RequestError as exc:
+        logger.error("Goals service unreachable at %s: %s", url, exc)
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail=f"Goals service unreachable: {exc}",
