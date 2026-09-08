@@ -336,6 +336,7 @@ export default function ChatPage() {
   const activeRecordingRef = useRef<ActiveRecording | null>(null);
   const [commitmentTagged, setCommitmentTagged] = useState(false);
   const [goalPickerGoals, setGoalPickerGoals] = useState<{ id: string; title: string }[] | null>(null);
+  const [newGoalInput, setNewGoalInput] = useState("");
   const [showConversations, setShowConversations] = useState(false);
   const [desktopSidebarOpen, setDesktopSidebarOpen] = useState(true);
   const [isTyping, setIsTyping] = useState(false);
@@ -512,6 +513,7 @@ export default function ChatPage() {
     if (!chatSessionId || chatMessages.length === 0) return;
     const lastMessage = chatMessages[chatMessages.length - 1];
     setGoalPickerGoals(null);
+    setNewGoalInput("");
     try {
       await tagCommitment(chatSessionId, lastMessage.id, goalId);
       dispatch({ type: "SET_ACTIVE_GOAL_ID", goalId });
@@ -700,6 +702,42 @@ export default function ChatPage() {
                       {g.title}
                     </button>
                   ))}
+                  {newGoalInput === "" ? (
+                    <button
+                      type="button"
+                      onClick={() => setNewGoalInput(" ")}
+                      className="tap-target flex items-center gap-sm rounded-full border border-dashed border-secondary px-md py-sm text-left font-label-sm text-label-sm text-secondary transition-colors hover:bg-secondary/10"
+                    >
+                      <Icon name="add" size={16} />
+                      New goal
+                    </button>
+                  ) : (
+                    <form
+                      className="flex items-center gap-sm"
+                      onSubmit={async (e) => {
+                        e.preventDefault();
+                        const title = newGoalInput.trim();
+                        if (!title) return;
+                        const created = await createGoal({ title });
+                        await confirmTagWithGoal(created.id);
+                      }}
+                    >
+                      <input
+                        autoFocus
+                        value={newGoalInput.trimStart()}
+                        onChange={(e) => setNewGoalInput(e.target.value)}
+                        placeholder="Goal name…"
+                        className="min-w-0 flex-1 rounded-full border border-secondary bg-transparent px-md py-sm font-label-sm text-label-sm text-on-surface placeholder:text-outline focus:outline-none focus:ring-1 focus:ring-secondary"
+                      />
+                      <button
+                        type="submit"
+                        disabled={!newGoalInput.trim()}
+                        className="tap-target rounded-full bg-secondary px-md py-sm font-label-sm text-label-sm text-on-secondary disabled:opacity-40"
+                      >
+                        Create
+                      </button>
+                    </form>
+                  )}
                   <button type="button" onClick={() => setGoalPickerGoals(null)} className="font-label-sm text-label-sm text-outline">
                     Cancel
                   </button>
