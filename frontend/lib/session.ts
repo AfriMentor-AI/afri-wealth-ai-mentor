@@ -43,6 +43,7 @@ function resolveApiBase(): string {
 const ACCESS_TOKEN_KEY = "afrimentor-access-token";
 const REFRESH_TOKEN_KEY = "afrimentor-refresh-token";
 const DEVICE_ID_KEY = "afrimentor-device-id";
+const INTAKE_COMPLETED_KEY = "afrimentor-intake-completed";
 
 interface TokenPair {
   accessToken: string;
@@ -172,6 +173,31 @@ async function ensureAccessToken(): Promise<string> {
   const fresh = await withAuthLock(signupDeviceAccount);
   storeTokens(fresh);
   return fresh.accessToken;
+}
+
+/** Whether this device has a stored device id — i.e. has at least been
+ * provisioned/visited before. NOTE: this alone does NOT mean intake was done;
+ * a device id is written the moment the first authenticated request runs
+ * (which can happen mid-intake). Use `isIntakeCompleted()` for the intake gate. */
+export function isDeviceProvisioned(): boolean {
+  if (typeof window === "undefined") return false;
+  return !!window.localStorage.getItem(DEVICE_ID_KEY);
+}
+
+/** Marks intake as completed on this device. Set once, after the intake
+ * submission succeeds server-side, and stays set across reloads/app-closes so
+ * a user who completed intake is never pushed back through it. */
+export function markIntakeCompleted(): void {
+  if (typeof window === "undefined") return;
+  window.localStorage.setItem(INTAKE_COMPLETED_KEY, "1");
+}
+
+/** True once intake has been completed on this device. This is the single
+ * source of truth the landing/routing code should use to decide between
+ * "Continue to chat" and "Get started (intake)". */
+export function isIntakeCompleted(): boolean {
+  if (typeof window === "undefined") return false;
+  return window.localStorage.getItem(INTAKE_COMPLETED_KEY) === "1";
 }
 
 /** JWT segments are base64url (`-`/`_`, unpadded), not plain base64 — `atob()`

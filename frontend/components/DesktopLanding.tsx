@@ -6,6 +6,7 @@ import { Icon } from "@/components/Icon";
 import { SankofaMotif } from "@/components/SankofaMotif";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { Button } from "@/components/ui/Button";
+import { isIntakeCompleted } from "@/lib/session";
 
 const desktopFeatures = [
   {
@@ -30,7 +31,7 @@ export function DesktopLanding() {
   const [returning, setReturning] = useState(false);
 
   useEffect(() => {
-    setReturning(!!localStorage.getItem("afrimentor-device-id"));
+    setReturning(isIntakeCompleted());
   }, []);
 
   return (

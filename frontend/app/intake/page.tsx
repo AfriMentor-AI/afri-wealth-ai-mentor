@@ -9,6 +9,7 @@ import { Chip } from "@/components/ui/Chip";
 import { Button } from "@/components/ui/Button";
 import { useAppDispatch } from "@/lib/store";
 import { submitIntake } from "@/lib/api";
+import { markIntakeCompleted } from "@/lib/session";
 import { startAudioRecording, type ActiveRecording } from "@/lib/voice";
 
 const SECTORS_LIST = [
@@ -158,6 +159,9 @@ export default function IntakePage() {
     try {
       const profile = await submitIntake(answers);
       dispatch({ type: "SET_PROFILE", profile });
+      // Persist the completion flag so a returning user is routed straight to
+      // the app and never re-runs intake.
+      markIntakeCompleted();
       router.push("/persona");
     } catch {
       setSubmitError("Couldn't save that — check your connection and try again.");

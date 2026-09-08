@@ -44,6 +44,7 @@ from sqlalchemy.orm import Session, aliased
 from .config import get_settings
 from .consistency_job import run_consistency_job
 from .db.session import engine, get_db
+from .events import start_consumer_thread
 from .models import (
     ArmAssignment,
     Base,
@@ -128,10 +129,14 @@ def _ensure_consistency_columns() -> None:
 
 @app.on_event("startup")
 def startup() -> None:
-    """Create tables and, unless disabled, arm the consistency scoring jobs."""
+    """Create tables, arm the consistency scoring jobs, and start the event consumer."""
     global _scheduler
     Base.metadata.create_all(bind=engine)
     _ensure_consistency_columns()
+
+    # Consume session.completed events to persist engagement metrics (card F4). No-op
+    # when RABBITMQ_URL is unset, so the service runs standalone without a broker.
+    start_consumer_thread()
 
     settings = get_settings()
     if not settings.enable_scheduler:
