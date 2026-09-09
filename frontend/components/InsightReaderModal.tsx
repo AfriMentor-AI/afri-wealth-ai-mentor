@@ -229,6 +229,7 @@ export function InsightReaderModal({
 
   const [isPlaying, setIsPlaying] = useState(false);
   const [playProgress, setPlayProgress] = useState(0);
+  const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [isCompleting, setIsCompleting] = useState(false);
   const [completed, setCompleted] = useState(false);
   const [completionBanner, setCompletionBanner] = useState<{
@@ -242,6 +243,7 @@ export function InsightReaderModal({
     // Reset state whenever a new item opens
     setIsPlaying(false);
     setPlayProgress(0);
+    setElapsedSeconds(0);
     setCompleted(false);
     setCompletionBanner(null);
     stopCurrentSpeech();
@@ -281,8 +283,6 @@ export function InsightReaderModal({
 
   const personaName = selectedPersona?.name.toLowerCase() === "kwame" ? "kwame" : "chioma";
   const personaDisplay = personaName === "kwame" ? "Kwame (Accra, GH)" : "Chioma (Lagos, NG)";
-
-  const [elapsedSeconds, setElapsedSeconds] = useState(0);
 
   // Calculate actual speech duration from narration text (~140 wpm = ~2.3 words/sec)
   const wordCount = (lesson.audioNarration || "").trim().split(/\s+/).filter(Boolean).length;
