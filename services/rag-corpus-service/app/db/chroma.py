@@ -225,6 +225,9 @@ class QdrantCollectionAdapter:
             logger.warning("Failed to delete points for doc_id %s: %s", doc_id, exc)
 
 
+CHROMA_URL = os.getenv("CHROMA_URL", "http://chromadb:8000")
+
+
 def get_chroma_collection(collection_name: str = "afrimentor_corpus"):
     """Return collection instance (cached Qdrant Cloud adapter or ChromaDB fallback)."""
     global _cached_adapters
@@ -239,14 +242,16 @@ def get_chroma_collection(collection_name: str = "afrimentor_corpus"):
         return adapter
 
     import chromadb
+    from urllib.parse import urlparse
 
     chroma_url = os.getenv("CHROMA_URL", "").strip()
-    if chroma_url and "chromadb:8000" not in chroma_url and "localhost:8100" not in chroma_url:
+    if chroma_url:
         try:
-            host_port = chroma_url.replace("http://", "").replace("https://", "").split(":")
-            host = host_port[0]
-            port = int(host_port[1]) if len(host_port) > 1 else 8000
-            client = chromadb.HttpClient(host=host, port=port)
+            parsed = urlparse(chroma_url)
+            host = parsed.hostname or "chromadb"
+            port = parsed.port or 8000
+            ssl = parsed.scheme == "https"
+            client = chromadb.HttpClient(host=host, port=port, ssl=ssl)
             coll = client.get_or_create_collection(
                 name=collection_name,
                 metadata={"hnsw:space": "cosine"},

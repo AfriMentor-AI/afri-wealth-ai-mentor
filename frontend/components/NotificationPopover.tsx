@@ -110,7 +110,7 @@ export function NotificationPopover() {
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 top-full z-50 mt-2 w-80 max-w-[calc(100vw-2rem)] rounded-xl border border-outline-variant bg-surface p-sm shadow-xl animate-in fade-in zoom-in-95">
+        <div className="absolute right-0 top-full z-50 mt-2 w-80 max-w-[calc(100vw-2rem)] rounded-xl border border-outline-variant bg-surface p-sm shadow-xl animate-in fade-in zoom-in-95 md:left-full md:right-auto md:top-0 md:mt-0 md:ml-3">
           <div className="mb-xs flex items-center justify-between border-b border-outline-variant/50 pb-xs px-xs">
             <h4 className="font-title-sm text-title-sm text-on-surface">Notifications</h4>
             {unreadCount > 0 && (

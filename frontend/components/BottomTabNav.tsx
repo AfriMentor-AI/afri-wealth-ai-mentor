@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Icon } from "./Icon";
+import { NotificationPopover } from "./NotificationPopover";
 
 const tabs = [
   { href: "/chat", label: "Chat", icon: "chat_bubble" },
@@ -19,9 +20,12 @@ export function BottomTabNav() {
 
   return (
     <nav
-      className="flex h-16 shrink-0 items-center justify-around border-t border-outline-variant bg-surface px-sm md:h-auto md:w-20 md:flex-col md:justify-start md:gap-2 md:border-b-0 md:border-t-0 md:border-r md:py-lg lg:w-56 lg:items-stretch"
+      className="flex h-16 shrink-0 items-center justify-around border-t border-outline-variant bg-surface px-sm md:h-full md:w-20 md:flex-col md:justify-start md:gap-2 md:border-b-0 md:border-t-0 md:border-r md:py-lg lg:w-56 lg:items-stretch"
       aria-label="Main"
     >
+      <div className="hidden md:flex md:flex-col md:items-center md:pb-sm md:border-b md:border-outline-variant lg:items-stretch">
+        <NotificationPopover />
+      </div>
       {tabs.map(({ href, label, icon }) => {
         const isActive = pathname?.startsWith(href);
         return (

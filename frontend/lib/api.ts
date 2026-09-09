@@ -36,6 +36,7 @@ export function stripThinkTags(text: string): string {
   return text
     .replace(/<think>(?:[\s\S]*?<\/think>|[\s\S]*$)/gi, "")
     .replace(/<\/think>/gi, "")
+    .replace(/<br\s*\/?>/gi, "\n")
     .trimStart();
 }
 
@@ -139,7 +140,7 @@ export function sendMessageStream(
                 id: parsed.id as string,
                 role: "assistant",
                 content: parsed.content as string,
-                is_commitment_candidate: false,
+                is_commitment_candidate: (parsed.is_commitment_candidate as boolean) ?? false,
                 citations: (parsed.citations as Array<{ label: string }>) ?? [],
                 created_at: new Date().toISOString(),
               };
@@ -168,6 +169,8 @@ export async function tagCommitment(chatSessionId: string, chatMessageId: string
     method: "POST",
     body: JSON.stringify({ goal_id: goalId }),
   });
+  // 409 means this message was already tagged — treat as success (idempotent)
+  if (res.status === 409) return { id: "", status: "in_progress" } as unknown as Commitment;
   if (!res.ok) throw new Error(`tagCommitment failed: ${res.status}`);
   return (await res.json()) as Commitment;
 }
@@ -186,6 +189,7 @@ export async function startChatSession(personaId?: string): Promise<string> {
 export interface ChatSessionSummary {
   id: string;
   personaId: string | null;
+  status: string;
   lastMessagePreview: string | null;
   lastMessageAt: string | null;
   updatedAt: string;
@@ -194,14 +198,12 @@ export interface ChatSessionSummary {
 interface BackendConversationSummary {
   id: string;
   persona_id: string | null;
+  status: string;
   last_message_preview: string | null;
   last_message_at: string | null;
   updated_at: string;
 }
 
-/** GET /api/v1/chat/sessions — every conversation this user has started,
- * across mentors, newest activity first. Powers the multi-mentor
- * conversation list. */
 export async function fetchChatSessions(): Promise<ChatSessionSummary[]> {
   const res = await apiFetch("/api/v1/chat/sessions");
   if (!res.ok) throw new Error(`fetchChatSessions failed: ${res.status}`);
@@ -209,10 +211,16 @@ export async function fetchChatSessions(): Promise<ChatSessionSummary[]> {
   return body.map((s) => ({
     id: s.id,
     personaId: s.persona_id,
+    status: s.status,
     lastMessagePreview: s.last_message_preview,
     lastMessageAt: s.last_message_at,
     updatedAt: s.updated_at,
   }));
+}
+
+export async function deleteChatSession(sessionId: string): Promise<void> {
+  const res = await apiFetch(`/api/v1/chat/sessions/${sessionId}/archive`, { method: "POST" });
+  if (!res.ok) throw new Error(`deleteChatSession failed: ${res.status}`);
 }
 
 // ── Goals & Milestones (goals-milestones-service, card O5.1 / BUG-06) ──────
@@ -671,24 +679,34 @@ export async function recordAction(
 
 export interface BackendInsightItem {
   id: string;
+  slug?: string | null;
   title: string;
   summary: string;
   category: string;
-  duration_minutes: number;
-  is_audio: boolean;
+  duration_minutes?: number;
+  duration_seconds?: number;
+  is_audio?: boolean;
+  media_type?: string;
   media_url: string | null;
+  content?: string | null;
+  audio_narration?: string | null;
   created_at: string;
   is_favorited: boolean;
 }
 
 function toInsightItem(b: BackendInsightItem): InsightItem {
+  const durationMinutes =
+    b.duration_minutes ??
+    (b.duration_seconds ? Math.max(1, Math.round(b.duration_seconds / 60)) : 5);
+  const isAudio = b.is_audio ?? (b.media_type === "audio");
+
   return {
     id: b.id,
     title: b.title,
     summary: b.summary,
     category: b.category,
-    durationMinutes: b.duration_minutes,
-    isAudio: b.is_audio,
+    durationMinutes,
+    isAudio,
     mediaUrl: b.media_url ?? undefined,
     createdAt: b.created_at,
   };

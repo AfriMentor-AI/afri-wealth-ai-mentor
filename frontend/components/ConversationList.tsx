@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import Link from "next/link";
 import { Icon } from "./Icon";
-import { fetchChatMessages, fetchChatSessions, fetchPersonas } from "@/lib/api";
+import { deleteChatSession, fetchChatMessages, fetchChatSessions, fetchPersonas } from "@/lib/api";
 import type { Persona } from "@/lib/types";
 import { useAppDispatch, useAppState } from "@/lib/store";
 
@@ -27,23 +28,216 @@ function timeAgo(iso: string | null): string {
   return `${Math.floor(hours / 24)}d ago`;
 }
 
+function DeleteConfirmDialog({
+  preview,
+  onConfirm,
+  onCancel,
+}: {
+  preview: string;
+  onConfirm: () => void;
+  onCancel: () => void;
+}) {
+  // Trap focus & close on Escape
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") onCancel();
+    }
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [onCancel]);
+
+  return createPortal(
+    <div
+      className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 px-md backdrop-blur-sm"
+      onClick={onCancel}
+    >
+      <div
+        className="w-full max-w-sm rounded-2xl bg-surface p-lg shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Icon */}
+        <div className="mb-md flex justify-center">
+          <div className="flex h-14 w-14 items-center justify-center rounded-full bg-error-container">
+            <Icon name="delete" size={28} className="text-on-error-container" />
+          </div>
+        </div>
+
+        {/* Title */}
+        <h2 className="mb-xs text-center font-title-lg text-title-lg text-on-surface">
+          Delete this conversation?
+        </h2>
+
+        {/* Preview */}
+        <p className="mb-xs text-center font-body-sm text-body-sm text-on-surface-variant">
+          &ldquo;{preview}&rdquo;
+        </p>
+        <p className="mb-lg text-center font-body-sm text-body-sm text-on-surface-variant/70">
+          This conversation and all its messages will be permanently removed.
+        </p>
+
+        {/* Actions */}
+        <div className="flex gap-sm">
+          <button
+            type="button"
+            onClick={onCancel}
+            className="flex-1 rounded-full border border-outline py-sm font-label-lg text-label-lg text-on-surface transition-colors hover:bg-surface-variant active:scale-95"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            onClick={onConfirm}
+            className="flex flex-1 items-center justify-center gap-xs rounded-full bg-error py-sm font-label-lg text-label-lg text-on-error transition-colors hover:bg-error/90 active:scale-95"
+          >
+            <Icon name="delete" size={16} />
+            Delete
+          </button>
+        </div>
+      </div>
+    </div>,
+    document.body,
+  );
+}
+
+function SessionRow({
+  s,
+  isActive,
+  onOpen,
+  onDelete,
+}: {
+  s: { id: string; lastMessagePreview: string | null; lastMessageAt: string | null };
+  isActive: boolean;
+  onOpen: () => void;
+  onDelete: () => void;
+}) {
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [menuPos, setMenuPos] = useState<{ top: number; right: number } | null>(null);
+  const [swipeX, setSwipeX] = useState(0);
+  const touchStartX = useRef<number | null>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const btnRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    function handler(e: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) setMenuOpen(false);
+    }
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [menuOpen]);
+
+  function onTouchStart(e: React.TouchEvent) {
+    touchStartX.current = e.touches[0].clientX;
+  }
+  function onTouchMove(e: React.TouchEvent) {
+    if (touchStartX.current === null) return;
+    const dx = e.touches[0].clientX - touchStartX.current;
+    if (dx < 0) setSwipeX(Math.max(dx, -80));
+  }
+  function onTouchEnd() {
+    if (swipeX < -50) {
+      // reveal stays — tap the red button to confirm
+    } else {
+      setSwipeX(0);
+    }
+    touchStartX.current = null;
+  }
+
+  const preview = s.lastMessagePreview
+    ? s.lastMessagePreview.slice(0, 30) + (s.lastMessagePreview.length > 30 ? "…" : "")
+    : "New conversation";
+
+  return (
+    <div className="relative">
+      {/* Swipe-reveal layer (mobile) */}
+      <div className="pointer-events-none absolute inset-0 overflow-hidden">
+        <div className="pointer-events-auto absolute inset-y-0 right-0 flex w-20 items-center justify-center bg-error">
+          <button
+            type="button"
+            aria-label="Delete"
+            onClick={onDelete}
+            className="flex flex-col items-center gap-[2px] text-on-error"
+          >
+            <Icon name="delete" size={20} />
+            <span className="text-[10px]">Delete</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Row */}
+      <div
+        style={{ transform: `translateX(${swipeX}px)`, transition: swipeX === 0 ? "transform 0.2s" : "none" }}
+        onTouchStart={onTouchStart}
+        onTouchMove={onTouchMove}
+        onTouchEnd={onTouchEnd}
+        className={`group relative flex w-full items-start gap-sm border-b border-outline-variant/20 bg-surface py-sm pl-14 pr-md text-left transition-colors ${
+          isActive ? "border-l-4 border-l-primary bg-surface-container" : "hover:bg-surface-variant/30"
+        }`}
+      >
+        <button type="button" onClick={onOpen} className="flex flex-1 flex-col overflow-hidden">
+          <div className="flex items-center justify-between">
+            <span className="truncate text-[12px] font-medium text-on-surface">{preview}</span>
+            <span className="ml-2 shrink-0 text-[10px] text-on-surface-variant">{timeAgo(s.lastMessageAt)}</span>
+          </div>
+        </button>
+
+        {/* Desktop: ... menu on hover */}
+        <div ref={menuRef} className="relative hidden shrink-0 group-hover:block">
+          <button
+            type="button"
+            aria-label="More options"
+            ref={btnRef}
+            onClick={(e) => {
+              e.stopPropagation();
+              if (!menuOpen && btnRef.current) {
+                const r = btnRef.current.getBoundingClientRect();
+                setMenuPos({ top: r.bottom + 4, right: window.innerWidth - r.right });
+              }
+              setMenuOpen((v) => !v);
+            }}
+            className="flex items-center justify-center rounded-full p-[2px] text-on-surface-variant hover:bg-surface-container-high"
+          >
+            <Icon name="more_vert" size={16} />
+          </button>
+          {menuOpen && menuPos && createPortal(
+            <div
+              ref={menuRef}
+              style={{ position: "fixed", top: menuPos.top, right: menuPos.right, zIndex: 9998 }}
+              className="min-w-[140px] rounded-md border border-outline-variant bg-surface-container shadow-md"
+            >
+              <button
+                type="button"
+                onClick={() => { setMenuOpen(false); onDelete(); }}
+                className="flex w-full items-center gap-sm px-md py-sm text-left font-body-md text-body-md text-error hover:bg-error-container/30"
+              >
+                <Icon name="delete" size={16} />
+                Delete
+              </button>
+            </div>,
+            document.body,
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function ConversationList({ onSelect }: { onSelect?: () => void }) {
   const { chatSessions, chatSessionId } = useAppState();
   const dispatch = useAppDispatch();
   const [personas, setPersonas] = useState<Persona[] | null>(null);
   const [expandedPersonas, setExpandedPersonas] = useState<Set<string>>(new Set());
+  const [pendingDelete, setPendingDelete] = useState<{ id: string; preview: string } | null>(null);
 
   useEffect(() => {
     fetchPersonas().then((ps) => {
       setPersonas(ps);
-      // Auto-expand the persona that owns the active session
       if (ps && chatSessionId) {
         const activeSession = chatSessions.find((s) => s.id === chatSessionId);
         if (activeSession?.personaId) {
           setExpandedPersonas(new Set([activeSession.personaId]));
-        } else {
-          // Expand first persona by default
-          if (ps[0]) setExpandedPersonas(new Set([ps[0].id]));
+        } else if (ps[0]) {
+          setExpandedPersonas(new Set([ps[0].id]));
         }
       } else if (ps?.[0]) {
         setExpandedPersonas(new Set([ps[0].id]));
@@ -80,7 +274,25 @@ export function ConversationList({ onSelect }: { onSelect?: () => void }) {
     onSelect?.();
   }
 
-  // Group sessions by personaId
+  function requestDelete(sessionId: string, preview: string) {
+    setPendingDelete({ id: sessionId, preview });
+  }
+
+  async function confirmDelete() {
+    if (!pendingDelete) return;
+    const { id } = pendingDelete;
+    setPendingDelete(null);
+    dispatch({ type: "REMOVE_CHAT_SESSION", sessionId: id });
+    try {
+      await deleteChatSession(id);
+    } catch (e) {
+      console.error("Failed to delete session:", e);
+      fetchChatSessions()
+        .then((sessions) => dispatch({ type: "SET_CHAT_SESSIONS", sessions }))
+        .catch(() => {});
+    }
+  }
+
   const sessionsByPersona = new Map<string, typeof chatSessions>();
   const unknownSessions: typeof chatSessions = [];
 
@@ -94,7 +306,6 @@ export function ConversationList({ onSelect }: { onSelect?: () => void }) {
     }
   }
 
-  // Ordered list of personas that have sessions, plus any with no sessions if loaded
   const personaList = personas ?? [];
 
   return (
@@ -117,7 +328,6 @@ export function ConversationList({ onSelect }: { onSelect?: () => void }) {
           </p>
         )}
 
-        {/* Sessions grouped under their mentor */}
         {personaList.map((persona) => {
           const sessions = sessionsByPersona.get(persona.id) ?? [];
           if (sessions.length === 0) return null;
@@ -126,7 +336,6 @@ export function ConversationList({ onSelect }: { onSelect?: () => void }) {
 
           return (
             <div key={persona.id}>
-              {/* Mentor header row — click to expand/collapse */}
               <button
                 type="button"
                 onClick={() => togglePersona(persona.id)}
@@ -145,73 +354,41 @@ export function ConversationList({ onSelect }: { onSelect?: () => void }) {
                     {sessions.length} {sessions.length === 1 ? "chat" : "chats"}
                   </span>
                 </div>
-                <Icon
-                  name={isExpanded ? "expand_less" : "expand_more"}
-                  size={20}
-                  className="shrink-0 text-on-surface-variant"
-                />
+                <Icon name={isExpanded ? "expand_less" : "expand_more"} size={20} className="shrink-0 text-on-surface-variant" />
               </button>
 
-              {/* Session rows under this mentor */}
               {isExpanded &&
-                sessions.map((s) => {
-                  const isActive = s.id === chatSessionId;
-                  return (
-                    <button
-                      key={s.id}
-                      onClick={() => openConversation(s.id)}
-                      className={`flex w-full items-start gap-sm border-b border-outline-variant/20 py-sm pl-14 pr-md text-left transition-colors ${
-                        isActive
-                          ? "border-l-4 border-l-primary bg-surface-container"
-                          : "hover:bg-surface-variant/30"
-                      }`}
-                    >
-                      <div className="flex flex-1 flex-col overflow-hidden">
-                        <div className="flex items-center justify-between">
-                          <span className="truncate text-[12px] font-medium text-on-surface">
-                            {s.lastMessagePreview
-                              ? s.lastMessagePreview.slice(0, 30) + (s.lastMessagePreview.length > 30 ? "…" : "")
-                              : "New conversation"}
-                          </span>
-                          <span className="ml-2 shrink-0 text-[10px] text-on-surface-variant">
-                            {timeAgo(s.lastMessageAt)}
-                          </span>
-                        </div>
-                      </div>
-                    </button>
-                  );
-                })}
+                sessions.map((s) => (
+                  <SessionRow
+                    key={s.id}
+                    s={s}
+                    isActive={s.id === chatSessionId}
+                    onOpen={() => openConversation(s.id)}
+                    onDelete={() => requestDelete(s.id, s.lastMessagePreview?.slice(0, 40) ?? "New conversation")}
+                  />
+                ))}
             </div>
           );
         })}
 
-        {/* Sessions with no known persona */}
-        {unknownSessions.map((s) => {
-          const isActive = s.id === chatSessionId;
-          return (
-            <button
-              key={s.id}
-              onClick={() => openConversation(s.id)}
-              className={`flex w-full items-center gap-md border-b border-outline-variant/30 p-md text-left transition-colors ${
-                isActive ? "border-l-4 border-l-primary bg-surface-container" : "hover:bg-surface-variant/30"
-              }`}
-            >
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-surface-container-high font-label-sm text-[13px] text-on-surface-variant">
-                ?
-              </div>
-              <div className="flex flex-1 flex-col overflow-hidden">
-                <div className="flex items-center justify-between">
-                  <span className="truncate text-sm text-on-surface">Unknown mentor</span>
-                  <span className="shrink-0 text-[10px] text-on-surface-variant">{timeAgo(s.lastMessageAt)}</span>
-                </div>
-                <p className="truncate text-sm text-on-surface-variant">
-                  {s.lastMessagePreview ?? "No messages yet"}
-                </p>
-              </div>
-            </button>
-          );
-        })}
+        {unknownSessions.map((s) => (
+          <SessionRow
+            key={s.id}
+            s={s}
+            isActive={s.id === chatSessionId}
+            onOpen={() => openConversation(s.id)}
+            onDelete={() => requestDelete(s.id, s.lastMessagePreview?.slice(0, 40) ?? "New conversation")}
+          />
+        ))}
       </div>
+
+      {pendingDelete && (
+        <DeleteConfirmDialog
+          preview={pendingDelete.preview}
+          onConfirm={confirmDelete}
+          onCancel={() => setPendingDelete(null)}
+        />
+      )}
     </div>
   );
 }

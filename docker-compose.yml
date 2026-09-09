@@ -226,6 +226,8 @@ services:
       # Present as a kill switch for a false positive blocking legitimate
       # mentoring — not something to turn off routinely.
       GUARDRAILS_ENABLED: ${GUARDRAILS_ENABLED:-true}
+      GOALS_SERVICE_URL: http://goals-milestones-service:8006
+      NOTIFICATION_SERVICE_URL: http://notification-service:8012
     depends_on:
       postgres: {condition: service_healthy}
       persona-prompt-service: {condition: service_healthy}
@@ -382,6 +384,7 @@ services:
       RABBITMQ_URL: amqp://afrimentor:afrimentor@rabbitmq:5672/
       # Streak-at-risk sweep (card O3.4) calls this to read a user's streak.
       PROGRESS_SERVICE_URL: http://progress-gamification-service:8007
+      NOTIFICATION_SERVICE_URL: http://notification-service:8012
     depends_on:
       postgres: {condition: service_healthy}
       rabbitmq: {condition: service_healthy}

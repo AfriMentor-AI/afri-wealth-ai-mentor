@@ -37,9 +37,29 @@ class Base(DeclarativeBase):
     pass
 
 
+def _ensure_insight_columns() -> None:
+    """Additive migration for live PostgreSQL volumes without full Alembic migration."""
+    if engine.dialect.name != "postgresql":
+        return
+    columns = [
+        ("slug", "VARCHAR(100)"),
+        ("content", "TEXT"),
+        ("audio_narration", "TEXT"),
+    ]
+    for col_name, col_type in columns:
+        try:
+            with engine.begin() as conn:
+                conn.exec_driver_sql(
+                    f"ALTER TABLE insight_items ADD COLUMN IF NOT EXISTS {col_name} {col_type}"
+                )
+        except Exception:
+            pass
+
+
 def init_db() -> None:
     from . import models  # noqa: F401
     Base.metadata.create_all(bind=engine)
+    _ensure_insight_columns()
 
 
 def get_db() -> Iterator[Session]:

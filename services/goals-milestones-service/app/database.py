@@ -52,6 +52,12 @@ _GOALS_ADDED_COLUMNS: tuple[tuple[str, str], ...] = (
     ("status", "VARCHAR(20)"),
 )
 
+# Post-launch columns added to `tagged_commitments` (same pattern as above).
+_TAGGED_COMMITMENTS_ADDED_COLUMNS: tuple[tuple[str, str, str | None], ...] = (
+    # (column_name, sql_type, backfill_sql_or_None)
+    ("is_archived", "BOOLEAN NOT NULL DEFAULT FALSE", None),
+)
+
 
 def _ensure_goals_columns() -> None:
     """Additively add post-launch columns to an existing `goals` table.
@@ -75,10 +81,28 @@ def _ensure_goals_columns() -> None:
         logger.warning("Could not ensure goals columns: %s", exc)
 
 
+def _ensure_tagged_commitments_columns() -> None:
+    """Additively add post-launch columns to an existing `tagged_commitments` table.
+    Postgres only — idempotent, never blocks startup.
+    """
+    if engine.dialect.name != "postgresql":
+        return
+    try:
+        with engine.begin() as conn:
+            for name, sql_type, _ in _TAGGED_COMMITMENTS_ADDED_COLUMNS:
+                conn.exec_driver_sql(
+                    f"ALTER TABLE tagged_commitments ADD COLUMN IF NOT EXISTS {name} {sql_type}"
+                )
+    except Exception as exc:  # pragma: no cover - defensive: never block startup
+        logger.warning("Could not ensure tagged_commitments columns: %s", exc)
+
+
 def init_db() -> None:
     from . import models  # noqa: F401
     Base.metadata.create_all(bind=engine)
     _ensure_goals_columns()
+    _ensure_tagged_commitments_columns()
+
 
 
 def get_db() -> Iterator[Session]:

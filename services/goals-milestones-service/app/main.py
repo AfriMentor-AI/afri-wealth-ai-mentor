@@ -13,6 +13,7 @@ from .config import get_settings
 from .database import init_db
 from .observability import instrument
 from .routers.goals import router as goals_router
+from .routers.internal import router as internal_router
 from .routers.milestones import router as milestones_router
 
 settings = get_settings()
@@ -38,6 +39,7 @@ instrument(app, SERVICE_NAME)
 
 app.include_router(goals_router)
 app.include_router(milestones_router)
+app.include_router(internal_router)
 
 
 @app.get("/health", tags=["meta"])

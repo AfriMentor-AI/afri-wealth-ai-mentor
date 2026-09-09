@@ -197,11 +197,29 @@ def create_commitment(
         db.commit()
     except IntegrityError as err:
         db.rollback()
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="Message already tagged as a commitment",
-        ) from err
-    db.refresh(commitment)
+        # The message_id unique constraint fired. Check whether the existing
+        # row is archived (its source conversation was deleted). If so,
+        # re-activate it under the new goal rather than blocking the user.
+        existing = (
+            db.query(TaggedCommitment)
+            .filter(TaggedCommitment.message_id == body.message_id)
+            .first()
+        )
+        if existing and existing.is_archived:
+            existing.goal_id = goal_id
+            existing.conversation_id = body.conversation_id
+            existing.content = body.content
+            existing.is_archived = False
+            db.commit()
+            db.refresh(existing)
+            commitment = existing
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Message already tagged as a commitment",
+            ) from err
+    else:
+        db.refresh(commitment)
 
     emit_commitment_created(
         commitment_id=commitment.id,
@@ -222,8 +240,14 @@ def list_commitments(
     db: Session = Depends(get_db),
 ) -> list[TaggedCommitment]:
     """List tagged commitments for a goal — feeds the 'Tagged Commitments' list
-    on the Goal Milestone Path screen."""
+    on the Goal Milestone Path screen.
+
+    Commitments whose source conversation has been deleted (archived) by the
+    user are excluded. The underlying rows are retained in the database for
+    admin oversight; only is_archived=True rows are hidden here.
+    """
     goal = db.get(Goal, goal_id)
     if not goal or goal.user_id != user_id:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Goal not found")
-    return goal.commitments
+    return [c for c in goal.commitments if not c.is_archived]
+

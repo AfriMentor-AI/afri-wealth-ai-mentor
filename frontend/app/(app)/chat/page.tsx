@@ -20,7 +20,30 @@ type MentorBlock =
   | { type: "table"; headers: string[]; rows: string[][] };
 
 function normalizeInlineText(value: string) {
-  return value.replaceAll("`", "").trim();
+  return value
+    .replaceAll("`", "")
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .trim();
+}
+
+function renderCellContent(value: string) {
+  // Split on <br> variants so bullet lists inside table cells render on separate lines
+  const segments = value.split(/<br\s*\/?>/i);
+  if (segments.length === 1) return renderInlineText(value);
+  return (
+    <>
+      {segments.map((seg, i) => (
+        <Fragment key={i}>
+          {i > 0 && <br />}
+          {renderInlineText(seg)}
+        </Fragment>
+      ))}
+    </>
+  );
 }
 
 function parseInlineStrong(text: string) {
@@ -225,7 +248,7 @@ function MentorMessageContent({ content }: Readonly<{ content: string }>) {
                           key={`cell-${blockIndex}-${rowIndex}-${colIndex}`}
                           className="border-b border-outline-variant/70 px-sm py-xs font-body-md text-body-md text-on-surface"
                         >
-                          {renderInlineText(row[colIndex] ?? "-")}
+                          {renderCellContent(row[colIndex] ?? "-")}
                         </td>
                       ))}
                     </tr>
@@ -312,6 +335,8 @@ export default function ChatPage() {
   const [playingAudioMessageId, setPlayingAudioMessageId] = useState<string | null>(null);
   const activeRecordingRef = useRef<ActiveRecording | null>(null);
   const [commitmentTagged, setCommitmentTagged] = useState(false);
+  const [goalPickerGoals, setGoalPickerGoals] = useState<{ id: string; title: string }[] | null>(null);
+  const [newGoalInput, setNewGoalInput] = useState("");
   const [showConversations, setShowConversations] = useState(false);
   const [desktopSidebarOpen, setDesktopSidebarOpen] = useState(true);
   const [isTyping, setIsTyping] = useState(false);
@@ -438,6 +463,7 @@ export default function ChatPage() {
         setStreamingContent(null);
         setIsTyping(false);
         dispatch({ type: "APPEND_CHAT_MESSAGE", message: assistantMessage });
+        setCommitmentTagged(false);
         abortStreamRef.current = null;
 
         // Auto-play mentor's audio reply if message was sent via voice!
@@ -457,41 +483,40 @@ export default function ChatPage() {
   }
 
   async function handleTagCommitment() {
-    if (!chatSessionId || chatMessages.length === 0) {
-      console.error("Cannot tag commitment without a chat session and messages.");
-      return;
-    }
+    if (!chatSessionId || chatMessages.length === 0) return;
     const lastMessage = chatMessages[chatMessages.length - 1];
-    if (lastMessage.sender !== "mentor" || !lastMessage.is_commitment_candidate) {
-      return;
-    }
+    if (lastMessage.sender !== "mentor" || !lastMessage.is_commitment_candidate) return;
 
-    let targetGoalId = activeGoalId;
-    if (!targetGoalId) {
-      try {
-        const goals = await fetchGoals();
-        if (goals && goals.length > 0) {
-          targetGoalId = goals[0].id;
-        } else {
-          const newGoal = await createGoal({
-            title: "Build Business Emergency Reserve",
-            description: "Target 10% daily reserve for operational cushion",
-          });
-          targetGoalId = newGoal.id;
-        }
-        dispatch({ type: "SET_ACTIVE_GOAL_ID", goalId: targetGoalId });
-      } catch (e) {
-        console.warn("Could not retrieve or create default goal:", e);
-      }
-    }
-
-    if (!targetGoalId) {
-      console.error("No active goal available to attach commitment to.");
+    if (activeGoalId) {
+      await confirmTagWithGoal(activeGoalId);
       return;
     }
 
     try {
-      await tagCommitment(chatSessionId, lastMessage.id, targetGoalId);
+      const goals = await fetchGoals();
+      if (goals.length === 1) {
+        dispatch({ type: "SET_ACTIVE_GOAL_ID", goalId: goals[0].id });
+        await confirmTagWithGoal(goals[0].id);
+      } else if (goals.length > 1) {
+        setGoalPickerGoals(goals.map((g) => ({ id: g.id, title: g.title })));
+      } else {
+        const newGoal = await createGoal({ title: "My Financial Goal", description: undefined });
+        dispatch({ type: "SET_ACTIVE_GOAL_ID", goalId: newGoal.id });
+        await confirmTagWithGoal(newGoal.id);
+      }
+    } catch (e) {
+      console.warn("Could not retrieve goals:", e);
+    }
+  }
+
+  async function confirmTagWithGoal(goalId: string) {
+    if (!chatSessionId || chatMessages.length === 0) return;
+    const lastMessage = chatMessages[chatMessages.length - 1];
+    setGoalPickerGoals(null);
+    setNewGoalInput("");
+    try {
+      await tagCommitment(chatSessionId, lastMessage.id, goalId);
+      dispatch({ type: "SET_ACTIVE_GOAL_ID", goalId });
       setCommitmentTagged(true);
     } catch (error) {
       console.error("Failed to tag commitment:", error);
@@ -663,20 +688,77 @@ export default function ChatPage() {
           )}
 
           {lastIsMentor && chatMessages[chatMessages.length - 1].is_commitment_candidate && !commitmentTagged && (
-            <div className="flex items-center justify-between gap-md rounded border border-secondary bg-secondary-container p-md md:rounded-xl">
-              <div className="flex items-center gap-sm">
-                <Icon name="workspace_premium" filled className="text-secondary" />
-                <span className="font-body-md text-body-md font-semibold text-on-secondary-container">
-                  Tag 10% daily reserve as a commitment?
-                </span>
-              </div>
-              <button
-                type="button"
-                onClick={handleTagCommitment}
-                className="tap-target rounded-full bg-secondary px-md py-sm font-label-sm text-label-sm text-on-secondary transition-transform active:scale-95"
-              >
-                Yes, Tag It
-              </button>
+            <div className="rounded border border-secondary bg-secondary-container p-md md:rounded-xl">
+              {goalPickerGoals ? (
+                <div className="flex flex-col gap-sm">
+                  <span className="font-body-md text-body-md font-semibold text-on-secondary-container">Which goal should this go under?</span>
+                  {goalPickerGoals.map((g) => (
+                    <button
+                      key={g.id}
+                      type="button"
+                      onClick={() => confirmTagWithGoal(g.id)}
+                      className="tap-target rounded-full bg-secondary px-md py-sm text-left font-label-sm text-label-sm text-on-secondary transition-transform active:scale-95"
+                    >
+                      {g.title}
+                    </button>
+                  ))}
+                  {newGoalInput === "" ? (
+                    <button
+                      type="button"
+                      onClick={() => setNewGoalInput(" ")}
+                      className="tap-target flex items-center gap-sm rounded-full border border-dashed border-secondary px-md py-sm text-left font-label-sm text-label-sm text-secondary transition-colors hover:bg-secondary/10"
+                    >
+                      <Icon name="add" size={16} />
+                      New goal
+                    </button>
+                  ) : (
+                    <form
+                      className="flex items-center gap-sm"
+                      onSubmit={async (e) => {
+                        e.preventDefault();
+                        const title = newGoalInput.trim();
+                        if (!title) return;
+                        const created = await createGoal({ title });
+                        await confirmTagWithGoal(created.id);
+                      }}
+                    >
+                      <input
+                        autoFocus
+                        value={newGoalInput.trimStart()}
+                        onChange={(e) => setNewGoalInput(e.target.value)}
+                        placeholder="Goal name…"
+                        className="min-w-0 flex-1 rounded-full border border-secondary bg-transparent px-md py-sm font-label-sm text-label-sm text-on-surface placeholder:text-outline focus:outline-none focus:ring-1 focus:ring-secondary"
+                      />
+                      <button
+                        type="submit"
+                        disabled={!newGoalInput.trim()}
+                        className="tap-target rounded-full bg-secondary px-md py-sm font-label-sm text-label-sm text-on-secondary disabled:opacity-40"
+                      >
+                        Create
+                      </button>
+                    </form>
+                  )}
+                  <button type="button" onClick={() => setGoalPickerGoals(null)} className="font-label-sm text-label-sm text-outline">
+                    Cancel
+                  </button>
+                </div>
+              ) : (
+                <div className="flex items-center justify-between gap-md">
+                  <div className="flex items-center gap-sm">
+                    <Icon name="workspace_premium" filled className="text-secondary" />
+                    <span className="font-body-md text-body-md font-semibold text-on-secondary-container">
+                      Tag this as a commitment?
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleTagCommitment}
+                    className="tap-target rounded-full bg-secondary px-md py-sm font-label-sm text-label-sm text-on-secondary transition-transform active:scale-95"
+                  >
+                    Yes, Tag It
+                  </button>
+                </div>
+              )}
             </div>
           )}
         </div>

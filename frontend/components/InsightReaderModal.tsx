@@ -16,6 +16,12 @@ interface InsightReaderModalProps {
   onCompleted?: () => void;
 }
 
+function formatAudioTime(seconds: number): string {
+  const m = Math.floor(seconds / 60);
+  const s = Math.floor(seconds % 60);
+  return `${m}:${s.toString().padStart(2, "0")}`;
+}
+
 interface LessonContent {
   headline: string;
   mentorTip: string;
@@ -223,6 +229,7 @@ export function InsightReaderModal({
 
   const [isPlaying, setIsPlaying] = useState(false);
   const [playProgress, setPlayProgress] = useState(0);
+  const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [isCompleting, setIsCompleting] = useState(false);
   const [completed, setCompleted] = useState(false);
   const [completionBanner, setCompletionBanner] = useState<{
@@ -236,6 +243,7 @@ export function InsightReaderModal({
     // Reset state whenever a new item opens
     setIsPlaying(false);
     setPlayProgress(0);
+    setElapsedSeconds(0);
     setCompleted(false);
     setCompletionBanner(null);
     stopCurrentSpeech();
@@ -276,6 +284,10 @@ export function InsightReaderModal({
   const personaName = selectedPersona?.name.toLowerCase() === "kwame" ? "kwame" : "chioma";
   const personaDisplay = personaName === "kwame" ? "Kwame (Accra, GH)" : "Chioma (Lagos, NG)";
 
+  // Calculate actual speech duration from narration text (~140 wpm = ~2.3 words/sec)
+  const wordCount = (lesson.audioNarration || "").trim().split(/\s+/).filter(Boolean).length;
+  const audioDurationSeconds = Math.max(10, Math.round(wordCount / 2.3));
+
   const handleToggleAudio = async () => {
     if (isPlaying) {
       stopCurrentSpeech();
@@ -286,26 +298,27 @@ export function InsightReaderModal({
 
     setIsPlaying(true);
     setPlayProgress(0);
+    setElapsedSeconds(0);
 
-    // Simulate progress animation over ~45-60 seconds for micro-lesson
-    const estimatedDurationMs = Math.max(30000, lesson.audioNarration.length * 75);
-    const intervalMs = 300;
-    const stepIncrement = (intervalMs / estimatedDurationMs) * 100;
+    const startTime = Date.now();
+    const intervalMs = 150;
 
     if (progressIntervalRef.current) clearInterval(progressIntervalRef.current);
     progressIntervalRef.current = setInterval(() => {
-      setPlayProgress((prev) => {
-        if (prev >= 100) {
-          if (progressIntervalRef.current) clearInterval(progressIntervalRef.current);
-          return 100;
-        }
-        return Math.min(100, prev + stepIncrement);
-      });
+      const elapsed = (Date.now() - startTime) / 1000;
+      if (elapsed >= audioDurationSeconds) {
+        setElapsedSeconds(audioDurationSeconds);
+        setPlayProgress(100);
+      } else {
+        setElapsedSeconds(elapsed);
+        setPlayProgress((elapsed / audioDurationSeconds) * 100);
+      }
     }, intervalMs);
 
     try {
       await playTextToSpeech(lesson.audioNarration, personaName, () => {
         setIsPlaying(false);
+        setElapsedSeconds(audioDurationSeconds);
         setPlayProgress(100);
         if (progressIntervalRef.current) clearInterval(progressIntervalRef.current);
       });
@@ -370,7 +383,7 @@ export function InsightReaderModal({
             </span>
             <span className="flex items-center gap-1 font-label-sm text-xs text-on-surface-variant">
               <Icon name="schedule" size={14} />
-              {item.durationMinutes} min {item.isAudio ? "listen" : "read"}
+              {item.durationMinutes} min read
             </span>
           </div>
 
@@ -423,7 +436,7 @@ export function InsightReaderModal({
                     {isPlaying ? "Narration Playing" : "Listen to Lesson"}
                   </p>
                   <p className="font-body-sm text-xs text-on-surface-variant">
-                    Voice of Mentor {personaDisplay}
+                    Voice of Mentor {personaDisplay} • {formatAudioTime(audioDurationSeconds)} audio
                   </p>
                 </div>
               </div>
@@ -443,8 +456,16 @@ export function InsightReaderModal({
                 />
               </div>
               <div className="mt-1 flex justify-between font-label-sm text-[11px] text-on-surface-variant">
-                <span>{isPlaying ? "Playing..." : playProgress > 0 ? "Paused" : "Ready"}</span>
-                <span>{item.durationMinutes}:00</span>
+                <span>
+                  {isPlaying
+                    ? `Playing (${formatAudioTime(elapsedSeconds)})`
+                    : playProgress >= 100
+                    ? "Completed"
+                    : playProgress > 0
+                    ? `Paused (${formatAudioTime(elapsedSeconds)})`
+                    : "Ready to listen"}
+                </span>
+                <span>{formatAudioTime(audioDurationSeconds)}</span>
               </div>
             </div>
           </div>
