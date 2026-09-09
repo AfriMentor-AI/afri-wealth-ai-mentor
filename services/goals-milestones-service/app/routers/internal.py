@@ -17,7 +17,7 @@ from __future__ import annotations
 
 import logging
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Response
 from sqlalchemy.orm import Session
 
 from ..database import get_db
@@ -31,11 +31,12 @@ router = APIRouter(prefix="/internal", tags=["internal"])
 @router.post(
     "/commitments/archive-by-conversation/{conversation_id}",
     status_code=204,
+    response_class=Response,
 )
 def archive_commitments_by_conversation(
     conversation_id: str,
     db: Session = Depends(get_db),
-) -> None:
+) -> Response:
     """Mark all TaggedCommitment rows for *conversation_id* as archived.
 
     Additionally, any Goal whose every commitment is now archived (meaning
@@ -55,7 +56,7 @@ def archive_commitments_by_conversation(
         .all()
     )
     if not affected:
-        return
+        return Response(status_code=204)
 
     affected_goal_ids = {c.goal_id for c in affected}
     for commitment in affected:
@@ -86,3 +87,4 @@ def archive_commitments_by_conversation(
         goals_archived,
         conversation_id,
     )
+    return Response(status_code=204)
