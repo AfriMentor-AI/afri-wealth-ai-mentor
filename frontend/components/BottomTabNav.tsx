@@ -23,6 +23,10 @@ export function BottomTabNav() {
       className="flex h-16 shrink-0 items-center justify-around border-t border-outline-variant bg-surface px-sm md:h-full md:w-20 md:flex-col md:justify-start md:gap-2 md:border-b-0 md:border-t-0 md:border-r md:py-lg lg:w-56 lg:items-stretch"
       aria-label="Main"
     >
+      <div className="hidden lg:flex lg:flex-col lg:gap-0.5 lg:px-lg lg:pb-lg">
+        <p className="font-headline-lg text-2xl font-bold text-primary">AfriMentor</p>
+        <p className="font-label-sm text-[10px] uppercase tracking-wider text-on-surface-variant">Dignified Growth</p>
+      </div>
       <div className="hidden md:flex md:flex-col md:items-center md:pb-sm md:border-b md:border-outline-variant lg:items-stretch">
         <NotificationPopover />
       </div>
@@ -45,6 +49,13 @@ export function BottomTabNav() {
           </Link>
         );
       })}
+      <Link
+        href="/goals/action"
+        className="mt-auto hidden items-center justify-center gap-sm rounded-full bg-primary px-lg py-md font-title-md text-title-md text-on-primary transition-opacity hover:opacity-90 lg:flex"
+      >
+        <Icon name="add" size={20} />
+        New Goal
+      </Link>
     </nav>
   );
 }

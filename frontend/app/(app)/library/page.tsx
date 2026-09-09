@@ -17,6 +17,30 @@ const FILTERS = [
   { label: "RAG Corpus", icon: "database" },
 ];
 
+const CARD_ART = [
+  {
+    image:
+      "https://lh3.googleusercontent.com/aida-public/AB6AXuAFseUcS0GHZY8TrW2_-IIfdTaltL9yULdhzDmDusWk7CIme3S5mYIxBt9Up7J1hnw6GeqfBjkQu2kDyMDK8Mm-zVRlUM6V0w64Psx1zsheJ80MG9p0nIJf8kgTCadXhpUlaDZoERCap9qC6bRX-_rzR9T7GpP6KdKaFj7hkMqbqqcnS1U9uIt-yGEpqRpuT1koCxOAeIOgVVexoQUdY7qpBwq5MEe2FnjVImRB4OGrEpSMAwp0a6Hv2A",
+    label: "African Origin",
+    icon: "group",
+    note: "Shared by 40+ Mentors in your sector",
+  },
+  {
+    image:
+      "https://lh3.googleusercontent.com/aida-public/AB6AXuCVZeh65H3-mwGuYfjCq9_AoXGcbxm8t4v6sCK_9PujExnOeHkprSrj1NpXi-Lsygxjh_lRp-ODoQBZ8TN5s4SY92FcGJ4QoQVpMGAq2BdidE3n7Cy8gLNK9rBCDxbY0GwrxzZjCmzBLjjBHhDmi2dwViq_WFoNE5x7aUoBH01FZjUIdDrh7LFfn7J5JHlUm4vCkyXYLbnIdD-6-e3LcB4pSKobfwzv3UA0b_NZoL02mABYaxhUBOsB-g",
+    label: "African Origin",
+    icon: "history_edu",
+    note: "Recommended by CHIOMA",
+  },
+  {
+    image:
+      "https://lh3.googleusercontent.com/aida-public/AB6AXuAlVqaxkhZRGgLUxqZPPwO9Mvf9XC8tN-7yGghROPeA2j-daXAjGoPdMC0jhJWIIR8PnIXhwZIoBFNxoZ2mX6r-zYhclluftn9oyxWs7qxzF268RUstR7nfipUgC745YYeclEAuh5msL0tUFbjGLNwJQiQkBAOoHRu4J9XD42BkfU8X0hQGijSBySlgtO70cYRuodH27kQ42RjS9yzEwj4fjMIKtkPbgG5zKVicOk7dl_rZFh9fRTTPQ",
+    label: "African Origin",
+    icon: "eco",
+    note: "Top trending in Agri-tech",
+  },
+];
+
 // Card shared by the mobile "Curated Insights" list and the desktop grid —
 // same InsightItem data, no fabricated titles/stats beyond what's real here.
 function InsightCard({
@@ -24,55 +48,68 @@ function InsightCard({
   isFavorite,
   onToggleFavorite,
   onOpen,
-}: {
+  artIndex = 0,
+}: Readonly<{
   item: InsightItem;
   isFavorite: boolean;
   onToggleFavorite: () => void;
   onOpen: () => void;
-}) {
+  artIndex?: number;
+}>) {
+  const art = CARD_ART[artIndex % CARD_ART.length];
   return (
     <div
       onClick={onOpen}
-      className="group relative flex cursor-pointer flex-col gap-sm rounded border border-outline-variant/30 bg-surface-container-low p-md transition-all duration-300 hover:border-primary/40 hover:shadow-md active:scale-[0.99] md:rounded-xl md:p-lg"
+      onKeyDown={(event) => {
+        if (event.key === "Enter" || event.key === " ") onOpen();
+      }}
+      role="button"
+      tabIndex={0}
+      className="group relative flex cursor-pointer flex-col overflow-hidden rounded-xl border border-outline-variant bg-surface-container transition-all duration-300 hover:border-primary hover:shadow-lg active:scale-[0.99]"
     >
-      <div className="flex items-start justify-between">
-        <div className="flex flex-col gap-xs">
-          <span className="inline-flex w-fit items-center gap-xs rounded-full bg-secondary-container px-sm py-1 text-[10px] font-bold uppercase tracking-wider text-on-secondary-container">
-            <Icon name="auto_stories" size={14} />
-            {item.summary}
-          </span>
-          <h3 className="font-title-md text-title-md pt-xs leading-tight text-on-surface">{item.title}</h3>
-        </div>
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            onOpen();
-          }}
-          aria-label={item.isAudio ? "Play audio insight" : "Read article"}
-          className="rounded-full bg-primary/10 p-sm text-primary transition-transform hover:scale-110 active:scale-95"
-        >
-          <Icon name={item.isAudio ? "play_circle" : "menu_book"} filled={item.isAudio} />
-        </button>
+      <div className="relative h-44 overflow-hidden">
+        <img src={art.image} alt="" className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
+        <span className="absolute left-md top-md inline-flex items-center gap-xs rounded-lg border border-primary/20 bg-surface/90 px-sm py-1 text-[10px] font-bold uppercase tracking-wider text-primary backdrop-blur-sm">
+          <Icon name="verified" filled size={14} />
+          {art.label}
+        </span>
+        {item.isAudio && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onOpen();
+            }}
+            aria-label="Play audio insight"
+            className="absolute bottom-md right-md flex h-10 w-10 items-center justify-center rounded-full bg-primary text-on-primary shadow-lg transition-transform hover:scale-110 active:scale-95"
+          >
+            <Icon name="play_arrow" filled />
+          </button>
+        )}
       </div>
-      <div className="flex items-center gap-md text-label-sm text-on-surface-variant">
-        <div className="flex items-center gap-xs">
-          <Icon name={item.isAudio ? "headphones" : "description"} size={18} />
-          <span>{item.isAudio ? "Audio Insight" : "Article"}</span>
+      <div className="flex flex-1 flex-col p-lg">
+        <div className="flex items-start justify-between gap-sm">
+          <span className="font-label-sm text-[11px] uppercase tracking-widest text-on-surface-variant">
+            {item.isAudio ? "Audio Insight" : "Article"} • {item.durationMinutes}m {item.isAudio ? "" : "Read"}
+          </span>
+          <button
+            aria-label={isFavorite ? "Remove from favorites" : "Save to favorites"}
+            onClick={(e) => {
+              e.stopPropagation();
+              onToggleFavorite();
+            }}
+            className="tap-target -mr-sm -mt-sm flex items-center justify-center rounded-full text-on-surface-variant transition-colors hover:text-primary"
+          >
+            <Icon name="bookmark" filled={isFavorite} size={20} />
+          </button>
         </div>
-        <div className="flex items-center gap-xs">
-          <Icon name="schedule" size={18} />
-          <span>{item.durationMinutes} min</span>
+        <h3 className="mt-sm line-clamp-2 font-title-md text-title-md leading-tight text-on-surface">{item.title}</h3>
+        <p className="mt-md line-clamp-3 font-body-md text-sm leading-relaxed text-on-surface-variant">{item.summary}</p>
+        <div className="mt-auto flex items-center gap-sm border-t border-outline-variant/30 pt-md">
+          <span className="flex h-6 w-6 items-center justify-center rounded-full bg-secondary-container text-on-secondary-container">
+            <Icon name={art.icon} size={14} />
+          </span>
+          <span className="text-[12px] text-on-surface-variant">{art.note}</span>
         </div>
-        <button
-          aria-label={isFavorite ? "Remove from favorites" : "Save to favorites"}
-          onClick={(e) => {
-            e.stopPropagation();
-            onToggleFavorite();
-          }}
-          className="tap-target ml-auto flex items-center justify-center rounded-full text-primary transition-transform hover:scale-110 active:scale-95"
-        >
-          <Icon name="favorite" filled={isFavorite} size={18} />
-        </button>
       </div>
     </div>
   );
@@ -134,8 +171,8 @@ export default function InsightLibraryPage() {
     if (activeFilter === "Text") return !item.isAudio;
     return true;
   });
-  const curated = filtered.slice(0, 2);
-  const recommended = filtered.slice(2);
+  const curated = filtered.slice(0, 3);
+  const recommended = filtered.slice(3);
 
   const toggleFavorite = async (id: string) => {
     const isFav = libraryFavorites.has(id);
@@ -148,83 +185,107 @@ export default function InsightLibraryPage() {
   };
 
   return (
-    <main className="pb-24 pt-md md:flex md:min-h-full md:gap-lg md:px-lg md:pb-lg md:pt-lg">
-      {/* Desktop filter rail */}
-      <aside className="hidden shrink-0 flex-col justify-between gap-lg lg:flex lg:w-64">
-        <div className="flex flex-col gap-lg">
-          <h3 className="flex items-center gap-sm font-title-md text-title-md text-on-surface">
-            <Icon name="filter_list" className="text-primary" />
-            Refine Library
-          </h3>
-          <div className="flex flex-col gap-xs">
-            {FILTERS.map((f) => (
-              <button
-                key={f.label}
-                onClick={() => setActiveFilter(f.label)}
-                className={`flex items-center gap-md rounded-lg p-sm text-left font-body-md transition-colors ${
-                  activeFilter === f.label
-                    ? "bg-primary-container text-on-primary-container"
-                    : "text-on-surface hover:bg-surface-container-low"
-                }`}
-              >
-                <Icon name={f.icon} size={18} />
-                {f.label}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Live RAG Corpus Status Card */}
-        <div className="rounded-xl border border-primary/20 bg-primary-container/10 p-md text-xs">
-          <div className="flex items-center gap-xs font-bold text-primary">
-            <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
-            </span>
-            RAG Knowledge Base
-          </div>
-          <p className="mt-1 text-[11px] leading-tight text-on-surface-variant">
-            {ragStats?.documents?.total !== undefined
-              ? `${ragStats.documents.total} docs indexed in ChromaDB`
-              : "Hybrid BM25 + Vector Retrieval connected"}
-          </p>
-        </div>
-      </aside>
-
-      <div className="flex-1 space-y-lg px-margin-mobile md:px-0">
-        <section className="relative">
-          <label className="relative block">
-          <span className="sr-only">Search insights, sectors, or tools</span>
-          <span className="pointer-events-none absolute inset-y-0 left-md flex items-center text-on-surface-variant">
-            <Icon name="search" />
-          </span>
+    <main className="min-h-full bg-surface pb-24 lg:pb-lg">
+      <header className="hidden h-16 items-center justify-between border-b border-outline-variant bg-surface px-lg lg:flex">
+        <h1 className="font-headline-lg text-headline-lg text-primary">AfriMentor AI</h1>
+        <label className="relative w-80 xl:w-96">
+          <span className="sr-only">Search insights, methods, or wisdom</span>
+          <Icon name="search" size={20} className="pointer-events-none absolute left-md top-1/2 -translate-y-1/2 text-on-surface-variant" />
           <input
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search insights, sectors, or tools..."
-            className="h-12 w-full rounded border-none bg-surface-container pl-12 pr-md font-body-md text-body-md placeholder:text-on-surface-variant/60 focus:outline-none focus:ring-2 focus:ring-primary md:max-w-md"
+            placeholder="Search insights, methods, or wisdom..."
+            className="h-10 w-full rounded-full border-0 bg-surface-container-low pl-11 pr-md text-sm text-on-surface placeholder:text-on-surface-variant/70 focus:ring-2 focus:ring-primary"
           />
         </label>
-        </section>
+        <div className="flex items-center gap-md text-on-surface-variant">
+          <Icon name="notifications_none" />
+          <Icon name="settings" />
+          <img src="/images/chioma-avatar.png" alt="Chioma" className="h-8 w-8 rounded-full border-2 border-primary object-cover" />
+        </div>
+      </header>
 
-        {/* Mobile-only filter chips — same state as the desktop rail above. */}
-        <section className="-mx-margin-mobile flex gap-sm overflow-x-auto px-margin-mobile py-xs lg:hidden">
-          {FILTERS.map((f) => (
-            <button
-              key={f.label}
-              onClick={() => setActiveFilter(f.label)}
-              className={`flex items-center gap-xs whitespace-nowrap rounded-full px-md py-sm font-label-sm text-label-sm transition-colors ${
-                activeFilter === f.label
-                  ? "bg-primary-container text-on-primary-container shadow-sm"
-                  : "bg-surface-container text-on-surface-variant hover:bg-surface-variant"
-              }`}
-            >
-              {f.label}
-              <Icon name={f.icon} size={16} />
-            </button>
-          ))}
-        </section>
+      <div className="flex flex-col lg:flex-row">
+        <aside className="hidden shrink-0 flex-col justify-between border-r border-outline-variant bg-surface-container-low p-lg lg:flex lg:min-h-[calc(100vh-4rem)] lg:w-72">
+          <div>
+            <h2 className="mb-lg flex items-center gap-sm font-title-md text-title-md text-on-surface">
+              <Icon name="filter_list" className="text-primary" />
+              Refine Library
+            </h2>
+            <div className="space-y-lg">
+              <div>
+                <p className="mb-sm font-label-sm text-[11px] uppercase tracking-widest text-on-surface-variant">Sector</p>
+                <div className="space-y-xs">
+                  {["Agriculture & Agri-tech", "Creative Economies", "Renewable Energy", "Social Enterprise"].map((sector, index) => (
+                    <label key={sector} className="flex cursor-pointer items-center gap-md rounded-lg p-sm text-sm transition-colors hover:bg-surface-variant">
+                      <input type="checkbox" defaultChecked={index === 0} className="rounded border-outline text-primary focus:ring-primary" />
+                      {sector}
+                    </label>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <p className="mb-sm font-label-sm text-[11px] uppercase tracking-widest text-on-surface-variant">Topic</p>
+                <div className="flex flex-wrap gap-xs">
+                  {["Sustainability", "Community Trust", "Financial Literacy", "Leadership"].map((topic) => (
+                    <button key={topic} className="rounded-full border border-outline-variant px-md py-xs text-[11px] transition-colors hover:bg-primary-container hover:text-on-primary-container">
+                      {topic}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <p className="mb-sm font-label-sm text-[11px] uppercase tracking-widest text-on-surface-variant">Content Type</p>
+                <div className="grid grid-cols-2 gap-sm">
+                  {[
+                    ["Audio", "mic", "Audio"],
+                    ["Text", "article", "Articles"],
+                  ].map(([label, icon, text]) => (
+                    <button key={label} onClick={() => setActiveFilter(label)} className="flex flex-col items-center gap-xs rounded-xl border border-outline-variant bg-surface p-md text-[11px] transition-colors hover:border-primary">
+                      <Icon name={icon} className="text-primary" />
+                      {text}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+          <div className="rounded-xl border border-secondary/20 bg-secondary-container p-md text-on-secondary-container">
+            <div className="mb-xs flex items-center gap-sm font-label-sm uppercase tracking-wider text-secondary"><Icon name="verified_user" size={18} /> Sankofa Trust</div>
+            <p className="text-xs leading-relaxed">All materials are verified for cultural relevance and pan-African origin.</p>
+            <p className="mt-sm text-[11px] font-semibold">{ragStats?.documents?.total ?? "Hybrid"} {ragStats?.documents?.total !== undefined ? "documents indexed" : "retrieval connected"}</p>
+          </div>
+        </aside>
+
+        <div className="min-w-0 flex-1 space-y-xl px-margin-mobile py-md md:px-lg lg:p-lg">
+          <section className="relative lg:hidden">
+            <label className="relative block">
+              <span className="sr-only">Search insights, sectors, or tools</span>
+              <Icon name="search" className="pointer-events-none absolute left-md top-1/2 -translate-y-1/2 text-on-surface-variant" />
+              <input type="text" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search insights, sectors, or tools..." className="h-12 w-full rounded border-0 bg-surface-container pl-12 pr-md text-sm focus:ring-2 focus:ring-primary" />
+            </label>
+          </section>
+
+          <section className="-mx-margin-mobile flex gap-sm overflow-x-auto px-margin-mobile py-xs lg:hidden">
+            {FILTERS.map((f) => (
+              <button key={f.label} onClick={() => setActiveFilter(f.label)} className={`flex items-center gap-xs whitespace-nowrap rounded-full px-md py-sm text-label-sm transition-colors ${activeFilter === f.label ? "bg-primary-container text-on-primary-container shadow-sm" : "bg-surface-container text-on-surface-variant"}`}>
+                {f.label}<Icon name={f.icon} size={16} />
+              </button>
+            ))}
+          </section>
+
+          <section className="relative overflow-hidden rounded-2xl border border-primary-container/20 bg-primary-container/10 p-lg">
+            <div className="absolute inset-0 opacity-[0.04]" style={{ backgroundImage: "radial-gradient(circle, currentColor 1px, transparent 1px)", backgroundSize: "18px 18px" }} />
+            <div className="relative flex flex-col items-center gap-lg md:flex-row">
+              <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-primary-container text-on-primary-container"><Icon name="psychology" size={32} /></div>
+              <div className="flex-1">
+                <div className="mb-xs flex flex-wrap items-center gap-sm"><h2 className="font-title-md text-title-md text-primary">Recommended for you</h2><span className="rounded bg-primary px-sm py-1 text-[10px] font-bold uppercase tracking-tight text-on-primary">AI Reasoning by CHIOMA</span></div>
+                <p className="text-sm leading-relaxed text-on-surface-variant">Based on your recent progress in <strong className="text-primary">Community Cooperative Finance</strong>, I&apos;ve curated these insights to help you navigate trust-based growth in urban West African markets.</p>
+              </div>
+              <button onClick={() => document.getElementById("browse-insights")?.scrollIntoView({ behavior: "smooth" })} className="shrink-0 rounded-full bg-primary px-lg py-md text-sm font-semibold text-on-primary transition-opacity hover:opacity-90">Explore Curated Set</button>
+            </div>
+          </section>
         {/* Grounded RAG Corpus Intelligence Section */}
         {(activeFilter === "RAG Corpus" || (search.trim().length > 0 && ragResults.length > 0) || isRagSearching) && (
           <section className="space-y-md animate-fadeIn">
@@ -238,9 +299,9 @@ export default function InsightLibraryPage() {
                 </h2>
               </div>
               {isRagSearching && (
-                <span className="flex items-center gap-xs text-xs text-primary font-medium">
+                <span className="flex items-center gap-xs text-xs font-medium text-primary">
                   <span className="h-3 w-3 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-                  Searching vector index...
+                  {" Searching vector index..."}
                 </span>
               )}
             </div>
@@ -308,15 +369,16 @@ export default function InsightLibraryPage() {
             )}
           </section>
         )}
-        <section className="space-y-md">
+        <section id="browse-insights" className="space-y-md">
           <h2 className="font-title-md text-title-md text-on-surface">Curated Insights</h2>
-          <div className="md:grid md:grid-cols-2 md:gap-md md:space-y-0 xl:grid-cols-3">
+          <div className="grid gap-lg md:grid-cols-2 md:space-y-0 xl:grid-cols-3">
             {insights === null
-              ? Array.from({ length: 2 }).map((_, i) => <Skeleton key={i} className="h-28 w-full rounded md:h-40" />)
-              : curated.map((item) => (
+              ? Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-96 w-full rounded-xl" />)
+              : curated.map((item, index) => (
                   <InsightCard
                     key={item.id}
                     item={item}
+                    artIndex={index}
                     isFavorite={libraryFavorites.has(item.id)}
                     onToggleFavorite={() => toggleFavorite(item.id)}
                     onOpen={() => setSelectedItem(item)}
@@ -327,7 +389,7 @@ export default function InsightLibraryPage() {
 
         <section className="space-y-md">
           <div className="flex items-center justify-between">
-            <h2 className="font-title-md text-title-md text-on-surface">Recommended for you</h2>
+            <h2 className="font-headline-lg text-headline-lg text-on-surface">Browse All Insights</h2>
           </div>
 
           {/* Mobile: horizontal scroll cards. Desktop: same real data in the grid above. */}
@@ -338,6 +400,11 @@ export default function InsightLibraryPage() {
                   <div
                     key={item.id}
                     onClick={() => setSelectedItem(item)}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter" || event.key === " ") setSelectedItem(item);
+                    }}
+                    role="button"
+                    tabIndex={0}
                     className="w-44 shrink-0 cursor-pointer overflow-hidden rounded border border-outline-variant/30 bg-surface-container-low transition-all duration-300 hover:border-primary/40 active:scale-[0.98]"
                   >
                     <div className="relative flex h-24 items-center justify-center bg-gradient-to-br from-primary-container to-secondary-container">
@@ -358,10 +425,11 @@ export default function InsightLibraryPage() {
           <div className="hidden md:grid md:grid-cols-2 md:gap-md xl:grid-cols-3">
             {insights === null
               ? Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-40 w-full rounded-xl" />)
-              : recommended.map((item) => (
+                : recommended.map((item, index) => (
                   <InsightCard
                     key={item.id}
                     item={item}
+                  artIndex={index + curated.length}
                     isFavorite={libraryFavorites.has(item.id)}
                     onToggleFavorite={() => toggleFavorite(item.id)}
                     onOpen={() => setSelectedItem(item)}
@@ -369,6 +437,7 @@ export default function InsightLibraryPage() {
                 ))}
           </div>
         </section>
+        </div>
       </div>
 
       {/* Interactive Reader & Audio Player Modal */}
