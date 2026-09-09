@@ -41,10 +41,14 @@ class InsightItem(Base):
     difficulty: Mapped[str] = mapped_column(
         String(12), index=True, nullable=False, default="beginner"
     )
+    slug: Mapped[str | None] = mapped_column(String(100), unique=True, index=True, nullable=True)
     media_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
     thumbnail_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
     # Low-bandwidth / accessibility fallback for audio and video
     transcript_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    # Full lesson text / curriculum and audio narration script
+    content: Mapped[str | None] = mapped_column(Text, nullable=True)
+    audio_narration: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[dt.datetime] = mapped_column(DateTime(timezone=True), default=_now)
 
 

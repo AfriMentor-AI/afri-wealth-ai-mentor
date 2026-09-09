@@ -679,24 +679,34 @@ export async function recordAction(
 
 export interface BackendInsightItem {
   id: string;
+  slug?: string | null;
   title: string;
   summary: string;
   category: string;
-  duration_minutes: number;
-  is_audio: boolean;
+  duration_minutes?: number;
+  duration_seconds?: number;
+  is_audio?: boolean;
+  media_type?: string;
   media_url: string | null;
+  content?: string | null;
+  audio_narration?: string | null;
   created_at: string;
   is_favorited: boolean;
 }
 
 function toInsightItem(b: BackendInsightItem): InsightItem {
+  const durationMinutes =
+    b.duration_minutes ??
+    (b.duration_seconds ? Math.max(1, Math.round(b.duration_seconds / 60)) : 5);
+  const isAudio = b.is_audio ?? (b.media_type === "audio");
+
   return {
     id: b.id,
     title: b.title,
     summary: b.summary,
     category: b.category,
-    durationMinutes: b.duration_minutes,
-    isAudio: b.is_audio,
+    durationMinutes,
+    isAudio,
     mediaUrl: b.media_url ?? undefined,
     createdAt: b.created_at,
   };
