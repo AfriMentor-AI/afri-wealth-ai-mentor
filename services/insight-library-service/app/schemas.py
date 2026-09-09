@@ -4,6 +4,8 @@ import datetime as dt
 
 from pydantic import BaseModel, ConfigDict, Field, computed_field, field_validator
 
+from .models import DIFFICULTIES, MEDIA_TYPES
+
 
 class InsightItemCreate(BaseModel):
     title: str = Field(min_length=1, max_length=200)
