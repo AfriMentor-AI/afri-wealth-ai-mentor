@@ -120,7 +120,25 @@ def archive_session(
     db.add(conv)
     db.commit()
     db.refresh(conv)
+
+    # Best-effort: hide related commitments in the goals service so they no
+    # longer appear on the user's Goal Milestone Path screen. The conversation
+    # data and commitments are retained in both databases for admin oversight.
+    # Errors are logged but never propagated — the delete succeeds regardless.
+    try:
+        goals_url = get_settings().goals_service_url
+        if goals_url:
+            httpx.post(
+                f"{goals_url}/internal/commitments/archive-by-conversation/{session_id}",
+                timeout=2.0,
+            )
+    except Exception as exc:  # noqa: BLE001
+        logger.warning(
+            "Could not archive commitments for conversation %s: %s", session_id, exc
+        )
+
     return conv
+
 
 
 @router.patch("/sessions/{session_id}/persona", response_model=ConversationResponse)

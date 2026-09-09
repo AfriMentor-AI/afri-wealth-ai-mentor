@@ -218,9 +218,9 @@ export async function fetchChatSessions(): Promise<ChatSessionSummary[]> {
   }));
 }
 
-export async function archiveChatSession(sessionId: string): Promise<void> {
+export async function deleteChatSession(sessionId: string): Promise<void> {
   const res = await apiFetch(`/api/v1/chat/sessions/${sessionId}/archive`, { method: "POST" });
-  if (!res.ok) throw new Error(`archiveChatSession failed: ${res.status}`);
+  if (!res.ok) throw new Error(`deleteChatSession failed: ${res.status}`);
 }
 
 // ── Goals & Milestones (goals-milestones-service, card O5.1 / BUG-06) ──────

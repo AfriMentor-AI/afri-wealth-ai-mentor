@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
 import { Icon } from "./Icon";
-import { archiveChatSession, fetchChatMessages, fetchChatSessions, fetchPersonas } from "@/lib/api";
+import { deleteChatSession, fetchChatMessages, fetchChatSessions, fetchPersonas } from "@/lib/api";
 import type { Persona } from "@/lib/types";
 import { useAppDispatch, useAppState } from "@/lib/store";
 
@@ -28,7 +28,7 @@ function timeAgo(iso: string | null): string {
   return `${Math.floor(hours / 24)}d ago`;
 }
 
-function ArchiveConfirmDialog({
+function DeleteConfirmDialog({
   preview,
   onConfirm,
   onCancel,
@@ -48,31 +48,31 @@ function ArchiveConfirmDialog({
 
   return createPortal(
     <div
-      className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40 px-md backdrop-blur-sm"
+      className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 px-md backdrop-blur-sm"
       onClick={onCancel}
     >
       <div
-        className="w-full max-w-sm rounded-2xl bg-surface p-lg shadow-xl"
+        className="w-full max-w-sm rounded-2xl bg-surface p-lg shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Icon */}
         <div className="mb-md flex justify-center">
-          <div className="flex h-14 w-14 items-center justify-center rounded-full bg-secondary-container">
-            <Icon name="archive" size={28} className="text-secondary" />
+          <div className="flex h-14 w-14 items-center justify-center rounded-full bg-error-container">
+            <Icon name="delete" size={28} className="text-on-error-container" />
           </div>
         </div>
 
         {/* Title */}
-        <h2 className="mb-sm text-center font-title-lg text-title-lg text-on-surface">
-          Delete this chat?
+        <h2 className="mb-xs text-center font-title-lg text-title-lg text-on-surface">
+          Delete this conversation?
         </h2>
 
         {/* Preview */}
-        <p className="mb-xs text-center font-body-md text-body-md text-on-surface-variant">
+        <p className="mb-xs text-center font-body-sm text-body-sm text-on-surface-variant">
           &ldquo;{preview}&rdquo;
         </p>
-        <p className="mb-lg text-center font-body-sm text-body-sm text-on-surface-variant">
-          Are you sure you want to delete this chat? This action cannot be undone.
+        <p className="mb-lg text-center font-body-sm text-body-sm text-on-surface-variant/70">
+          This conversation and all its messages will be permanently removed.
         </p>
 
         {/* Actions */}
@@ -87,8 +87,9 @@ function ArchiveConfirmDialog({
           <button
             type="button"
             onClick={onConfirm}
-            className="flex-1 rounded-full bg-secondary py-sm font-label-lg text-label-lg text-on-secondary transition-colors hover:bg-secondary/90 active:scale-95"
+            className="flex flex-1 items-center justify-center gap-xs rounded-full bg-error py-sm font-label-lg text-label-lg text-on-error transition-colors hover:bg-error/90 active:scale-95"
           >
+            <Icon name="delete" size={16} />
             Delete
           </button>
         </div>
@@ -102,12 +103,12 @@ function SessionRow({
   s,
   isActive,
   onOpen,
-  onArchive,
+  onDelete,
 }: {
   s: { id: string; lastMessagePreview: string | null; lastMessageAt: string | null };
   isActive: boolean;
   onOpen: () => void;
-  onArchive: () => void;
+  onDelete: () => void;
 }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [menuPos, setMenuPos] = useState<{ top: number; right: number } | null>(null);
@@ -153,11 +154,11 @@ function SessionRow({
         <div className="pointer-events-auto absolute inset-y-0 right-0 flex w-20 items-center justify-center bg-error">
           <button
             type="button"
-            aria-label="Archive"
-            onClick={onArchive}
+            aria-label="Delete"
+            onClick={onDelete}
             className="flex flex-col items-center gap-[2px] text-on-error"
           >
-            <Icon name="archive" size={20} />
+            <Icon name="delete" size={20} />
             <span className="text-[10px]">Delete</span>
           </button>
         </div>
@@ -202,14 +203,14 @@ function SessionRow({
             <div
               ref={menuRef}
               style={{ position: "fixed", top: menuPos.top, right: menuPos.right, zIndex: 9998 }}
-              className="min-w-[120px] rounded-md border border-outline-variant bg-surface-container shadow-md"
+              className="min-w-[140px] rounded-md border border-outline-variant bg-surface-container shadow-md"
             >
               <button
                 type="button"
-                onClick={() => { setMenuOpen(false); onArchive(); }}
-                className="flex w-full items-center gap-sm px-md py-sm text-left font-body-md text-body-md text-on-surface hover:bg-surface-variant"
+                onClick={() => { setMenuOpen(false); onDelete(); }}
+                className="flex w-full items-center gap-sm px-md py-sm text-left font-body-md text-body-md text-error hover:bg-error-container/30"
               >
-                <Icon name="archive" size={16} />
+                <Icon name="delete" size={16} />
                 Delete
               </button>
             </div>,
@@ -226,7 +227,7 @@ export function ConversationList({ onSelect }: { onSelect?: () => void }) {
   const dispatch = useAppDispatch();
   const [personas, setPersonas] = useState<Persona[] | null>(null);
   const [expandedPersonas, setExpandedPersonas] = useState<Set<string>>(new Set());
-  const [pendingArchive, setPendingArchive] = useState<{ id: string; preview: string } | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<{ id: string; preview: string } | null>(null);
 
   useEffect(() => {
     fetchPersonas().then((ps) => {
@@ -273,19 +274,19 @@ export function ConversationList({ onSelect }: { onSelect?: () => void }) {
     onSelect?.();
   }
 
-  function requestArchive(sessionId: string, preview: string) {
-    setPendingArchive({ id: sessionId, preview });
+  function requestDelete(sessionId: string, preview: string) {
+    setPendingDelete({ id: sessionId, preview });
   }
 
-  async function confirmArchive() {
-    if (!pendingArchive) return;
-    const { id } = pendingArchive;
-    setPendingArchive(null);
+  async function confirmDelete() {
+    if (!pendingDelete) return;
+    const { id } = pendingDelete;
+    setPendingDelete(null);
     dispatch({ type: "REMOVE_CHAT_SESSION", sessionId: id });
     try {
-      await archiveChatSession(id);
+      await deleteChatSession(id);
     } catch (e) {
-      console.error("Failed to archive session:", e);
+      console.error("Failed to delete session:", e);
       fetchChatSessions()
         .then((sessions) => dispatch({ type: "SET_CHAT_SESSIONS", sessions }))
         .catch(() => {});
@@ -363,7 +364,7 @@ export function ConversationList({ onSelect }: { onSelect?: () => void }) {
                     s={s}
                     isActive={s.id === chatSessionId}
                     onOpen={() => openConversation(s.id)}
-                    onArchive={() => requestArchive(s.id, s.lastMessagePreview?.slice(0, 40) ?? "New conversation")}
+                    onDelete={() => requestDelete(s.id, s.lastMessagePreview?.slice(0, 40) ?? "New conversation")}
                   />
                 ))}
             </div>
@@ -376,16 +377,16 @@ export function ConversationList({ onSelect }: { onSelect?: () => void }) {
             s={s}
             isActive={s.id === chatSessionId}
             onOpen={() => openConversation(s.id)}
-            onArchive={() => requestArchive(s.id, s.lastMessagePreview?.slice(0, 40) ?? "New conversation")}
+            onDelete={() => requestDelete(s.id, s.lastMessagePreview?.slice(0, 40) ?? "New conversation")}
           />
         ))}
       </div>
 
-      {pendingArchive && (
-        <ArchiveConfirmDialog
-          preview={pendingArchive.preview}
-          onConfirm={confirmArchive}
-          onCancel={() => setPendingArchive(null)}
+      {pendingDelete && (
+        <DeleteConfirmDialog
+          preview={pendingDelete.preview}
+          onConfirm={confirmDelete}
+          onCancel={() => setPendingDelete(null)}
         />
       )}
     </div>

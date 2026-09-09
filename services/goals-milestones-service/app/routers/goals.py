@@ -222,8 +222,14 @@ def list_commitments(
     db: Session = Depends(get_db),
 ) -> list[TaggedCommitment]:
     """List tagged commitments for a goal — feeds the 'Tagged Commitments' list
-    on the Goal Milestone Path screen."""
+    on the Goal Milestone Path screen.
+
+    Commitments whose source conversation has been deleted (archived) by the
+    user are excluded. The underlying rows are retained in the database for
+    admin oversight; only is_archived=True rows are hidden here.
+    """
     goal = db.get(Goal, goal_id)
     if not goal or goal.user_id != user_id:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Goal not found")
-    return goal.commitments
+    return [c for c in goal.commitments if not c.is_archived]
+
