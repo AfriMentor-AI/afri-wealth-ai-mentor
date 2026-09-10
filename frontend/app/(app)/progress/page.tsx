@@ -94,69 +94,64 @@ export default function ProgressBoardPage() {
   const lockedCount = badges ? badges.length - (earnedCount ?? 0) : null;
 
   return (
-    <main className="space-y-xl px-margin-mobile pb-24 pt-md md:mx-auto md:max-w-6xl md:space-y-lg md:px-lg md:pb-lg md:pt-lg">
-      <section className="flex flex-col gap-sm md:flex-row md:items-center md:justify-between">
-        <div>
-          <h2 className="font-headline-lg-mobile text-headline-lg-mobile text-on-surface md:font-headline-lg md:text-headline-lg">
-            Your Growth
-          </h2>
-          <p className="font-body-md text-on-surface-variant">
-            Consistent action builds lasting wealth, {profile?.name ?? "Entrepreneur"}.
-          </p>
+    <main
+      className="min-h-full bg-surface pb-24 pt-md md:pb-lg md:pt-0"
+      style={{ backgroundImage: "radial-gradient(circle, rgba(126,87,0,0.035) 2px, transparent 2px)", backgroundSize: "60px 60px" }}
+    >
+      <header className="hidden h-16 items-center justify-between border-b border-outline-variant bg-surface px-lg lg:flex">
+        <h1 className="font-title-md text-title-md text-primary">Progress Board</h1>
+        <div className="flex items-center gap-md">
+          <label className="relative w-48 xl:w-64">
+            <span className="sr-only">Search analytics</span>
+            <Icon name="search" size={18} className="absolute left-sm top-1/2 -translate-y-1/2 text-on-surface-variant" />
+            <input placeholder="Search analytics..." className="h-9 w-full rounded-full border-0 bg-surface-container-low pl-9 pr-md text-xs focus:ring-2 focus:ring-primary" />
+          </label>
+          <Icon name="notifications_none" className="text-on-surface-variant" />
+          <Icon name="settings" className="text-on-surface-variant" />
+          <button type="button" onClick={() => dispatch({ type: "OPEN_FEEDBACK_MODAL" })} className="flex items-center gap-xs rounded-full bg-surface-container-high px-md py-sm text-xs text-primary">
+            <Icon name="share" size={16} /> Share
+          </button>
+          <button type="button" onClick={() => window.print()} className="flex items-center gap-xs rounded-full border border-outline-variant px-md py-sm text-xs text-on-surface-variant">
+            <Icon name="ios_share" size={16} /> Export
+          </button>
         </div>
-        <button
-          type="button"
-          onClick={handleRecordAction}
-          disabled={recordingAction}
-          className="tap-target inline-flex items-center justify-center gap-xs rounded-full bg-secondary px-lg py-sm font-label-sm text-label-sm font-semibold text-on-secondary shadow transition-transform active:scale-95 disabled:opacity-50"
-        >
-          <Icon name="check_circle" size={18} />
-          <span>{recordingAction ? "Recording..." : "Log Today's Action"}</span>
-        </button>
-      </section>
+      </header>
 
-      {awardNotice && (
-        <div className="rounded-xl border border-secondary bg-secondary-container p-md font-body-md text-body-md font-medium text-on-secondary-container shadow-sm">
-          {awardNotice}
-        </div>
-      )}
-
-      {/* Desktop hero stats row — real streak/badge numbers, not the
-          mockup's fabricated "Global Rank"/"Knowledge Points" (no such
-          data exists). */}
-      <section className="hidden gap-lg md:grid md:grid-cols-3">
-        <div className="flex flex-col gap-sm rounded-xl border border-outline-variant/30 bg-secondary-container p-lg">
-          <span className="font-label-sm text-label-sm uppercase tracking-widest text-on-secondary-container">
-            Active Streak
-          </span>
-          <div className="flex items-baseline gap-sm">
-            <span className="font-headline-xl text-headline-xl text-on-secondary-container">
-              {streak?.currentStreakDays ?? "—"}
-            </span>
-            <span className="font-title-md text-title-md text-on-secondary-container/80">Days</span>
+      <div className="mx-auto flex max-w-6xl flex-col gap-lg px-margin-mobile py-md md:gap-lg md:p-lg xl:p-xl">
+        <section className="flex flex-col gap-sm md:flex-row md:items-end md:justify-between lg:hidden">
+          <div>
+            <h2 className="font-headline-lg-mobile text-headline-lg-mobile text-on-surface">Your Growth</h2>
+            <p className="font-body-md text-on-surface-variant">Consistent action builds lasting wealth, {profile?.name ?? "Entrepreneur"}.</p>
           </div>
-          <span className="font-label-sm text-label-sm text-on-secondary-container/80">
-            Longest: {streak?.longestStreakDays ?? "—"} days
-          </span>
-        </div>
-        <div className="flex flex-col gap-sm rounded-xl border border-outline-variant/30 bg-surface-container-high p-lg">
-          <span className="font-label-sm text-label-sm uppercase tracking-widest text-on-surface-variant">
-            Badges Earned
-          </span>
-          <span className="font-headline-xl text-headline-xl text-on-surface">{earnedCount ?? "—"}</span>
-          <span className="font-label-sm text-label-sm text-on-surface-variant">
-            {lockedCount ?? "—"} still to unlock
-          </span>
-        </div>
-        <div className="flex flex-col gap-sm rounded-xl border border-outline-variant/30 bg-surface-container-high p-lg">
-          <span className="font-label-sm text-label-sm uppercase tracking-widest text-on-surface-variant">
-            Actions Completed
-          </span>
-          <span className="font-headline-xl text-headline-xl text-on-surface">
-            {streak?.actionsCompletedTotal ?? "—"}
-          </span>
-        </div>
-      </section>
+          <button type="button" onClick={handleRecordAction} disabled={recordingAction} className="tap-target inline-flex items-center justify-center gap-xs rounded-full bg-secondary px-lg py-sm font-label-sm text-label-sm font-semibold text-on-secondary shadow disabled:opacity-50">
+            <Icon name="check_circle" size={18} /> {recordingAction ? "Recording..." : "Log Today's Action"}
+          </button>
+        </section>
+
+        {awardNotice && <div className="rounded-xl border border-secondary bg-secondary-container p-md text-sm font-medium text-on-secondary-container shadow-sm">{awardNotice}</div>}
+
+        <section className="grid gap-md md:grid-cols-2 lg:grid-cols-4">
+          <div className="flex flex-col gap-sm rounded-xl border border-primary/10 bg-primary-container/20 p-lg">
+            <span className="font-label-sm text-[11px] uppercase tracking-widest text-on-surface-variant">Longest Streak</span>
+            <span className="font-headline-xl text-headline-xl text-primary">{streak?.longestStreakDays ?? "—"} <span className="font-title-md text-title-md">days</span></span>
+            <span className="flex items-center gap-xs text-xs font-bold text-secondary"><Icon name="trending_up" size={16} /> Personal best</span>
+          </div>
+          <div className="flex flex-col gap-sm rounded-xl bg-secondary-container p-lg">
+            <span className="font-label-sm text-[11px] uppercase tracking-widest text-on-secondary-container">Active Streak</span>
+            <div className="flex items-baseline gap-sm"><span className="font-headline-xl text-headline-xl text-on-secondary-container">{streak?.currentStreakDays ?? "—"}</span><span className="font-title-md text-title-md text-on-secondary-container/80">Days</span></div>
+            <div className="h-2 overflow-hidden rounded-full bg-surface/30"><div className="h-full bg-secondary" style={{ width: `${Math.min(100, ((streak?.currentStreakDays ?? 0) / 30) * 100)}%` }} /></div>
+          </div>
+          <div className="flex flex-col gap-sm rounded-xl border border-outline-variant/30 bg-surface-container-high p-lg">
+            <span className="font-label-sm text-[11px] uppercase tracking-widest text-on-surface-variant">Badges Earned</span>
+            <span className="font-headline-xl text-headline-xl text-on-surface">{earnedCount ?? "—"}</span>
+            <span className="font-label-sm text-[11px] text-on-surface-variant">{lockedCount ?? "—"} available to unlock</span>
+          </div>
+          <div className="flex flex-col gap-sm rounded-xl border border-outline-variant/30 bg-surface-container-high p-lg">
+            <span className="font-label-sm text-[11px] uppercase tracking-widest text-on-surface-variant">Actions Completed</span>
+            <span className="font-headline-xl text-headline-xl text-on-surface">{streak?.actionsCompletedTotal ?? "—"}</span>
+            <span className="font-label-sm text-[11px] text-on-surface-variant">Keep building your rhythm</span>
+          </div>
+        </section>
 
       {streak === null ? (
         <Skeleton className="h-40 w-full rounded md:hidden" />
@@ -186,12 +181,13 @@ export default function ProgressBoardPage() {
         </div>
       )}
 
-      <section className="space-y-md">
-        <div className="flex items-center justify-between">
-          <h3 className="font-title-md text-title-md text-on-surface">Action Heatmap</h3>
-          <span className="font-label-sm text-label-sm text-on-surface-variant">Last 3 Months</span>
+      <div className="grid gap-lg lg:grid-cols-12">
+      <section className="space-y-md lg:col-span-8">
+        <div className="flex items-center justify-between rounded-t-xl bg-surface-container-lowest px-md pt-md md:px-lg md:pt-lg">
+          <h3 className="font-title-md text-title-md text-on-surface">Activity Heatmap</h3>
+          <div className="hidden items-center gap-sm text-[10px] text-on-surface-variant md:flex"><span>Less</span><div className="flex gap-1">{HEATMAP_INTENSITIES.map((c) => <span key={c} className={`h-3 w-3 rounded-sm ${c}`} />)}</div><span>More</span></div>
         </div>
-        <div className="rounded border border-outline-variant bg-surface-container-lowest p-md md:p-lg">
+        <div className="rounded-b-xl border border-t-0 border-outline-variant/20 bg-surface-container-lowest p-md md:p-lg">
           {heatmap === null ? (
             <Skeleton className="h-24 w-full" />
           ) : (
@@ -219,7 +215,7 @@ export default function ProgressBoardPage() {
               </div>
             </>
           )}
-          <div className="mt-md flex items-center justify-end gap-sm">
+          <div className="mt-md flex items-center justify-end gap-sm md:hidden">
             <span className="text-[10px] text-on-surface-variant">Less</span>
             <div className="flex gap-xs">
               {HEATMAP_INTENSITIES.map((c) => (
@@ -231,11 +227,27 @@ export default function ProgressBoardPage() {
         </div>
       </section>
 
-      <section className="space-y-md">
-        <h3 className="font-title-md text-title-md text-on-surface">Milestones Reached</h3>
-        <div className="grid grid-cols-2 gap-md md:grid-cols-4 lg:grid-cols-6">
+      <section className="rounded-xl border border-outline-variant/20 bg-surface-container-lowest p-md md:p-lg lg:col-span-4">
+        <h3 className="mb-lg font-title-md text-title-md text-on-surface">Your Path</h3>
+        <div className="space-y-0 px-sm">
+          <div className="flex min-h-16 gap-md">
+            <div className="flex flex-col items-center"><span className="z-10 flex h-6 w-6 items-center justify-center rounded-full border-4 border-primary-fixed bg-primary text-on-primary"><Icon name="check" size={12} /></span><span className="h-full w-0.5 bg-primary" /></div>
+            <div className="-mt-1 flex flex-col"><span className="font-label-sm font-bold text-primary">Completed</span><span className="text-xs text-on-surface">Financial Literacy 101</span></div>
+          </div>
+          <div className="flex min-h-24 gap-md">
+            <div className="flex flex-col items-center"><span className="z-10 h-6 w-6 animate-pulse rounded-full bg-primary ring-4 ring-primary-container/20" /><span className="h-full w-0.5 border-l-2 border-dashed border-outline-variant" /></div>
+            <div className="-mt-1 rounded-lg border border-primary/10 bg-primary-container/10 p-sm"><span className="font-label-sm font-bold text-primary">In Progress</span><span className="block text-xs font-bold text-on-surface">Daily action practice</span><span className="mt-1 block text-[11px] text-on-surface-variant">{streak?.currentStreakDays ?? 0} day streak</span></div>
+          </div>
+          <div className="flex min-h-16 gap-md"><div className="flex flex-col items-center"><span className="z-10 h-6 w-6 rounded-full border-2 border-outline-variant bg-surface" /></div><div className="-mt-1 opacity-60"><span className="font-label-sm font-bold text-on-surface-variant">Upcoming</span><span className="block text-xs text-on-surface">Community Leadership</span></div></div>
+        </div>
+      </section>
+      </div>
+
+      <section className="rounded-2xl bg-surface-container-low p-md md:p-lg">
+        <div className="mb-lg flex items-end justify-between"><div><h3 className="font-headline-lg text-headline-lg text-on-surface">Achievement Gallery</h3><p className="text-sm text-on-surface-variant">Celebrating your consistent dedication to growth.</p></div><button type="button" className="hidden items-center gap-xs text-xs font-semibold text-primary md:flex">View All Badges <Icon name="arrow_forward" size={16} /></button></div>
+        <div className="grid grid-cols-2 gap-md md:grid-cols-3 xl:grid-cols-6">
           {badges === null
-            ? Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-32 w-full rounded" />)
+            ? Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="h-36 w-full rounded-xl" />)
             : badges.map((b, i) => <BadgeTile key={b.id} badge={b} wide={i === 2} />)}
         </div>
       </section>
@@ -251,6 +263,7 @@ export default function ProgressBoardPage() {
       <p className="pb-lg text-center font-body-md text-[13px] italic text-on-surface-variant">
         Inspired by the Sankofa bird: Looking back to move forward.
       </p>
+      </div>
     </main>
   );
 }
