@@ -15,7 +15,8 @@ export default function AppShellLayout({ children }: { children: React.ReactNode
   const dispatch = useAppDispatch();
   const pathname = usePathname();
   const router = useRouter();
-  const hasOwnHeader = pathname?.startsWith("/chat") || pathname === "/goals/action";
+  const hasOwnHeader = pathname?.startsWith("/chat") || pathname === "/goals/action" || pathname?.startsWith("/research");
+
 
   // Route guard: the app shell (chat/goals/library/progress) is only reachable
   // after intake + persona selection. If this device hasn't completed intake,
