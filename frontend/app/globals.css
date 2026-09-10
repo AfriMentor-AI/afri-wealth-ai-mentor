@@ -154,6 +154,16 @@ body {
   z-index: 0;
 }
 
+/* Subtle pulse used on active milestone nodes in the Goal Roadmap panel */
+@keyframes pulse-subtle {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.65; }
+}
+
+.animate-pulse-subtle {
+  animation: pulse-subtle 3s ease-in-out infinite;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
