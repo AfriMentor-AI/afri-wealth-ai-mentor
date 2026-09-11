@@ -8,8 +8,6 @@ import { Icon } from "@/components/Icon";
 const NAV_ITEMS = [
   { label: "Personas", icon: "person", href: "/research/personas" },
   { label: "RAG Corpus", icon: "folder_shared", href: "/research/rag-corpus" },
-  { label: "Analytics", icon: "analytics", href: "/research/analytics" },
-  { label: "Settings", icon: "settings", href: "/research/settings" },
 ];
 
 export default function ResearchLayout({
