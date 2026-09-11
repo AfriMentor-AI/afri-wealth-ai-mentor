@@ -105,6 +105,7 @@ export interface Goal {
   id: ID;
   userId: ID;
   title: string;
+  description?: string;
   /** Server-computed from this goal's milestones — the client should
    * treat this as read-only, never derive/send it. */
   progressPct: number;
@@ -188,6 +189,10 @@ export interface InsightItem {
    * once real content exists. */
   mediaUrl?: string;
   createdAt: ISODateTime;
+  /** Whether the current user has bookmarked this insight. Present on live
+   * API responses (insight-library-service embeds it per-request); absent
+   * from mock data, where favorites are tracked purely client-side. */
+  isFavorited?: boolean;
 }
 
 /** Per-user favorite marker — modeled as a separate join concept rather
@@ -268,3 +273,76 @@ export interface UserBadge {
  * state — what GET /progress/badges actually returns. Mirrors the
  * `BadgeWithStatus` schema in openapi.yaml. */
 export type BadgeWithStatus = Badge & { earnedAt: ISODateTime | null };
+
+// ---------------------------------------------------------------------------
+// RAG Corpus (Knowledge & Retrieval)
+// ---------------------------------------------------------------------------
+
+export interface RagChunkMetadata {
+  title?: string;
+  author?: string;
+  sector?: string;
+  market?: string;
+  source_origin?: string;
+  channel?: string;
+  filename?: string;
+  content_type?: string;
+  tier?: number;
+}
+
+export interface RagChunk {
+  chunk_id: string;
+  doc_id?: string;
+  content: string;
+  score: number;
+  metadata: RagChunkMetadata;
+  retrieval_method?: string;
+}
+
+export interface RagQueryResponse {
+  query: string;
+  results: RagChunk[];
+  total: number;
+}
+
+export interface RagCorpusStats {
+  documents: {
+    total: number;
+    total_chunks: number;
+    by_status: Record<string, number>;
+    by_country: Record<string, number>;
+    by_sector: Record<string, number>;
+    by_tier?: Record<string, number>;
+  };
+  vectors: {
+    active_count: number | null;
+    collection: string | null;
+    embedding_dim: number;
+  };
+  index_size: {
+    document_bytes: number;
+    vector_bytes: number | null;
+    total_bytes: number | null;
+  };
+  latency_ms?: Record<string, number>;
+}
+
+/** One day's activity count — feeds the Progress Board's action heatmap.
+ * Mirrors progress-gamification-service's `HeatmapDay` schema. */
+export interface HeatmapDay {
+  date: ISODate;
+  count: number;
+}
+
+/** What GET /progress/summary/share returns — a pre-built, shareable
+ * recap of the caller's current week. Mirrors the `WeeklySummaryShare`
+ * schema in progress-gamification-service. */
+export interface WeeklySummaryShare {
+  userId: ID;
+  weekStart: ISODate;
+  weekEnd: ISODate;
+  actionsThisWeek: number;
+  currentStreakDays: number;
+  badgesEarnedThisWeek: ID[];
+  shareText: string;
+}

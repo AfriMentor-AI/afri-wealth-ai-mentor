@@ -86,6 +86,7 @@ export default function DailyActionCardPage() {
                 <button
                   key={c.id}
                   onClick={() => setActiveState(c.id)}
+                  aria-pressed={activeState === c.id}
                   className={`tap-target flex items-center justify-between rounded border-2 px-lg py-md transition-all active:scale-[0.98] ${
                     activeState === c.id ? "border-primary bg-primary-container/10" : "border-outline-variant bg-surface hover:bg-surface-container-low"
                   }`}

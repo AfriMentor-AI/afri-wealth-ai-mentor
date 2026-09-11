@@ -5,6 +5,10 @@ upstream with a trusted identity header. See docs/adr/0001-microservices-archite
 """
 from __future__ import annotations
 
+import os
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
+
 import httpx
 from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
@@ -20,18 +24,46 @@ SERVICE_NAME = "api-gateway"
 SERVICE_VERSION = "1.0.0"
 settings = get_settings()
 
+
+@asynccontextmanager
+async def lifespan(app: FastAPI) -> AsyncIterator[None]:
+    """Card O5.1 / BUG-01: a fresh httpx.AsyncClient per request exhausted file
+    descriptors/sockets under load (each `async with httpx.AsyncClient(...)`
+    opens its own connection pool that's torn down at the end of that one
+    request instead of being reused). One shared, pooled client for the whole
+    process's lifetime fixes it — sized well above the 60-user load test in
+    docs/deployment/o4-3-pilot-load-test-report.md.
+    """
+    app.state.client = httpx.AsyncClient(
+        limits=httpx.Limits(max_connections=500, max_keepalive_connections=100),
+        timeout=settings.upstream_timeout_seconds,
+    )
+    try:
+        yield
+    finally:
+        await app.state.client.aclose()
+
+
 app = FastAPI(
     title="AfriMentor AI — API Gateway",
     version=SERVICE_VERSION,
     description="Edge routing, JWT verification, and rate limiting.",
+    lifespan=lifespan,
 )
 
 instrument(app, SERVICE_NAME)
 
-# Mobile app + admin console origins (tighten in prod).
+# Mobile app + admin console origins (supports local, Codespaces, and Vercel).
+_cors_origins_raw = os.getenv("CORS_ORIGINS", "")
+_cors_origins = [o.strip() for o in _cors_origins_raw.split(",") if o.strip()] or [
+    "http://localhost:3000",
+    "http://localhost:3001",
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://localhost:3001"],
+    allow_origins=_cors_origins,
+    allow_origin_regex=r"^https://.*\.app\.github\.dev$|^https://.*\.vercel\.app$",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -116,19 +148,23 @@ async def gateway(path: str, request: Request) -> Response:
         fwd_headers["X-User-Roles"] = ",".join(roles)
 
     body = await request.body()
+    client: httpx.AsyncClient = request.app.state.client
     if full_path.endswith("/messages/stream"):
         async def events():
             try:
-                async with httpx.AsyncClient(timeout=None) as client:
-                    async with client.stream(
-                        request.method,
-                        upstream_url,
-                        params=dict(request.query_params),
-                        headers=fwd_headers,
-                        content=body,
-                    ) as upstream_resp:
-                        async for chunk in upstream_resp.aiter_bytes():
-                            yield chunk
+                # No timeout on the streaming call specifically — a long-lived SSE
+                # response shouldn't be cut off by the client's default upstream
+                # timeout, even though the client itself is now shared/pooled.
+                async with client.stream(
+                    request.method,
+                    upstream_url,
+                    params=dict(request.query_params),
+                    headers=fwd_headers,
+                    content=body,
+                    timeout=None,
+                ) as upstream_resp:
+                    async for chunk in upstream_resp.aiter_bytes():
+                        yield chunk
             except httpx.RequestError:
                 yield b'event: error\ndata: {"detail":"upstream unavailable"}\n\n'
 
@@ -139,14 +175,13 @@ async def gateway(path: str, request: Request) -> Response:
         )
 
     try:
-        async with httpx.AsyncClient(timeout=settings.upstream_timeout_seconds) as client:
-            upstream_resp = await client.request(
-                request.method,
-                upstream_url,
-                params=dict(request.query_params),
-                headers=fwd_headers,
-                content=body,
-            )
+        upstream_resp = await client.request(
+            request.method,
+            upstream_url,
+            params=dict(request.query_params),
+            headers=fwd_headers,
+            content=body,
+        )
     except httpx.RequestError as exc:
         return JSONResponse(
             {"detail": f"upstream unavailable: {exc.__class__.__name__}"}, status_code=502

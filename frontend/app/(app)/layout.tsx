@@ -1,19 +1,32 @@
 "use client";
 
 import { useEffect } from "react";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import Image from "next/image";
 import { BottomTabNav } from "@/components/BottomTabNav";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { FeedbackSurveyModal } from "@/components/FeedbackSurveyModal";
 import { useAppDispatch, useAppState } from "@/lib/store";
 import { fetchChatMessages, fetchProfile } from "@/lib/api";
+import { isIntakeCompleted } from "@/lib/session";
 
 export default function AppShellLayout({ children }: { children: React.ReactNode }) {
   const { chatMessages, profile, chatSessionId } = useAppState();
   const dispatch = useAppDispatch();
   const pathname = usePathname();
+  const router = useRouter();
   const hasOwnHeader = pathname?.startsWith("/chat") || pathname === "/goals/action";
+
+  // Route guard: the app shell (chat/goals/library/progress) is only reachable
+  // after intake + persona selection. If this device hasn't completed intake,
+  // send it back to the intake flow rather than dropping a user straight into
+  // the app (deep link / stale bookmark / cleared flag). Reads localStorage in
+  // an effect so the initial render stays hydration-safe.
+  useEffect(() => {
+    if (!isIntakeCompleted()) {
+      router.replace("/intake");
+    }
+  }, [router]);
 
   useEffect(() => {
     if (chatSessionId && chatMessages.length === 0) {
@@ -33,7 +46,7 @@ export default function AppShellLayout({ children }: { children: React.ReactNode
   // the previous approach (fixed nav + guessing how much padding clears
   // it) breaks any time the nav's real height doesn't match the guess.
   return (
-    <div className="mx-auto flex h-screen max-w-md flex-col bg-surface md:max-w-5xl md:flex-row-reverse">
+    <div className="flex h-screen w-full flex-col bg-surface md:flex-row-reverse">
       <div className="flex min-h-0 flex-1 flex-col">
         {!hasOwnHeader && (
           <header className="flex shrink-0 items-center justify-between px-margin-mobile py-md md:hidden">

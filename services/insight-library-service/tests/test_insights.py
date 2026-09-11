@@ -36,22 +36,59 @@ def test_search_matches_title_and_summary(client):
 def test_category_filter_scoped(client):
     r = client.get("/api/v1/insights?category=Savings", headers=USER_HEADERS)
     items = r.json()
-    assert len(items) == 1
-    assert items[0]["title"] == "Saving during lean seasons"
+    assert len(items) >= 1
+    assert all(i["category"] == "Savings" for i in items)
 
 
-def test_is_audio_filter_scoped(client):
-    r = client.get("/api/v1/insights?is_audio=true", headers=USER_HEADERS)
-    assert all(i["is_audio"] for i in r.json())
-    assert len(r.json()) >= 1
+def test_media_type_filter_audio(client):
+    r = client.get("/api/v1/insights?media_type=audio", headers=USER_HEADERS)
+    items = r.json()
+    assert len(items) >= 1
+    assert all(i["media_type"] == "audio" for i in items)
+
+
+def test_media_type_filter_video(client):
+    r = client.get("/api/v1/insights?media_type=video", headers=USER_HEADERS)
+    items = r.json()
+    assert len(items) >= 1
+    assert all(i["media_type"] == "video" for i in items)
+
+
+def test_media_type_filter_text(client):
+    r = client.get("/api/v1/insights?media_type=text", headers=USER_HEADERS)
+    items = r.json()
+    assert len(items) >= 1
+    assert all(i["media_type"] == "text" for i in items)
+
+
+def test_language_filter(client):
+    r = client.get("/api/v1/insights?language=sw", headers=USER_HEADERS)
+    items = r.json()
+    assert len(items) >= 1
+    assert all(i["language"] == "sw" for i in items)
+
+
+def test_difficulty_filter(client):
+    r = client.get("/api/v1/insights?difficulty=advanced", headers=USER_HEADERS)
+    items = r.json()
+    assert len(items) >= 1
+    assert all(i["difficulty"] == "advanced" for i in items)
 
 
 def test_combined_filters_scoped(client):
     r = client.get(
-        "/api/v1/insights?category=Bookkeeping&is_audio=false", headers=USER_HEADERS
+        "/api/v1/insights?category=Bookkeeping&media_type=text", headers=USER_HEADERS
     )
     titles = {i["title"] for i in r.json()}
-    assert titles == {"Bookkeeping with Mobile Money"}
+    assert "Bookkeeping with Mobile Money" in titles
+    assert all(i["media_type"] == "text" for i in r.json())
+
+
+def test_response_has_duration_seconds(client):
+    r = client.get("/api/v1/insights", headers=USER_HEADERS)
+    for item in r.json():
+        assert "duration_seconds" in item
+        assert item["duration_seconds"] > 0
 
 
 def test_get_insight_not_found(client):
@@ -112,7 +149,7 @@ def test_list_bookmarks_returns_only_favorited(client):
     assert other_bookmarks == []
 
 
-# ── Catalog authoring (admin-only) ──────────────────────────────────────────
+# ── Catalog authoring (admin-only) ───────────────────────────────────────────
 
 def test_create_insight_requires_admin_role(client):
     r = client.post(
@@ -121,7 +158,8 @@ def test_create_insight_requires_admin_role(client):
             "title": "New lesson",
             "summary": "Something new.",
             "category": "Pricing",
-            "duration_minutes": 4,
+            "media_type": "text",
+            "duration_seconds": 240,
         },
         headers=USER_HEADERS,
     )
@@ -132,16 +170,117 @@ def test_create_insight_as_admin(client):
     r = client.post(
         "/api/v1/insights",
         json={
-            "title": "New lesson",
+            "title": "New audio lesson",
             "summary": "Something new.",
             "category": "Pricing",
-            "duration_minutes": 4,
-            "is_audio": True,
+            "media_type": "audio",
+            "duration_seconds": 240,
+            "language": "en",
+            "difficulty": "beginner",
         },
         headers=ADMIN_HEADERS,
     )
     assert r.status_code == 201
-    assert r.json()["title"] == "New lesson"
+    body = r.json()
+    assert body["title"] == "New audio lesson"
+    assert body["media_type"] == "audio"
+    assert body["duration_seconds"] == 240
 
     titles = {i["title"] for i in client.get("/api/v1/insights", headers=USER_HEADERS).json()}
-    assert "New lesson" in titles
+    assert "New audio lesson" in titles
+
+
+def test_create_insight_invalid_media_type(client):
+    r = client.post(
+        "/api/v1/insights",
+        json={
+            "title": "Bad type",
+            "summary": "x",
+            "category": "Pricing",
+            "media_type": "podcast",
+            "duration_seconds": 60,
+        },
+        headers=ADMIN_HEADERS,
+    )
+    assert r.status_code == 422
+
+
+def test_create_insight_invalid_difficulty(client):
+    r = client.post(
+        "/api/v1/insights",
+        json={
+            "title": "Bad difficulty",
+            "summary": "x",
+            "category": "Pricing",
+            "media_type": "text",
+            "duration_seconds": 60,
+            "difficulty": "expert",
+        },
+        headers=ADMIN_HEADERS,
+    )
+    assert r.status_code == 422
+
+
+# ── Progress tracking ────────────────────────────────────────────────────────
+
+def test_progress_upsert_and_get(client):
+    insight_id = _insight_id_by_title(client, "Saving during lean seasons")
+
+    r = client.put(
+        f"/api/v1/insights/{insight_id}/progress",
+        json={"position_seconds": 120, "completed": False},
+        headers=USER_HEADERS,
+    )
+    assert r.status_code == 200
+    body = r.json()
+    assert body["position_seconds"] == 120
+    assert body["completed"] is False
+    assert body["insight_id"] == insight_id
+
+    r2 = client.get(f"/api/v1/insights/{insight_id}/progress", headers=USER_HEADERS)
+    assert r2.status_code == 200
+    assert r2.json()["position_seconds"] == 120
+
+
+def test_progress_update_advances_position(client):
+    insight_id = _insight_id_by_title(client, "Saving during lean seasons")
+    client.put(
+        f"/api/v1/insights/{insight_id}/progress",
+        json={"position_seconds": 60, "completed": False},
+        headers=USER_HEADERS,
+    )
+    client.put(
+        f"/api/v1/insights/{insight_id}/progress",
+        json={"position_seconds": 300, "completed": True},
+        headers=USER_HEADERS,
+    )
+    r = client.get(f"/api/v1/insights/{insight_id}/progress", headers=USER_HEADERS)
+    assert r.json()["position_seconds"] == 300
+    assert r.json()["completed"] is True
+
+
+def test_progress_isolated_per_user(client):
+    insight_id = _insight_id_by_title(client, "Saving during lean seasons")
+    client.put(
+        f"/api/v1/insights/{insight_id}/progress",
+        json={"position_seconds": 200, "completed": False},
+        headers=USER_HEADERS,
+    )
+    r = client.get(f"/api/v1/insights/{insight_id}/progress", headers=OTHER_HEADERS)
+    assert r.status_code == 404
+
+
+def test_progress_not_allowed_for_text(client):
+    insight_id = _insight_id_by_title(client, "How to price your trade")
+    r = client.put(
+        f"/api/v1/insights/{insight_id}/progress",
+        json={"position_seconds": 10, "completed": False},
+        headers=USER_HEADERS,
+    )
+    assert r.status_code == 400
+
+
+def test_progress_get_no_record_404(client):
+    insight_id = _insight_id_by_title(client, "Saving during lean seasons")
+    r = client.get(f"/api/v1/insights/{insight_id}/progress", headers=USER_HEADERS)
+    assert r.status_code == 404

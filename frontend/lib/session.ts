@@ -25,16 +25,25 @@ function resolveApiBase(): string {
       const gatewayHost = host.replace(/-\d+\.app\.github\.dev$/, "-8000.app.github.dev");
       return `${window.location.protocol}//${gatewayHost}`;
     }
+
+    // Only default to the local gateway when actually running on localhost.
+    // Any other deployed host (e.g. Vercel) with NEXT_PUBLIC_API_BASE_URL unset
+    // must fall through to same-origin relative paths so next.config.js's
+    // rewrites() proxy handles the request — a hardcoded localhost fallback here
+    // would otherwise make every deployed browser try to reach its own machine.
+    const isLocalhost = host === "localhost" || host.startsWith("localhost:") || host.startsWith("127.0.0.1");
+    if (!isLocalhost) {
+      return "";
+    }
   }
 
   return "http://localhost:8000";
 }
 
-const API_BASE = resolveApiBase();
-
 const ACCESS_TOKEN_KEY = "afrimentor-access-token";
 const REFRESH_TOKEN_KEY = "afrimentor-refresh-token";
 const DEVICE_ID_KEY = "afrimentor-device-id";
+const INTAKE_COMPLETED_KEY = "afrimentor-intake-completed";
 
 interface TokenPair {
   accessToken: string;
@@ -100,7 +109,7 @@ function deviceCredentials(): { email: string; password: string } {
 }
 
 async function signupDeviceAccount(): Promise<TokenPair> {
-  const res = await fetch(`${API_BASE}/api/v1/auth/signup`, {
+  const res = await fetch(`${resolveApiBase()}/api/v1/auth/signup`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(deviceCredentials()),
@@ -117,7 +126,7 @@ async function signupDeviceAccount(): Promise<TokenPair> {
  * or auth-user-service restarted and rotated its dev-mode signing key,
  * invalidating every outstanding token. */
 async function loginDeviceAccount(): Promise<TokenPair> {
-  const res = await fetch(`${API_BASE}/api/v1/auth/login`, {
+  const res = await fetch(`${resolveApiBase()}/api/v1/auth/login`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(deviceCredentials()),
@@ -131,7 +140,7 @@ async function refreshSession(): Promise<TokenPair> {
   const existing = readStoredTokens();
   if (!existing) return signupDeviceAccount();
 
-  const res = await fetch(`${API_BASE}/api/v1/auth/refresh`, {
+  const res = await fetch(`${resolveApiBase()}/api/v1/auth/refresh`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ refresh_token: existing.refreshToken }),
@@ -166,6 +175,31 @@ async function ensureAccessToken(): Promise<string> {
   return fresh.accessToken;
 }
 
+/** Whether this device has a stored device id — i.e. has at least been
+ * provisioned/visited before. NOTE: this alone does NOT mean intake was done;
+ * a device id is written the moment the first authenticated request runs
+ * (which can happen mid-intake). Use `isIntakeCompleted()` for the intake gate. */
+export function isDeviceProvisioned(): boolean {
+  if (typeof window === "undefined") return false;
+  return !!window.localStorage.getItem(DEVICE_ID_KEY);
+}
+
+/** Marks intake as completed on this device. Set once, after the intake
+ * submission succeeds server-side, and stays set across reloads/app-closes so
+ * a user who completed intake is never pushed back through it. */
+export function markIntakeCompleted(): void {
+  if (typeof window === "undefined") return;
+  window.localStorage.setItem(INTAKE_COMPLETED_KEY, "1");
+}
+
+/** True once intake has been completed on this device. This is the single
+ * source of truth the landing/routing code should use to decide between
+ * "Continue to chat" and "Get started (intake)". */
+export function isIntakeCompleted(): boolean {
+  if (typeof window === "undefined") return false;
+  return window.localStorage.getItem(INTAKE_COMPLETED_KEY) === "1";
+}
+
 /** JWT segments are base64url (`-`/`_`, unpadded), not plain base64 — `atob()`
  * alone mis-decodes any segment containing those characters, which most will. */
 function base64UrlDecode(segment: string): string {
@@ -185,12 +219,13 @@ export async function getCurrentUserId(): Promise<string> {
 /** fetch() against the gateway with the device session's bearer token attached,
  * transparently refreshing once and retrying on a 401. */
 export async function apiFetch(path: string, init: RequestInit = {}): Promise<Response> {
+  const isFormData = typeof FormData !== "undefined" && init.body instanceof FormData;
   const attempt = async (accessToken: string) => {
     const userId = await getCurrentUserId();
-    return fetch(`${API_BASE}${path}`, {
+    return fetch(`${resolveApiBase()}${path}`, {
       ...init,
       headers: {
-        ...(init.body ? { "Content-Type": "application/json" } : {}),
+        ...(init.body && !isFormData ? { "Content-Type": "application/json" } : {}),
         ...init.headers,
         Authorization: `Bearer ${accessToken}`,
         "X-User-Id": userId,

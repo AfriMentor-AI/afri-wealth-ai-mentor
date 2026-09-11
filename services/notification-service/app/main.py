@@ -22,6 +22,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 
 from .config import get_settings
+from .consumer import start_consumer
 from .database import SessionLocal, init_db
 from .observability import instrument
 from .routers.notifications import router as notifications_router
@@ -49,6 +50,7 @@ async def _sweep_loop() -> None:
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     init_db()
+    start_consumer()
     task = asyncio.create_task(_sweep_loop())
     yield
     task.cancel()

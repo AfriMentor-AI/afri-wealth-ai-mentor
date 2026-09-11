@@ -53,7 +53,7 @@ infra/keys/
 # Local pg_dump output from scripts/backup/backup-postgres.sh (card O4.5) —
 # real service data, never committed.
 /backups/
-
+/extracted_onnx
 # Audio data and uploads
 *.mp3
 *.wav
@@ -62,3 +62,6 @@ infra/keys/
 .github/workflows/claude-review.yml
 .github/workflows/claude.yml
 .claude/
+
+# Local deployment overrides
+docker-compose.cloud.yml

@@ -65,6 +65,7 @@ class ConversationSummary(BaseModel):
 
     id: str
     persona_id: str | None
+    status: str
     last_message_preview: str | None
     last_message_at: dt.datetime | None
     updated_at: dt.datetime

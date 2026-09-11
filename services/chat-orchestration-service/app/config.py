@@ -22,6 +22,7 @@ class Settings(BaseModel):
     persona_service_url: str = os.getenv("PERSONA_SERVICE_URL", "")
     rag_service_url: str = os.getenv("RAG_SERVICE_URL", "")
     goals_service_url: str = os.getenv("GOALS_SERVICE_URL", "http://localhost:8006")
+    notification_service_url: str = os.getenv("NOTIFICATION_SERVICE_URL", "")
 
     # LLM — OpenAI-compatible (Groq / Together AI / local vLLM)
     llm_api_key: str = os.getenv("LLM_API_KEY", "")

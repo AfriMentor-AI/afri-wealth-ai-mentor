@@ -38,11 +38,13 @@ type Action =
   | { type: "SET_CHAT_DRAFT"; draft: string }
   | { type: "SET_CHAT_SESSION_ID"; sessionId: string }
   | { type: "SET_CHAT_SESSIONS"; sessions: ChatSessionSummary[] }
+  | { type: "REMOVE_CHAT_SESSION"; sessionId: string }
   | { type: "SET_ACTIVE_GOAL_ID"; goalId: string | null } // New: Set the currently active goal
   | { type: "OPEN_FEEDBACK_MODAL" }
   | { type: "CLOSE_FEEDBACK_MODAL" }
   | { type: "MARK_DAILY_ACTION_DONE" }
   | { type: "TOGGLE_LIBRARY_FAVORITE"; id: string }
+  | { type: "SET_LIBRARY_FAVORITES"; ids: string[] }
   | { type: "SET_LIBRARY_FILTER"; category: string | null };
 
 const initialState: AppState = {
@@ -92,6 +94,8 @@ function reducer(state: AppState, action: Action): AppState {
       return { ...state, chatSessionId: action.sessionId };
     case "SET_CHAT_SESSIONS":
       return { ...state, chatSessions: action.sessions };
+    case "REMOVE_CHAT_SESSION":
+      return { ...state, chatSessions: state.chatSessions.filter((s) => s.id !== action.sessionId) };
     case "SET_ACTIVE_GOAL_ID":
       return { ...state, activeGoalId: action.goalId }; // Handle new action
     case "OPEN_FEEDBACK_MODAL":
@@ -106,6 +110,8 @@ function reducer(state: AppState, action: Action): AppState {
       else next.add(action.id);
       return { ...state, libraryFavorites: next };
     }
+    case "SET_LIBRARY_FAVORITES":
+      return { ...state, libraryFavorites: new Set(action.ids) };
     case "SET_LIBRARY_FILTER":
       return { ...state, libraryFilter: action.category };
     default:

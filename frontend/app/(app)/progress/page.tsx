@@ -2,10 +2,10 @@
 
 import { useEffect, useState } from "react";
 import { Icon } from "@/components/Icon";
-import { fetchBadges, fetchStreak } from "@/lib/api";
+import { fetchProgressSummary, recordAction } from "@/lib/api";
 import type { BadgeWithStatus, StreakStat } from "@/lib/types";
 import { Skeleton } from "@/components/ui/Skeleton";
-import { useAppDispatch } from "@/lib/store";
+import { useAppDispatch, useAppState } from "@/lib/store";
 
 const WEEKDAY_BARS = [40, 60, 55, 85, 100, 95, 98]; // % height, matches reference chart shape
 const HEATMAP_INTENSITIES = ["bg-surface-container", "bg-secondary-fixed", "bg-secondary-container", "bg-secondary"];
@@ -40,32 +40,86 @@ function BadgeTile({ badge, wide = false }: { badge: BadgeWithStatus; wide?: boo
 
 export default function ProgressBoardPage() {
   const dispatch = useAppDispatch();
+  const { profile } = useAppState();
   const [streak, setStreak] = useState<StreakStat | null>(null);
   const [badges, setBadges] = useState<BadgeWithStatus[] | null>(null);
   const [heatmap, setHeatmap] = useState<number[][] | null>(null);
+  const [recordingAction, setRecordingAction] = useState(false);
+  const [awardNotice, setAwardNotice] = useState<string | null>(null);
+
+  async function loadData() {
+    const summary = await fetchProgressSummary();
+    setStreak(summary.streak);
+    setBadges(summary.badges);
+    if (summary.heatmap && summary.heatmap.length > 0) {
+      const weeks: number[][] = [];
+      for (let i = 0; i < summary.heatmap.length; i += 7) {
+        const slice = summary.heatmap.slice(i, i + 7);
+        const intensities = slice.map((d) => Math.min(3, d.count));
+        while (intensities.length < 7) {
+          intensities.push(0);
+        }
+        weeks.push(intensities);
+      }
+      setHeatmap(weeks);
+    } else {
+      setHeatmap(Array.from({ length: 13 }, () => Array(7).fill(0)));
+    }
+  }
 
   useEffect(() => {
-    fetchStreak().then(setStreak);
-    fetchBadges().then(setBadges);
-    // Generated client-side only to avoid SSR/client hydration mismatch —
-    // in production this is real per-day activity data from the API, not random.
-    const weeks = Array.from({ length: 13 }, () =>
-      Array.from({ length: 7 }, () => Math.floor(Math.random() * HEATMAP_INTENSITIES.length))
-    );
-    setHeatmap(weeks);
+    loadData();
   }, []);
+
+  async function handleRecordAction() {
+    setRecordingAction(true);
+    setAwardNotice(null);
+    try {
+      const res = await recordAction("daily_action");
+      setStreak(res.streak);
+      await loadData();
+      if (res.newlyEarnedBadges && res.newlyEarnedBadges.length > 0) {
+        setAwardNotice(`🎉 Congratulations! You earned: ${res.newlyEarnedBadges[0].label}!`);
+      } else {
+        setAwardNotice("✨ Action recorded! Your streak has been updated.");
+      }
+    } catch (err) {
+      console.error("Failed to record action:", err);
+    } finally {
+      setRecordingAction(false);
+    }
+  }
 
   const earnedCount = badges?.filter((b) => b.earnedAt !== null).length ?? null;
   const lockedCount = badges ? badges.length - (earnedCount ?? 0) : null;
 
   return (
     <main className="space-y-xl px-margin-mobile pb-24 pt-md md:mx-auto md:max-w-6xl md:space-y-lg md:px-lg md:pb-lg md:pt-lg">
-      <section>
-        <h2 className="font-headline-lg-mobile text-headline-lg-mobile text-on-surface md:font-headline-lg md:text-headline-lg">
-          Your Growth
-        </h2>
-        <p className="font-body-md text-on-surface-variant">Consistent action builds lasting wealth, Kofi.</p>
+      <section className="flex flex-col gap-sm md:flex-row md:items-center md:justify-between">
+        <div>
+          <h2 className="font-headline-lg-mobile text-headline-lg-mobile text-on-surface md:font-headline-lg md:text-headline-lg">
+            Your Growth
+          </h2>
+          <p className="font-body-md text-on-surface-variant">
+            Consistent action builds lasting wealth, {profile?.name ?? "Entrepreneur"}.
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={handleRecordAction}
+          disabled={recordingAction}
+          className="tap-target inline-flex items-center justify-center gap-xs rounded-full bg-secondary px-lg py-sm font-label-sm text-label-sm font-semibold text-on-secondary shadow transition-transform active:scale-95 disabled:opacity-50"
+        >
+          <Icon name="check_circle" size={18} />
+          <span>{recordingAction ? "Recording..." : "Log Today's Action"}</span>
+        </button>
       </section>
+
+      {awardNotice && (
+        <div className="rounded-xl border border-secondary bg-secondary-container p-md font-body-md text-body-md font-medium text-on-secondary-container shadow-sm">
+          {awardNotice}
+        </div>
+      )}
 
       {/* Desktop hero stats row — real streak/badge numbers, not the
           mockup's fabricated "Global Rank"/"Knowledge Points" (no such
@@ -141,24 +195,29 @@ export default function ProgressBoardPage() {
           {heatmap === null ? (
             <Skeleton className="h-24 w-full" />
           ) : (
-            <div className="flex gap-1 overflow-x-auto pb-sm md:gap-[3px]">
-              <div className="grid grid-rows-7 gap-1 pr-1 text-[8px] text-on-surface-variant md:gap-[3px] md:text-[10px] md:uppercase md:font-bold">
-                <div>M</div>
-                <div />
-                <div>W</div>
-                <div />
-                <div>F</div>
-                <div />
-                <div>S</div>
-              </div>
-              {heatmap.map((week, wi) => (
-                <div key={wi} className="grid grid-rows-7 gap-1 md:gap-[3px]">
-                  {week.map((intensity, di) => (
-                    <div key={di} className={`h-2.5 w-2.5 rounded-[2px] md:h-3 md:w-3 ${HEATMAP_INTENSITIES[intensity]}`} />
-                  ))}
+            <>
+              <p className="sr-only">
+                A heatmap of your daily action over the last 3 months, from less active to more active.
+              </p>
+              <div aria-hidden="true" className="flex gap-1 overflow-x-auto pb-sm md:gap-[3px]">
+                <div className="grid grid-rows-7 gap-1 pr-1 text-[8px] text-on-surface-variant md:gap-[3px] md:text-[10px] md:uppercase md:font-bold">
+                  <div>M</div>
+                  <div />
+                  <div>W</div>
+                  <div />
+                  <div>F</div>
+                  <div />
+                  <div>S</div>
                 </div>
-              ))}
-            </div>
+                {heatmap.map((week, wi) => (
+                  <div key={wi} className="grid grid-rows-7 gap-1 md:gap-[3px]">
+                    {week.map((intensity, di) => (
+                      <div key={di} className={`h-2.5 w-2.5 rounded-[2px] md:h-3 md:w-3 ${HEATMAP_INTENSITIES[intensity]}`} />
+                    ))}
+                  </div>
+                ))}
+              </div>
+            </>
           )}
           <div className="mt-md flex items-center justify-end gap-sm">
             <span className="text-[10px] text-on-surface-variant">Less</span>

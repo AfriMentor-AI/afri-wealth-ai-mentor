@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import re
 import time
 from collections.abc import AsyncIterator
 
@@ -22,6 +23,29 @@ settings = get_settings()
 _client: AsyncOpenAI | None = None
 _persona_http_client: httpx.AsyncClient | None = None
 _prompt_cache: dict[tuple[str, str], tuple[float, str]] = {}
+
+# ── Think-tag stripping ───────────────────────────────────────────────────────
+# Qwen/Qwen2.5 (and other reasoning models) emit an internal chain-of-thought
+# wrapped in <think>…</think> before the actual reply. We strip the entire
+# block so it is never stored or returned to clients.
+_THINK_RE = re.compile(r"<think>(?:.*?</think>|[\s\S]*$)", re.DOTALL | re.IGNORECASE)
+_STRAY_CLOSING_RE = re.compile(r"</think>", re.IGNORECASE)
+
+
+def _strip_think_tags(text: str) -> str:
+    """Remove <think>…</think> reasoning blocks from model output.
+    Also handles unclosed <think>... blocks if truncated by max_tokens,
+    and removes any stray closing tags."""
+    cleaned = _THINK_RE.sub("", text)
+    cleaned = _STRAY_CLOSING_RE.sub("", cleaned)
+    return cleaned.lstrip("\n")
+
+
+def _get_extra_body() -> dict | None:
+    """On Groq, suppress reasoning tokens natively so the token budget is preserved."""
+    if "groq.com" in settings.llm_base_url.lower():
+        return {"reasoning_format": "hidden"}
+    return None
 
 
 def get_llm_client() -> AsyncOpenAI:
@@ -89,7 +113,10 @@ async def _get_system_prompt(persona_id: str | None) -> str:
         "('I will…', 'I plan to…', 'My goal is…'), explicitly name it as a commitment "
         "and confirm it back so they feel the weight of accountability. "
         "(4) Short replies on mobile — default to 3–5 short paragraphs; bullet points "
-        "only for step lists; no walls of text."
+        "only for step lists; no walls of text. "
+        "(5) Direct response only — do not include any <think> tags, internal monologue, "
+        "reasoning scratchpad, or planning commentary. "
+        "Begin immediately with your response to the user."
         # ── ALIGNMENT PROVENANCE ──────────────────────────────────────────────
         # This prompt embodies Condition C4 (RLHF / Preference Optimization),
         # the Sprint 4 best-performing alignment condition (composite 0.654).
@@ -105,9 +132,8 @@ async def _get_system_prompt(persona_id: str | None) -> str:
     try:
         global _persona_http_client
         if _persona_http_client is None:
-            _persona_http_client = httpx.AsyncClient(timeout=httpx.Timeout(1.5, connect=0.3))
             _persona_http_client = httpx.AsyncClient(
-                timeout=httpx.Timeout(1.5, connect=0.3),
+                timeout=httpx.Timeout(3.0, connect=0.3),
                 limits=httpx.Limits(
                     max_connections=settings.http_pool_max_connections,
                     max_keepalive_connections=settings.http_pool_max_keepalive,
@@ -154,13 +180,82 @@ def _deduplicate_labels(chunks: list[RagResult]) -> list[str]:
 
 # ── Commitment detection ──────────────────────────────────────────────────────
 
-def is_commitment_candidate(text: str) -> bool:
-    """Heuristic: does the text contain a user-voiced commitment phrase?
+def is_commitment_candidate(user_text: str, assistant_text: str = "") -> bool:
+    """Heuristic: does the user message or Chioma's reply contain a commitment phrase?
 
+    Checks both sides — the user may voice the commitment directly, or Chioma
+    (per her system prompt) may name it back to confirm accountability.
     Sprint 4 — replace with a dedicated classifier or structured LLM output field.
     """
-    lower = text.lower()
-    return any(kw in lower for kw in settings.commitment_keywords)
+    combined = (user_text + " " + assistant_text).lower()
+    return any(kw in combined for kw in settings.commitment_keywords)
+
+
+# ── Thinking tag stripper ─────────────────────────────────────────────────────
+
+def strip_thinking_tags(text: str) -> str:
+    """Remove <think>...</think> reasoning traces from model responses."""
+    if not text:
+        return ""
+    cleaned = re.sub(r"<think>[\s\S]*?</think>", "", text, flags=re.IGNORECASE)
+    cleaned = re.sub(r"<think>[\s\S]*$", "", cleaned, flags=re.IGNORECASE)
+    cleaned = re.sub(r"^[\s\S]*?</think>", "", cleaned, flags=re.IGNORECASE)
+    return cleaned.strip()
+
+
+async def filter_thinking_stream(stream: AsyncIterator[str]) -> AsyncIterator[str]:
+    """Yield tokens from stream while filtering out <think>...</think> blocks in real time."""
+    in_think = False
+    buffer = ""
+    async for token in stream:
+        buffer += token
+        while buffer:
+            if not in_think:
+                lower_buf = buffer.lower()
+                if "<think>" in lower_buf:
+                    idx = lower_buf.index("<think>")
+                    prefix = buffer[:idx]
+                    if prefix:
+                        yield prefix
+                    in_think = True
+                    buffer = buffer[idx + 7:]
+                else:
+                    match_partial = False
+                    for i in range(1, min(len("<think>"), len(buffer) + 1)):
+                        suffix = lower_buf[-i:]
+                        if "<think>".startswith(suffix):
+                            match_partial = True
+                            if len(buffer) > i:
+                                yield buffer[:-i]
+                                buffer = buffer[-i:]
+                            break
+                    if not match_partial:
+                        yield buffer
+                        buffer = ""
+                    else:
+                        break
+            else:
+                lower_buf = buffer.lower()
+                if "</think>" in lower_buf:
+                    idx = lower_buf.index("</think>")
+                    in_think = False
+                    buffer = buffer[idx + 8:].lstrip("\r\n ")
+                else:
+                    match_partial = False
+                    for i in range(1, min(len("</think>"), len(buffer) + 1)):
+                        suffix = lower_buf[-i:]
+                        if "</think>".startswith(suffix):
+                            buffer = buffer[-i:]
+                            match_partial = True
+                            break
+                    if not match_partial:
+                        buffer = ""
+                    break
+
+    if buffer and not in_think:
+        cleaned = strip_thinking_tags(buffer)
+        if cleaned:
+            yield cleaned
 
 
 # ── Message assembly & LLM call ───────────────────────────────────────────────
@@ -214,11 +309,7 @@ async def chat_completion(
             messages=messages,  # type: ignore[arg-type]
             max_tokens=settings.llm_max_tokens,
             temperature=settings.llm_temperature,
-            # No-op for the current model (gpt-oss-20b); kept as a guard in
-            # case LLM_MODEL is ever pointed back at a reasoning model like
-            # qwen/qwen3.6-27b, which otherwise leaks a raw <think> trace into
-            # `content` (see docs/implementation/C5_1_final_evaluation.md).
-            extra_body={"reasoning_format": "hidden"},
+            extra_body=_get_extra_body(),
         )
     except Exception as exc:  # pragma: no cover - exercised via integration tests with bad creds
         logger.warning("LLM request failed; falling back to stub reply: %s", exc)
@@ -232,8 +323,10 @@ async def chat_completion(
 
     choice = response.choices[0]
     usage = response.usage
+    raw_content = choice.message.content or ""
+    cleaned_content = _strip_think_tags(raw_content)
     return (
-        choice.message.content or "",
+        cleaned_content,
         usage.prompt_tokens if usage else 0,
         usage.completion_tokens if usage else 0,
         citations,
@@ -278,16 +371,67 @@ async def stream_chat_completion(
                 max_tokens=settings.llm_max_tokens,
                 temperature=settings.llm_temperature,
                 stream=True,
-                extra_body={"reasoning_format": "hidden"},
+                extra_body=_get_extra_body(),
             )
+            # Buffer tokens to suppress any <think>…</think> reasoning blocks.
+            # Reasoning models (e.g. Qwen / DeepSeek) emit thinking content first;
+            # we must not yield any of it to SSE clients.
+            buffer = ""
+            in_think = False
+            think_done = False
+
             async for chunk in response:
-                if chunk.choices and chunk.choices[0].delta.content:
-                    yield chunk.choices[0].delta.content
+                if not (chunk.choices and chunk.choices[0].delta.content):
+                    continue
+                token = chunk.choices[0].delta.content
+
+                if think_done:
+                    yield token
+                    continue
+
+                buffer += token
+
+                if not in_think:
+                    stripped = buffer.lstrip()
+                    lower_stripped = stripped.lower()
+                    if not lower_stripped:
+                        # Only leading whitespace so far — keep buffering
+                        continue
+                    if "<think>" in lower_stripped:
+                        in_think = True
+                    elif any(
+                        "<think>".startswith(lower_stripped[:i])
+                        for i in range(1, len(lower_stripped) + 1)
+                    ):
+                        # Matches prefix of "<think>" (e.g. "<", "<th", etc.) — keep buffering
+                        continue
+                    else:
+                        # Definitely not a think block — flush buffer and stream normally
+                        think_done = True
+                        yield buffer
+                        buffer = ""
+                        continue
+
+                if in_think:
+                    lower_buffer = buffer.lower()
+                    if "</think>" in lower_buffer:
+                        # Thinking completed — extract any text after </think>
+                        close_idx = lower_buffer.find("</think>") + len("</think>")
+                        remainder = buffer[close_idx:].lstrip("\n")
+                        think_done = True
+                        in_think = False
+                        buffer = ""
+                        if remainder:
+                            yield remainder
+
+            # If stream finished without think block, flush any buffered non-think text
+            if buffer and not in_think and not think_done:
+                yield buffer
         except Exception as exc:  # pragma: no cover - provider failures need integration coverage
             logger.warning("LLM stream failed; using fallback response: %s", exc)
             yield "I hear you! Let's work through this together. (LLM unavailable.)"
 
-    return provider_stream(), citations
+    return filter_thinking_stream(provider_stream()), citations
 
 
 async def generate_daily_action_for_user(user_id: str, db) -> str:
@@ -296,10 +440,29 @@ async def generate_daily_action_for_user(user_id: str, db) -> str:
     """
     logger.info(f"Generating daily action for user {user_id}...")
 
-    # TODO: Replace this placeholder with an actual HTTP request to the goals-milestones-service
-    # 1. Fetch user's active goals from the goals-milestones-service
-    #    (This is a placeholder, actual implementation will make an HTTP request)
-    active_goals = ["Save money for a new car", "Invest in the stock market"]
+    active_goals: list[str] = []
+    if settings.goals_service_url:
+        try:
+            global _persona_http_client
+            if _persona_http_client is None:
+                _persona_http_client = httpx.AsyncClient(
+                    timeout=httpx.Timeout(5.0, connect=2.0),
+                    limits=httpx.Limits(
+                        max_connections=settings.http_pool_max_connections,
+                        max_keepalive_connections=settings.http_pool_max_keepalive,
+                    ),
+                )
+            resp = await _persona_http_client.get(
+                f"{settings.goals_service_url}/api/v1/goals",
+                headers={"X-User-Id": user_id},
+            )
+            resp.raise_for_status()
+            active_goals = [g["title"] for g in resp.json() if g.get("status") == "active"]
+        except Exception as exc:
+            logger.warning("Could not fetch goals for user %s: %s", user_id, exc)
+
+    if not active_goals:
+        active_goals = ["build financial stability", "grow savings consistently"]
     logger.info(f"User {user_id} has active goals: {active_goals}")
 
     # 2. Construct the prompt
@@ -343,4 +506,3 @@ async def generate_daily_action_for_user(user_id: str, db) -> str:
 
     choice = response.choices[0]
     return choice.message.content or ""
-

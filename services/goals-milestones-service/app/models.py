@@ -84,5 +84,8 @@ class TaggedCommitment(Base):
     message_id: Mapped[str] = mapped_column(String(36), nullable=False, unique=True)
     content: Mapped[str] = mapped_column(Text, nullable=False)
     created_at: Mapped[dt.datetime] = mapped_column(DateTime(timezone=True), default=_now)
+    # Set to True when the source conversation is deleted (archived) by the user.
+    # Data is retained for admin oversight; this flag hides it from user-facing views.
+    is_archived: Mapped[bool] = mapped_column(default=False, nullable=False)
 
     goal: Mapped[Goal] = relationship("Goal", back_populates="commitments")

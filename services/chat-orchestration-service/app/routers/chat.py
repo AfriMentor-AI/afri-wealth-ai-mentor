@@ -22,7 +22,12 @@ from ..guardrails import (
     screen_input,
     screen_output,
 )
-from ..llm import chat_completion, is_commitment_candidate, stream_chat_completion
+from ..llm import (
+    _strip_think_tags,
+    chat_completion,
+    is_commitment_candidate,
+    stream_chat_completion,
+)
 from ..models import Conversation, Message
 from ..schemas import (
     ConversationCreate,
@@ -62,19 +67,13 @@ def create_session(
 @router.get("/sessions", response_model=list[ConversationSummary])
 def list_sessions(
     user_id: str = Depends(get_current_user),
+    include_archived: bool = False,
     db: Session = Depends(get_db),
 ) -> list[ConversationSummary]:
-    """Multi-mentor conversation list — one row per session the user has ever
-    started (with any persona), newest activity first. Powers the desktop/
-    mobile conversation-list UI; each conversation may be with a different
-    persona (Conversation.persona_id already supports this — no schema
-    change needed, a user was never restricted to one concurrent session)."""
-    convs = (
-        db.query(Conversation)
-        .filter(Conversation.user_id == user_id)
-        .order_by(Conversation.updated_at.desc())
-        .all()
-    )
+    q = db.query(Conversation).filter(Conversation.user_id == user_id)
+    if not include_archived:
+        q = q.filter(Conversation.status != "archived")
+    convs = q.order_by(Conversation.updated_at.desc()).all()
     summaries: list[ConversationSummary] = []
     for conv in convs:
         last_message = (
@@ -87,6 +86,7 @@ def list_sessions(
             ConversationSummary(
                 id=conv.id,
                 persona_id=conv.persona_id,
+                status=conv.status,
                 last_message_preview=last_message.content[:140] if last_message else None,
                 last_message_at=last_message.created_at if last_message else None,
                 updated_at=conv.updated_at,
@@ -105,6 +105,40 @@ def get_session(
     if not conv or conv.user_id != user_id:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Session not found")
     return conv
+
+
+@router.post("/sessions/{session_id}/archive", response_model=ConversationResponse)
+def archive_session(
+    session_id: str,
+    user_id: str = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> Conversation:
+    conv = db.get(Conversation, session_id)
+    if not conv or conv.user_id != user_id:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Session not found")
+    conv.status = "archived"
+    db.add(conv)
+    db.commit()
+    db.refresh(conv)
+
+    # Best-effort: hide related commitments in the goals service so they no
+    # longer appear on the user's Goal Milestone Path screen. The conversation
+    # data and commitments are retained in both databases for admin oversight.
+    # Errors are logged but never propagated — the delete succeeds regardless.
+    try:
+        goals_url = get_settings().goals_service_url
+        if goals_url:
+            httpx.post(
+                f"{goals_url}/internal/commitments/archive-by-conversation/{session_id}",
+                timeout=2.0,
+            )
+    except Exception as exc:  # noqa: BLE001
+        logger.warning(
+            "Could not archive commitments for conversation %s: %s", session_id, exc
+        )
+
+    return conv
+
 
 
 @router.patch("/sessions/{session_id}/persona", response_model=ConversationResponse)
@@ -202,7 +236,9 @@ async def stream_message(
                         break
                 yield f"event: token\ndata: {json.dumps({'text': token})}\n\n"
 
-            reply_text = "".join(parts)
+            reply_text = _strip_think_tags("".join(parts))
+            if not reply_text.strip():
+                reply_text = "I hear you! Let's work through this together."
             output_decision = screen_output(reply_text) if guardrails_on else ALLOWED
             if output_decision.blocked:
                 reply_text = refusal_message(output_decision)
@@ -212,7 +248,7 @@ async def stream_message(
             decision = most_severe(input_decision, output_decision)
             if decision.action is GuardrailAction.disclaim:
                 reply_text = apply_disclaimer(reply_text, decision)
-            candidate = is_commitment_candidate(body.content) and not decision.blocked
+            candidate = is_commitment_candidate(body.content, reply_text) and not decision.blocked
             prompt_tokens = completion_tokens = 0
 
         # Persist assistant turn and update conversation counters
@@ -247,6 +283,7 @@ async def stream_message(
             "id": assistant_msg.id,
             "content": reply_text,
             "citations": citations,
+            "is_commitment_candidate": candidate,
             "guardrail_action": decision.action.value if guardrails_on else None,
         }) + "\n\n"
 
@@ -330,7 +367,7 @@ async def send_message(
         if decision.action is GuardrailAction.disclaim:
             reply_text = apply_disclaimer(reply_text, decision)
 
-        candidate = is_commitment_candidate(body.content) and not decision.blocked
+        candidate = is_commitment_candidate(body.content, reply_text) and not decision.blocked
 
     assistant_msg = Message(
         conversation_id=session_id,
@@ -433,6 +470,7 @@ def tag_commitment(
             detail=f"Goals service error: {exc.response.text}",
         ) from exc
     except httpx.RequestError as exc:
+        logger.error("Goals service unreachable at %s: %s", url, exc)
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail=f"Goals service unreachable: {exc}",

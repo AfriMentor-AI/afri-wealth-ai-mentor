@@ -1,0 +1,7 @@
+# Local-dev-only env files. Next.js's `next build` always loads these from the
+# local filesystem regardless of how the build was triggered, which would
+# otherwise silently override the environment variables configured on the
+# Vercel project (e.g. BACKEND_ORIGIN, NEXT_PUBLIC_API_BASE_URL) with whatever
+# a developer's own machine happens to have for local dev.
+.env
+.env.local
