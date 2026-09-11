@@ -22,7 +22,6 @@ import type {
   CorpusDocument,
   DriftAlert,
   ConsistencyMetrics,
-  ConsistencyMetricsSession,
   AuditSession,
 } from "./types";
 import { mockProfile, mockInsights, mockPersonas, mockDailyAction } from "./mockData";
