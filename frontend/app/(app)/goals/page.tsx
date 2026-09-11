@@ -200,8 +200,10 @@ function GoalRoadmapPanel({
               Edit
             </button>
             <button
+              type="button"
               onClick={onClose}
               aria-label="Close roadmap panel"
+              title="Close roadmap panel"
               className="text-on-surface-variant hover:text-on-surface transition-colors p-1"
             >
               <Icon name="close" size={20} />
@@ -284,6 +286,7 @@ export default function GoalsOverviewPage() {
     Record<string, Milestone[]>
   >({});
   const [activeGoalId, setActiveGoalId] = useState<string | null>(null);
+  const [isRoadmapCollapsed, setIsRoadmapCollapsed] = useState(false);
   const [editingGoal, setEditingGoal] = useState<Goal | null>(null);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [newGoalTitle, setNewGoalTitle] = useState("");
@@ -359,12 +362,29 @@ export default function GoalsOverviewPage() {
               </p>
             </div>
             {goals !== null && goals.length > 0 && (
-              <div className="flex shrink-0 items-center gap-sm rounded-lg border border-outline-variant bg-surface-container px-md py-sm">
-                <Icon name="emoji_events" className="text-primary" size={20} />
-                <span className="font-label-sm text-label-sm text-on-surface">
-                  {activeGoalCount(goals)} Active Goal
-                  {activeGoalCount(goals) !== 1 ? "s" : ""}
-                </span>
+              <div className="flex shrink-0 items-center gap-sm">
+                <div className="flex shrink-0 items-center gap-sm rounded-lg border border-outline-variant bg-surface-container px-md py-sm">
+                  <Icon name="emoji_events" className="text-primary" size={20} />
+                  <span className="font-label-sm text-label-sm text-on-surface">
+                    {activeGoalCount(goals)} Active Goal
+                    {activeGoalCount(goals) !== 1 ? "s" : ""}
+                  </span>
+                </div>
+                {activeGoal && (
+                  <button
+                    type="button"
+                    onClick={() => setIsRoadmapCollapsed((prev) => !prev)}
+                    className="hidden lg:flex items-center gap-xs rounded-lg border border-outline-variant bg-surface-container px-md py-sm text-xs font-semibold text-on-surface hover:bg-surface-variant transition-colors"
+                    title={isRoadmapCollapsed ? "Show active roadmap" : "Hide active roadmap"}
+                  >
+                    <Icon
+                      name={isRoadmapCollapsed ? "view_sidebar" : "dock_to_right"}
+                      size={18}
+                      className="text-primary"
+                    />
+                    <span>{isRoadmapCollapsed ? "Show Roadmap" : "Hide Roadmap"}</span>
+                  </button>
+                )}
               </div>
             )}
           </header>
@@ -415,33 +435,15 @@ export default function GoalsOverviewPage() {
                       role="button"
                       tabIndex={0}
                       onClick={() => {
-                        // On desktop: open panel. On mobile (no panel visible): navigate.
-                        const isLargeScreen =
-                          window.innerWidth >= 1024; // lg breakpoint
-                        if (isLargeScreen) {
-                          setActiveGoalId(
-                            isActive ? null : goal.id
-                          );
-                        } else {
-                          router.push(`/goals/milestones/${goal.id}`);
-                        }
+                        router.push(`/goals/milestones/${goal.id}`);
                       }}
                       onKeyDown={(e) => {
                         if (e.key === "Enter" || e.key === " ") {
                           e.preventDefault();
-                          const isLargeScreen = window.innerWidth >= 1024;
-                          if (isLargeScreen) {
-                            setActiveGoalId(isActive ? null : goal.id);
-                          } else {
-                            router.push(`/goals/milestones/${goal.id}`);
-                          }
+                          router.push(`/goals/milestones/${goal.id}`);
                         }
                       }}
-                      className={`flex cursor-pointer flex-col gap-md rounded-xl p-lg transition-all hover:shadow-md focus-visible:outline-2 focus-visible:outline-primary ${
-                        isActive
-                          ? "border border-primary bg-surface-container-low"
-                          : "border border-outline-variant bg-surface-container-low hover:bg-surface-container-high"
-                      }`}
+                      className="flex cursor-pointer flex-col gap-md rounded-xl border border-outline-variant bg-surface-container-low p-lg transition-all hover:bg-surface-container-high hover:shadow-md focus-visible:outline-2 focus-visible:outline-primary"
                     >
                       {/* Top row: icon + edit button + progress ring */}
                       <div className="flex items-start justify-between">
@@ -601,14 +603,15 @@ export default function GoalsOverviewPage() {
       {/* ------------------------------------------------------------------ */}
       {/* Right-side roadmap panel (desktop only)                             */}
       {/* ------------------------------------------------------------------ */}
-      {activeGoal && (
+      {activeGoal && !isRoadmapCollapsed && (
         <GoalRoadmapPanel
           goal={activeGoal}
           milestones={activeMilestones}
-          onClose={() => setActiveGoalId(null)}
+          onClose={() => setIsRoadmapCollapsed(true)}
           onEdit={() => setEditingGoal(activeGoal)}
         />
       )}
+
 
       {/* ------------------------------------------------------------------ */}
       {/* FAB — new goal (mobile)                                             */}
