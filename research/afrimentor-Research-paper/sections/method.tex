@@ -1,0 +1,24 @@
+\section{Method}
+\label{sec:method}
+
+We evaluate four alignment conditions for producing a persona-constrained mentor from a single base model, \texttt{Qwen2.5-7B-Instruct} \citep{qwen2024technical}, under 4-bit quantization (\texttt{bitsandbytes}, NF4, double quantization, \texttt{float16} compute dtype — required on Turing-generation GPUs, which lack the Ampere-and-later tensor-core support \texttt{bfloat16} needs). Each condition after C1 is a LoRA adapter (rank 16, $\alpha=32$, dropout $0.05$, applied to the attention projections \texttt{q\_proj}/\texttt{k\_proj}/\texttt{v\_proj}/\texttt{o\_proj}) trained on top of the same base weights, so differences across conditions isolate the alignment \emph{procedure} rather than the underlying model.
+
+\subsection{C1 — Baseline Prompting}
+\label{subsec:method-c1}
+No weight updates. The CHIOMA persona system prompt (the same prompt rendered for every condition at inference) conditions \texttt{openai/gpt-oss-20b}, served via the Groq API, with zero-shot generation at $T=0.7$. This establishes the performance floor a fine-tuned or preference-optimized adapter must beat to justify its training cost. An earlier configuration used a reasoning model whose hidden chain-of-thought silently exhausted the judge's token budget before emitting a visible answer (Appendix~\ref{sec:appendix-reproducibility}); \texttt{openai/gpt-oss-20b} was substituted after confirming it exhibits no such truncation across the evaluation set.
+
+\subsection{C2 — Supervised Fine-Tuning}
+\label{subsec:method-c2}
+A LoRA adapter trained via \texttt{SFTTrainer} (TRL) on curated \texttt{(system, user, assistant)} demonstration triples exhibiting the CHIOMA persona's target communication style, for 3 epochs at an effective batch size of 16 (per-device batch 4, gradient accumulation 4), learning rate $2\times10^{-4}$ with cosine decay and a $5\%$ warmup ratio, sequence length capped at 2048 tokens, \texttt{fp16} mixed precision. The published checkpoint is \texttt{Danleon56/chioma-sft-v1}.
+
+\subsection{C3 — Contrastive Learning via DPO}
+\label{subsec:method-c3}
+Direct Preference Optimization \citep{rafailov2023dpo} on \texttt{(prompt, chosen, rejected)} triples, continuing C2's adapter directly rather than initializing a fresh one — attempting the latter under TRL 0.13 with an already-loaded \texttt{PeftModel} triggers an internal \texttt{merge\_and\_unload()} unsupported on a 4-bit-quantized base, and warm-starting from the existing adapter is the more faithful reading of ``contrastive refinement of the SFT policy'' in any case. $\beta=0.1$ (sigmoid loss), 2 epochs, effective batch 16 (per-device 2, accumulation 8), learning rate $5\times10^{-5}$, cosine schedule, max sequence length 2048 (prompt truncated to 512). Published as \texttt{AfriMentor/chioma-dpo-v1}.
+
+\subsection{C4 — RLHF / Preference Optimization}
+\label{subsec:method-c4}
+A three-stage pipeline warm-started from C3's adapter. \textbf{Stage 1} fits a logistic-regression reward probe on per-dimension LLM-judge score deltas between paired responses (weights: persona adherence $0.20$, cultural fluency $0.15$, anti-dependency $0.15$, financial accuracy $0.15$, urgency $0.15$, plus multi-turn consistency features $C_{\text{p2l}}/C_{\text{l2l}}/C_{\text{qa}}$ at $0.08/0.06/0.06$, following \citet{abdulhai2025personas}). On this pipeline's actual preference dataset every training pair is labeled \texttt{preferred: "a"}, so the fitted probe is provably a constant classifier — it cannot re-rank anything. \textbf{Stage 2} therefore runs DPO directly on the unranked pairs (identical hyperparameters to C3: $\beta=0.1$, sigmoid loss, 2 epochs, effective batch 16, learning rate $5\times10^{-5}$), which produces byte-identical training data to running Stage 1 first, at zero additional judge-API cost. \textbf{Stage 3} scores the resulting checkpoint on the shared metric suite (\S\ref{subsec:eval-setup}). Published as \texttt{AfriMentor/chioma-rlhf-v1}.
+
+\subsection{Data}
+\label{subsec:method-data}
+All splits are drawn from a single curated corpus of CHIOMA-persona advisory dialogues and preference annotations and partitioned 80/10/10 (train/val/test), stratified by persona slug, sector, and country, with a fixed split seed (\texttt{random\_seed: 42}) so the same held-out test set (\texttt{sft\_test.jsonl}) evaluates every condition. Full field-level schemas for the SFT, DPO, and RLHF-preference formats are given in Appendix~\ref{sec:appendix-reproducibility}.

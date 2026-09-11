@@ -1,7 +1,7 @@
 \section{Evaluation \& Results}
 \label{sec:evaluation}
 
-This section presents the empirical evaluation of AfriMentor AI across the four alignment conditions defined in our experimental framework: baseline prompting (C1), supervised fine-tuning (C2), contrastive preference optimization via DPO (C3), and multi-turn consistency-augmented RLHF (C4). We report on: (1) automated multi-dimensional metric evaluations against held-out benchmark dialogues; (2) multi-turn behavioral stability and reward model ablations; (3) adversarial red-teaming safety guardrails; and (4) interim quantitative field data from the ongoing randomized pilot deployment.
+This section presents the empirical evaluation of AfriMentor AI across the four alignment conditions defined in our experimental framework: baseline prompting (C1), supervised fine-tuning (C2), contrastive preference optimization via DPO (C3), and multi-turn consistency-augmented RLHF (C4). We report on: (1) automated multi-dimensional metric evaluations against held-out benchmark dialogues, alongside a blinded human evaluation on the same responses; (2) multi-turn behavioral stability and reward model ablations; (3) adversarial red-teaming safety guardrails; and (4) the planned field-pilot measures and reporting format (\S\ref{subsec:mid-pilot-evaluation}), illustrative at this stage — see that subsection's disclosure.
 
 \subsection{Evaluation Setup \& Metric Suite}
 \label{subsec:eval-setup}
@@ -25,13 +25,26 @@ Table~\ref{tab:comparative-results} presents the quantitative comparison across 
 
 \input{sections/results_table}
 
-The progression across conditions reveals marked differences between prompt-conditioned and parameter-adapted models:
+All four conditions in Table~\ref{tab:comparative-results} are live measurements — no literature-extrapolated placeholders remain. This is a change from an earlier draft, which reported C3/C4 as calibrated-from-literature estimates pending live GPU training; those checkpoints have since been trained, published, and measured on the identical shared harness (Appendix~\ref{sec:appendix-reproducibility}). C1's baseline is also corrected from an earlier draft: an initial measurement used a reasoning model (\texttt{qwen/qwen3.6-27b}) whose hidden chain-of-thought silently exhausted the judge's token budget before any visible answer, producing erratic composite scores ($0.06$--$0.53$) that reflected a truncated reasoning trace, not persona quality. C1 now uses \texttt{openai/gpt-oss-20b} (Groq-hosted, zero-shot system-prompt conditioning, $T=0.7$), which exhibits no such truncation.
+
+The resulting picture is more nuanced than a strictly monotonic improvement with more alignment:
 \begin{itemize}
-    \item \textbf{Baseline Prompting (C1)}: Conditioning \texttt{Qwen-2.5-32B} via zero-shot/few-shot system prompts yields a baseline composite score of $0.2750$. While syntactically fluent, C1 demonstrates low persona adherence ($0.2000$), cultural fluency ($0.3700$), and anti-dependency ($0.3100$). It routinely defaults to generic assistant tropes, passive open-ended queries, and Western corporate idioms unsuited for the informal market context.
-    \item \textbf{Supervised Fine-Tuning (C2)}: Training a low-rank adapter on \texttt{Qwen2.5-7B-Instruct} with response-only loss masking (\texttt{Danleon56/chioma-sft-v1}) produces a dramatic $+113.5\%$ relative improvement in composite score ($0.4760$). Persona adherence increases by $+145\%$ (from $0.2000$ to $0.4900$), anti-dependency increases by $+109\%$ ($0.3100$ to $0.4900$), and urgency advances by $+113\%$ ($0.2300$ to $0.4900$). Low-temperature decoding ($T=0.1$) further anchors generation trajectories within the learned adapter space.
-    \item \textbf{Contrastive Learning via DPO (C3)}: Contrastive preference optimization on paired chosen/rejected mentor dialogues \citep{rafailov2023dpo} achieves an estimated composite score of $0.6020\dagger$. By penalizing verbose, non-committal outputs and rewarding proactive, structured advice, DPO advances persona adherence to $0.6200$ and cultural fluency to $0.5800$.
-    \item \textbf{Multi-Turn RLHF / Preference Optimization (C4)}: Integrating multi-turn consistency reward modeling \citep{abdulhai2025personas,ouyang2022instructgpt} achieves the highest overall performance across all dimensions, reaching a composite score of $0.6540\dagger$ (persona adherence $0.6800$, cultural fluency $0.6300$, anti-dependency $0.6600$, financial accuracy $0.6400$, and urgency $0.6500$).
+    \item \textbf{Baseline Prompting (C1)}: composite $0.651$. Persona adherence ($0.780$) and anti-dependency ($0.710$) are respectable for a model with no weight updates, but urgency ($0.490$) is the weakest dimension — the model tends toward encouragement without making the concrete cost of inaction explicit.
+    \item \textbf{Supervised Fine-Tuning (C2)}: composite $0.753$, the \emph{highest} of the four conditions on the automatic suite. Training a QLoRA adapter on \texttt{Qwen2.5-7B-Instruct} with response-only loss masking (\texttt{Danleon56/chioma-sft-v1}) lifts financial accuracy to $0.800$ and urgency to $0.710$ — the largest single-condition gain on both dimensions.
+    \item \textbf{Contrastive Learning via DPO (C3)}: composite $0.697$, warm-started from C2's adapter on (chosen, rejected) preference pairs \citep{rafailov2023dpo}. Cultural fluency improves to $0.650$ (the highest of any condition), but financial accuracy falls back to $0.660$ from C2's $0.800$.
+    \item \textbf{Multi-Turn RLHF / Preference Optimization (C4)}: composite $0.643$, the \emph{lowest} of the three trained conditions on the automatic suite, warm-started from C3 with a reward-probe-guided DPO stage \citep{abdulhai2025personas,ouyang2022instructgpt}. Every automatic dimension sits below its C2 value.
 \end{itemize}
+
+Automatic-suite composite therefore ranks C2 $>$ C3 $>$ C1 $>$ C4 — RLHF is not the best-scoring condition by this measure, which motivates the blinded human evaluation below (\S\ref{subsec:human-eval}), since an automatic LLM-as-judge can share blind spots with the system it is judging \citep{han2025illusion}.
+
+\subsection{Human Evaluation}
+\label{subsec:human-eval}
+
+Two independent raters, blind to condition, scored the same 20 $(user\ message, response)$ pairs (5 per condition) drawn from the live run above, on the identical 5-dimension rubric plus a holistic 1--5 overall-quality item (Table~\ref{tab:human-eval}). Raters agreed within 1 point on overall quality for 17/20 samples; 3 samples were flagged for disagreement $\geq 2$ points and are reported as-is rather than averaged away.
+
+\input{sections/human_eval_table}
+
+\textbf{The human ranking inverts the automatic one}: C4 is rated \emph{highest} by human raters (overall quality $3.30/5$, and highest on every individual dimension) despite scoring \emph{lowest} on the automatic composite. C1 is rated lowest by both measures, but far more starkly by humans — urgency in particular scores $0.075/1.0$ from human raters versus $0.490$ from the automatic judge, a gap consistent with human raters penalizing C1's lack of concrete cost-of-inaction framing more heavily than the automatic rubric does. This divergence is reported side by side rather than merged into one number, since collapsing the two would hide exactly the disagreement a human panel exists to surface.
 
 \subsection{Multi-Turn Consistency \& Reward Model Ablation}
 \label{subsec:ablation-consistency}
@@ -56,7 +69,9 @@ The deterministic harm classification layer and safety guardrails achieve a $100
 \subsection{Field Deployment \& Mid-Pilot Quantitative Evaluation}
 \label{subsec:mid-pilot-evaluation}
 
-To complement offline benchmark evaluations with in-the-wild behavioral evidence, we report interim quantitative findings from our ongoing randomized pilot study ($N=30$ target participants, aged 18--35, operating active informal micro-enterprises across Nigeria, Ghana, and Kenya). The study implements a two-arm parallel design:
+\textbf{Placeholder section — no participant has been contacted yet.} The remainder of this subsection, including Table~\ref{tab:pilot-results}, is illustrative of the measures and reporting format the pilot will produce, structured against the pre-registered plan (\texttt{docs/research/pilot-data-collection-plan-v0.md}). The plan itself is still in draft (co-author sign-off outstanding), and per its \S4.7, participant contact is explicitly blocked pending ethics-board designation and a determination of the applicable data-protection jurisdiction — both open as of this draft. The numbers in Table~\ref{tab:pilot-results} are placeholder values with no participant behind them and \textbf{must not be cited, quoted, or otherwise treated as findings} until they are replaced with the real export from \texttt{GET /api/v1/research/export/pilot-data.csv} once the pilot actually runs.
+
+To complement offline benchmark evaluations with in-the-wild behavioral evidence, the planned randomized pilot study ($N=30$ target participants, aged 18--35, operating active informal micro-enterprises across Nigeria, Ghana, and Kenya) will report the following measures once it runs. The study implements a two-arm parallel design:
 \begin{itemize}
     \item \textbf{Arm A (AfriMentor Prototype)}: Full system deployment featuring the CHIOMA persona, African-authored RAG corpus, and asynchronous voice-note interaction modality ($n=15$).
     \item \textbf{Arm B (Generic LLM Control)}: Matched base model interface without persona conditioning or localized corpus grounding ($n=15$).
@@ -66,7 +81,7 @@ Quantitative telemetry, in-vivo consistency scoring, and oral survey instruments
 
 \begin{table}[ht]
 \centering
-\caption{Mid-pilot quantitative telemetry and outcome measures across study arms. T0 represents baseline oral intake; T1 reflects exit scores recorded at the midpoint cut.}
+\caption{\textbf{Illustrative / placeholder} — no participant has been enrolled; see disclosure above. Structure and reporting format the pilot will use once run, not measured data. T0 represents baseline oral intake; T1 reflects exit scores recorded at the midpoint cut.}
 \label{tab:pilot-results}
 \small
 \begin{tabular}{lccc}

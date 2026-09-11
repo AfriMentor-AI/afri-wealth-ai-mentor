@@ -1,3 +1,14 @@
+> **STALE as of card C5.5 (2026-09-11).** The C3/C4 numbers this sign-off verifies
+> (`0.602†`/`0.654†`, `source: estimated_dpo_extrapolation`/`estimated_rlhf_extrapolation`)
+> were literature extrapolations pending live GPU training. Both checkpoints have since
+> been trained, published, and measured live (`eval-freeze-v1`, `PUBLICATION_READY`);
+> `sections/results_table.tex` and `sections/results.tex` now report the real numbers,
+> which tell a different story (C2 highest on the automatic suite, not C4; a new Human
+> Evaluation subsection shows the opposite ranking). **This sign-off no longer covers
+> the current Results section and needs a fresh review pass from all three co-authors**
+> before the paper is submitted. Left in place below as the historical record of what
+> was reviewed and when, not edited to match the new numbers.
+
 # Results & Discussion Technical Review & Sign-Off
 
 - **Document:** `research/afrimentor-Research-paper/docs/results_discussion_review_signoff.md`

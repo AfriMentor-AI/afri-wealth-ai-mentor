@@ -23,10 +23,11 @@ overfull/underfull hboxes).
 | Abstract | Placeholder — write last, after Method section is complete |
 | Introduction | **Drafted, 702 words** (AC: ≥500) |
 | Related Work | **Drafted, 1,432 words** — all references from both proposals cited (AC met in full) |
-| Method | Not started — depends on Epic H/C maturity |
-| Evaluation & Results | **Drafted & Verified** — 5-metric suite + comparative results table + reward ablation + safety |
-| Discussion & Limitations | **Drafted & Co-authored** — alignment dynamics, behavioral consistency, deployment realities, limitations |
+| Method | **Drafted** (card C5.5) — C1–C4 training procedures, real hyperparameters from `research/configs/*.yaml`, dataset split |
+| Evaluation & Results | **Drafted, updated (card C5.5)** — comparative table now the real `eval-freeze-v1` numbers (was literature-estimated C3/C4 pending GPU training, now superseded); added a Human Evaluation subsection; mid-pilot section explicitly marked placeholder pending real pilot data (see below) |
+| Discussion & Limitations | **Drafted & Co-authored — now partially stale (card C5.5 finding)**: extensively builds on the same not-yet-real pilot numbers the Results section now discloses as placeholder (qualitative themes T1–T5, deployment-realities claims, DG4/DG5, the AI-disclosure comprehension claim). Not rewritten here — flagged for the team, since it's previously signed-off co-authored content |
 | Conclusion | **Drafted** — summary of findings, contributions, and outlook |
+| Reproducibility Appendix | **Added (card C5.5)** — frozen snapshot reference, checkpoints, configs, dataset split, judge config, known gaps (no training seed logged), reproduction commands |
 
 ## Important history — read this before touching the citations
 

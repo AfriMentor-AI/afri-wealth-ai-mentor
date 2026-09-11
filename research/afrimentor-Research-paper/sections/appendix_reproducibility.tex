@@ -1,0 +1,62 @@
+\section{Reproducibility Appendix}
+\label{sec:appendix-reproducibility}
+
+\subsection{Frozen Evaluation Snapshot}
+\label{subsec:appendix-freeze}
+Every number in Table~\ref{tab:comparative-results} and Table~\ref{tab:human-eval} is taken from a single immutable snapshot, \texttt{eval-freeze-v1} (git tag, commit \texttt{2d1161c6}, status \texttt{PUBLICATION\_READY}), produced by \texttt{research/evaluation/freeze\_results.py} and committed at \texttt{research/evaluation/results/canonical/v1/}: \texttt{comparative\_results.json} (automatic suite, all four conditions), \texttt{human\_eval\_results.json} (the blinded panel), \texttt{safety\_results.json} (red-team results), and \texttt{manifest.json} (per-condition provenance — every condition's \texttt{source} field, confirming none is a literature estimate). The freeze tool refuses to report \texttt{PUBLICATION\_READY} unless every condition is a live measurement \emph{and} has human ratings on file, so this status is itself a reproducibility claim, not a label.
+
+\subsection{Model Checkpoints}
+\label{subsec:appendix-checkpoints}
+\begin{center}
+\small
+\begin{tabular}{lll}
+\toprule
+Condition & Base model & Checkpoint \\
+\midrule
+C1 & \texttt{openai/gpt-oss-20b} & N/A — prompting only, Groq-hosted \\
+C2 & \texttt{Qwen/Qwen2.5-7B-Instruct} & \texttt{Danleon56/chioma-sft-v1} (HF Hub) \\
+C3 & \texttt{Qwen/Qwen2.5-7B-Instruct} & \texttt{AfriMentor/chioma-dpo-v1} (HF Hub) \\
+C4 & \texttt{Qwen/Qwen2.5-7B-Instruct} & \texttt{AfriMentor/chioma-rlhf-v1} (HF Hub) \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\subsection{Configs}
+\label{subsec:appendix-configs}
+Full hyperparameters for C2--C4 are declared in \texttt{research/configs/\{c2\_supervised\_finetuning,c3\_contrastive\_learning,c4\_rlhf\_preference\_opt\}.yaml} and summarized in \S\ref{sec:method}. \textbf{Known discrepancy, disclosed rather than silently fixed}: \texttt{research/configs/c1\_baseline\_prompting.yaml} still declares \texttt{model\_id: llama-3.1-8b-instant}, a model since retired by the provider; the evaluation harness that actually produced C1's numbers (\texttt{research/evaluation/comparative\_eval.py}) does not read this file at all and instead defaults to \texttt{openai/gpt-oss-20b} via the \texttt{LLM\_MODEL} environment variable (\S\ref{subsec:method-c1}). The yaml file is stale and should be corrected to match the harness, not the other way around.
+
+\subsection{Dataset Split}
+\label{subsec:appendix-dataset}
+\texttt{research/configs/dataset.yaml}: 80/10/10 train/val/test, stratified by \texttt{persona\_slug}, \texttt{sector}, \texttt{country}, \texttt{random\_seed: 42}. All four conditions are scored on the same resulting held-out split, \texttt{sft\_test.jsonl}.
+
+\subsection{Judge Configuration}
+\label{subsec:appendix-judge}
+The automatic 5-dimension rubric (\S\ref{subsec:eval-setup}) is scored by \texttt{openai/gpt-oss-120b} via the Groq API, \texttt{EVAL\_JUDGE\_MAX\_TOKENS=1536} (\texttt{research/evaluation/metrics.py}). This limit was raised from an original 512 after live testing showed the judge model spends a variable, invisible fraction of its token budget on internal reasoning that never surfaces in the returned content — 512 tokens produced silent truncation failures on some samples. Judge-call failures are tagged (\texttt{\_judge\_failed}) and excluded from the reported mean rather than averaged in as zero (\texttt{research/evaluation/checkpoint\_eval.py::avg\_scores}); no run underlying Table~\ref{tab:comparative-results} had any excluded samples.
+
+\subsection{Human-Evaluation Blinding}
+\label{subsec:appendix-human-eval}
+\texttt{research/evaluation/human\_eval\_sampler.py} draws and shuffles the rated pairs with a fixed seed (\texttt{seed=42}), so the sample-to-\texttt{sample\_id} assignment is reproducible; the \texttt{sample\_id}$\to$condition key is deliberately not published here, since publishing it would retroactively de-blind the released samples. Each condition received 5 samples $\times$ 2 raters $=$ 10 ratings (Table~\ref{tab:human-eval}).
+
+\subsection{Known Reproducibility Gaps}
+\label{subsec:appendix-gaps}
+Disclosed rather than omitted:
+\begin{itemize}
+    \item \textbf{No training seed is set or logged.} Neither the C2/C3/C4 training scripts (\texttt{research/experiments/0\{2,3,4\}\_*/run.py}) nor \texttt{comparative\_eval.py} call \texttt{set\_seed} or pass an explicit \texttt{seed} anywhere (grep-confirmed against the current source). Runs rely on whichever default TRL/Transformers applies internally, which is not recorded per-run. Re-running the training pipeline from scratch is therefore expected to produce a similar but not bit-identical adapter.
+    \item \textbf{C1 is not exactly reproducible run-to-run.} Baseline prompting samples at $T=0.7$; C2--C4 checkpoint generation for evaluation uses $T=0.0$ (greedy), which is reproducible given the same published checkpoint and prompt.
+    \item \textbf{Small $N$.} The automatic-suite comparison is 5 held-out dialogues per condition; the human panel is the same 20 total responses. Both are explicitly pilot-scale (\S\ref{subsec:discussion-limitations}), not a claim of statistical power.
+\end{itemize}
+
+\subsection{Reproduction Commands}
+\label{subsec:appendix-commands}
+\begin{verbatim}
+# Automatic suite (requires the checkpoints above + a Groq API key)
+python research/evaluation/comparative_eval.py --sample-size 5
+
+# Human-eval packet (from the comparative run's output)
+python research/evaluation/human_eval_sampler.py
+python research/evaluation/human_eval_aggregate.py <rater1.csv> <rater2.csv>
+
+# Freeze + tag (fails closed: only reports PUBLICATION_READY if every
+# condition is live-measured and has human ratings on file)
+python research/evaluation/freeze_results.py --version <new-version> --tag
+\end{verbatim}
