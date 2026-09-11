@@ -57,7 +57,19 @@ Exposed via `GET /api/v1/research/audit-sessions/false-positive-rate`
 endpoint, for the dashboard to actually surface this to Grace/product once
 real data exists.
 
-### 3. Tests
+### 3. Reviewer UI — `apps/admin-research-console/app/dashboard/page.tsx`
+
+The API alone wasn't reviewer-usable: nothing in the Research Console let a
+human actually record a verdict. The single "Mark reviewed" button is now two
+(**✓ Correct** / **✗ False positive**) that submit the verdict in the same
+click that closes the review — no separate step a reviewer could skip.
+Reviewed rows show their recorded verdict inline. A new panel above the audit
+table reads `GET .../false-positive-rate` and shows the overall rate plus the
+per-reason breakdown, `"no data yet"` (not `0%`) until real verdicts exist —
+this is the mechanism for actually seeing the number Grace/product would set
+a target against, not a guess rendered as data.
+
+### 4. Tests
 
 9 new tests in `tests/test_manual_audit.py`: verdict persists through the
 review endpoint, an omitted verdict stays null (not fabricated), an invalid
