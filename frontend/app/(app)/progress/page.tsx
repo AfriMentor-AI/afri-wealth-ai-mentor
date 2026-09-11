@@ -108,6 +108,9 @@ export default function ProgressBoardPage() {
           </label>
           <Icon name="notifications_none" className="text-on-surface-variant" />
           <Icon name="settings" className="text-on-surface-variant" />
+          <button type="button" onClick={handleRecordAction} disabled={recordingAction} className="flex items-center gap-xs rounded-full bg-secondary px-md py-sm text-xs font-semibold text-on-secondary shadow transition-opacity hover:opacity-90 disabled:opacity-50">
+            <Icon name="check_circle" size={16} /> {recordingAction ? "Recording..." : "Log Today's Action"}
+          </button>
           <button type="button" onClick={() => dispatch({ type: "OPEN_FEEDBACK_MODAL" })} className="flex items-center gap-xs rounded-full bg-surface-container-high px-md py-sm text-xs text-primary">
             <Icon name="share" size={16} /> Share
           </button>
