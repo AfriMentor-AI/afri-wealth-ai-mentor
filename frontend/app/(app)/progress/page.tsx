@@ -5,7 +5,7 @@ import { Icon } from "@/components/Icon";
 import { fetchProgressSummary, recordAction, shareWeeklySummary } from "@/lib/api";
 import type { BadgeWithStatus, StreakStat } from "@/lib/types";
 import { Skeleton } from "@/components/ui/Skeleton";
-import { useAppDispatch, useAppState } from "@/lib/store";
+import { useAppState } from "@/lib/store";
 
 const HEATMAP_INTENSITIES = ["bg-surface-container", "bg-secondary-fixed", "bg-secondary-container", "bg-secondary"];
 
@@ -38,7 +38,6 @@ function BadgeTile({ badge, wide = false }: { badge: BadgeWithStatus; wide?: boo
 }
 
 export default function ProgressBoardPage() {
-  const dispatch = useAppDispatch();
   const { profile } = useAppState();
   const [streak, setStreak] = useState<StreakStat | null>(null);
   const [badges, setBadges] = useState<BadgeWithStatus[] | null>(null);
