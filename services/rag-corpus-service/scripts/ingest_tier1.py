@@ -22,6 +22,9 @@ def ingest_record(record):
         "filename":      record["doc_id"] + ".txt",
         "text":          record["content"],
         "source_origin": map_source_origin(meta),
+        # Idempotent upsert (mirrors ingest_tier2.py): without this, re-running
+        # the loader mints a fresh UUID per record and duplicates every row.
+        "external_id":   record["doc_id"],
         "figure_id":     meta.get("figure_id") or None,
         "market":        meta.get("country_code", "general"),
         "sector":        meta.get("primary_sector") or None,

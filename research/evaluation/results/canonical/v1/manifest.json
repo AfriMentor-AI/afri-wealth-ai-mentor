@@ -1,0 +1,67 @@
+{
+  "version": "v1",
+  "frozen_at": "2026-09-11T12:40:10.976473+00:00",
+  "git_commit": "2d1161c6ddf769e295282cc91bfa0e7e49591458",
+  "git_branch": "feat/C5.1-final-evaluation-run",
+  "git_dirty": false,
+  "inputs": [
+    {
+      "name": "comparative",
+      "path": "research/evaluation/results/comparative_results.json",
+      "exists": true,
+      "sha256": "9047d1b48a8cb06255ca3dc40990dc0f3954cd79f35599846d52fd8d37a580e8"
+    },
+    {
+      "name": "safety",
+      "path": "research/evaluation/results/safety_results.json",
+      "exists": true,
+      "sha256": "fab5f751c2ad7fca8ef4681e8a84302c99937d00aaf7ade2d3a627968a235838"
+    },
+    {
+      "name": "human_eval",
+      "path": "research/evaluation/results/human_eval_results.json",
+      "exists": true,
+      "sha256": "3d26429f0520c712faee6b1727695a152239a7c602724fdc3257ea29d619e251"
+    }
+  ],
+  "condition_provenance": {
+    "C1": {
+      "source": "live_groq",
+      "is_real": true
+    },
+    "C2": {
+      "source": "live_hf_adapter",
+      "is_real": true
+    },
+    "C3": {
+      "source": "live_hf_adapter",
+      "is_real": true
+    },
+    "C4": {
+      "source": "live_hf_adapter",
+      "is_real": true
+    }
+  },
+  "estimated_conditions": [],
+  "human_eval_provenance": {
+    "C4": {
+      "n_ratings": 10,
+      "status": "rated"
+    },
+    "C3": {
+      "n_ratings": 10,
+      "status": "rated"
+    },
+    "C2": {
+      "n_ratings": 10,
+      "status": "rated"
+    },
+    "C1": {
+      "n_ratings": 10,
+      "status": "rated"
+    }
+  },
+  "pending_human_eval_conditions": [],
+  "status": "PUBLICATION_READY",
+  "status_note": "Every condition is real (live-scored or a recorded past run) and has human ratings on file \u2014 safe to cite as final results."
+}

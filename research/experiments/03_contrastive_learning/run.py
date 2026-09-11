@@ -100,7 +100,7 @@ def train(cfg: dict) -> tuple[str | None, dict]:
 
     import torch
     from datasets import load_dataset
-    from peft import LoraConfig, PeftModel
+    from peft import PeftModel
     from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig
     from trl import DPOConfig, DPOTrainer
 
@@ -108,11 +108,10 @@ def train(cfg: dict) -> tuple[str | None, dict]:
     dpo_cfg = cfg["dpo"]
     train_cfg = cfg["training"]
     bnb_cfg = cfg["quantization"]
-    lora_cfg = cfg["lora"]
 
     bnb_config = BitsAndBytesConfig(
         load_in_4bit=bnb_cfg["load_in_4bit"],
-        bnb_4bit_compute_dtype=torch.bfloat16,
+        bnb_4bit_compute_dtype=getattr(torch, bnb_cfg["bnb_4bit_compute_dtype"]),
         bnb_4bit_quant_type=bnb_cfg["bnb_4bit_quant_type"],
         bnb_4bit_use_double_quant=bnb_cfg["bnb_4bit_use_double_quant"],
     )
@@ -123,19 +122,15 @@ def train(cfg: dict) -> tuple[str | None, dict]:
         quantization_config=bnb_config,
         device_map="auto",
     )
-    model = PeftModel.from_pretrained(base_model, model_cfg["sft_checkpoint"])
+    # is_trainable=True is required: PeftModel.from_pretrained defaults to
+    # inference mode (every loaded adapter param gets requires_grad=False),
+    # since loading a checkpoint for further training isn't the common case.
+    # Without it: "element 0 of tensors does not require grad and does not
+    # have a grad_fn" the moment loss.backward() is called.
+    model = PeftModel.from_pretrained(base_model, model_cfg["sft_checkpoint"], is_trainable=True)
     tokenizer = AutoTokenizer.from_pretrained(model_cfg["base_model_id"])
     if tokenizer.pad_token is None:
         tokenizer.pad_token = tokenizer.eos_token
-
-    lora_config = LoraConfig(
-        r=lora_cfg["r"],
-        lora_alpha=lora_cfg["lora_alpha"],
-        lora_dropout=lora_cfg["lora_dropout"],
-        target_modules=lora_cfg["target_modules"],
-        bias=lora_cfg["bias"],
-        task_type=lora_cfg["task_type"],
-    )
 
     # An empty val split is valid (data pipeline may not have produced held-out
     # pairs yet) — train without in-loop eval rather than letting datasets choke.
@@ -150,6 +145,14 @@ def train(cfg: dict) -> tuple[str | None, dict]:
         )
     dataset = load_dataset("json", data_files=data_files)
 
+    # Gradient checkpointing's backward-pass recompute doesn't reliably match
+    # shapes when `device_map="auto"` has sharded the model across multiple
+    # GPUs (confirmed live: `torch.utils.checkpoint.CheckpointError:
+    # Recomputed values ... have different metadata` on a 2xT4 session) — only
+    # safe to enable on a single GPU, where it's still a real OOM mitigation
+    # for a 7B QLoRA model with no prepare_model_for_kbit_training call.
+    use_grad_checkpointing = torch.cuda.device_count() <= 1
+
     dpo_config = DPOConfig(
         output_dir=model_cfg["output_dir"],
         num_train_epochs=train_cfg["num_train_epochs"],
@@ -159,6 +162,9 @@ def train(cfg: dict) -> tuple[str | None, dict]:
         lr_scheduler_type=train_cfg["lr_scheduler_type"],
         warmup_ratio=train_cfg["warmup_ratio"],
         bf16=train_cfg["bf16"],
+        fp16=train_cfg["fp16"],
+        gradient_checkpointing=use_grad_checkpointing,
+        gradient_checkpointing_kwargs={"use_reentrant": False} if use_grad_checkpointing else None,
         logging_steps=train_cfg["logging_steps"],
         eval_steps=train_cfg["eval_steps"] if has_val else None,
         eval_strategy="steps" if has_val else "no",
@@ -171,13 +177,19 @@ def train(cfg: dict) -> tuple[str | None, dict]:
         report_to="none",
     )
 
+    # No peft_config here deliberately: `model` is already Danleon56/chioma-sft-v1
+    # loaded as a PeftModel. Passing peft_config alongside an existing PeftModel
+    # makes trl call model.merge_and_unload() first — unsupported on a 4-bit
+    # quantized base (confirmed via trl source on the actual installed build) and
+    # would crash before training starts. Continuing to train the existing SFT
+    # adapter under the DPO objective is also the correct read of "warm-start
+    # from C2" anyway, not "merge it away and train a fresh one."
     trainer = DPOTrainer(
         model=model,
         args=dpo_config,
         train_dataset=dataset["train"],
         eval_dataset=dataset["validation"] if has_val else None,
-        tokenizer=tokenizer,  # trl==0.13.0 API (processing_class lands in later TRL)
-        peft_config=lora_config,
+        processing_class=tokenizer,  # tokenizer= is deprecated on this trl build (confirmed on SFTTrainer; same base class)
     )
 
     trainer.train()

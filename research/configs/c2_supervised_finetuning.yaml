@@ -10,7 +10,7 @@ model:
   base_model_id: "Qwen/Qwen2.5-7B-Instruct"  # HuggingFace model ID
   adapter_type: "qlora"
   output_dir: "research/experiments/02_supervised_finetuning/checkpoints"
-  hub_repo: "afrimentor/chioma-sft-v1"        # HuggingFace Hub publish target
+  hub_repo: "AfriMentor/chioma-sft-v1"        # HuggingFace Hub publish target
 
 lora:
   r: 16
@@ -22,7 +22,9 @@ lora:
 
 quantization:
   load_in_4bit: true
-  bnb_4bit_compute_dtype: "bfloat16"
+  # float16, not bfloat16: BF16 tensor-core acceleration needs Ampere (SM 8.0+);
+  # a T4 (Turing, SM 7.5) hits `ValueError: doesn't support bf16` at Trainer init.
+  bnb_4bit_compute_dtype: "float16"
   bnb_4bit_quant_type: "nf4"
   bnb_4bit_use_double_quant: true
 
@@ -36,8 +38,8 @@ training:
   lr_scheduler_type: "cosine"
   warmup_ratio: 0.05
   max_seq_length: 2048
-  fp16: false
-  bf16: true
+  fp16: true
+  bf16: false
   logging_steps: 10
   eval_steps: 50
   save_steps: 100

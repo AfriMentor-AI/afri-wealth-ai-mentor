@@ -1,0 +1,339 @@
+{
+  "meta": {
+    "sample_size": 5,
+    "eval_split": "sft_test.jsonl",
+    "metric_suite": [
+      "persona_adherence",
+      "cultural_fluency",
+      "anti_dependency",
+      "financial_accuracy",
+      "urgency",
+      "rouge_l",
+      "bert_score_f1",
+      "composite_score"
+    ],
+    "generated_at": "2026-09-11T12:23:53.548095"
+  },
+  "conditions": {
+    "C1": {
+      "aggregate": {
+        "persona_adherence": 0.78,
+        "cultural_fluency": 0.5599999999999999,
+        "anti_dependency": 0.71,
+        "financial_accuracy": 0.6399999999999999,
+        "urgency": 0.49000000000000005,
+        "rouge_l": 0.13791401428415845,
+        "bert_score_f1": 0.8211957693099976,
+        "composite_score": 0.6505,
+        "source": "live_groq"
+      },
+      "rows": [
+        {
+          "persona_adherence": 0.85,
+          "cultural_fluency": 0.9,
+          "anti_dependency": 0.9,
+          "financial_accuracy": 0.95,
+          "urgency": 0.6,
+          "rouge_l": 0.1532567049808429,
+          "bert_score_f1": 0.8226284384727478,
+          "persona": "chioma-base",
+          "composite_score": 0.8524999999999999,
+          "user_message": "My co-founder in my Cape Town startup and I are disagreeing on equity split. He thinks it should be 50/50, but I invested more of my own money upfront. How do we solve this?",
+          "response": "I hear you\u2014money is hard to split when you\u2019re already feeling the weight of it.  \nHere\u2019s a quick framework you can use to make the split fair and keep the partnership strong:\n\n**Step 1 \u2013 Quantify the cash contribution**  \n- Write down how much each of you has already put in (in ZAR).  \n- Convert that to a common unit (e.g., USD or ZAR) so you can compare apples to apples.\n\n**Step 2 \u2013 Add a \u201crole\u2011value\u201d component**  \n- List the core responsibilities each of you will shoulder (product, sales, ops, fundraising, etc.).  \n- Assign a weight to each role (e.g., 30% for product, 20% for sales, etc.).  \n- Multiply each weight by a standard valuation for that role in the South\u2011African market (you can use industry benchmarks or a simple rule like \u201c$X per month of expected effort\u201d).\n\n**Step 3 \u2013 Combine cash + role value**  \n- Add the cash contribution to the role\u2011value score for each founder.  \n- Divide each founder\u2019s total by the sum of both totals to get a percentage.  \n- That percentage becomes the equity you should each hold.\n\n**Step 4 \u2013 Protect the future with vesting**  \n- Agree on a 4\u2011year vesting schedule with a 1\u2011year cliff.  \n- This ensures that if one of you leaves early, the other keeps the equity earned.\n\n**Step 5 \u2013 Put it in writing**  \n- Draft a simple founders\u2019 agreement that states the split, the vesting terms, and a clause that if the split needs to be revisited, both parties must agree in writing.\n\n**Step 6 \u2013 Re\u2011evaluate after milestones**  \n- Schedule a review after 6 months or after your first funding round.  \n- If one of you has contributed significantly more (e.g., a large investment or a critical partnership), you can renegotiate.\n\n---\n\n**Next question for you:**  \nHow much cash has each of you invested so far, and what specific roles do you both expect to play in the next 12 months?"
+        },
+        {
+          "persona_adherence": 0.95,
+          "cultural_fluency": 0.9,
+          "anti_dependency": 0.9,
+          "financial_accuracy": 0.95,
+          "urgency": 0.85,
+          "rouge_l": 0.14919354838709675,
+          "bert_score_f1": 0.8265053033828735,
+          "persona": "chioma-base",
+          "composite_score": 0.915,
+          "user_message": "I own a small grocery shop in Kinshasa. How can I use technology to manage my inventory better? I lose money because things expire or I run out of stock.",
+          "response": "I hear you\u2014every spoiled item or empty shelf is a bite of profit you\u2019re losing.  \nLet\u2019s turn that waste into a win with a simple tech stack that fits a Kinshasa shop.\n\n### 1\ufe0f\u20e3 Capture every item digitally  \n- **Use a phone\u2011based spreadsheet (Google Sheets or Excel)** \u2013 set up columns: *Item, SKU, Unit price, Supplier, Expiry, Qty on hand, Reorder point*.  \n- **Scan barcodes or QR codes** \u2013 if you can\u2019t buy scanners, a free app like \u201cInventory Manager \u2013 Stock\u201d on Android will read QR codes from your phone\u2019s camera.\n\n### 2\ufe0f\u20e3 Set automatic reorder alerts  \n- In the sheet, calculate a *Reorder Point* = (Average daily sales \u00d7 Lead time days) + Safety stock.  \n- Use Google Sheets\u2019 \u201cConditional formatting\u201d to colour\u2011code items below the reorder point.  \n- Set a daily reminder on your phone to review the coloured list.\n\n### 3\ufe0f\u20e3 Forecast demand with simple maths  \n- **Monthly average sales** = (Sum of sales over last 3 months) \u00f7 3.  \n- **Projected demand** = Monthly average \u00d7 (1 + 10%) to cushion seasonal spikes.  \n- Adjust your reorder point accordingly.\n\n### 4\ufe0f\u20e3 Leverage local mobile money for supplier payments  \n- Use *M-Pesa* or *MTN Mobile Money* to pay suppliers on the day you receive goods.  \n- Record each payment in the same sheet under \u201cSupplier, Date, Amount, Paid via\u201d.\n\n### 5\ufe0f\u20e3 Keep a \u201cSupplier Pulse\u201d WhatsApp group  \n- Ask suppliers to send daily or weekly stock updates.  \n- Pin the group to your phone\u2019s home screen so you never miss a message.\n\n### 6\ufe0f\u20e3 Review weekly, improve monthly  \n- **Week 1\u20132:** Set up the sheet, scan 50 items, test alerts.  \n- **Week 3:** Record first reorder, note any missed items.  \n- **Month 1:** Compare spoilage % before vs after. Aim to cut spoilage by 20% and stockouts by 15% within 3\u202fmonths.\n\n---\n\n**What tech do you already have?** (phone model, internet access, any apps you\u2019re comfortable with?)"
+        },
+        {
+          "persona_adherence": 0.7,
+          "cultural_fluency": 0.5,
+          "anti_dependency": 0.75,
+          "financial_accuracy": 0.6,
+          "urgency": 0.4,
+          "rouge_l": 0.13513513513513514,
+          "bert_score_f1": 0.8110555410385132,
+          "persona": "chioma-base",
+          "composite_score": 0.605,
+          "user_message": "I'm thinking of starting a fish farming business in a peri-urban area in Cameroon. Is tilapia or catfish better to start with?",
+          "response": "Hey, great you\u2019re looking at fish farming in Cameroon!  \nLet\u2019s break it down so you can see which species makes more sense for your peri\u2011urban spot.\n\n---\n\n### Tilapia vs. Catfish \u2013 Quick Snapshot\n\n| Factor | Tilapia | Catfish |\n|--------|---------|---------|\n| **Feed conversion** | 1.8\u20132.0 kg feed per kg fish | 2.5\u20133.0 kg feed per kg fish |\n| **Growth rate** | 6\u20138 weeks to 500\u202fg | 10\u201312 weeks to 500\u202fg |\n| **Market price** | \u20a615\u2013\u20a620 per kg (fresh) | \u20a620\u2013\u20a225 per kg (fresh) |\n| **Water needs** | 20\u201330\u202fL per kg (shallow ponds) | 30\u201340\u202fL per kg (larger ponds) |\n| **Disease risk** | Lower, but watch for *Streptococcus* | Higher, especially *Streptococcus* & *Aeromonas* |\n| **Initial cost** | \u20a650\u2013\u20a670 per starter seed | \u20a680\u2013\u20a6100 per starter seed |\n| **Profit margin** | 30\u201335\u202f% after feed & labor | 25\u201330\u202f% after feed & labor |\n\n**Bottom line:** Tilapia usually gives you faster returns and lower feed costs, which is a win in a peri\u2011urban market where cash flow matters. Catfish can fetch a higher price, but you\u2019ll need more water, more feed, and you\u2019ll face a higher disease risk.\n\n---\n\n### Quick Checklist for Tilapia (if you choose it)\n\n1. **Site prep** \u2013 Clear a 0.1\u202fha plot, dig 1\u202fm deep ponds, line with clay or HDPE liner.  \n2. **Starter stock** \u2013 Buy 50\u202fkg of 3\u2011month\u2011old fingerlings from a reputable hatchery (\u2248\u20a63\u202fmillion).  \n3. **Feed** \u2013 5\u202f% of body weight per day (\u2248\u20a61.5\u202fk per month).  \n4. **Water** \u2013 Use rainwater or borehole; maintain 20\u202fL per kg; monitor pH 6.5\u20137.5.  \n5. **Disease control** \u2013 Monthly vaccination (if available) and keep pond clean.  \n6. **Market** \u2013 Target local supermarkets, restaurants, and community groups; aim to sell 50\u202fkg per month after 6\u20138 weeks.\n\n---\n\n### What\u2019s next for you?\n\n- **Do you already have a site and water source?**  \n- **Can you secure a hatchery that supplies tilapia fingerlings?**  \n\nAnswer one of these first, and we\u2019ll map out the exact cash flow and timeline."
+        },
+        {
+          "persona_adherence": 0.9,
+          "cultural_fluency": 0.3,
+          "anti_dependency": 0.7,
+          "financial_accuracy": 0.4,
+          "urgency": 0.6,
+          "rouge_l": 0.13953488372093023,
+          "bert_score_f1": 0.8210105299949646,
+          "persona": "chioma-base",
+          "composite_score": 0.5950000000000001,
+          "user_message": "I want to raise a small seed round of $50k for my health-tech app in Ethiopia from angel investors. What are the 3 most important slides in my pitch deck?",
+          "response": "I hear you\u2019re looking to grab a \u20a67\u202fmillion seed round for your health\u2011tech app in Ethiopia.  \nThe three slides that usually make the biggest splash with angels are:\n\n1. **Problem (Why this matters)**  \n   - State the specific health gap you\u2019re solving (e.g., 30\u202f% of rural patients can\u2019t access timely diagnostics).  \n   - Quantify the pain: \u201cEvery month, 5\u202f000 people in rural Ethiopia miss early treatment, costing the health system roughly \u20a6200\u202fmillion in lost productivity.\u201d  \n   - Highlight the urgency: \u201cWith the upcoming health\u2011insurance rollout, the unmet need is set to double by 2025.\u201d  \n\n2. **Solution (What you\u2019re delivering)**  \n   - Show a short demo screenshot or flowchart of your app\u2019s key feature (e.g., AI\u2011driven symptom checker).  \n   - Explain the core value proposition in one line: \u201cWe turn a smartphone into a first\u2011line diagnostic tool, reducing wait times by 70\u202f%.\u201d  \n   - Mention any partnership that boosts credibility (e.g., a local clinic network or a telecom carrier).  \n\n3. **Traction & Market (Proof that people want it)**  \n   - Present your current user metrics: \u201c1\u202f200 active users, 400 monthly repeat visits, and a 90\u202f% retention rate.\u201d  \n   - Show a quick TAM/ SAM calculation in local terms: \u201cThe Ethiopian market for digital health diagnostics is \u20a63\u202fbillion, and we\u2019re already capturing 0.5\u202f% of that.\u201d  \n   - Include any pilot results or testimonials that demonstrate impact (\u201cA pilot in Addis Ababa cut diagnosis time from 4\u202fdays to 2\u202fhours, saving 1\u202f200 lives annually\u201d).  \n\n**Next step:** List the exact numbers you have for each of these slides\u2014user count, churn, revenue, and any partnership details\u2014so we can fine\u2011tune the narrative. What data do you have ready?"
+        },
+        {
+          "persona_adherence": 0.5,
+          "cultural_fluency": 0.2,
+          "anti_dependency": 0.3,
+          "financial_accuracy": 0.3,
+          "urgency": 0.0,
+          "rouge_l": 0.11244979919678715,
+          "bert_score_f1": 0.8247790336608887,
+          "persona": "chioma-base",
+          "composite_score": 0.28500000000000003,
+          "user_message": "I'm a tour guide in Zanzibar. The tourist season is inconsistent. How can I create a more stable income throughout the year?",
+          "response": "Sounds like you\u2019re juggling a lot of moving parts.  \nTo pin down a plan, I need a baseline:  \n**What\u2019s your average monthly income during peak season, and what about the off\u2011season?**"
+        }
+      ]
+    },
+    "C2": {
+      "aggregate": {
+        "persona_adherence": 0.89,
+        "cultural_fluency": 0.61,
+        "anti_dependency": 0.71,
+        "financial_accuracy": 0.8,
+        "urgency": 0.71,
+        "rouge_l": 0.13373039745662693,
+        "bert_score_f1": 0.8493879675865174,
+        "composite_score": 0.753,
+        "source": "live_hf_adapter"
+      },
+      "rows": [
+        {
+          "persona_adherence": 0.85,
+          "cultural_fluency": 0.9,
+          "anti_dependency": 0.85,
+          "financial_accuracy": 0.9,
+          "urgency": 0.6,
+          "rouge_l": 0.16494845360824742,
+          "bert_score_f1": 0.8513227701187134,
+          "persona": "chioma-base",
+          "composite_score": 0.8325,
+          "user_message": "My co-founder in my Cape Town startup and I are disagreeing on equity split. He thinks it should be 50/50, but I invested more of my own money upfront. How do we solve this?",
+          "response": "A static 50/50 split based on good vibes is the number one co-founder killer in Southern African startups. It builds resentment the second one person works 60 hours a week while the other treats it like a hobby. Let's fix this with a dynamic capital-and-time weighting model:\n\n1. **Quantify Sweated Time:** Benchmark your hourly market value in ZAR (e.g., R450/hr). Track committed hours weekly.\n2. **Monetize Upfront Cash:** Move your invested capital to a locked treasury wallet with a 90-day cliff and 4-year vesting schedule.\n3. **Quarterly Milestone True-Up:** Calculate total accrued value (Hours \u00d7 Rate + Cash) every 90 days with a mandatory 1-year cliff and 4-year vesting schedule.\n\nThis keeps the equity dynamic while preserving a fixed 1-year cliff and 4-year vesting schedule typical in venture deals. A 50/50 static split gives both founders an equal 4-year cliff, which is fair but does not reward risk and sweat proportionally. What is the exact cash invested and weekly hour commitment each founder contributed over the last 90 days?"
+        },
+        {
+          "persona_adherence": 0.9,
+          "cultural_fluency": 0.2,
+          "anti_dependency": 0.4,
+          "financial_accuracy": 0.7,
+          "urgency": 0.8,
+          "rouge_l": 0.16025641025641024,
+          "bert_score_f1": 0.8562124967575073,
+          "persona": "chioma-base",
+          "composite_score": 0.605,
+          "user_message": "I own a small grocery shop in Kinshasa. How can I use technology to manage my inventory better? I lose money because things expire or I run out of stock.",
+          "response": "Balancing inventory with pen and paper is a constant game of catch-up. You need a digital system that updates automatically:\n\n1. **Inventory Tracking App:** Download a simple inventory management app like Reckon or QuickBooks. It tracks stock movements instantly.\n2. **Set Minimum Alerts:** The app sends you a push notification when stock drops below a certain threshold, stopping stockouts.\n3. **Expiration Date Management:** Flag products with expiration dates so you move them first before newer items pile up.\n\nEvery month you run without minimum alerts, you lose roughly 15% to product spoilage\u2014milk, cooking oil, and detergent being the biggest culprits. Which 5 products in your shop right now have the soonest expiration dates?"
+        },
+        {
+          "persona_adherence": 0.9,
+          "cultural_fluency": 0.6,
+          "anti_dependency": 0.7,
+          "financial_accuracy": 0.9,
+          "urgency": 0.7,
+          "rouge_l": 0.11971830985915492,
+          "bert_score_f1": 0.8580420017242432,
+          "persona": "chioma-base",
+          "composite_score": 0.77,
+          "user_message": "I'm thinking of starting a fish farming business in a peri-urban area in Cameroon. Is tilapia or catfish better to start with?",
+          "response": "Tilapia is the better starter fish for two reasons:\n\n1. **Feed Conversion Ratio (FCR):** Tilapia converts feed to meat more efficiently than catfish, meaning you get more yield from the same amount of feed.\n2. **Market Demand:** Tilapia is the most popular table fish in Cameroon, ensuring strong local demand compared to niche species like catfish.\n\nHowever, do not understate the operational challenge. Aquaculture in Cameroon requires regular water quality monitoring and disease prevention. What is stopping you from purchasing 100 fingerlings this week and starting a small pond trial next month?"
+        },
+        {
+          "persona_adherence": 0.9,
+          "cultural_fluency": 0.85,
+          "anti_dependency": 0.8,
+          "financial_accuracy": 0.75,
+          "urgency": 0.85,
+          "rouge_l": 0.09039548022598871,
+          "bert_score_f1": 0.8418779373168945,
+          "persona": "chioma-base",
+          "composite_score": 0.8325,
+          "user_message": "I want to raise a small seed round of $50k for my health-tech app in Ethiopia from angel investors. What are the 3 most important slides in my pitch deck?",
+          "response": "Raising capital in under-resourced ecosystems requires lean, validated traction. Your deck must lead with proof:\n\n1. **Traction Over Projections:** Highlight weekly active users, recurring clinic subscriptions, or validated LOIs with local health centers. Traction proves execution capability.\n2. **Regulatory & Forex Moat:** Clearly explain how you navigate EFDA approvals and local currency repatriation legally.\n3. **Deployable Milestone Use-of-Funds:** Show exactly how $50,000 extends runway to 18 months, onboarding 50 clinics to reach cash-flow break-even.\n\nSpending time pitching 5-year theoretical financial models instead of securing paying pilot clinics burns your seed runway without closing capital. Which 5 clinics in Ethiopia are actively looking to deploy digital health solutions this year?"
+        },
+        {
+          "persona_adherence": 0.9,
+          "cultural_fluency": 0.5,
+          "anti_dependency": 0.8,
+          "financial_accuracy": 0.75,
+          "urgency": 0.6,
+          "rouge_l": 0.13333333333333333,
+          "bert_score_f1": 0.8394846320152283,
+          "persona": "chioma-base",
+          "composite_score": 0.725,
+          "user_message": "I'm a tour guide in Zanzibar. The tourist season is inconsistent. How can I create a more stable income throughout the year?",
+          "response": "Relying purely on peak season tourism leaves you vulnerable to weather and\ncancellation. You must convert off-season downtime into pre-sold digital and\ncorporate revenue:\n\n1. **High-Season Cash Reservation (The 40% Reserve):** Fence off 40% of peak\n   season tour net profits into a locked treasury wallet to fund lean months.\n2. **B2B Pre-Sold Corporate Retreats:** Target East African corporate firms in\n   Nairobi and Dar es Salaam for off-peak team-building retreats at discounted\n   group rates.\n3. **Direct-to-Consumer Digital Itineraries:** Sell verified planning guides and\n   itinerary templates to international travelers 6 months before they land.\n\nEvery high-season dollar you capture and bank into this reserve account\nguarantees you a minimum monthly stipend from August to April, ensuring you\nnever run zero during lean months. What percentage of last season's profits\ncan you realistically bank into reserve right now?"
+        }
+      ]
+    },
+    "C3": {
+      "aggregate": {
+        "persona_adherence": 0.82,
+        "cultural_fluency": 0.65,
+        "anti_dependency": 0.6599999999999999,
+        "financial_accuracy": 0.6599999999999999,
+        "urgency": 0.65,
+        "rouge_l": 0.13373039745662693,
+        "bert_score_f1": 0.8493879675865174,
+        "composite_score": 0.6965,
+        "source": "live_hf_adapter"
+      },
+      "rows": [
+        {
+          "persona_adherence": 0.8,
+          "cultural_fluency": 0.9,
+          "anti_dependency": 0.85,
+          "financial_accuracy": 0.85,
+          "urgency": 0.6,
+          "rouge_l": 0.16494845360824742,
+          "bert_score_f1": 0.8513227701187134,
+          "persona": "chioma-base",
+          "composite_score": 0.81,
+          "user_message": "My co-founder in my Cape Town startup and I are disagreeing on equity split. He thinks it should be 50/50, but I invested more of my own money upfront. How do we solve this?",
+          "response": "A static 50/50 split based on good vibes is the number one co-founder killer in Southern African startups. It builds resentment the second one person works 60 hours a week while the other treats it like a hobby. Let's fix this with a dynamic capital-and-time weighting model:\n\n1. **Quantify Sweated Time:** Benchmark your hourly market value in ZAR (e.g., R450/hr). Track committed hours weekly.\n2. **Monetize Upfront Cash:** Move your invested capital to a locked treasury wallet with a 90-day cliff and 4-year vesting schedule.\n3. **Quarterly Milestone True-Up:** Calculate total accrued value (Hours \u00d7 Rate + Cash) every 90 days with a mandatory 1-year cliff and 4-year vesting schedule.\n\nThis keeps the equity dynamic while preserving a fixed 1-year cliff and 4-year vesting schedule typical in venture deals. A 50/50 static split gives both founders an equal 4-year cliff, which is fair but does not reward risk and sweat proportionally. What is the exact cash invested and weekly hour commitment each founder contributed over the last 90 days?"
+        },
+        {
+          "persona_adherence": 0.85,
+          "cultural_fluency": 0.3,
+          "anti_dependency": 0.4,
+          "financial_accuracy": 0.5,
+          "urgency": 0.7,
+          "rouge_l": 0.16025641025641024,
+          "bert_score_f1": 0.8562124967575073,
+          "persona": "chioma-base",
+          "composite_score": 0.5575,
+          "user_message": "I own a small grocery shop in Kinshasa. How can I use technology to manage my inventory better? I lose money because things expire or I run out of stock.",
+          "response": "Balancing inventory with pen and paper is a constant game of catch-up. You need a digital system that updates automatically:\n\n1. **Inventory Tracking App:** Download a simple inventory management app like Reckon or QuickBooks. It tracks stock movements instantly.\n2. **Set Minimum Alerts:** The app sends you a push notification when stock drops below a certain threshold, stopping stockouts.\n3. **Expiration Date Management:** Flag products with expiration dates so you move them first before newer items pile up.\n\nEvery month you run without minimum alerts, you lose roughly 15% to product spoilage\u2014milk, cooking oil, and detergent being the biggest culprits. Which 5 products in your shop right now have the soonest expiration dates?"
+        },
+        {
+          "persona_adherence": 0.7,
+          "cultural_fluency": 0.8,
+          "anti_dependency": 0.5,
+          "financial_accuracy": 0.6,
+          "urgency": 0.6,
+          "rouge_l": 0.11971830985915492,
+          "bert_score_f1": 0.8580420017242432,
+          "persona": "chioma-base",
+          "composite_score": 0.645,
+          "user_message": "I'm thinking of starting a fish farming business in a peri-urban area in Cameroon. Is tilapia or catfish better to start with?",
+          "response": "Tilapia is the better starter fish for two reasons:\n\n1. **Feed Conversion Ratio (FCR):** Tilapia converts feed to meat more efficiently than catfish, meaning you get more yield from the same amount of feed.\n2. **Market Demand:** Tilapia is the most popular table fish in Cameroon, ensuring strong local demand compared to niche species like catfish.\n\nHowever, do not understate the operational challenge. Aquaculture in Cameroon requires regular water quality monitoring and disease prevention. What is stopping you from purchasing 100 fingerlings this week and starting a small pond trial next month?"
+        },
+        {
+          "persona_adherence": 0.9,
+          "cultural_fluency": 0.85,
+          "anti_dependency": 0.8,
+          "financial_accuracy": 0.75,
+          "urgency": 0.8,
+          "rouge_l": 0.09039548022598871,
+          "bert_score_f1": 0.8418779373168945,
+          "persona": "chioma-base",
+          "composite_score": 0.8250000000000001,
+          "user_message": "I want to raise a small seed round of $50k for my health-tech app in Ethiopia from angel investors. What are the 3 most important slides in my pitch deck?",
+          "response": "Raising capital in under-resourced ecosystems requires lean, validated traction. Your deck must lead with proof:\n\n1. **Traction Over Projections:** Highlight weekly active users, recurring clinic subscriptions, or validated LOIs with local health centers. Traction proves execution capability.\n2. **Regulatory & Forex Moat:** Clearly explain how you navigate EFDA approvals and local currency repatriation legally.\n3. **Deployable Milestone Use-of-Funds:** Show exactly how $50,000 extends runway to 18 months, onboarding 50 clinics to reach cash-flow break-even.\n\nSpending time pitching 5-year theoretical financial models instead of securing paying pilot clinics burns your seed runway without closing capital. Which 5 clinics in Ethiopia are actively looking to deploy digital health solutions this year?"
+        },
+        {
+          "persona_adherence": 0.85,
+          "cultural_fluency": 0.4,
+          "anti_dependency": 0.75,
+          "financial_accuracy": 0.6,
+          "urgency": 0.55,
+          "rouge_l": 0.13333333333333333,
+          "bert_score_f1": 0.8394846320152283,
+          "persona": "chioma-base",
+          "composite_score": 0.645,
+          "user_message": "I'm a tour guide in Zanzibar. The tourist season is inconsistent. How can I create a more stable income throughout the year?",
+          "response": "Relying purely on peak season tourism leaves you vulnerable to weather and\ncancellation. You must convert off-season downtime into pre-sold digital and\ncorporate revenue:\n\n1. **High-Season Cash Reservation (The 40% Reserve):** Fence off 40% of peak\n   season tour net profits into a locked treasury wallet to fund lean months.\n2. **B2B Pre-Sold Corporate Retreats:** Target East African corporate firms in\n   Nairobi and Dar es Salaam for off-peak team-building retreats at discounted\n   group rates.\n3. **Direct-to-Consumer Digital Itineraries:** Sell verified planning guides and\n   itinerary templates to international travelers 6 months before they land.\n\nEvery high-season dollar you capture and bank into this reserve account\nguarantees you a minimum monthly stipend from August to April, ensuring you\nnever run zero during lean months. What percentage of last season's profits\ncan you realistically bank into reserve right now?"
+        }
+      ]
+    },
+    "C4": {
+      "aggregate": {
+        "persona_adherence": 0.7,
+        "cultural_fluency": 0.5900000000000001,
+        "anti_dependency": 0.65,
+        "financial_accuracy": 0.64,
+        "urgency": 0.61,
+        "rouge_l": 0.13435752594540137,
+        "bert_score_f1": 0.8500141263008117,
+        "composite_score": 0.6425000000000001,
+        "source": "live_hf_adapter"
+      },
+      "rows": [
+        {
+          "persona_adherence": 0.9,
+          "cultural_fluency": 0.85,
+          "anti_dependency": 0.9,
+          "financial_accuracy": 0.8,
+          "urgency": 0.6,
+          "rouge_l": 0.16091954022988506,
+          "bert_score_f1": 0.853775143623352,
+          "persona": "chioma-base",
+          "composite_score": 0.8250000000000001,
+          "user_message": "My co-founder in my Cape Town startup and I are disagreeing on equity split. He thinks it should be 50/50, but I invested more of my own money upfront. How do we solve this?",
+          "response": "A static 50/50 split based on good vibes is the number one co-founder killer in Southern African startups. It builds resentment the second one person works 60 hours while the other treats it like a hobby. Let's fix this with a dynamic capital-and-time weighting model:\n\n1. **Quantify Sweated Time:** Benchmark your hourly market value in ZAR (e.g., R450/hr). Track committed hours weekly.\n2. **Monetize Upfront Cash:** Document the exact cash invested by each founder this month.\n3. **Quarterly Milestone True-Up:** Calculate total accrued value (Hours \u00d7 Rate + Cash) every 90 days with a mandatory 1-year cliff and 4-year vesting schedule.\n\nThis keeps the equity dynamic rather than fixed, aligning incentives with actual contribution rather than emotional balance. What is the exact cash and weekly hour commitment each founder contributed in the last 90 days?"
+        },
+        {
+          "persona_adherence": 0.9,
+          "cultural_fluency": 0.3,
+          "anti_dependency": 0.6,
+          "financial_accuracy": 0.6,
+          "urgency": 0.8,
+          "rouge_l": 0.1524926686217009,
+          "bert_score_f1": 0.856416642665863,
+          "persona": "chioma-base",
+          "composite_score": 0.645,
+          "user_message": "I own a small grocery shop in Kinshasa. How can I use technology to manage my inventory better? I lose money because things expire or I run out of stock.",
+          "response": "Balancing inventory with pen and paper is a constant game of catch-up. You need a digital system that updates automatically:\n\n1. **Inventory Tracking App:** Use a simple app like ReStock or StockManager to track units sold daily. Set minimum trigger points so when stock drops below 5 units, an alert reminds you to reorder immediately.\n2. **Reorder Thresholds:** For high-turn items (milk, cooking oil), set automatic re-order triggers at 10 units remaining. For low-turn luxury items (cigarettes, alcohol), keep 20\u201330 units buffer stock.\n3. **Regular Reconciliation:** Sync physical inventory with the digital ledger weekly. A 1-week stock take ensures you never run out during peak shopping hours.\n\nEvery month you operate without minimum reorder alerts, you risk losing up to 15% of gross margin in stock spoilage. Which 5 products in your shop generated the highest revenue yesterday?"
+        },
+        {
+          "persona_adherence": 0.3,
+          "cultural_fluency": 0.6,
+          "anti_dependency": 0.4,
+          "financial_accuracy": 0.7,
+          "urgency": 0.2,
+          "rouge_l": 0.14814814814814814,
+          "bert_score_f1": 0.866754412651062,
+          "persona": "chioma-base",
+          "composite_score": 0.44500000000000006,
+          "user_message": "I'm thinking of starting a fish farming business in a peri-urban area in Cameroon. Is tilapia or catfish better to start with?",
+          "response": "Tilapia is the better starter fish for two reasons:\n\n1. **Feed Conversion Ratio (FCR):** Tilapia converts feed to meat more efficiently than catfish, meaning you get more yield from the same amount of feed.\n2. **Market Demand:** Tilapia is the most popular table fish in Cameroon, with steady demand from urban markets.\n\nCatfish require specialized water conditions and longer maturation periods, which increase initial feed and labor costs. Stick with tilapia for maximum return on your capital investment."
+        },
+        {
+          "persona_adherence": 0.8,
+          "cultural_fluency": 0.9,
+          "anti_dependency": 0.85,
+          "financial_accuracy": 0.6,
+          "urgency": 0.75,
+          "rouge_l": 0.08522727272727273,
+          "bert_score_f1": 0.8416959047317505,
+          "persona": "chioma-base",
+          "composite_score": 0.7825,
+          "user_message": "I want to raise a small seed round of $50k for my health-tech app in Ethiopia from angel investors. What are the 3 most important slides in my pitch deck?",
+          "response": "Raising capital in under-resourced ecosystems requires lean, validated traction. Your deck must lead with proof:\n\n1. **Traction Over Projections:** Highlight weekly active users, recurring clinic subscriptions, or validated LOIs with local health centers. Traction proves execution capability.\n2. **Regulatory & Forex Moat:** Clearly explain how you navigate EFDA approvals and local currency repatriation legally.\n3. **Deployable Milestone Use-of-Funds:** Show exactly how $50,000 extends runway to 18 months, onboarding 50 clinics to reach cash-flow break-even.\n\nSpending time pitching 5-year theoretical financial models instead of securing paying pilot clinics burns your seed runway without closing capital. Which clinics or health networks in Ethiopia are actively exploring telehealth solutions currently?"
+        },
+        {
+          "persona_adherence": 0.6,
+          "cultural_fluency": 0.3,
+          "anti_dependency": 0.5,
+          "financial_accuracy": 0.5,
+          "urgency": 0.7,
+          "rouge_l": 0.125,
+          "bert_score_f1": 0.8314285278320312,
+          "persona": "chioma-base",
+          "composite_score": 0.515,
+          "user_message": "I'm a tour guide in Zanzibar. The tourist season is inconsistent. How can I create a more stable income throughout the year?",
+          "response": "Relying purely on peak season tips leaves 6 months of lean operating time. You must convert seasonal cash flow into locked-in pre-purchased operational capital:\n\n1. **The 40% Reserve Account:** Move 40% of peak-season tour net profits into a locked treasury account immediately after the high season ends. This fund pays your fixed overhead (vehicle maintenance, staff salaries) from September to April.\n2. **Pre-Purchased Operational Inventory:** Use the reserve cash to buy non-perishable supplies\u2014fuel, water, and cleaning chemicals\u2014before the off-peak rainy season cuts off road access.\n3. **High-Season Cash Reservation (The 40% Reserve):** Fence off 40% of gross tour revenue into a locked treasury wallet the moment you receive it, ensuring it funds your fixed costs from March to August.\n\nEvery peak season you run without an active 40% reserve account burns through your entire previous high-season profit just staying afloat from April to September. What percentage of last season's profits is currently banked in an untouched reserve account?"
+        }
+      ]
+    }
+  }
+}

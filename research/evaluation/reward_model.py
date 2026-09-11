@@ -260,6 +260,20 @@ def _weighted_reward(
     return sum(scores.get(dim, 0.0) * weights.get(dim, 0.0) for dim in dims)
 
 
+def _prob_prefer_a(probe, delta) -> float:
+    """P(response_a preferred) from a fitted probe, robust to the single-class
+    case: fit_reward_probe falls back to a DummyClassifier when every training
+    pair has the same label (e.g. this project's curated datasets, where
+    response_a is always the intended-better answer) — predict_proba() then
+    returns only 1 column instead of the usual 2, so a bare [0][1] index
+    raises IndexError rather than reflecting "always/never preferred"."""
+    proba = probe.predict_proba(delta)[0]
+    classes = list(probe.classes_)
+    if 1 not in classes:
+        return 0.0
+    return float(proba[classes.index(1)])
+
+
 # ── Scoring a pair (calls the LLM judge + optional consistency) ───────────────
 
 def score_pair(
@@ -321,7 +335,7 @@ def score_pair(
 
     if probe is not None:
         delta = np.array([[scores_a.get(d, 0.0) - scores_b.get(d, 0.0) for d in dims]])
-        prob_a = float(probe.predict_proba(delta)[0][1])  # P(label=1) = P(prefer_a)
+        prob_a = _prob_prefer_a(probe, delta)
         predicted_preferred = "a" if prob_a >= 0.5 else "b"
         confidence = prob_a
     else:
@@ -594,7 +608,7 @@ def pairs_to_dpo_format(
                 scores_a.update(c_a)
                 scores_b.update(c_b)
             delta = np.array([[scores_a.get(d, 0.0) - scores_b.get(d, 0.0) for d in dims]])
-            prob_a = float(probe.predict_proba(delta)[0][1])
+            prob_a = _prob_prefer_a(probe, delta)
             if prob_a > 0.65:
                 preferred = "a"
             elif prob_a < 0.35:

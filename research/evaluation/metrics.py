@@ -91,7 +91,7 @@ def score_all_dimensions(user_message: str, response: str) -> dict[str, float]:
     client = _get_judge()
     if not client.api_key:
         print("[ERROR] LLM API key missing for judge client.", flush=True)
-        return defaults
+        return {**defaults, "_judge_failed": True}
 
     for attempt in range(3):
         try:
@@ -102,6 +102,12 @@ def score_all_dimensions(user_message: str, response: str) -> dict[str, float]:
                 ],
                 max_tokens=_JUDGE_MAX_TOKENS,
                 temperature=0.0,
+                # No-op for gpt-oss-120b (the default judge); guards against a
+                # reasoning model (e.g. qwen/qwen3.6-27b, used when gpt-oss's
+                # quota is exhausted) leaking its <think> trace into `content`
+                # the same way it did for C1 generation earlier in this repo's
+                # history — see docs/implementation/C5_1_final_evaluation.md.
+                extra_body={"reasoning_format": "hidden"},
             )
 
             msg = res.choices[0].message
@@ -123,7 +129,14 @@ def score_all_dimensions(user_message: str, response: str) -> dict[str, float]:
             if attempt == 2:
                 print(f"[Judge API Error with {_JUDGE_MODEL}]: {e}", flush=True)
 
-    return defaults
+    # "_judge_failed" marks this as a real failure (missing key, quota
+    # exhaustion, unparseable output), not a genuine all-zero score, so
+    # downstream averaging can exclude it instead of silently diluting the
+    # mean — see docs/implementation/C5_1_final_evaluation.md for the C4 run
+    # this bit for real. Underscore-prefixed and not one of the 5 rubric
+    # dimensions, so existing callers that index specific keys (e.g.
+    # reward_model.py's _weighted_reward) are unaffected by its presence.
+    return {**defaults, "_judge_failed": True}
 
 def score_rouge_l(response: str, reference: str) -> float:
     try:
@@ -155,6 +168,8 @@ def evaluate_response(
         financial_accuracy=scores["financial_accuracy"],
         urgency=scores["urgency"],
     )
+    if scores.get("_judge_failed"):
+        result.metadata["judge_failed"] = True
 
     if reference:
         result.rouge_l = score_rouge_l(response, reference)

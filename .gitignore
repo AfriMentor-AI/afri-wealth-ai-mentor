@@ -32,7 +32,15 @@ mlruns/
 optimizer.pt
 research/models/
 checkpoints/
-results/
+# Ignore eval-run scratch output, but not the frozen canonical snapshots
+# (card C5.1) - freeze_results.py calls those "immutable"; leaving them
+# gitignored would mean the paper's citable dataset only ever exists on
+# whichever machine ran the freeze, the exact failure mode that twice lost
+# this card's raw eval output already. A directory-exclusion pattern (plain
+# "results/") blocks re-inclusion of anything under it, so this ignores the
+# directory's direct contents instead and carves the one subdirectory back out.
+research/evaluation/results/*
+!research/evaluation/results/canonical/
 
 # Per-service SQLite dev fallback DBs (DATABASE_URL unset) and alembic scratch DBs
 *.db

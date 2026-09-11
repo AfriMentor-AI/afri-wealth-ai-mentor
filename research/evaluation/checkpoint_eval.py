@@ -137,11 +137,28 @@ def load_eval_samples(
 # ── Aggregation ────────────────────────────────────────────────────────────────
 
 def avg_scores(rows: list[dict]) -> dict:
-    """Mean of every numeric field across ``rows`` (non-numeric fields ignored)."""
-    if not rows:
+    """Mean of every numeric field across ``rows`` (non-numeric fields ignored).
+
+    Rows with ``judge_failed=True`` (the LLM judge errored, timed out, or hit
+    a quota wall — see :func:`evaluation.metrics.score_all_dimensions`) are
+    excluded rather than averaged in as genuine zeros: a diluted mean here
+    looks identical to a real quality drop unless failures are dropped
+    explicitly. When any are dropped, ``n_judge_failed``/``n_samples_scored``
+    record it in the aggregate rather than hiding it.
+    """
+    valid_rows = [r for r in rows if not r.get("judge_failed")]
+    if not valid_rows:
         return {}
-    numeric_keys = [k for k, v in rows[0].items() if isinstance(v, (int, float))]
-    return {k: sum(r[k] for r in rows) / len(rows) for k in numeric_keys}
+    numeric_keys = [
+        k for k, v in valid_rows[0].items()
+        if isinstance(v, (int, float)) and k != "judge_failed"
+    ]
+    agg = {k: sum(r[k] for r in valid_rows) / len(valid_rows) for k in numeric_keys}
+    n_failed = len(rows) - len(valid_rows)
+    if n_failed:
+        agg["n_judge_failed"] = n_failed
+        agg["n_samples_scored"] = len(valid_rows)
+    return agg
 
 
 # ── Evaluation pipeline ──────────────────────────────────────────────────────
@@ -185,12 +202,24 @@ def evaluate_checkpoint(
             "persona": sample["persona"],
             "composite_score": result.composite_score,
         })
-        logger.info(
-            "  sample %d/%d persona=%-14s composite=%.3f",
-            i + 1, len(samples), sample["persona"], result.composite_score,
-        )
+        if result.metadata.get("judge_failed"):
+            logger.warning(
+                "  sample %d/%d persona=%-14s JUDGE FAILED — composite=0.000 is not"
+                " a real score, excluded from the aggregate",
+                i + 1, len(samples), sample["persona"],
+            )
+        else:
+            logger.info(
+                "  sample %d/%d persona=%-14s composite=%.3f",
+                i + 1, len(samples), sample["persona"], result.composite_score,
+            )
 
     agg = avg_scores(rows)
+    if agg.get("n_judge_failed"):
+        logger.warning(
+            "  %d/%d samples excluded from this aggregate (judge failures) —"
+            " scored on %d.", agg["n_judge_failed"], len(rows), agg["n_samples_scored"],
+        )
 
     if log_to_mlflow and rows:
         import mlflow
@@ -245,7 +274,9 @@ class HFCheckpointGenerator:
 
             kwargs["quantization_config"] = BitsAndBytesConfig(
                 load_in_4bit=True,
-                bnb_4bit_compute_dtype=torch.bfloat16,
+                # float16, not bfloat16: BF16 tensor-core acceleration needs
+                # Ampere (SM 8.0+); a T4 (Turing, SM 7.5) errors out on this.
+                bnb_4bit_compute_dtype=torch.float16,
                 bnb_4bit_quant_type="nf4",
                 bnb_4bit_use_double_quant=True,
             )

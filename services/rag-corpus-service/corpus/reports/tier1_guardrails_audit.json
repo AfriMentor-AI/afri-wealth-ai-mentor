@@ -1,0 +1,233 @@
+{
+  "rules_checked_against": "chat-orchestration-service/app/guardrails.py:screen_output",
+  "documents_audited": 23,
+  "summary": {
+    "allow": 6,
+    "disclaim": 12,
+    "block": 5
+  },
+  "documents": [
+    {
+      "doc_id": "ng_arese_ugwu_personal_finance",
+      "title": "Personal Finance and Wealth Management",
+      "action": "disclaim",
+      "categories": [
+        "specific_instrument",
+        "leverage_debt"
+      ],
+      "matched_term_count": 2
+    },
+    {
+      "doc_id": "ng_folorunsho_alakija",
+      "title": "Fashion, Printing, Energy and Enterprise Development",
+      "action": "disclaim",
+      "categories": [
+        "specific_instrument",
+        "tax_legal_evasion"
+      ],
+      "matched_term_count": 2
+    },
+    {
+      "doc_id": "ng_tony_elumelu",
+      "title": "Banking, Venture Capital, Africapitalism and Entrepreneurship",
+      "action": "disclaim",
+      "categories": [
+        "specific_instrument",
+        "leverage_debt",
+        "tax_legal_evasion"
+      ],
+      "matched_term_count": 3
+    },
+    {
+      "doc_id": "ng_adenike_ogunlesi",
+      "title": "Fashion Manufacturing, Retail and SME Growth",
+      "action": "disclaim",
+      "categories": [
+        "specific_instrument",
+        "crypto_speculation",
+        "leverage_debt",
+        "tax_legal_evasion"
+      ],
+      "matched_term_count": 4
+    },
+    {
+      "doc_id": "ng_aliko_dangote",
+      "title": "Manufacturing, Industrial Conglomerate, Agriculture and Commodities",
+      "action": "disclaim",
+      "categories": [
+        "specific_instrument",
+        "crypto_speculation",
+        "leverage_debt",
+        "tax_legal_evasion"
+      ],
+      "matched_term_count": 4
+    },
+    {
+      "doc_id": "ng_deola_sagoe",
+      "title": "Fashion Design, Textile Innovation and Luxury Retail",
+      "action": "allow",
+      "categories": [],
+      "matched_term_count": 0
+    },
+    {
+      "doc_id": "ng_kenneth_ize",
+      "title": "Fashion Design, Textile Preservation, Artisanal Craft and Global Luxury Retail",
+      "action": "allow",
+      "categories": [],
+      "matched_term_count": 0
+    },
+    {
+      "doc_id": "ng_iyinoluwa_aboyeji",
+      "title": "Technology, FinTech, Venture Capital and Talent Acceleration",
+      "action": "block",
+      "categories": [
+        "medical_or_legal",
+        "specific_instrument",
+        "crypto_speculation",
+        "leverage_debt"
+      ],
+      "matched_term_count": 4
+    },
+    {
+      "doc_id": "ng_mitchell_elegbe",
+      "title": "FinTech, Financial Infrastructure, Electronic Payments and Corporate Governance",
+      "action": "block",
+      "categories": [
+        "guaranteed_return",
+        "medical_or_legal",
+        "specific_instrument"
+      ],
+      "matched_term_count": 3
+    },
+    {
+      "doc_id": "ng_jason_njoku",
+      "title": "Digital Media, Nollywood Distribution, Streaming and Tech Venture Capital",
+      "action": "disclaim",
+      "categories": [
+        "leverage_debt"
+      ],
+      "matched_term_count": 1
+    },
+    {
+      "doc_id": "ng_sim_shagaya",
+      "title": "E-Commerce, Digital Advertising, EdTech and Distance Higher Education",
+      "action": "block",
+      "categories": [
+        "specific_instrument",
+        "crypto_speculation",
+        "tax_legal_evasion"
+      ],
+      "matched_term_count": 3
+    },
+    {
+      "doc_id": "ng_shola_akinlade",
+      "title": "FinTech, Payment Infrastructure, Software Engineering and Global Acquisitions",
+      "action": "allow",
+      "categories": [],
+      "matched_term_count": 0
+    },
+    {
+      "doc_id": "ng_tara_fela_durotoye",
+      "title": "Beauty and Cosmetics, Retail Infrastructure, Franchise Distribution and Enterprise Governance",
+      "action": "disclaim",
+      "categories": [
+        "specific_instrument",
+        "leverage_debt",
+        "tax_legal_evasion"
+      ],
+      "matched_term_count": 3
+    },
+    {
+      "doc_id": "gh_fred_swaniker_leadership",
+      "title": "Education, Leadership Development, Human Capital and Tech Talent Acceleration",
+      "action": "allow",
+      "categories": [],
+      "matched_term_count": 0
+    },
+    {
+      "doc_id": "gh_fred_swaniker_entrepreneurship",
+      "title": "Entrepreneurship, Leadership Development and Education",
+      "action": "allow",
+      "categories": [],
+      "matched_term_count": 0
+    },
+    {
+      "doc_id": "gh_patrick_awuah",
+      "title": "Education, Leadership Development and Business Ethics",
+      "action": "allow",
+      "categories": [],
+      "matched_term_count": 0
+    },
+    {
+      "doc_id": "ke_tabitha_karanja",
+      "title": "Manufacturing, Beverage Industry, Tax Policy and Local Enterprise Advocacy",
+      "action": "disclaim",
+      "categories": [
+        "specific_instrument",
+        "leverage_debt",
+        "tax_legal_evasion"
+      ],
+      "matched_term_count": 3
+    },
+    {
+      "doc_id": "zw_strive_masiyiwa",
+      "title": "Telecommunications, Digital Payments, Venture Capital and Philanthropy",
+      "action": "disclaim",
+      "categories": [
+        "specific_instrument",
+        "tax_legal_evasion"
+      ],
+      "matched_term_count": 2
+    },
+    {
+      "doc_id": "et_bethlehem_tilahun_alemu",
+      "title": "Manufacturing, Footwear, Sustainable Fashion and Export Trade",
+      "action": "disclaim",
+      "categories": [
+        "specific_instrument"
+      ],
+      "matched_term_count": 1
+    },
+    {
+      "doc_id": "sn_magatte_wade",
+      "title": "Consumer Goods, Skincare Manufacturing, Economic Freedom and Enterprise Advocacy",
+      "action": "disclaim",
+      "categories": [
+        "leverage_debt",
+        "tax_legal_evasion"
+      ],
+      "matched_term_count": 2
+    },
+    {
+      "doc_id": "za_vusi_thembekwayo",
+      "title": "If I Lost Everything, This Is How I'd Start Again in 2026",
+      "action": "block",
+      "categories": [
+        "crypto_speculation",
+        "specific_instrument"
+      ],
+      "matched_term_count": 2
+    },
+    {
+      "doc_id": "ng_trade_guide",
+      "title": "Starting and Growing a Trade Business in Nigeria: A Practical Guide",
+      "action": "disclaim",
+      "categories": [
+        "crypto_speculation",
+        "leverage_debt"
+      ],
+      "matched_term_count": 2
+    },
+    {
+      "doc_id": "general_financial_literacy_guide",
+      "title": "Financial Literacy for African Informal Sector Workers: A Practical Guide",
+      "action": "block",
+      "categories": [
+        "guaranteed_return",
+        "specific_instrument",
+        "leverage_debt"
+      ],
+      "matched_term_count": 3
+    }
+  ]
+}
