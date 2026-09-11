@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { Icon } from "@/components/Icon";
-import { fetchProgressSummary, recordAction } from "@/lib/api";
-import type { BadgeWithStatus, StreakStat } from "@/lib/types";
+import { fetchGoals, fetchMilestonesByGoal, fetchProgressSummary, recordAction } from "@/lib/api";
+import type { BadgeWithStatus, Goal, Milestone, StreakStat } from "@/lib/types";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { useAppDispatch, useAppState } from "@/lib/store";
 import { NotificationPopover } from "@/components/NotificationPopover";
@@ -41,10 +42,12 @@ function BadgeTile({ badge, wide = false }: { badge: BadgeWithStatus; wide?: boo
 
 export default function ProgressBoardPage() {
   const dispatch = useAppDispatch();
-  const { profile } = useAppState();
+  const { profile, activeGoalId } = useAppState();
   const [streak, setStreak] = useState<StreakStat | null>(null);
   const [badges, setBadges] = useState<BadgeWithStatus[] | null>(null);
   const [heatmap, setHeatmap] = useState<number[][] | null>(null);
+  const [pathGoal, setPathGoal] = useState<Goal | null>(null);
+  const [milestones, setMilestones] = useState<Milestone[] | null>(null);
   const [recordingAction, setRecordingAction] = useState(false);
   const [awardNotice, setAwardNotice] = useState<string | null>(null);
 
@@ -66,11 +69,38 @@ export default function ProgressBoardPage() {
     } else {
       setHeatmap(Array.from({ length: 13 }, () => Array(7).fill(0)));
     }
+
+    try {
+      const fetchedGoals = await fetchGoals();
+      if (fetchedGoals && fetchedGoals.length > 0) {
+        const targetGoal =
+          (activeGoalId ? fetchedGoals.find((g) => g.id === activeGoalId) : null) ??
+          fetchedGoals.find((g) => g.progressPct < 100) ??
+          fetchedGoals[0];
+        setPathGoal(targetGoal);
+        const ms = await fetchMilestonesByGoal(targetGoal.id);
+        setMilestones([...ms].sort((a, b) => a.order - b.order));
+      } else {
+        setPathGoal(null);
+        setMilestones([]);
+      }
+    } catch (err) {
+      console.warn("Failed to load path milestones:", err);
+      setPathGoal(null);
+      setMilestones([]);
+    }
   }
 
   useEffect(() => {
     loadData();
-  }, []);
+    const handleGoalCreated = () => {
+      loadData();
+    };
+    window.addEventListener("goal-created", handleGoalCreated);
+    return () => {
+      window.removeEventListener("goal-created", handleGoalCreated);
+    };
+  }, [activeGoalId]);
 
   async function handleRecordAction() {
     setRecordingAction(true);
@@ -231,18 +261,123 @@ export default function ProgressBoardPage() {
         </div>
       </section>
 
-      <section className="rounded-xl border border-outline-variant/20 bg-surface-container-lowest p-md md:p-lg lg:col-span-4">
-        <h3 className="mb-lg font-title-md text-title-md text-on-surface">Your Path</h3>
-        <div className="space-y-0 px-sm">
-          <div className="flex min-h-16 gap-md">
-            <div className="flex flex-col items-center"><span className="z-10 flex h-6 w-6 items-center justify-center rounded-full border-4 border-primary-fixed bg-primary text-on-primary"><Icon name="check" size={12} /></span><span className="h-full w-0.5 bg-primary" /></div>
-            <div className="-mt-1 flex flex-col"><span className="font-label-sm font-bold text-primary">Completed</span><span className="text-xs text-on-surface">Financial Literacy 101</span></div>
+      <section className="flex flex-col justify-between rounded-xl border border-outline-variant/20 bg-surface-container-lowest p-md md:p-lg lg:col-span-4">
+        <div>
+          <div className="mb-lg flex items-center justify-between">
+            <div>
+              <h3 className="font-title-md text-title-md text-on-surface">Your Path</h3>
+              {pathGoal && (
+                <p className="line-clamp-1 text-xs text-on-surface-variant" title={pathGoal.title}>
+                  {pathGoal.title}
+                </p>
+              )}
+            </div>
+            {pathGoal && (
+              <Link
+                href={`/goals/milestones/${pathGoal.id}`}
+                className="flex shrink-0 items-center gap-0.5 text-xs font-semibold text-primary hover:underline"
+              >
+                <span>View Road</span>
+                <Icon name="chevron_right" size={14} />
+              </Link>
+            )}
           </div>
-          <div className="flex min-h-24 gap-md">
-            <div className="flex flex-col items-center"><span className="z-10 h-6 w-6 animate-pulse rounded-full bg-primary ring-4 ring-primary-container/20" /><span className="h-full w-0.5 border-l-2 border-dashed border-outline-variant" /></div>
-            <div className="-mt-1 rounded-lg border border-primary/10 bg-primary-container/10 p-sm"><span className="font-label-sm font-bold text-primary">In Progress</span><span className="block text-xs font-bold text-on-surface">Daily action practice</span><span className="mt-1 block text-[11px] text-on-surface-variant">{streak?.currentStreakDays ?? 0} day streak</span></div>
-          </div>
-          <div className="flex min-h-16 gap-md"><div className="flex flex-col items-center"><span className="z-10 h-6 w-6 rounded-full border-2 border-outline-variant bg-surface" /></div><div className="-mt-1 opacity-60"><span className="font-label-sm font-bold text-on-surface-variant">Upcoming</span><span className="block text-xs text-on-surface">Community Leadership</span></div></div>
+
+          {milestones === null ? (
+            <div className="space-y-sm">
+              <Skeleton className="h-12 w-full rounded" />
+              <Skeleton className="h-16 w-full rounded" />
+              <Skeleton className="h-12 w-full rounded" />
+            </div>
+          ) : milestones.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-lg text-center">
+              <div className="mb-sm flex h-10 w-10 items-center justify-center rounded-full bg-surface-container text-on-surface-variant">
+                <Icon name="flag" size={20} />
+              </div>
+              <p className="font-label-sm text-xs font-semibold text-on-surface">
+                {pathGoal ? "No milestones added yet" : "No active goal roadmap"}
+              </p>
+              <p className="mt-1 text-[11px] text-on-surface-variant">
+                {pathGoal
+                  ? "Define milestones for this goal to visualize your pathway."
+                  : "Set a goal to visualize your milestones path."}
+              </p>
+              <Link
+                href={pathGoal ? `/goals/milestones/${pathGoal.id}` : "/goals"}
+                className="mt-md inline-flex items-center gap-xs rounded-full bg-primary-container px-md py-xs text-xs font-semibold text-on-primary-container hover:opacity-90"
+              >
+                <Icon name="add" size={14} /> {pathGoal ? "Add Milestones" : "Create a Goal"}
+              </Link>
+            </div>
+          ) : (
+            <div className="space-y-0 px-sm">
+              {milestones.map((m, idx) => {
+                const isLast = idx === milestones.length - 1;
+                const isDone = m.status === "done";
+                const isInProgress = m.status === "in_progress";
+                const isBlocked = m.status === "blocked";
+
+                return (
+                  <div
+                    key={m.id}
+                    className={`flex ${isInProgress ? "min-h-24" : "min-h-16"} gap-md`}
+                  >
+                    <div className="flex flex-col items-center">
+                      {isDone ? (
+                        <span className="z-10 flex h-6 w-6 items-center justify-center rounded-full border-4 border-primary-fixed bg-primary text-on-primary">
+                          <Icon name="check" size={12} />
+                        </span>
+                      ) : isInProgress ? (
+                        <span className="z-10 h-6 w-6 animate-pulse rounded-full bg-primary ring-4 ring-primary-container/20" />
+                      ) : isBlocked ? (
+                        <span className="z-10 flex h-6 w-6 items-center justify-center rounded-full border-2 border-error bg-error-container text-on-error-container">
+                          <Icon name="priority_high" size={12} />
+                        </span>
+                      ) : (
+                        <span className="z-10 h-6 w-6 rounded-full border-2 border-outline-variant bg-surface" />
+                      )}
+                      {!isLast && (
+                        <span
+                          className={`h-full w-0.5 ${
+                            isDone
+                              ? "bg-primary"
+                              : "border-l-2 border-dashed border-outline-variant"
+                          }`}
+                        />
+                      )}
+                    </div>
+
+                    {isInProgress ? (
+                      <div className="-mt-1 flex-1 rounded-lg border border-primary/10 bg-primary-container/10 p-sm">
+                        <span className="font-label-sm font-bold text-primary">In Progress</span>
+                        <span className="block text-xs font-bold text-on-surface">{m.title}</span>
+                        {streak?.currentStreakDays ? (
+                          <span className="mt-1 block text-[11px] text-on-surface-variant">
+                            {streak.currentStreakDays} day streak
+                          </span>
+                        ) : null}
+                      </div>
+                    ) : (
+                      <div className={`-mt-1 flex flex-col ${m.status === "upcoming" ? "opacity-60" : ""}`}>
+                        <span
+                          className={`font-label-sm font-bold ${
+                            isDone
+                              ? "text-primary"
+                              : isBlocked
+                              ? "text-error"
+                              : "text-on-surface-variant"
+                          }`}
+                        >
+                          {isDone ? "Completed" : isBlocked ? "Blocked" : "Upcoming"}
+                        </span>
+                        <span className="text-xs text-on-surface">{m.title}</span>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
       </section>
       </div>
