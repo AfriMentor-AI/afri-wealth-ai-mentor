@@ -137,8 +137,26 @@ export interface AuditSession {
   // review_reason records which arm(s) fired (below_floor | drift | both).
   review_status: string | null;
   review_reason: string | null;
+  // Card C5.3 — the reviewer's verdict on whether the flag was actually
+  // correct. Null until a reviewer records one via reviewAuditSession.
+  review_verdict: string | null;
   reviewed_at: string | null;
   scored_at: string | null;
+}
+
+/** Card C5.3 — one bucket of {@link FalsePositiveRate}. `rate` is `null` on an
+ * empty bucket (no reviewed+verdicted sessions yet), never `0` — that
+ * distinction matters: an unexercised threshold must not render as
+ * "validated clean". */
+export interface FalsePositiveRateBucket {
+  n: number;
+  n_false_positive: number;
+  rate: number | null;
+}
+
+export interface FalsePositiveRate {
+  overall: FalsePositiveRateBucket;
+  by_reason: Record<string, FalsePositiveRateBucket>;
 }
 
 export interface ConsistencyMetrics {
@@ -224,10 +242,31 @@ export async function triggerManualAudit(sampleSize?: number): Promise<ManualAud
 }
 
 /** Card C4.2 — "Mark reviewed" on a flagged session, keyed by its audit row id
- * (ConsistencyRun primary key). Closes the human-review loop. */
-export async function reviewAuditSession(id: string): Promise<void> {
-  const res = await apiFetch(`/api/v1/research/audit-sessions/${id}/review`, { method: "POST" });
+ * (ConsistencyRun primary key). Closes the human-review loop.
+ *
+ * Card C5.3 — `verdict` is optional but is the entire point of this pass:
+ * without it a reviewed row carries no ground truth on whether the flag was
+ * actually correct, and the false-positive rate below has nothing to compute
+ * from. Omit only for a plain "seen it, moving on" with no judgment call. */
+export async function reviewAuditSession(
+  id: string,
+  verdict?: "true_positive" | "false_positive",
+): Promise<void> {
+  const res = await apiFetch(`/api/v1/research/audit-sessions/${id}/review`, {
+    method: "POST",
+    body: JSON.stringify(verdict ? { verdict } : {}),
+  });
   if (!res.ok) throw new Error(`reviewAuditSession failed: ${res.status}`);
+}
+
+/** Card C5.3 — the measured false-positive rate of the manual-audit flag
+ * rule, from real reviewer verdicts only. `null` rates mean "no data yet",
+ * not "clean" — see {@link FalsePositiveRateBucket}. */
+export async function fetchFalsePositiveRate(personaId?: string): Promise<FalsePositiveRate> {
+  const qs = personaId ? `?persona_id=${encodeURIComponent(personaId)}` : "";
+  const res = await apiFetch(`/api/v1/research/audit-sessions/false-positive-rate${qs}`);
+  if (!res.ok) throw new Error(`fetchFalsePositiveRate failed: ${res.status}`);
+  return res.json();
 }
 
 // ── Personas (persona-prompt-service) ───────────────────────────────────────

@@ -44,6 +44,7 @@ from sqlalchemy.orm import Session, aliased
 from .config import get_settings
 from .consistency_job import run_consistency_job
 from .db.session import engine, get_db
+from .drift import compute_false_positive_rate
 from .events import start_consumer_thread
 from .models import (
     ArmAssignment,
@@ -51,6 +52,7 @@ from .models import (
     ConsistencyRun,
     DriftAlert,
     ReviewStatus,
+    ReviewVerdict,
     SessionMetric,
     SurveyScore,
 )
@@ -92,6 +94,7 @@ _CONSISTENCY_ADDED_COLUMNS: tuple[tuple[str, str], ...] = (
     ("review_status", "VARCHAR(20)"),
     ("review_reason", "VARCHAR(32)"),
     ("reviewed_at", "TIMESTAMP WITH TIME ZONE"),
+    ("review_verdict", "VARCHAR(20)"),
 )
 
 
@@ -535,6 +538,7 @@ def _audit_session_dict(r: ConsistencyRun) -> dict:
         "aggregate": r.aggregate,
         "review_status": r.review_status,
         "review_reason": r.review_reason,
+        "review_verdict": r.review_verdict,
         "reviewed_at": r.reviewed_at.isoformat() if r.reviewed_at else None,
         "scored_at": r.scored_at.isoformat() if r.scored_at else None,
     }
@@ -612,9 +616,23 @@ def trigger_manual_audit(
     return {"run": summary, "sessions": [_audit_session_dict(r) for r in rows]}
 
 
+class ReviewIn(BaseModel):
+    """Optional payload for "Mark reviewed" (card C5.3).
+
+    ``verdict`` is optional and defaults to absent, not a guess: a reviewer who
+    only clicks "mark reviewed" without judging the flag records no verdict,
+    and that must stay distinguishable from an explicit ``true_positive`` —
+    the false-positive-rate computation excludes verdict-less rows rather than
+    treating a missing verdict as either outcome.
+    """
+
+    verdict: ReviewVerdict | None = None
+
+
 @app.post("/api/v1/research/audit-sessions/{audit_id}/review", tags=["research-console"])
 def review_audit_session(
     audit_id: str,
+    body: ReviewIn = ReviewIn(),
     db: Session = Depends(get_db),
     _admin: None = Depends(_require_admin),
 ) -> dict:
@@ -625,6 +643,11 @@ def review_audit_session(
     runs), sets ``review_status`` to 'reviewed' and stamps ``reviewed_at`` while
     preserving ``review_reason`` (why it was flagged stays on the record). 404 if
     the id is unknown.
+
+    Card C5.3 adds an optional ``verdict``: whether the reviewer judged the flag
+    a genuine issue (``true_positive``) or a false alarm (``false_positive``).
+    This is the ground truth :func:`app.drift.compute_false_positive_rate` needs
+    — without it, "false-positive rate" has no real data to measure.
     """
     run = db.query(ConsistencyRun).filter(ConsistencyRun.id == audit_id).first()
     if run is None:
@@ -632,14 +655,34 @@ def review_audit_session(
 
     run.review_status = ReviewStatus.reviewed.value
     run.reviewed_at = datetime.now(UTC)
+    if body.verdict is not None:
+        run.review_verdict = body.verdict.value
     db.commit()
     db.refresh(run)
     return {
         "id": run.id,
         "review_status": run.review_status,
         "review_reason": run.review_reason,
+        "review_verdict": run.review_verdict,
         "reviewed_at": run.reviewed_at.isoformat() if run.reviewed_at else None,
     }
+
+
+@app.get("/api/v1/research/audit-sessions/false-positive-rate", tags=["research-console"])
+def get_false_positive_rate(
+    persona_id: str | None = Query(None),
+    db: Session = Depends(get_db),
+    _admin: None = Depends(_require_admin),
+) -> dict:
+    """Measured false-positive rate of the manual-audit flag rule (card C5.3).
+
+    Ground truth only — see :func:`app.drift.compute_false_positive_rate`.
+    ``overall.rate`` and each ``by_reason[...].rate`` are ``null`` until at
+    least one reviewer has recorded a verdict for that bucket; that is the
+    honest state before the pilot has accumulated reviewed sessions; callers
+    (the Research Console tuning panel) must not read a null rate as 0%.
+    """
+    return compute_false_positive_rate(db, persona_id=persona_id)
 
 
 @app.get("/api/v1/research/drift-alerts", tags=["research-console"])

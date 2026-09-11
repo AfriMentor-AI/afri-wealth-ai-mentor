@@ -21,7 +21,7 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.metrics.schemas import Dialogue, Speaker
-from app.models.consistency_run import ConsistencyRun
+from app.models.consistency_run import ConsistencyRun, ReviewVerdict
 from app.models.drift_alert import DriftAlert
 
 PROMPT_CONTEXT_MAX_LEN = 240
@@ -210,3 +210,54 @@ def evaluate_drift_and_alert(
     if alerts:
         db.commit()
     return alerts
+
+
+def _rate_group(rows: list[str | None]) -> dict:
+    """``{n, n_false_positive, rate}`` for one bucket of review verdicts.
+
+    ``rate`` is ``None`` on an empty bucket rather than ``0.0`` — no reviewed
+    sessions is a different fact than "zero were false positives", and
+    collapsing the two would make a threshold that hasn't been exercised yet
+    look identical to one that's been validated clean.
+    """
+    n = len(rows)
+    n_false_positive = sum(1 for v in rows if v == ReviewVerdict.false_positive.value)
+    return {
+        "n": n,
+        "n_false_positive": n_false_positive,
+        "rate": round(n_false_positive / n, 4) if n else None,
+    }
+
+
+def compute_false_positive_rate(db: Session, persona_id: str | None = None) -> dict:
+    """Measured false-positive rate of the manual-audit flag rule (card C5.3).
+
+    Ground truth comes only from sessions a human has actually reviewed AND
+    given a verdict on (``review_status='reviewed'`` and ``review_verdict`` set
+    via the ``/review`` endpoint) — a flagged-but-not-yet-reviewed session, or a
+    reviewed one where the reviewer skipped the verdict, contributes nothing,
+    since there is no ground truth to score it against.
+
+    Broken down by ``review_reason`` (``below_floor`` / ``drift`` /
+    ``below_floor+drift``) as well as overall, because the floor and the drift
+    threshold are two independently-tunable knobs
+    (``consistency_review_floor`` / ``drift_threshold_pct``) — an overall rate
+    alone can't say which one is generating the false positives.
+    """
+    query = db.query(ConsistencyRun.review_reason, ConsistencyRun.review_verdict).filter(
+        ConsistencyRun.review_status == "reviewed",
+        ConsistencyRun.review_verdict.isnot(None),
+    )
+    if persona_id is not None:
+        query = query.filter(ConsistencyRun.persona_id == persona_id)
+
+    by_reason: dict[str, list[str | None]] = {}
+    all_verdicts: list[str | None] = []
+    for reason, verdict in query.all():
+        all_verdicts.append(verdict)
+        by_reason.setdefault(reason, []).append(verdict)
+
+    return {
+        "overall": _rate_group(all_verdicts),
+        "by_reason": {reason: _rate_group(verdicts) for reason, verdicts in by_reason.items()},
+    }

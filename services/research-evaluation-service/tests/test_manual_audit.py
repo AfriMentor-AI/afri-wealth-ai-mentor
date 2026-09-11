@@ -45,6 +45,7 @@ def add_run(
     consistency_delta_pct=None,
     review_status=None,
     review_reason=None,
+    review_verdict=None,
     reviewed_at=None,
     scored_at=None,
 ) -> str:
@@ -65,6 +66,7 @@ def add_run(
         consistency_delta_pct=consistency_delta_pct,
         review_status=review_status,
         review_reason=review_reason,
+        review_verdict=review_verdict,
         reviewed_at=reviewed_at,
         scored_at=scored_at or datetime.now(UTC),
     ))
@@ -371,7 +373,8 @@ def test_audit_session_rows_carry_review_keys():
         client.app.dependency_overrides.clear()
 
     row = resp.json()["sessions"][0]
-    for key in ("id", "session_id", "review_status", "review_reason", "reviewed_at"):
+    keys = ("id", "session_id", "review_status", "review_reason", "review_verdict", "reviewed_at")
+    for key in keys:
         assert key in row
     assert row["review_status"] == "pending_review"
     assert row["review_reason"] == "below_floor"
@@ -428,6 +431,67 @@ def test_review_unknown_id_returns_404():
     assert resp.status_code == 404
 
 
+def test_review_accepts_and_persists_verdict():
+    engine = make_engine()
+    Session = sessionmaker(bind=engine)
+    audit_id = add_run(Session, conversation_id="conv-x",
+                       review_status="pending_review", review_reason="drift")
+
+    client = _client_with_db(engine)
+    try:
+        resp = client.post(
+            f"/api/v1/research/audit-sessions/{audit_id}/review",
+            headers=ADMIN_HEADERS, json={"verdict": "false_positive"},
+        )
+    finally:
+        client.app.dependency_overrides.clear()
+
+    assert resp.status_code == 200
+    assert resp.json()["review_verdict"] == "false_positive"
+
+    db = Session()
+    persisted = db.query(ConsistencyRun).filter_by(id=audit_id).first()
+    assert persisted.review_verdict == "false_positive"
+    db.close()
+
+
+def test_review_without_verdict_leaves_it_null():
+    """Backward compatible: a plain 'mark reviewed' (no body) must not fabricate
+    a verdict — null stays distinguishable from an explicit true_positive."""
+    engine = make_engine()
+    Session = sessionmaker(bind=engine)
+    audit_id = add_run(Session, conversation_id="conv-x",
+                       review_status="pending_review", review_reason="below_floor")
+
+    client = _client_with_db(engine)
+    try:
+        resp = client.post(
+            f"/api/v1/research/audit-sessions/{audit_id}/review", headers=ADMIN_HEADERS
+        )
+    finally:
+        client.app.dependency_overrides.clear()
+
+    assert resp.status_code == 200
+    assert resp.json()["review_verdict"] is None
+
+
+def test_review_rejects_invalid_verdict():
+    engine = make_engine()
+    Session = sessionmaker(bind=engine)
+    audit_id = add_run(Session, conversation_id="conv-x", review_status="pending_review")
+
+    client = _client_with_db(engine)
+    try:
+        resp = client.post(
+            f"/api/v1/research/audit-sessions/{audit_id}/review",
+            headers=ADMIN_HEADERS, json={"verdict": "maybe"},
+        )
+    finally:
+        client.app.dependency_overrides.clear()
+
+    assert resp.status_code == 422
+
+
 def test_review_keys_by_pk_not_conversation_id():
     """F10: the same conversation is re-scored across runs, so conversation_id is
     not unique. Reviewing one row's PK must not touch the sibling row that shares
@@ -452,3 +516,112 @@ def test_review_keys_by_pk_not_conversation_id():
     assert db.query(ConsistencyRun).filter_by(id=id1).first().review_status == "reviewed"
     assert db.query(ConsistencyRun).filter_by(id=id2).first().review_status == "pending_review"
     db.close()
+
+
+# ── compute_false_positive_rate (card C5.3) ────────────────────────────────────
+
+def test_fp_rate_no_reviewed_verdicts_returns_null_not_zero():
+    """No ground truth yet must read as 'unknown', never as a clean 0% rate."""
+    from app.drift import compute_false_positive_rate
+
+    engine = make_engine()
+    Session = sessionmaker(bind=engine)
+    add_run(Session, review_status="pending_review", review_reason="below_floor")  # not reviewed
+    add_run(Session, review_status="reviewed", review_reason="drift")  # reviewed, no verdict
+
+    db = Session()
+    result = compute_false_positive_rate(db)
+    db.close()
+
+    assert result["overall"] == {"n": 0, "n_false_positive": 0, "rate": None}
+    assert result["by_reason"] == {}
+
+
+def test_fp_rate_excludes_unreviewed_and_verdictless_rows():
+    from app.drift import compute_false_positive_rate
+
+    engine = make_engine()
+    Session = sessionmaker(bind=engine)
+    add_run(Session, review_status="pending_review", review_reason="below_floor",
+            review_verdict=None)
+    add_run(Session, review_status="reviewed", review_reason="below_floor",
+            review_verdict=None)
+    add_run(Session, review_status="reviewed", review_reason="below_floor",
+            review_verdict="true_positive")
+
+    db = Session()
+    result = compute_false_positive_rate(db)
+    db.close()
+
+    assert result["overall"]["n"] == 1
+    assert result["overall"]["rate"] == 0.0
+
+
+def test_fp_rate_overall_and_by_reason_breakdown():
+    from app.drift import compute_false_positive_rate
+
+    engine = make_engine()
+    Session = sessionmaker(bind=engine)
+    # below_floor: 1 true_positive, 1 false_positive -> 0.5
+    add_run(Session, review_status="reviewed", review_reason="below_floor",
+            review_verdict="true_positive")
+    add_run(Session, review_status="reviewed", review_reason="below_floor",
+            review_verdict="false_positive")
+    # drift: 3 false_positive -> 1.0 (the noisy arm, worth flagging for tuning)
+    for _ in range(3):
+        add_run(Session, review_status="reviewed", review_reason="drift",
+                review_verdict="false_positive")
+
+    db = Session()
+    result = compute_false_positive_rate(db)
+    db.close()
+
+    assert result["overall"] == {"n": 5, "n_false_positive": 4, "rate": 0.8}
+    assert result["by_reason"]["below_floor"] == {"n": 2, "n_false_positive": 1, "rate": 0.5}
+    assert result["by_reason"]["drift"] == {"n": 3, "n_false_positive": 3, "rate": 1.0}
+
+
+def test_fp_rate_filters_by_persona():
+    from app.drift import compute_false_positive_rate
+
+    engine = make_engine()
+    Session = sessionmaker(bind=engine)
+    add_run(Session, persona_id="chioma", review_status="reviewed",
+            review_reason="drift", review_verdict="false_positive")
+    add_run(Session, persona_id="other-persona", review_status="reviewed",
+            review_reason="drift", review_verdict="true_positive")
+
+    db = Session()
+    result = compute_false_positive_rate(db, persona_id="chioma")
+    db.close()
+
+    assert result["overall"] == {"n": 1, "n_false_positive": 1, "rate": 1.0}
+
+
+def test_fp_rate_endpoint_requires_admin():
+    engine = make_engine()
+    client = _client_with_db(engine)
+    try:
+        resp = client.get("/api/v1/research/audit-sessions/false-positive-rate")
+    finally:
+        client.app.dependency_overrides.clear()
+    assert resp.status_code == 403
+
+
+def test_fp_rate_endpoint_returns_computed_result():
+    engine = make_engine()
+    Session = sessionmaker(bind=engine)
+    add_run(Session, review_status="reviewed", review_reason="below_floor",
+            review_verdict="false_positive")
+
+    client = _client_with_db(engine)
+    try:
+        resp = client.get(
+            "/api/v1/research/audit-sessions/false-positive-rate", headers=ADMIN_HEADERS
+        )
+    finally:
+        client.app.dependency_overrides.clear()
+
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["overall"] == {"n": 1, "n_false_positive": 1, "rate": 1.0}
