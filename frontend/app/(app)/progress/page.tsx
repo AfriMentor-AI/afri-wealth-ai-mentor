@@ -197,6 +197,23 @@ export default function ProgressBoardPage() {
     const endOfCurrentWeek = new Date(now);
     endOfCurrentWeek.setDate(now.getDate() + (6 - currentDayOfWeek));
 
+    // Ensure active streak days reflect directly on the heatmap
+    if (summary.streak && summary.streak.currentStreakDays > 0) {
+      const streakDays = summary.streak.currentStreakDays;
+      const todayIso = now.toISOString().split("T")[0];
+      const hasToday = (activityMap.get(todayIso) ?? 0) > 0;
+      const startOffset = hasToday ? 0 : 1;
+
+      for (let i = 0; i < streakDays; i++) {
+        const streakDate = new Date(now);
+        streakDate.setDate(now.getDate() - (startOffset + i));
+        const iso = streakDate.toISOString().split("T")[0];
+        if (!activityMap.has(iso) || (activityMap.get(iso) ?? 0) === 0) {
+          activityMap.set(iso, 1);
+        }
+      }
+    }
+
     const startDate = new Date(endOfCurrentWeek);
     startDate.setDate(startDate.getDate() - (WEEKS_COUNT * 7 - 1));
 
