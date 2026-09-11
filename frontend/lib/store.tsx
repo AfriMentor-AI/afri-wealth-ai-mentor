@@ -23,6 +23,7 @@ interface AppState {
   chatSessions: ChatSessionSummary[];
   activeGoalId: string | null; // New: Tracks the goal the user is currently viewing/acting on
   feedbackModalOpen: boolean;
+  newGoalModalOpen: boolean;
   dailyActionDone: boolean;
   libraryFavorites: Set<string>;
   libraryFilter: string | null;
@@ -42,6 +43,8 @@ type Action =
   | { type: "SET_ACTIVE_GOAL_ID"; goalId: string | null } // New: Set the currently active goal
   | { type: "OPEN_FEEDBACK_MODAL" }
   | { type: "CLOSE_FEEDBACK_MODAL" }
+  | { type: "OPEN_NEW_GOAL_MODAL" }
+  | { type: "CLOSE_NEW_GOAL_MODAL" }
   | { type: "MARK_DAILY_ACTION_DONE" }
   | { type: "TOGGLE_LIBRARY_FAVORITE"; id: string }
   | { type: "SET_LIBRARY_FAVORITES"; ids: string[] }
@@ -57,6 +60,7 @@ const initialState: AppState = {
   chatSessions: [],
   activeGoalId: null, // Initialize new state property
   feedbackModalOpen: false,
+  newGoalModalOpen: false,
   dailyActionDone: false,
   libraryFavorites: new Set(),
   libraryFilter: null,
@@ -102,6 +106,10 @@ function reducer(state: AppState, action: Action): AppState {
       return { ...state, feedbackModalOpen: true };
     case "CLOSE_FEEDBACK_MODAL":
       return { ...state, feedbackModalOpen: false };
+    case "OPEN_NEW_GOAL_MODAL":
+      return { ...state, newGoalModalOpen: true };
+    case "CLOSE_NEW_GOAL_MODAL":
+      return { ...state, newGoalModalOpen: false };
     case "MARK_DAILY_ACTION_DONE":
       return { ...state, dailyActionDone: true };
     case "TOGGLE_LIBRARY_FAVORITE": {

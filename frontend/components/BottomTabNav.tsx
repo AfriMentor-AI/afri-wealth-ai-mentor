@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Icon } from "./Icon";
+import { useAppDispatch } from "@/lib/store";
 
 const tabs = [
   { href: "/chat", label: "Chat", icon: "chat_bubble" },
@@ -17,6 +18,7 @@ const tabs = [
 // overlay that content elsewhere has to guess padding to clear.
 export function BottomTabNav() {
   const pathname = usePathname();
+  const dispatch = useAppDispatch();
 
   return (
     <nav
@@ -46,13 +48,14 @@ export function BottomTabNav() {
           </Link>
         );
       })}
-      <Link
-        href="/goals/action"
-        className="mt-auto hidden items-center justify-center gap-sm rounded-full bg-primary px-lg py-md font-title-md text-title-md text-on-primary transition-opacity hover:opacity-90 lg:flex"
+      <button
+        type="button"
+        onClick={() => dispatch({ type: "OPEN_NEW_GOAL_MODAL" })}
+        className="mt-auto hidden items-center justify-center gap-sm rounded-full bg-primary px-lg py-md font-title-md text-title-md text-on-primary transition-opacity hover:opacity-90 active:scale-95 lg:flex"
       >
         <Icon name="add" size={20} />
         New Goal
-      </Link>
+      </button>
     </nav>
   );
 }

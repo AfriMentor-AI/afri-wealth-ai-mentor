@@ -9,6 +9,7 @@ import type { Goal, Milestone } from "@/lib/types";
 import { ProgressRing } from "@/components/ui/ProgressRing";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { Button } from "@/components/ui/Button";
+import { useAppDispatch } from "@/lib/store";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -260,6 +261,7 @@ function GoalRoadmapPanel({
 
 export default function GoalsOverviewPage() {
   const router = useRouter();
+  const dispatch = useAppDispatch();
   const [goals, setGoals] = useState<Goal[] | null>(null);
   const [milestonesByGoal, setMilestonesByGoal] = useState<
     Record<string, Milestone[]>
@@ -287,8 +289,14 @@ export default function GoalsOverviewPage() {
 
   useEffect(() => {
     loadGoals();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    const handleGoalCreated = () => {
+      loadGoals();
+    };
+    window.addEventListener("goal-created", handleGoalCreated);
+    return () => {
+      window.removeEventListener("goal-created", handleGoalCreated);
+    };
+  }, [loadGoals]);
 
   async function handleCreateGoal() {
     const title = newGoalTitle.trim();
@@ -365,6 +373,14 @@ export default function GoalsOverviewPage() {
                     Start your first goal and CHIOMA will help you break it into
                     milestones.
                   </p>
+                  <button
+                    type="button"
+                    onClick={() => dispatch({ type: "OPEN_NEW_GOAL_MODAL" })}
+                    className="mt-md inline-flex items-center gap-xs rounded-full bg-primary px-lg py-sm font-title-md text-title-md text-on-primary transition-opacity hover:opacity-90 active:scale-95"
+                  >
+                    <Icon name="add" size={18} />
+                    Create Your First Goal
+                  </button>
                 </div>
               </>
             ) : (
@@ -463,23 +479,22 @@ export default function GoalsOverviewPage() {
                 })}
 
                 {/* "Define New Purpose" dashed card */}
-                {!showCreateForm && (
-                  <button
-                    onClick={() => setShowCreateForm(true)}
-                    className="group flex flex-col items-center justify-center gap-md rounded-xl border-2 border-dashed border-outline-variant p-xl transition-all hover:border-primary"
-                  >
-                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-surface-container transition-colors group-hover:bg-primary-fixed">
-                      <Icon
-                        name="add_circle"
-                        size={24}
-                        className="text-on-surface-variant group-hover:text-primary"
-                      />
-                    </div>
-                    <span className="font-title-md text-title-md text-on-surface-variant">
-                      Define New Purpose
-                    </span>
-                  </button>
-                )}
+                <button
+                  type="button"
+                  onClick={() => dispatch({ type: "OPEN_NEW_GOAL_MODAL" })}
+                  className="group flex flex-col items-center justify-center gap-md rounded-xl border-2 border-dashed border-outline-variant p-xl transition-all hover:border-primary"
+                >
+                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-surface-container transition-colors group-hover:bg-primary-fixed">
+                    <Icon
+                      name="add_circle"
+                      size={24}
+                      className="text-on-surface-variant group-hover:text-primary"
+                    />
+                  </div>
+                  <span className="font-title-md text-title-md text-on-surface-variant">
+                    Define New Purpose
+                  </span>
+                </button>
               </>
             )}
           </div>
@@ -564,11 +579,11 @@ export default function GoalsOverviewPage() {
       )}
 
       {/* ------------------------------------------------------------------ */}
-      {/* FAB — new goal (mobile, shown when no form open)                    */}
+      {/* FAB — new goal (mobile)                                             */}
       {/* ------------------------------------------------------------------ */}
-      {!showCreateForm && goals !== null && goals.length > 0 && (
+      {goals !== null && (
         <button
-          onClick={() => setShowCreateForm(true)}
+          onClick={() => dispatch({ type: "OPEN_NEW_GOAL_MODAL" })}
           aria-label="New goal"
           className="fixed bottom-lg right-lg z-30 flex h-14 w-14 items-center justify-center rounded-full bg-primary text-on-primary shadow-lg transition-all hover:scale-105 active:scale-95 lg:hidden"
         >

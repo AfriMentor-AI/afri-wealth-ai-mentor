@@ -7,6 +7,7 @@ import { BottomTabNav } from "@/components/BottomTabNav";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { NotificationPopover } from "@/components/NotificationPopover";
 import { FeedbackSurveyModal } from "@/components/FeedbackSurveyModal";
+import { CreateGoalModal } from "@/components/CreateGoalModal";
 import { useAppDispatch, useAppState } from "@/lib/store";
 import { fetchChatMessages, fetchProfile } from "@/lib/api";
 import { isIntakeCompleted } from "@/lib/session";
@@ -68,6 +69,7 @@ export default function AppShellLayout({ children }: { children: React.ReactNode
       </div>
       <BottomTabNav />
       <FeedbackSurveyModal />
+      <CreateGoalModal />
     </div>
   );
 }
