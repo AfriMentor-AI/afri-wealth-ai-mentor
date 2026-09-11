@@ -23,6 +23,19 @@ class ReviewStatus(str, Enum):
     reviewed = "reviewed"
 
 
+class ReviewVerdict(str, Enum):
+    """Ground truth a reviewer records when closing a flagged session (card C5.3).
+
+    Distinct from ``ReviewStatus``: status says whether the human-review step
+    happened at all, verdict says what they concluded once it did — whether the
+    flag rule (:func:`app.drift.evaluate_review_flag`) was actually right to
+    fire. Without this, "false-positive rate" has no data to compute from; every
+    prior review only ever recorded that a human looked, never what they found.
+    """
+    true_positive = "true_positive"
+    false_positive = "false_positive"
+
+
 class ConsistencyRun(Base):
     __tablename__ = "consistency_runs"
 
@@ -69,6 +82,11 @@ class ConsistencyRun(Base):
     review_status: Mapped[str | None] = mapped_column(String(20), nullable=True)
     review_reason: Mapped[str | None] = mapped_column(String(32), nullable=True)
     reviewed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    # Card C5.3 — the reviewer's verdict on whether the flag was correct. Null
+    # until a reviewer records one; a 'reviewed' row can still have a null
+    # verdict (older reviews, or a reviewer who skipped it), which the
+    # false-positive-rate computation must exclude rather than guess at.
+    review_verdict: Mapped[str | None] = mapped_column(String(20), nullable=True)
     # Indexed: the Sprint-4 dashboard reads the most recent run first.
     scored_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
