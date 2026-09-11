@@ -1,0 +1,17 @@
+\begin{table}[ht]
+\centering
+\caption{Blinded human evaluation, 2 independent raters, $N=20$ samples (5 per condition, 10 ratings per condition). Rubric dimensions are scored $[0,1]$, mirroring the automatic judge; Overall Quality is a holistic 1--5 Likert item the automatic judge does not score (``would you be comfortable if this were the actual advice given to a real entrepreneur?''). Raters did not know which condition produced any given response.}
+\label{tab:human-eval}
+\small
+\begin{tabular}{lcccccc}
+\toprule
+Condition & Persona & Cultural & Anti-Dep. & Financial & Urgency & Overall Quality \\
+& Adherence & Fluency & & Accuracy & & (1--5) \\
+\midrule
+C1: Baseline Prompting & 0.205 & 0.260 & 0.295 & 0.265 & 0.075 & 2.10 \\
+C2: Supervised Fine-Tuning & 0.435 & 0.370 & 0.400 & 0.290 & 0.475 & 3.00 \\
+C3: Contrastive Learning (DPO) & 0.435 & 0.370 & 0.405 & 0.295 & 0.470 & 3.00 \\
+C4: RLHF / Preference Opt. & \textbf{0.525} & \textbf{0.435} & \textbf{0.495} & \textbf{0.355} & \textbf{0.625} & \textbf{3.30} \\
+\bottomrule
+\end{tabular}
+\end{table}
