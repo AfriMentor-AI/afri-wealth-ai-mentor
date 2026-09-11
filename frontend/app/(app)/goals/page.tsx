@@ -9,7 +9,6 @@ import type { Goal, Milestone } from "@/lib/types";
 import { ProgressRing } from "@/components/ui/ProgressRing";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { Button } from "@/components/ui/Button";
-import { useAppDispatch } from "@/lib/store";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -80,11 +79,9 @@ function ChipBadge({
 function MilestoneNode({
   milestone,
   isLast,
-  onAskAi,
 }: {
   milestone: Milestone;
   isLast: boolean;
-  onAskAi?: (milestone: Milestone) => void;
 }) {
   const statusStyles = {
     done: {
@@ -156,11 +153,7 @@ function MilestoneNode({
           </span>
         </div>
         {milestone.status === "blocked" && (
-          <button
-            type="button"
-            onClick={() => onAskAi?.(milestone)}
-            className="mt-sm flex items-center gap-xs font-label-sm text-label-sm text-on-error-container underline transition-opacity hover:opacity-80 active:scale-95"
-          >
+          <button className="mt-sm flex items-center gap-xs font-label-sm text-label-sm text-on-error-container underline">
             <Icon name="auto_fix" size={14} />
             Ask AI for solution
           </button>
@@ -175,15 +168,13 @@ function GoalRoadmapPanel({
   goal,
   milestones,
   onClose,
-  onAskAi,
 }: {
   goal: Goal;
   milestones: Milestone[] | undefined;
   onClose: () => void;
-  onAskAi?: (goal: Goal, milestone: Milestone) => void;
 }) {
   const nextSuggestedStep = milestones?.find(
-    (m) => m.status === "blocked" || m.status === "in_progress"
+    (m) => m.status === "in_progress" || m.status === "blocked"
   );
 
   return (
@@ -226,7 +217,6 @@ function GoalRoadmapPanel({
                 key={m.id}
                 milestone={m}
                 isLast={i === milestones.length - 1}
-                onAskAi={(milestone) => onAskAi?.(goal, milestone)}
               />
             ))}
           </div>
@@ -242,29 +232,14 @@ function GoalRoadmapPanel({
           <Icon name="lightbulb" className="text-primary" size={20} />
         </div>
         <div className="rounded-lg border border-primary-fixed-dim bg-primary-fixed p-md">
-          {nextSuggestedStep?.status === "blocked" ? (
-            <div className="flex flex-col gap-xs">
-              <p className="font-label-sm text-label-sm text-error font-medium">
-                &ldquo;Milestone &lsquo;{nextSuggestedStep.title}&rsquo; is blocked. Ask CHIOMA for advice or an alternative approach.&rdquo;
-              </p>
-              {onAskAi && (
-                <button
-                  type="button"
-                  onClick={() => onAskAi(goal, nextSuggestedStep)}
-                  className="mt-xs inline-flex items-center gap-1 text-xs font-bold text-primary underline"
-                >
-                  <Icon name="chat" size={14} /> Troubleshoot in Chat
-                </button>
-              )}
-            </div>
-          ) : nextSuggestedStep ? (
+          {nextSuggestedStep ? (
             <p className="font-label-sm text-label-sm text-on-primary-fixed-variant">
               &ldquo;Focus on completing &lsquo;{nextSuggestedStep.title}&rsquo; to keep
               your goal on track.&rdquo;
             </p>
           ) : (
             <p className="font-label-sm text-label-sm text-on-primary-fixed-variant">
-              &ldquo;Great progress! All milestones active or complete. Keep the momentum going.&rdquo;
+              &ldquo;Great progress! Keep the momentum going.&rdquo;
             </p>
           )}
         </div>
@@ -285,7 +260,6 @@ function GoalRoadmapPanel({
 
 export default function GoalsOverviewPage() {
   const router = useRouter();
-  const dispatch = useAppDispatch();
   const [goals, setGoals] = useState<Goal[] | null>(null);
   const [milestonesByGoal, setMilestonesByGoal] = useState<
     Record<string, Milestone[]>
@@ -295,17 +269,6 @@ export default function GoalsOverviewPage() {
   const [newGoalTitle, setNewGoalTitle] = useState("");
   const [creating, setCreating] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
-
-  const handleAskAiForMilestone = useCallback(
-    (g: Goal, m: Milestone) => {
-      dispatch({
-        type: "SET_CHAT_DRAFT",
-        draft: `I need guidance on my goal "${g.title}". The milestone "${m.title}" is currently blocked. What practical actions or alternatives do you recommend to resolve this?`,
-      });
-      router.push("/chat");
-    },
-    [dispatch, router]
-  );
 
   const loadGoals = useCallback(async () => {
     const fetchedGoals = await fetchGoals();
@@ -597,7 +560,6 @@ export default function GoalsOverviewPage() {
           goal={activeGoal}
           milestones={activeMilestones}
           onClose={() => setActiveGoalId(null)}
-          onAskAi={handleAskAiForMilestone}
         />
       )}
 

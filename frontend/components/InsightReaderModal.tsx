@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { Icon } from "@/components/Icon";
 import type { InsightItem } from "@/lib/types";
 import { playTextToSpeech, stopCurrentSpeech } from "@/lib/voice";
-import { recordAction, upsertInsightProgress } from "@/lib/api";
+import { recordAction } from "@/lib/api";
 import { useAppDispatch, useAppState } from "@/lib/store";
 
 interface InsightReaderModalProps {
@@ -256,35 +256,30 @@ export function InsightReaderModal({
 
   if (!item) return null;
 
-  // Resolve curriculum data, item content, or tailored fallback
-  const baseLesson = LESSON_CURRICULUM[item.title];
-  const audioNarrationText =
-    item.audioNarration ||
-    baseLesson?.audioNarration ||
-    `${item.title}. ${item.summary}. Take your time to study these key principles and apply them to your daily business decisions.`;
-
-  const lesson: LessonContent = baseLesson ?? {
-    headline: item.title,
-    mentorTip:
-      "Every small action you take to structure your enterprise adds up to substantial long-term independence. Focus on cash discipline today.",
-    audioNarration: audioNarrationText,
-    overview: item.content || item.summary,
-    practicalSteps: [
-      {
-        title: "1. Evaluate your current operational reality",
-        detail: `Review how ${item.title.toLowerCase()} impacts your daily sales, inventory, or operational costs.`,
-      },
-      {
-        title: "2. Implement one concrete test for 7 days",
-        detail: `Pick a single action from this ${item.category.toLowerCase()} insight and measure the financial result before scaling it.`,
-      },
-      {
-        title: "3. Build trust through consistent records",
-        detail: "Keep clean daily records of cash flow, inventory movement, and customer credit to stay resilient.",
-      },
-    ],
-    keyTakeaway: item.summary,
-  };
+  // Resolve curriculum data or fallback to item summary
+  const lesson =
+    LESSON_CURRICULUM[item.title] ?? {
+      headline: item.title,
+      mentorTip:
+        "Every small action you take to structure your enterprise adds up to substantial long-term independence.",
+      audioNarration: `${item.title}. ${item.summary}. Take your time to study the key principles and apply them to your daily business decisions.`,
+      overview: item.summary,
+      practicalSteps: [
+        {
+          title: "1. Review your current baseline",
+          detail: "Take stock of where your business currently stands on this topic.",
+        },
+        {
+          title: "2. Implement one small change today",
+          detail: "Pick one concrete action from this insight and test it for 7 days.",
+        },
+        {
+          title: "3. Track your cash flow results",
+          detail: "Measure the outcome and discuss your findings with your mentor.",
+        },
+      ],
+      keyTakeaway: item.summary,
+    };
 
   const personaName = selectedPersona?.name.toLowerCase() === "kwame" ? "kwame" : "chioma";
   const personaDisplay = personaName === "kwame" ? "Kwame (Accra, GH)" : "Chioma (Lagos, NG)";
@@ -326,7 +321,6 @@ export function InsightReaderModal({
         setElapsedSeconds(audioDurationSeconds);
         setPlayProgress(100);
         if (progressIntervalRef.current) clearInterval(progressIntervalRef.current);
-        upsertInsightProgress(item.id, audioDurationSeconds, true).catch(() => {});
       });
     } catch (err) {
       console.warn("Audio playback failed:", err);
@@ -347,7 +341,6 @@ export function InsightReaderModal({
         badgeUnlocked: newlyEarned,
       });
       onCompleted?.();
-      upsertInsightProgress(item.id, audioDurationSeconds, true).catch(() => {});
     } catch (err) {
       console.warn("Could not log insight completion:", err);
       setCompleted(true);

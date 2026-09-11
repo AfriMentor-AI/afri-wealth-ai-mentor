@@ -68,11 +68,7 @@ function InsightCard({
       className="group relative flex cursor-pointer flex-col overflow-hidden rounded-xl border border-outline-variant bg-surface-container transition-all duration-300 hover:border-primary hover:shadow-lg active:scale-[0.99]"
     >
       <div className="relative h-44 overflow-hidden">
-        <img
-          src={item.thumbnailUrl || art.image}
-          alt={item.title}
-          className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-        />
+        <img src={art.image} alt="" className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
         <span className="absolute left-md top-md inline-flex items-center gap-xs rounded-lg border border-primary/20 bg-surface/90 px-sm py-1 text-[10px] font-bold uppercase tracking-wider text-primary backdrop-blur-sm">
           <Icon name="verified" filled size={14} />
           {art.label}
@@ -121,14 +117,12 @@ function InsightCard({
 
 export default function InsightLibraryPage() {
   const router = useRouter();
-  const { libraryFavorites, profile } = useAppState();
+  const { libraryFavorites } = useAppState();
   const dispatch = useAppDispatch();
   const [insights, setInsights] = useState<InsightItem[] | null>(null);
   const [selectedItem, setSelectedItem] = useState<InsightItem | null>(null);
   const [activeFilter, setActiveFilter] = useState("Sector");
   const [search, setSearch] = useState("");
-  const [selectedSectors, setSelectedSectors] = useState<string[]>([]);
-  const [selectedTopic, setSelectedTopic] = useState<string | null>(null);
 
   const [ragResults, setRagResults] = useState<RagChunk[]>([]);
   const [isRagSearching, setIsRagSearching] = useState(false);
@@ -171,54 +165,10 @@ export default function InsightLibraryPage() {
     router.push("/chat");
   };
 
-  const toggleSector = (sector: string) => {
-    setSelectedSectors((prev) =>
-      prev.includes(sector) ? prev.filter((s) => s !== sector) : [...prev, sector]
-    );
-  };
-
-  const toggleTopic = (topic: string) => {
-    setSelectedTopic((prev) => (prev === topic ? null : topic));
-  };
-
-  const availableSectors = Array.from(
-    new Set((insights ?? []).map((i) => i.category))
-  ).filter(Boolean);
-  const displayedSectors =
-    availableSectors.length > 0
-      ? availableSectors
-      : ["Trade & Commerce", "Agriculture & Agri-tech", "Finance & Banking", "Energy & Climate", "Social Enterprise"];
-
-  const TOPIC_OPTIONS = ["Savings", "Pricing", "Cash Flow", "Trust & Credit", "Micro-loans"];
-
   const filtered = (insights ?? []).filter((item) => {
-    const term = search.toLowerCase();
-    if (
-      term &&
-      !item.title.toLowerCase().includes(term) &&
-      !item.summary.toLowerCase().includes(term) &&
-      !item.category.toLowerCase().includes(term)
-    ) {
-      return false;
-    }
+    if (search && !item.title.toLowerCase().includes(search.toLowerCase())) return false;
     if (activeFilter === "Audio") return item.isAudio;
     if (activeFilter === "Text") return !item.isAudio;
-    if (
-      selectedSectors.length > 0 &&
-      !selectedSectors.some((s) => item.category.toLowerCase().includes(s.toLowerCase()))
-    ) {
-      return false;
-    }
-    if (selectedTopic) {
-      const t = selectedTopic.toLowerCase();
-      if (
-        !item.title.toLowerCase().includes(t) &&
-        !item.summary.toLowerCase().includes(t) &&
-        !item.category.toLowerCase().includes(t)
-      ) {
-        return false;
-      }
-    }
     return true;
   });
   const curated = filtered.slice(0, 3);
@@ -265,63 +215,24 @@ export default function InsightLibraryPage() {
             </h2>
             <div className="space-y-lg">
               <div>
-                <div className="mb-sm flex items-center justify-between">
-                  <p className="font-label-sm text-[11px] uppercase tracking-widest text-on-surface-variant">Sector</p>
-                  {selectedSectors.length > 0 && (
-                    <button
-                      onClick={() => setSelectedSectors([])}
-                      className="text-[10px] font-bold text-primary hover:underline"
-                    >
-                      Clear ({selectedSectors.length})
-                    </button>
-                  )}
-                </div>
+                <p className="mb-sm font-label-sm text-[11px] uppercase tracking-widest text-on-surface-variant">Sector</p>
                 <div className="space-y-xs">
-                  {displayedSectors.map((sector) => {
-                    const checked = selectedSectors.includes(sector);
-                    return (
-                      <label key={sector} className="flex cursor-pointer items-center gap-md rounded-lg p-sm text-sm transition-colors hover:bg-surface-variant">
-                        <input
-                          type="checkbox"
-                          checked={checked}
-                          onChange={() => toggleSector(sector)}
-                          className="rounded border-outline text-primary focus:ring-primary"
-                        />
-                        {sector}
-                      </label>
-                    );
-                  })}
+                  {["Agriculture & Agri-tech", "Creative Economies", "Renewable Energy", "Social Enterprise"].map((sector, index) => (
+                    <label key={sector} className="flex cursor-pointer items-center gap-md rounded-lg p-sm text-sm transition-colors hover:bg-surface-variant">
+                      <input type="checkbox" defaultChecked={index === 0} className="rounded border-outline text-primary focus:ring-primary" />
+                      {sector}
+                    </label>
+                  ))}
                 </div>
               </div>
               <div>
-                <div className="mb-sm flex items-center justify-between">
-                  <p className="font-label-sm text-[11px] uppercase tracking-widest text-on-surface-variant">Topic</p>
-                  {selectedTopic && (
-                    <button
-                      onClick={() => setSelectedTopic(null)}
-                      className="text-[10px] font-bold text-primary hover:underline"
-                    >
-                      Reset
-                    </button>
-                  )}
-                </div>
+                <p className="mb-sm font-label-sm text-[11px] uppercase tracking-widest text-on-surface-variant">Topic</p>
                 <div className="flex flex-wrap gap-xs">
-                  {TOPIC_OPTIONS.map((topic) => {
-                    const isSelected = selectedTopic === topic;
-                    return (
-                      <button
-                        key={topic}
-                        onClick={() => toggleTopic(topic)}
-                        className={`rounded-full border px-md py-xs text-[11px] font-medium transition-colors ${
-                          isSelected
-                            ? "border-primary bg-primary text-on-primary shadow-sm"
-                            : "border-outline-variant hover:bg-primary-container hover:text-on-primary-container"
-                        }`}
-                      >
-                        {topic}
-                      </button>
-                    );
-                  })}
+                  {["Sustainability", "Community Trust", "Financial Literacy", "Leadership"].map((topic) => (
+                    <button key={topic} className="rounded-full border border-outline-variant px-md py-xs text-[11px] transition-colors hover:bg-primary-container hover:text-on-primary-container">
+                      {topic}
+                    </button>
+                  ))}
                 </div>
               </div>
               <div>
@@ -331,15 +242,7 @@ export default function InsightLibraryPage() {
                     ["Audio", "mic", "Audio"],
                     ["Text", "article", "Articles"],
                   ].map(([label, icon, text]) => (
-                    <button
-                      key={label}
-                      onClick={() => setActiveFilter((cur) => (cur === label ? "Sector" : label))}
-                      className={`flex flex-col items-center gap-xs rounded-xl border p-md text-[11px] transition-colors ${
-                        activeFilter === label
-                          ? "border-primary bg-primary-container/20 text-primary font-bold"
-                          : "border-outline-variant bg-surface hover:border-primary"
-                      }`}
-                    >
+                    <button key={label} onClick={() => setActiveFilter(label)} className="flex flex-col items-center gap-xs rounded-xl border border-outline-variant bg-surface p-md text-[11px] transition-colors hover:border-primary">
                       <Icon name={icon} className="text-primary" />
                       {text}
                     </button>
@@ -366,7 +269,7 @@ export default function InsightLibraryPage() {
 
           <section className="-mx-margin-mobile flex gap-sm overflow-x-auto px-margin-mobile py-xs lg:hidden">
             {FILTERS.map((f) => (
-              <button key={f.label} onClick={() => setActiveFilter((cur) => (cur === f.label ? "Sector" : f.label))} className={`flex items-center gap-xs whitespace-nowrap rounded-full px-md py-sm text-label-sm transition-colors ${activeFilter === f.label ? "bg-primary-container text-on-primary-container shadow-sm" : "bg-surface-container text-on-surface-variant"}`}>
+              <button key={f.label} onClick={() => setActiveFilter(f.label)} className={`flex items-center gap-xs whitespace-nowrap rounded-full px-md py-sm text-label-sm transition-colors ${activeFilter === f.label ? "bg-primary-container text-on-primary-container shadow-sm" : "bg-surface-container text-on-surface-variant"}`}>
                 {f.label}<Icon name={f.icon} size={16} />
               </button>
             ))}
@@ -377,19 +280,8 @@ export default function InsightLibraryPage() {
             <div className="relative flex flex-col items-center gap-lg md:flex-row">
               <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-primary-container text-on-primary-container"><Icon name="psychology" size={32} /></div>
               <div className="flex-1">
-                <div className="mb-xs flex flex-wrap items-center gap-sm">
-                  <h2 className="font-title-md text-title-md text-primary">
-                    Recommended for {profile?.name ? profile.name.split(" ")[0] : "you"}
-                  </h2>
-                  <span className="rounded bg-primary px-sm py-1 text-[10px] font-bold uppercase tracking-tight text-on-primary">
-                    AI Reasoning by CHIOMA
-                  </span>
-                </div>
-                <p className="text-sm leading-relaxed text-on-surface-variant">
-                  Based on your diagnostic profile in{" "}
-                  <strong className="text-primary">{profile?.sector || "Local Commerce"}</strong>
-                  , I&apos;ve curated these insights to help you navigate practical cash flow and trust-based growth in African markets.
-                </p>
+                <div className="mb-xs flex flex-wrap items-center gap-sm"><h2 className="font-title-md text-title-md text-primary">Recommended for you</h2><span className="rounded bg-primary px-sm py-1 text-[10px] font-bold uppercase tracking-tight text-on-primary">AI Reasoning by CHIOMA</span></div>
+                <p className="text-sm leading-relaxed text-on-surface-variant">Based on your recent progress in <strong className="text-primary">Community Cooperative Finance</strong>, I&apos;ve curated these insights to help you navigate trust-based growth in urban West African markets.</p>
               </div>
               <button onClick={() => document.getElementById("browse-insights")?.scrollIntoView({ behavior: "smooth" })} className="shrink-0 rounded-full bg-primary px-lg py-md text-sm font-semibold text-on-primary transition-opacity hover:opacity-90">Explore Curated Set</button>
             </div>

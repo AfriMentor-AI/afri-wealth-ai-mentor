@@ -2,11 +2,12 @@
 
 import { useEffect, useState } from "react";
 import { Icon } from "@/components/Icon";
-import { fetchProgressSummary, recordAction, shareWeeklySummary } from "@/lib/api";
+import { fetchProgressSummary, recordAction } from "@/lib/api";
 import type { BadgeWithStatus, StreakStat } from "@/lib/types";
 import { Skeleton } from "@/components/ui/Skeleton";
-import { useAppState } from "@/lib/store";
+import { useAppDispatch, useAppState } from "@/lib/store";
 
+const WEEKDAY_BARS = [40, 60, 55, 85, 100, 95, 98]; // % height, matches reference chart shape
 const HEATMAP_INTENSITIES = ["bg-surface-container", "bg-secondary-fixed", "bg-secondary-container", "bg-secondary"];
 
 function BadgeTile({ badge, wide = false }: { badge: BadgeWithStatus; wide?: boolean }) {
@@ -38,30 +39,19 @@ function BadgeTile({ badge, wide = false }: { badge: BadgeWithStatus; wide?: boo
 }
 
 export default function ProgressBoardPage() {
+  const dispatch = useAppDispatch();
   const { profile } = useAppState();
   const [streak, setStreak] = useState<StreakStat | null>(null);
   const [badges, setBadges] = useState<BadgeWithStatus[] | null>(null);
   const [heatmap, setHeatmap] = useState<number[][] | null>(null);
-  const [weeklyBars, setWeeklyBars] = useState<number[]>([20, 20, 20, 20, 20, 20, 20]);
   const [recordingAction, setRecordingAction] = useState(false);
   const [awardNotice, setAwardNotice] = useState<string | null>(null);
-  const [shareNotice, setShareNotice] = useState<string | null>(null);
-  const [isSharing, setIsSharing] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
 
   async function loadData() {
     const summary = await fetchProgressSummary();
     setStreak(summary.streak);
     setBadges(summary.badges);
     if (summary.heatmap && summary.heatmap.length > 0) {
-      // Derive the past 7 days of activity heights
-      const last7 = summary.heatmap.slice(-7);
-      const computedBars = last7.map((d) => (d.count > 0 ? Math.min(100, 30 + d.count * 35) : 15));
-      while (computedBars.length < 7) {
-        computedBars.unshift(15);
-      }
-      setWeeklyBars(computedBars);
-
       const weeks: number[][] = [];
       for (let i = 0; i < summary.heatmap.length; i += 7) {
         const slice = summary.heatmap.slice(i, i + 7);
@@ -74,7 +64,6 @@ export default function ProgressBoardPage() {
       setHeatmap(weeks);
     } else {
       setHeatmap(Array.from({ length: 13 }, () => Array(7).fill(0)));
-      setWeeklyBars([15, 15, 15, 15, 15, 15, 15]);
     }
   }
 
@@ -101,49 +90,8 @@ export default function ProgressBoardPage() {
     }
   }
 
-  async function handleShareWeekly() {
-    setIsSharing(true);
-    setShareNotice(null);
-    try {
-      const summary = await shareWeeklySummary();
-      const text =
-        summary?.shareText ||
-        `This week I completed ${streak?.actionsCompletedTotal ?? 0} actions on AfriMentor AI and I'm on a ${streak?.currentStreakDays ?? 1}-day streak! 🔥`;
-
-      if (typeof navigator !== "undefined" && navigator.share) {
-        try {
-          await navigator.share({
-            title: "My AfriMentor Weekly Growth",
-            text,
-          });
-          setShareNotice("Shared successfully! 🎉");
-          return;
-        } catch {
-          // User dismissed or share failed, fallback to copy
-        }
-      }
-      if (typeof navigator !== "undefined" && navigator.clipboard) {
-        await navigator.clipboard.writeText(text);
-        setShareNotice("Copied weekly progress summary to clipboard! 🎉");
-      }
-    } catch (err) {
-      console.warn("Share failed:", err);
-      setShareNotice("Could not share summary right now.");
-    } finally {
-      setIsSharing(false);
-      setTimeout(() => setShareNotice(null), 5000);
-    }
-  }
-
   const earnedCount = badges?.filter((b) => b.earnedAt !== null).length ?? null;
   const lockedCount = badges ? badges.length - (earnedCount ?? 0) : null;
-  const nextLockedBadge = badges?.find((b) => b.earnedAt === null);
-
-  const displayedBadges = (badges ?? []).filter((b) => {
-    if (!searchQuery.trim()) return true;
-    const q = searchQuery.toLowerCase();
-    return b.label.toLowerCase().includes(q) || (b.description && b.description.toLowerCase().includes(q));
-  });
 
   return (
     <main
@@ -154,26 +102,16 @@ export default function ProgressBoardPage() {
         <h1 className="font-title-md text-title-md text-primary">Progress Board</h1>
         <div className="flex items-center gap-md">
           <label className="relative w-48 xl:w-64">
-            <span className="sr-only">Search achievements</span>
+            <span className="sr-only">Search analytics</span>
             <Icon name="search" size={18} className="absolute left-sm top-1/2 -translate-y-1/2 text-on-surface-variant" />
-            <input
-              placeholder="Search badges..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="h-9 w-full rounded-full border-0 bg-surface-container-low pl-9 pr-md text-xs focus:ring-2 focus:ring-primary"
-            />
+            <input placeholder="Search analytics..." className="h-9 w-full rounded-full border-0 bg-surface-container-low pl-9 pr-md text-xs focus:ring-2 focus:ring-primary" />
           </label>
           <Icon name="notifications_none" className="text-on-surface-variant" />
           <Icon name="settings" className="text-on-surface-variant" />
-          <button
-            type="button"
-            onClick={handleShareWeekly}
-            disabled={isSharing}
-            className="flex items-center gap-xs rounded-full bg-surface-container-high px-md py-sm text-xs text-primary transition-opacity hover:opacity-80 disabled:opacity-50"
-          >
-            <Icon name="share" size={16} /> {isSharing ? "Sharing..." : "Share"}
+          <button type="button" onClick={() => dispatch({ type: "OPEN_FEEDBACK_MODAL" })} className="flex items-center gap-xs rounded-full bg-surface-container-high px-md py-sm text-xs text-primary">
+            <Icon name="share" size={16} /> Share
           </button>
-          <button type="button" onClick={() => window.print()} className="flex items-center gap-xs rounded-full border border-outline-variant px-md py-sm text-xs text-on-surface-variant transition-colors hover:bg-surface-variant">
+          <button type="button" onClick={() => window.print()} className="flex items-center gap-xs rounded-full border border-outline-variant px-md py-sm text-xs text-on-surface-variant">
             <Icon name="ios_share" size={16} /> Export
           </button>
         </div>
@@ -190,8 +128,7 @@ export default function ProgressBoardPage() {
           </button>
         </section>
 
-        {awardNotice && <div className="rounded-xl border border-secondary bg-secondary-container p-md text-sm font-medium text-on-secondary-container shadow-sm animate-fadeIn">{awardNotice}</div>}
-        {shareNotice && <div className="rounded-xl border border-primary/30 bg-primary-container/30 p-md text-sm font-medium text-primary shadow-sm animate-fadeIn">{shareNotice}</div>}
+        {awardNotice && <div className="rounded-xl border border-secondary bg-secondary-container p-md text-sm font-medium text-on-secondary-container shadow-sm">{awardNotice}</div>}
 
         <section className="grid gap-md md:grid-cols-2 lg:grid-cols-4">
           <div className="flex flex-col gap-sm rounded-xl border border-primary/10 bg-primary-container/20 p-lg">
@@ -228,10 +165,10 @@ export default function ProgressBoardPage() {
             <p className="font-label-sm text-label-sm text-on-surface-variant">Top Streak: {streak.longestStreakDays}</p>
           </div>
           <div className="flex h-24 items-end justify-between gap-xs px-xs">
-            {weeklyBars.map((h, i) => (
+            {WEEKDAY_BARS.map((h, i) => (
               <div
                 key={i}
-                className={`w-full rounded-t-sm transition-all duration-500 ${h >= 50 ? "bg-secondary" : "bg-secondary-container"}`}
+                className={`w-full rounded-t-sm ${h >= 85 ? "bg-secondary" : "bg-secondary-container"}`}
                 style={{ height: `${h}%` }}
               />
             ))}
@@ -293,95 +230,34 @@ export default function ProgressBoardPage() {
       <section className="rounded-xl border border-outline-variant/20 bg-surface-container-lowest p-md md:p-lg lg:col-span-4">
         <h3 className="mb-lg font-title-md text-title-md text-on-surface">Your Path</h3>
         <div className="space-y-0 px-sm">
-          {/* Milestone 1: Profile & Diagnostic */}
           <div className="flex min-h-16 gap-md">
-            <div className="flex flex-col items-center">
-              <span className="z-10 flex h-6 w-6 items-center justify-center rounded-full border-4 border-primary-fixed bg-primary text-on-primary">
-                <Icon name="check" size={12} />
-              </span>
-              <span className="h-full w-0.5 bg-primary" />
-            </div>
-            <div className="-mt-1 flex flex-col">
-              <span className="font-label-sm font-bold text-primary">Completed</span>
-              <span className="text-xs text-on-surface">Intake &amp; Enterprise Baseline</span>
-              <span className="text-[10px] text-on-surface-variant">{profile?.sector ?? "Diagnostic setup complete"}</span>
-            </div>
+            <div className="flex flex-col items-center"><span className="z-10 flex h-6 w-6 items-center justify-center rounded-full border-4 border-primary-fixed bg-primary text-on-primary"><Icon name="check" size={12} /></span><span className="h-full w-0.5 bg-primary" /></div>
+            <div className="-mt-1 flex flex-col"><span className="font-label-sm font-bold text-primary">Completed</span><span className="text-xs text-on-surface">Financial Literacy 101</span></div>
           </div>
-
-          {/* Milestone 2: Daily Rhythm */}
           <div className="flex min-h-24 gap-md">
-            <div className="flex flex-col items-center">
-              <span className={`z-10 h-6 w-6 rounded-full ring-4 ${
-                (streak?.currentStreakDays ?? 0) >= 7 ? "bg-secondary ring-secondary/20" : "animate-pulse bg-primary ring-primary-container/20"
-              }`} />
-              <span className="h-full w-0.5 border-l-2 border-dashed border-outline-variant" />
-            </div>
-            <div className="mt-[-4px] rounded-lg border border-primary/10 bg-primary-container/10 p-sm">
-              <span className="font-label-sm font-bold text-primary">
-                {(streak?.currentStreakDays ?? 0) >= 7 ? "Mastered" : "In Progress"}
-              </span>
-              <span className="block text-xs font-bold text-on-surface">Daily action practice</span>
-              <span className="mt-1 block text-[11px] text-on-surface-variant">
-                {streak?.currentStreakDays ?? 0} day streak • {streak?.actionsCompletedTotal ?? 0} total actions
-              </span>
-            </div>
+            <div className="flex flex-col items-center"><span className="z-10 h-6 w-6 animate-pulse rounded-full bg-primary ring-4 ring-primary-container/20" /><span className="h-full w-0.5 border-l-2 border-dashed border-outline-variant" /></div>
+            <div className="-mt-1 rounded-lg border border-primary/10 bg-primary-container/10 p-sm"><span className="font-label-sm font-bold text-primary">In Progress</span><span className="block text-xs font-bold text-on-surface">Daily action practice</span><span className="mt-1 block text-[11px] text-on-surface-variant">{streak?.currentStreakDays ?? 0} day streak</span></div>
           </div>
-
-          {/* Milestone 3: Next Badge or Target */}
-          <div className="flex min-h-16 gap-md">
-            <div className="flex flex-col items-center">
-              <span className="z-10 h-6 w-6 rounded-full border-2 border-outline-variant bg-surface" />
-            </div>
-            <div className="-mt-1 opacity-80">
-              <span className="font-label-sm font-bold text-on-surface-variant">Next Milestone</span>
-              <span className="block text-xs text-on-surface font-semibold">
-                {nextLockedBadge ? nextLockedBadge.label : "Master Mentor Badge"}
-              </span>
-              <span className="block text-[10px] text-on-surface-variant">
-                {nextLockedBadge?.description ?? "Keep logging daily actions to unlock more achievements"}
-              </span>
-            </div>
-          </div>
+          <div className="flex min-h-16 gap-md"><div className="flex flex-col items-center"><span className="z-10 h-6 w-6 rounded-full border-2 border-outline-variant bg-surface" /></div><div className="-mt-1 opacity-60"><span className="font-label-sm font-bold text-on-surface-variant">Upcoming</span><span className="block text-xs text-on-surface">Community Leadership</span></div></div>
         </div>
       </section>
       </div>
 
       <section className="rounded-2xl bg-surface-container-low p-md md:p-lg">
-        <div className="mb-lg flex items-end justify-between">
-          <div>
-            <h3 className="font-headline-lg text-headline-lg text-on-surface">Achievement Gallery</h3>
-            <p className="text-sm text-on-surface-variant">Celebrating your consistent dedication to growth.</p>
-          </div>
-          {searchQuery && (
-            <button
-              type="button"
-              onClick={() => setSearchQuery("")}
-              className="text-xs font-semibold text-primary hover:underline"
-            >
-              Clear filter ({displayedBadges.length})
-            </button>
-          )}
-        </div>
+        <div className="mb-lg flex items-end justify-between"><div><h3 className="font-headline-lg text-headline-lg text-on-surface">Achievement Gallery</h3><p className="text-sm text-on-surface-variant">Celebrating your consistent dedication to growth.</p></div><button type="button" className="hidden items-center gap-xs text-xs font-semibold text-primary md:flex">View All Badges <Icon name="arrow_forward" size={16} /></button></div>
         <div className="grid grid-cols-2 gap-md md:grid-cols-3 xl:grid-cols-6">
-          {badges === null ? (
-            Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="h-36 w-full rounded-xl" />)
-          ) : displayedBadges.length > 0 ? (
-            displayedBadges.map((b, i) => <BadgeTile key={b.id} badge={b} wide={i === 2} />)
-          ) : (
-            <div className="col-span-full rounded-xl border border-dashed border-outline-variant p-lg text-center text-sm text-on-surface-variant">
-              No badges match &ldquo;{searchQuery}&rdquo;.
-            </div>
-          )}
+          {badges === null
+            ? Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="h-36 w-full rounded-xl" />)
+            : badges.map((b, i) => <BadgeTile key={b.id} badge={b} wide={i === 2} />)}
         </div>
       </section>
 
       <button
-        onClick={handleShareWeekly}
-        disabled={isSharing}
-        className="flex w-full items-center justify-center gap-sm rounded-full bg-primary py-md text-on-primary shadow-md transition-transform active:scale-95 hover:opacity-90 disabled:opacity-50 md:w-auto md:px-xl"
+        onClick={() => dispatch({ type: "OPEN_FEEDBACK_MODAL" })}
+        className="flex w-full items-center justify-center gap-sm rounded-full bg-primary py-md text-on-primary shadow-md transition-transform active:scale-95 hover:opacity-90 md:w-auto md:px-xl"
       >
         <Icon name="share" />
-        <span className="font-title-md text-title-md">{isSharing ? "Preparing..." : "Share weekly summary"}</span>
+        <span className="font-title-md text-title-md">Share weekly summary</span>
       </button>
 
       <p className="pb-lg text-center font-body-md text-[13px] italic text-on-surface-variant">
