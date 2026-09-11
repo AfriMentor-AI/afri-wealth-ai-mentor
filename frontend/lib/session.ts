@@ -136,29 +136,36 @@ async function loginDeviceAccount(): Promise<TokenPair> {
   return { accessToken: body.access_token, refreshToken: body.refresh_token };
 }
 
-async function refreshSession(): Promise<TokenPair> {
-  const existing = readStoredTokens();
-  if (!existing) return signupDeviceAccount();
-
-  const res = await fetch(`${resolveApiBase()}/api/v1/auth/refresh`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ refresh_token: existing.refreshToken }),
-  });
-  if (res.ok) {
-    const body = await res.json();
-    return { accessToken: body.access_token, refreshToken: body.refresh_token };
+async function obtainDeviceTokens(): Promise<TokenPair> {
+  const refreshToken = typeof window !== "undefined" ? window.localStorage.getItem(REFRESH_TOKEN_KEY) : null;
+  if (refreshToken) {
+    try {
+      const res = await fetch(`${resolveApiBase()}/api/v1/auth/refresh`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ refresh_token: refreshToken }),
+      });
+      if (res.ok) {
+        const body = await res.json();
+        return { accessToken: body.access_token, refreshToken: body.refresh_token };
+      }
+    } catch {
+      // Refresh failed, try login next
+    }
   }
-  // Refresh token expired/revoked. The account usually still exists — log back in
-  // with this device's deterministic credentials rather than jumping straight to
-  // signup, which 409s (and strands the device with no valid session at all) if
-  // the account is already registered. Only signup if login says the account is
-  // genuinely gone (e.g. deactivated).
+
+  // The account usually still exists — log back in with this device's deterministic
+  // credentials rather than jumping straight to signup, which 409s if the account
+  // is already registered. Only signup if login fails.
   try {
     return await loginDeviceAccount();
   } catch {
     return signupDeviceAccount();
   }
+}
+
+async function refreshSession(): Promise<TokenPair> {
+  return obtainDeviceTokens();
 }
 
 /** Returns a currently-valid access token, provisioning/refreshing the device
@@ -170,7 +177,7 @@ async function ensureAccessToken(): Promise<string> {
     cachedAccessToken = existing.accessToken;
     return cachedAccessToken;
   }
-  const fresh = await withAuthLock(signupDeviceAccount);
+  const fresh = await withAuthLock(obtainDeviceTokens);
   storeTokens(fresh);
   return fresh.accessToken;
 }

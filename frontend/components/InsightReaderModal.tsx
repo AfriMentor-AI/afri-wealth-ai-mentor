@@ -238,6 +238,7 @@ export function InsightReaderModal({
   } | null>(null);
 
   const progressIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
     // Reset state whenever a new item opens
@@ -247,39 +248,52 @@ export function InsightReaderModal({
     setCompleted(false);
     setCompletionBanner(null);
     stopCurrentSpeech();
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current = null;
+    }
 
     return () => {
       stopCurrentSpeech();
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current = null;
+      }
       if (progressIntervalRef.current) clearInterval(progressIntervalRef.current);
     };
   }, [item?.id]);
 
   if (!item) return null;
 
-  // Resolve curriculum data or fallback to item summary
-  const lesson =
-    LESSON_CURRICULUM[item.title] ?? {
-      headline: item.title,
-      mentorTip:
-        "Every small action you take to structure your enterprise adds up to substantial long-term independence.",
-      audioNarration: `${item.title}. ${item.summary}. Take your time to study the key principles and apply them to your daily business decisions.`,
-      overview: item.summary,
-      practicalSteps: [
-        {
-          title: "1. Review your current baseline",
-          detail: "Take stock of where your business currently stands on this topic.",
-        },
-        {
-          title: "2. Implement one small change today",
-          detail: "Pick one concrete action from this insight and test it for 7 days.",
-        },
-        {
-          title: "3. Track your cash flow results",
-          detail: "Measure the outcome and discuss your findings with your mentor.",
-        },
-      ],
-      keyTakeaway: item.summary,
-    };
+  // Prefer dynamic backend content and narration; fallback to static curriculum when absent
+  const hardcoded = LESSON_CURRICULUM[item.title];
+  const lesson: LessonContent = {
+    headline: hardcoded?.headline || item.title,
+    mentorTip:
+      hardcoded?.mentorTip ||
+      "Every small action you take to structure your enterprise adds up to substantial long-term independence.",
+    audioNarration:
+      item.audioNarration ||
+      hardcoded?.audioNarration ||
+      `${item.title}. ${item.summary}. Take your time to study the key principles and apply them to your daily business decisions.`,
+    overview: item.content || hardcoded?.overview || item.summary,
+    practicalSteps: hardcoded?.practicalSteps || [
+      {
+        title: "1. Review your current baseline",
+        detail: "Take stock of where your business currently stands on this topic.",
+      },
+      {
+        title: "2. Implement one small change today",
+        detail: "Pick one concrete action from this insight and test it for 7 days.",
+      },
+      {
+        title: "3. Track your cash flow results",
+        detail: "Measure the outcome and discuss your findings with your mentor.",
+      },
+    ],
+    formulaOrTool: hardcoded?.formulaOrTool,
+    keyTakeaway: hardcoded?.keyTakeaway || item.summary,
+  };
 
   const personaName = selectedPersona?.name.toLowerCase() === "kwame" ? "kwame" : "chioma";
   const personaDisplay = personaName === "kwame" ? "Kwame (Accra, GH)" : "Chioma (Lagos, NG)";
@@ -291,6 +305,9 @@ export function InsightReaderModal({
   const handleToggleAudio = async () => {
     if (isPlaying) {
       stopCurrentSpeech();
+      if (audioRef.current) {
+        audioRef.current.pause();
+      }
       setIsPlaying(false);
       if (progressIntervalRef.current) clearInterval(progressIntervalRef.current);
       return;
@@ -300,32 +317,63 @@ export function InsightReaderModal({
     setPlayProgress(0);
     setElapsedSeconds(0);
 
-    const startTime = Date.now();
-    const intervalMs = 150;
-
-    if (progressIntervalRef.current) clearInterval(progressIntervalRef.current);
-    progressIntervalRef.current = setInterval(() => {
-      const elapsed = (Date.now() - startTime) / 1000;
-      if (elapsed >= audioDurationSeconds) {
-        setElapsedSeconds(audioDurationSeconds);
-        setPlayProgress(100);
-      } else {
-        setElapsedSeconds(elapsed);
-        setPlayProgress((elapsed / audioDurationSeconds) * 100);
+    // If a real audio media URL is provided, stream the audio asset directly
+    if (item.mediaUrl) {
+      try {
+        const audio = new Audio(item.mediaUrl);
+        audioRef.current = audio;
+        audio.ontimeupdate = () => {
+          if (audio.duration) {
+            setElapsedSeconds(audio.currentTime);
+            setPlayProgress((audio.currentTime / audio.duration) * 100);
+          }
+        };
+        audio.onended = () => {
+          setIsPlaying(false);
+          setPlayProgress(100);
+        };
+        audio.onerror = () => {
+          console.warn("Media playback failed, falling back to TTS");
+          audioRef.current = null;
+          fallbackToTTS();
+        };
+        await audio.play();
+        return;
+      } catch (err) {
+        console.warn("Direct audio play error:", err);
+        fallbackToTTS();
+        return;
       }
-    }, intervalMs);
+    }
 
-    try {
-      await playTextToSpeech(lesson.audioNarration, personaName, () => {
+    fallbackToTTS();
+
+    function fallbackToTTS() {
+      const startTime = Date.now();
+      const intervalMs = 150;
+
+      if (progressIntervalRef.current) clearInterval(progressIntervalRef.current);
+      progressIntervalRef.current = setInterval(() => {
+        const elapsed = (Date.now() - startTime) / 1000;
+        if (elapsed >= audioDurationSeconds) {
+          setElapsedSeconds(audioDurationSeconds);
+          setPlayProgress(100);
+        } else {
+          setElapsedSeconds(elapsed);
+          setPlayProgress((elapsed / audioDurationSeconds) * 100);
+        }
+      }, intervalMs);
+
+      playTextToSpeech(lesson.audioNarration, personaName, () => {
         setIsPlaying(false);
         setElapsedSeconds(audioDurationSeconds);
         setPlayProgress(100);
         if (progressIntervalRef.current) clearInterval(progressIntervalRef.current);
+      }).catch((err) => {
+        console.warn("Audio playback failed:", err);
+        setIsPlaying(false);
+        if (progressIntervalRef.current) clearInterval(progressIntervalRef.current);
       });
-    } catch (err) {
-      console.warn("Audio playback failed:", err);
-      setIsPlaying(false);
-      if (progressIntervalRef.current) clearInterval(progressIntervalRef.current);
     }
   };
 
