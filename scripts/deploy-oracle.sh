@@ -27,14 +27,20 @@ if [ ! -f .env ] || ! grep -q '^LLM_API_KEY=' .env; then
   exit 1
 fi
 
-echo "==> Building and starting the lean-MVP stack (api-gateway, auth-user-service, chat-orchestration-service, persona-prompt-service, rag-corpus-service)"
-echo "    First run builds 5 images from scratch on a free-tier VM — expect this to take a while."
-$COMPOSE up -d --build api-gateway auth-user-service chat-orchestration-service persona-prompt-service rag-corpus-service
+echo "==> Building and starting the lean-MVP stack (api-gateway, auth-user-service, chat-orchestration-service, persona-prompt-service, rag-corpus-service, research-evaluation-service, admin-research-console)"
+echo "    research-evaluation-service and admin-research-console (card C5.4) were"
+echo "    missing from earlier deploys — nothing served the Persona Consistency"
+echo "    Dashboard or the pilot-data export on this VM until now. Both already"
+echo "    bind to 127.0.0.1 only (docker-compose.yml), same as every other"
+echo "    internal service here — admin-research-console is reached via an SSH"
+echo "    tunnel (see docs/deployment/staging.md), never exposed publicly."
+echo "    First run builds 7 images from scratch on a free-tier VM — expect this to take a while."
+$COMPOSE up -d --build api-gateway auth-user-service chat-orchestration-service persona-prompt-service rag-corpus-service research-evaluation-service admin-research-console
 
 echo "==> Waiting for services to report healthy"
 # Longer timeout than deploy-staging.sh's (60 x 3s vs 30 x 2s) — a free-tier
-# VM is slower to boot 9 containers than a dev machine.
-for svc in postgres redis rabbitmq chromadb auth-user-service persona-prompt-service rag-corpus-service chat-orchestration-service api-gateway; do
+# VM is slower to boot containers than a dev machine.
+for svc in postgres redis rabbitmq chromadb auth-user-service persona-prompt-service rag-corpus-service chat-orchestration-service research-evaluation-service api-gateway admin-research-console; do
   healthy=""
   for _ in $(seq 1 60); do
     if $COMPOSE ps "$svc" | grep -qi "(healthy)"; then
