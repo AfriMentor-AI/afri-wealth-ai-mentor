@@ -26,7 +26,7 @@ interface HeatmapCell {
   count: number;
 }
 
-export const EXPANDED_BADGE_CATALOG: BadgeWithStatus[] = [
+const EXPANDED_BADGE_CATALOG: BadgeWithStatus[] = [
   {
     id: "early_bird",
     label: "Early Bird",
@@ -113,11 +113,16 @@ export const EXPANDED_BADGE_CATALOG: BadgeWithStatus[] = [
   },
 ];
 
-function BadgeTile({ badge }: { badge: BadgeWithStatus }) {
+function BadgeTile({ badge, onClick }: { badge: BadgeWithStatus; onClick?: () => void }) {
   const earned = badge.earnedAt !== null;
   return (
     <div
+      onClick={onClick}
+      role={onClick ? "button" : undefined}
+      tabIndex={onClick ? 0 : undefined}
       className={`group flex flex-col items-center gap-sm rounded-xl p-md text-center transition-all ${
+        onClick ? "cursor-pointer" : ""
+      } ${
         earned
           ? "border border-outline-variant/30 bg-surface hover:border-primary/50 hover:shadow-md"
           : "border border-dashed border-outline-variant bg-surface/50 opacity-60 grayscale hover:opacity-80"

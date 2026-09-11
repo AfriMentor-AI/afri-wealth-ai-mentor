@@ -59,9 +59,7 @@ export function DesktopLanding() {
           </div>
           <div className="flex items-center gap-xl">
             <nav className="hidden items-center gap-xl md:flex">
-              <a className="font-label-sm text-label-sm text-on-surface-variant transition-colors hover:text-primary" href="#">About</a>
               <a className="font-label-sm text-label-sm text-on-surface-variant transition-colors hover:text-primary" href="#" onClick={(e) => { e.preventDefault(); router.push("/persona"); }}>Mentors</a>
-              <a className="font-label-sm text-label-sm text-on-surface-variant transition-colors hover:text-primary" href="#">Support</a>
             </nav>
             <ThemeToggle />
             <Button
