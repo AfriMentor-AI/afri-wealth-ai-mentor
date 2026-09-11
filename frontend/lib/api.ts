@@ -19,6 +19,7 @@ import type {
   Persona,
   DailyAction,
   FeedbackSurvey,
+  WeeklySummaryShare,
 } from "./types";
 import { mockProfile, mockInsights, mockPersonas, mockDailyAction } from "./mockData";
 
@@ -673,6 +674,28 @@ export async function recordAction(
   };
 }
 
+/** POST /api/v1/progress/summary/share */
+export async function shareWeeklySummary(): Promise<WeeklySummaryShare | null> {
+  try {
+    const res = await apiFetch("/api/v1/progress/summary/share", { method: "POST" });
+    if (res.ok) {
+      const data = await res.json();
+      return {
+        userId: data.user_id,
+        weekStart: data.week_start,
+        weekEnd: data.week_end,
+        actionsThisWeek: data.actions_this_week,
+        currentStreakDays: data.current_streak_days,
+        badgesEarnedThisWeek: data.badges_earned_this_week || [],
+        shareText: data.share_text,
+      };
+    }
+  } catch (err) {
+    console.warn("shareWeeklySummary error:", err);
+  }
+  return null;
+}
+
 // ---------------------------------------------------------------------------
 // Insight Library (insight-library-service)
 // ---------------------------------------------------------------------------
@@ -688,6 +711,7 @@ export interface BackendInsightItem {
   is_audio?: boolean;
   media_type?: string;
   media_url: string | null;
+  thumbnail_url?: string | null;
   content?: string | null;
   audio_narration?: string | null;
   created_at: string;
@@ -708,7 +732,11 @@ function toInsightItem(b: BackendInsightItem): InsightItem {
     durationMinutes,
     isAudio,
     mediaUrl: b.media_url ?? undefined,
+    thumbnailUrl: b.thumbnail_url ?? undefined,
+    content: b.content ?? undefined,
+    audioNarration: b.audio_narration ?? undefined,
     createdAt: b.created_at,
+    isFavorited: b.is_favorited,
   };
 }
 
@@ -744,6 +772,24 @@ export async function toggleInsightFavorite(insightId: string, shouldFavorite: b
     res = await apiFetch(`/api/v1/insights/${insightId}/bookmark`, { method });
   }
   return res.ok;
+}
+
+/** PUT /api/v1/insights/{insightId}/progress */
+export async function upsertInsightProgress(
+  insightId: string,
+  positionSeconds: number,
+  completed: boolean
+): Promise<boolean> {
+  try {
+    const res = await apiFetch(`/api/v1/insights/${insightId}/progress`, {
+      method: "PUT",
+      body: JSON.stringify({ position_seconds: positionSeconds, completed }),
+    });
+    return res.ok;
+  } catch (err) {
+    console.warn("upsertInsightProgress error:", err);
+    return false;
+  }
 }
 
 // ---------------------------------------------------------------------------

@@ -193,6 +193,12 @@ export interface InsightItem {
    * API responses (insight-library-service embeds it per-request); absent
    * from mock data, where favorites are tracked purely client-side. */
   isFavorited?: boolean;
+  /** Full curriculum text / practical steps from backend */
+  content?: string;
+  /** Audio narration script from backend */
+  audioNarration?: string;
+  /** Thumbnail image URL */
+  thumbnailUrl?: string;
 }
 
 /** Per-user favorite marker — modeled as a separate join concept rather
