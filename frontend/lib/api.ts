@@ -694,8 +694,10 @@ export interface BackendInsightItem {
   is_audio?: boolean;
   media_type?: string;
   media_url: string | null;
+  thumbnail_url?: string | null;
   content?: string | null;
   audio_narration?: string | null;
+  difficulty?: string;
   created_at: string;
   is_favorited: boolean;
 }
@@ -714,7 +716,12 @@ function toInsightItem(b: BackendInsightItem): InsightItem {
     durationMinutes,
     isAudio,
     mediaUrl: b.media_url ?? undefined,
+    thumbnailUrl: b.thumbnail_url ?? undefined,
+    content: b.content ?? undefined,
+    audioNarration: b.audio_narration ?? undefined,
+    difficulty: b.difficulty,
     createdAt: b.created_at,
+    isFavorited: b.is_favorited,
   };
 }
 

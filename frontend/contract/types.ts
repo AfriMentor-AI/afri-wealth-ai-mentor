@@ -188,6 +188,13 @@ export interface InsightItem {
   /** URL to the audio/article asset. Absent in mock data today; required
    * once real content exists. */
   mediaUrl?: string;
+  thumbnailUrl?: string;
+  /** Full article / lesson content from the catalog. */
+  content?: string;
+  /** Audio narration script or transcript. */
+  audioNarration?: string;
+  /** Difficulty level: beginner, intermediate, advanced. */
+  difficulty?: string;
   createdAt: ISODateTime;
   /** Whether the current user has bookmarked this insight. Present on live
    * API responses (insight-library-service embeds it per-request); absent
