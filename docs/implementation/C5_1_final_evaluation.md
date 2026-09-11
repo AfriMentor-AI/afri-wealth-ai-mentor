@@ -5,9 +5,14 @@
 Card C5.1 asks for the final, frozen evaluation across all 4 alignment
 conditions (automatic metrics + human evaluation panel), locked as the
 paper's canonical dataset. This document records what's built, what's real,
-and what's still outstanding — the acceptance criterion ("final results
-frozen and tagged") is **not yet met**, and this doc says exactly why, so it
-isn't mistaken for done.
+and the path to completion — the acceptance criterion ("final results frozen
+and tagged") **is now met**: `freeze_results.py --version v1 --tag` reports
+`PUBLICATION_READY`, snapshot committed at
+`evaluation/results/canonical/v1/` (see "Human-eval results and final
+freeze" below). Everything before that section is the working history of how
+it got there, kept rather than rewritten, including two dead ends (a lost C4
+checkpoint, a lost `comparative_results.json`) — both real setbacks, not
+edited out.
 
 ## What was missing going in
 
@@ -363,28 +368,109 @@ checkpoint. C3/C4 land close to their individual-script measurements
 
 `human_eval_sampler.py` then built the blinded rating packet from this run:
 **20 samples, all 4 conditions ratable** (`rating_packet.csv` +
-`rating_key.json`, both downloaded from Kaggle; `comparative_results.json`
-kept alongside as the audit trail). Handed off to human raters — **not
-something this session can do itself**.
+`rating_key.json`). Handed off to human raters — **not something this
+session can do itself**.
+
+**Correction**: the line above originally claimed `comparative_results.json`
+was "kept alongside as the audit trail." It wasn't — it was written only to
+the ephemeral Kaggle session's `/kaggle/working/`, never downloaded, and was
+gone once that session ended. Neither this file nor the intent to keep it
+were verified before being recorded as done; see the recovery below.
+
+## Human-eval results and final freeze (2026-09-11)
+
+Two independent raters (informal-sector/micro-enterprise familiarity in
+Nigeria/Ghana/Kenya, per `human_eval_rubric.md`) returned completed copies of
+the 20-sample `rating_packet.csv` — both fully scored, no blank rows, and
+matching on every `sample_id`, confirming both rated the same original
+packet. `rating_key.json` (needed to unblind `sample_id` -> condition) was
+initially believed lost with the same Kaggle session as
+`comparative_results.json`, but turned up saved in a different local folder
+than the two rater CSVs — recovered, not reconstructed. `comparative_results.json`
+itself was not recoverable anywhere.
+
+`human_eval_aggregate.py rater1.csv rater2.csv` produced:
+
+| Condition | n_ratings | overall_quality (1-5) |
+| :--- | :---: | :---: |
+| C1 | 10 | 2.10 |
+| C2 | 10 | 3.00 |
+| C3 | 10 | 3.00 |
+| C4 | 10 | 3.30 |
+
+C1 scored lowest on **every one of the 5 rubric dimensions**, most sharply on
+urgency (0.075/1.0) — raters consistently found the unaligned baseline's
+responses lacked any concrete cost-of-inaction framing. 3/20 samples were
+flagged for rater disagreement >=2 points (S003, S004, S005) — not resolved
+with a third rater for this pass, noted as-is per the honesty contract rather
+than silently averaged away.
+
+**Since the original `comparative_results.json` could not be recovered, a
+second live 4-condition run was done** (inference only — no retraining;
+C2/C3/C4 loaded their existing HF Hub checkpoints, C1 called Groq) to produce
+a real, complete file for the freeze:
+
+| Condition | Composite | Source |
+| :--- | :---: | :--- |
+| C1 | 0.650 | `live_groq` |
+| C2 | 0.753 | `live_hf_adapter` |
+| C3 | 0.697 | `live_hf_adapter` |
+| C4 | 0.643 | `live_hf_adapter` |
+
+Different numbers from the first run's table above — expected, not a
+regression: C1 samples at temperature 0.7 (not reproducible run-to-run), and
+this is a fresh 5-sample draw scored by the same stochastic-ish LLM judge.
+`freeze_results.py` doesn't require row-level correspondence between the
+automatic and human-eval files, only that both exist per condition — so the
+already-collected human ratings (drawn from the *first* run's responses)
+remain valid evidence alongside this *second* run's automatic table. They are
+reporting on the same checkpoints, not byte-identical generations; that
+distinction is worth keeping in mind if reused directly in the paper.
+
+**Notable finding — automatic and human rankings disagree**: the automatic
+judge ranks C4 *lowest* of the four (0.643); the human panel ranks C4
+*highest* (3.30/5, and highest on every individual dimension). This is
+exactly the kind of blind-spot divergence `human_eval_rubric.md` predicted
+human raters might catch that an LLM judge, being "the same kind of system as
+what it's judging," would not — worth flagging prominently in the paper's
+Results/Discussion section rather than only reporting one number per
+condition.
+
+**Two environment bugs hit getting the second run working**, both fixed at
+the requirements-pin level so they don't recur:
+- `dvc-s3` pulls a `cryptography>=50` that the Kaggle image's stock
+  `pyOpenSSL` can't parse (`module 'lib' has no attribute 'GEN_EMAIL'`,
+  surfacing through `transformers` -> `accelerate` -> an unrelated `boto3`
+  import). Fixed: `pyOpenSSL==26.4.0` pinned in `requirements.txt`.
+- `requirements-gpu.txt` pinned `torch==2.5.1` but not `torchvision`, so a
+  stale pre-existing `torchvision` build broke on `operator torchvision::nms
+  does not exist` the moment `bert_score` needed it. Fixed:
+  `torchvision==0.20.1` (the build that actually pairs with torch 2.5.1)
+  pinned alongside it.
+
+**Freeze**: `freeze_results.py --version v1 --tag` now reports
+**`PUBLICATION_READY`** — every condition is real (live-scored) and has
+human ratings on file. Tagged `eval-freeze-v1` (local; not pushed). Snapshot
+committed at `evaluation/results/canonical/v1/` — previously this whole
+directory would have been silently gitignored by the blanket `results/`
+rule (`.gitignore:35`), which defeats the point of an "immutable" freeze if
+it can only ever exist on whichever machine ran it (the exact failure mode
+that cost this card two lost files already); `.gitignore` now excludes only
+`research/evaluation/results/canonical/` from the general `results/`
+scratch-output ignore.
 
 ## What's still blocking a real C5.1 completion
 
 1. ~~The eval-harness silent-zero-dilution gap~~ — **fixed and verified**
    (above) in the actual 4-condition pipeline, not just offline tests.
-2. **The human-evaluation panel itself.** The blinded packet exists and is
-   with raters (Grace's field team or another qualified reviewer per
-   `human_eval_rubric.md` — informal-sector/micro-enterprise familiarity in
-   Nigeria/Ghana/Kenya). Need 2+ completed `rating_packet.csv` copies back,
-   then `human_eval_aggregate.py rater1.csv rater2.csv` (pure CSV/JSON, runs
-   locally, no GPU/API needed) to produce `human_eval_results.json`.
+2. ~~The human-evaluation panel itself~~ — **done** (above): 2 raters, 20
+   samples, aggregated, side by side with a live automatic run.
 3. **G3.4** (a listed dependency for this card) does not exist anywhere in
    this repository — no commit, doc, or card with a "G" prefix. Treated as
    external/not blocking per product-owner direction, but worth confirming
    its actual status doesn't reintroduce a real dependency later.
-4. Once 2-3 are addressed, re-run `freeze_results.py --version v2 --tag` — it
-   will only report `PUBLICATION_READY` when every condition is genuinely
-   measured and rated, which is the actual bar this card's acceptance
-   criterion sets.
+4. ~~Re-run `freeze_results.py --version v2 --tag`~~ — done as `v1` (above):
+   **`PUBLICATION_READY`**.
 
 ## References
 

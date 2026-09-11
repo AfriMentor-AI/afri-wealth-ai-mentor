@@ -11,3 +11,8 @@ trl==0.13.0             # SFTTrainer, DPOTrainer, PPOTrainer (Condition 4)
 # ── Training infrastructure ───────────────────────────────────────────────────
 accelerate==1.2.1       # multi-GPU / mixed-precision training
 torch==2.5.1            # PyTorch (CUDA build installed by RunPod/EC2 AMI)
+torchvision==0.20.1     # MUST match the torch==2.5.1 build exactly - a stale
+                        # torchvision left over from the base image (e.g.
+                        # Kaggle/Colab) crashes any transformers import with
+                        # "operator torchvision::nms does not exist" the
+                        # moment something (e.g. bert_score) needs it
