@@ -10,32 +10,145 @@ import { useAppDispatch, useAppState } from "@/lib/store";
 import { NotificationPopover } from "@/components/NotificationPopover";
 
 const WEEKDAY_BARS = [40, 60, 55, 85, 100, 95, 98]; // % height, matches reference chart shape
-const HEATMAP_INTENSITIES = ["bg-surface-container", "bg-secondary-fixed", "bg-secondary-container", "bg-secondary"];
+const HEATMAP_INTENSITIES = [
+  "bg-surface-container",
+  "bg-primary-container/30",
+  "bg-primary-container/60",
+  "bg-primary-container",
+  "bg-primary",
+];
 
-function BadgeTile({ badge, wide = false }: { badge: BadgeWithStatus; wide?: boolean }) {
+const MONTH_NAMES = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+interface HeatmapCell {
+  date: string;
+  intensity: number;
+  count: number;
+}
+
+export const EXPANDED_BADGE_CATALOG: BadgeWithStatus[] = [
+  {
+    id: "early_bird",
+    label: "Early Bird",
+    description: "8 Sessions before 8 AM",
+    iconName: "workspace_premium",
+    earnedAt: null,
+  },
+  {
+    id: "community_pillar",
+    label: "Community Pillar",
+    description: "Helped 5 new members",
+    iconName: "groups",
+    earnedAt: null,
+  },
+  {
+    id: "bookworm",
+    label: "Bookworm",
+    description: "Read 10 modules in Library",
+    iconName: "auto_stories",
+    earnedAt: null,
+  },
+  {
+    id: "certified_expert",
+    label: "Certified Expert",
+    description: "Passed Advanced Exam",
+    iconName: "verified",
+    earnedAt: null,
+  },
+  {
+    id: "consistency_master",
+    label: "Consistency Master",
+    description: "30 Day Streak (24/30)",
+    iconName: "local_fire_department",
+    earnedAt: null,
+  },
+  {
+    id: "legacy_giver",
+    label: "Legacy Giver",
+    description: "Unlock after 50 sessions",
+    iconName: "military_tech",
+    earnedAt: null,
+  },
+  {
+    id: "smart_saver",
+    label: "Smart Saver",
+    description: "Hit a weekly savings goal",
+    iconName: "savings",
+    earnedAt: null,
+  },
+  {
+    id: "scholar_spirit",
+    label: "Scholar Spirit",
+    description: "Finished 5 lessons in Library",
+    iconName: "school",
+    earnedAt: null,
+  },
+  {
+    id: "visionary_founder",
+    label: "Visionary Founder",
+    description: "Created first business milestone",
+    iconName: "emoji_objects",
+    earnedAt: null,
+  },
+  {
+    id: "communal_investor",
+    label: "Communal Investor",
+    description: "Collaborated on a venture goal",
+    iconName: "handshake",
+    earnedAt: null,
+  },
+  {
+    id: "action_pioneer",
+    label: "Action Pioneer",
+    description: "Logged 10 daily actions",
+    iconName: "bolt",
+    earnedAt: null,
+  },
+  {
+    id: "wealth_architect",
+    label: "Wealth Architect",
+    description: "Completed 100% of a strategic goal",
+    iconName: "diamond",
+    earnedAt: null,
+  },
+];
+
+function BadgeTile({ badge }: { badge: BadgeWithStatus }) {
   const earned = badge.earnedAt !== null;
   return (
     <div
-      className={`flex flex-col items-center gap-sm rounded border p-md text-center transition-transform active:scale-95 md:hover:border-primary/50 ${
-        wide ? "col-span-2 flex-row justify-start text-left md:col-span-1 md:flex-col md:justify-center md:text-center" : ""
-      } ${
+      className={`group flex flex-col items-center gap-sm rounded-xl p-md text-center transition-all ${
         earned
-          ? "border-primary-fixed bg-primary-fixed/20"
-          : "border-outline-variant bg-surface-container-high opacity-70 md:border-dashed"
+          ? "border border-outline-variant/30 bg-surface hover:border-primary/50 hover:shadow-md"
+          : "border border-dashed border-outline-variant bg-surface/50 opacity-60 grayscale hover:opacity-80"
       }`}
     >
       <div
-        className={`relative flex shrink-0 items-center justify-center rounded-full ${wide ? "h-12 w-12 md:h-16 md:w-16" : "h-16 w-16"} ${
-          earned ? "bg-primary-fixed text-on-primary-fixed" : "bg-surface-variant text-on-surface-variant"
+        className={`mb-xs flex h-16 w-16 shrink-0 items-center justify-center rounded-full transition-transform group-hover:scale-105 ${
+          earned
+            ? "bg-primary-container/20 text-primary"
+            : "bg-surface-container text-on-surface-variant"
         }`}
       >
-        <Icon name={badge.iconName ?? "workspace_premium"} filled={earned} size={wide ? 24 : 32} />
-        {!earned && <Icon name="lock" className="absolute -bottom-1 -right-1" size={14} />}
+        <Icon
+          name={earned ? badge.iconName ?? "workspace_premium" : "lock"}
+          filled={earned}
+          size={32}
+        />
       </div>
-      <div>
-        <p className="font-label-sm text-label-sm font-bold text-on-surface">{badge.label}</p>
-        <p className="text-[10px] text-on-surface-variant">{badge.description}</p>
+      <div className="flex flex-col gap-0.5">
+        <span className="font-label-sm font-bold text-on-surface transition-colors group-hover:text-primary">
+          {badge.label}
+        </span>
+        <span className="text-[11px] text-on-surface-variant line-clamp-2">
+          {badge.description}
+        </span>
       </div>
+      {earned && (
+        <span className="mt-auto text-[9px] font-semibold text-primary uppercase tracking-wider">
+          Earned
+        </span>
+      )}
     </div>
   );
 }
@@ -45,30 +158,64 @@ export default function ProgressBoardPage() {
   const { profile, activeGoalId } = useAppState();
   const [streak, setStreak] = useState<StreakStat | null>(null);
   const [badges, setBadges] = useState<BadgeWithStatus[] | null>(null);
-  const [heatmap, setHeatmap] = useState<number[][] | null>(null);
+  const [heatmap, setHeatmap] = useState<HeatmapCell[][] | null>(null);
   const [pathGoal, setPathGoal] = useState<Goal | null>(null);
   const [milestones, setMilestones] = useState<Milestone[] | null>(null);
   const [recordingAction, setRecordingAction] = useState(false);
   const [awardNotice, setAwardNotice] = useState<string | null>(null);
+  const [showBadgesModal, setShowBadgesModal] = useState(false);
+  const [badgeFilter, setBadgeFilter] = useState<"all" | "earned" | "locked">("all");
 
   async function loadData() {
     const summary = await fetchProgressSummary();
     setStreak(summary.streak);
-    setBadges(summary.badges);
+
+    // Merge backend badges with rich catalog — strictly user's actual earnedAt dates
+    const backendBadges = summary.badges || [];
+    const merged = EXPANDED_BADGE_CATALOG.map((def) => {
+      const match = backendBadges.find(
+        (b) => b.id === def.id || b.label.toLowerCase() === def.label.toLowerCase()
+      );
+      return {
+        ...def,
+        earnedAt: match?.earnedAt ?? null,
+      };
+    });
+    setBadges(merged);
+
+    // Build 52-week activity heatmap based strictly on real recorded actions
+    const activityMap = new Map<string, number>();
     if (summary.heatmap && summary.heatmap.length > 0) {
-      const weeks: number[][] = [];
-      for (let i = 0; i < summary.heatmap.length; i += 7) {
-        const slice = summary.heatmap.slice(i, i + 7);
-        const intensities = slice.map((d) => Math.min(3, d.count));
-        while (intensities.length < 7) {
-          intensities.push(0);
-        }
-        weeks.push(intensities);
+      for (const d of summary.heatmap) {
+        activityMap.set(d.date, d.count);
       }
-      setHeatmap(weeks);
-    } else {
-      setHeatmap(Array.from({ length: 13 }, () => Array(7).fill(0)));
     }
+
+    const WEEKS_COUNT = 52;
+    const now = new Date();
+    const currentDayOfWeek = (now.getDay() + 6) % 7; // Mon=0, Sun=6
+    const endOfCurrentWeek = new Date(now);
+    endOfCurrentWeek.setDate(now.getDate() + (6 - currentDayOfWeek));
+
+    const startDate = new Date(endOfCurrentWeek);
+    startDate.setDate(startDate.getDate() - (WEEKS_COUNT * 7 - 1));
+
+    const weeks: HeatmapCell[][] = [];
+    const cursor = new Date(startDate);
+
+    for (let w = 0; w < WEEKS_COUNT; w++) {
+      const week: HeatmapCell[] = [];
+      for (let d = 0; d < 7; d++) {
+        const iso = cursor.toISOString().split("T")[0];
+        const count = activityMap.get(iso) ?? 0;
+        const intensity = count > 0 ? Math.min(4, count) : 0;
+
+        week.push({ date: iso, intensity, count });
+        cursor.setDate(cursor.getDate() + 1);
+      }
+      weeks.push(week);
+    }
+    setHeatmap(weeks);
 
     try {
       const fetchedGoals = await fetchGoals();
@@ -138,7 +285,6 @@ export default function ProgressBoardPage() {
             <input placeholder="Search analytics..." className="h-9 w-full rounded-full border-0 bg-surface-container-low pl-9 pr-md text-xs focus:ring-2 focus:ring-primary" />
           </label>
           <NotificationPopover />
-          <Icon name="settings" className="text-on-surface-variant" />
           <button type="button" onClick={handleRecordAction} disabled={recordingAction} className="flex items-center gap-xs rounded-full bg-secondary px-md py-sm text-xs font-semibold text-on-secondary shadow transition-opacity hover:opacity-90 disabled:opacity-50">
             <Icon name="check_circle" size={16} /> {recordingAction ? "Recording..." : "Log Today's Action"}
           </button>
@@ -219,45 +365,53 @@ export default function ProgressBoardPage() {
       <section className="space-y-md lg:col-span-8">
         <div className="flex items-center justify-between rounded-t-xl bg-surface-container-lowest px-md pt-md md:px-lg md:pt-lg">
           <h3 className="font-title-md text-title-md text-on-surface">Activity Heatmap</h3>
-          <div className="hidden items-center gap-sm text-[10px] text-on-surface-variant md:flex"><span>Less</span><div className="flex gap-1">{HEATMAP_INTENSITIES.map((c) => <span key={c} className={`h-3 w-3 rounded-sm ${c}`} />)}</div><span>More</span></div>
+          <div className="flex items-center gap-sm text-[10px] text-on-surface-variant">
+            <span>Less</span>
+            <div className="flex gap-[2px]">
+              {HEATMAP_INTENSITIES.map((c, i) => (
+                <span key={i} className={`h-3 w-3 rounded-sm ${c}`} />
+              ))}
+            </div>
+            <span>More</span>
+          </div>
         </div>
         <div className="rounded-b-xl border border-t-0 border-outline-variant/20 bg-surface-container-lowest p-md md:p-lg">
           {heatmap === null ? (
-            <Skeleton className="h-24 w-full" />
+            <Skeleton className="h-28 w-full" />
           ) : (
-            <>
+            <div className="flex flex-col gap-1">
               <p className="sr-only">
-                A heatmap of your daily action over the last 3 months, from less active to more active.
+                A 52-week heatmap of your daily actions over the year, from less active to more active.
               </p>
-              <div aria-hidden="true" className="flex gap-1 overflow-x-auto pb-sm md:gap-[3px]">
-                <div className="grid grid-rows-7 gap-1 pr-1 text-[8px] text-on-surface-variant md:gap-[3px] md:text-[10px] md:uppercase md:font-bold">
-                  <div>M</div>
-                  <div />
-                  <div>W</div>
-                  <div />
-                  <div>F</div>
-                  <div />
-                  <div>S</div>
+              {/* Days labels and heatmap grid */}
+              <div className="flex">
+                <div className="w-8 flex flex-col justify-between py-1 text-[10px] text-on-surface-variant uppercase font-bold shrink-0">
+                  <span>Mon</span>
+                  <span>Wed</span>
+                  <span>Fri</span>
                 </div>
-                {heatmap.map((week, wi) => (
-                  <div key={wi} className="grid grid-rows-7 gap-1 md:gap-[3px]">
-                    {week.map((intensity, di) => (
-                      <div key={di} className={`h-2.5 w-2.5 rounded-[2px] md:h-3 md:w-3 ${HEATMAP_INTENSITIES[intensity]}`} />
-                    ))}
+                <div className="flex-grow overflow-x-auto pb-xs">
+                  <div className="grid grid-flow-col grid-rows-7 gap-1 min-w-max">
+                    {heatmap.map((week, wi) =>
+                      week.map((cell, di) => (
+                        <div
+                          key={`${wi}-${di}`}
+                          title={`${cell.count} action${cell.count === 1 ? "" : "s"} on ${cell.date}`}
+                          className={`h-3 w-3 rounded-sm transition-transform hover:scale-125 hover:z-10 cursor-pointer ${HEATMAP_INTENSITIES[cell.intensity]}`}
+                        />
+                      ))
+                    )}
                   </div>
+                </div>
+              </div>
+              {/* 12 Months row matching screen.png */}
+              <div className="flex pl-8 mt-2 justify-between text-[10px] text-on-surface-variant uppercase font-bold">
+                {MONTH_NAMES.map((m) => (
+                  <span key={m}>{m}</span>
                 ))}
               </div>
-            </>
-          )}
-          <div className="mt-md flex items-center justify-end gap-sm md:hidden">
-            <span className="text-[10px] text-on-surface-variant">Less</span>
-            <div className="flex gap-xs">
-              {HEATMAP_INTENSITIES.map((c) => (
-                <div key={c} className={`h-3 w-3 rounded-[2px] ${c}`} />
-              ))}
             </div>
-            <span className="text-[10px] text-on-surface-variant">More</span>
-          </div>
+          )}
         </div>
       </section>
 
@@ -382,14 +536,122 @@ export default function ProgressBoardPage() {
       </section>
       </div>
 
+      {/* Achievement Badges Grid */}
       <section className="rounded-2xl bg-surface-container-low p-md md:p-lg">
-        <div className="mb-lg flex items-end justify-between"><div><h3 className="font-headline-lg text-headline-lg text-on-surface">Achievement Gallery</h3><p className="text-sm text-on-surface-variant">Celebrating your consistent dedication to growth.</p></div><button type="button" className="hidden items-center gap-xs text-xs font-semibold text-primary md:flex">View All Badges <Icon name="arrow_forward" size={16} /></button></div>
+        <div className="mb-lg flex items-end justify-between gap-md">
+          <div>
+            <h3 className="font-headline-lg text-headline-lg text-on-surface">Achievement Gallery</h3>
+            <p className="text-sm text-on-surface-variant">Celebrating your consistent dedication to growth.</p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setShowBadgesModal(true)}
+            className="flex shrink-0 items-center gap-xs text-xs font-semibold text-primary hover:underline transition-all"
+          >
+            <span>View All Badges ({badges?.length ?? 12})</span>
+            <Icon name="arrow_forward" size={16} />
+          </button>
+        </div>
+
         <div className="grid grid-cols-2 gap-md md:grid-cols-3 xl:grid-cols-6">
           {badges === null
-            ? Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="h-36 w-full rounded-xl" />)
-            : badges.map((b, i) => <BadgeTile key={b.id} badge={b} wide={i === 2} />)}
+            ? Array.from({ length: 6 }).map((_, i) => (
+                <Skeleton key={i} className="h-44 w-full rounded-xl" />
+              ))
+            : badges.slice(0, 6).map((b) => (
+                <BadgeTile
+                  key={b.id}
+                  badge={b}
+                  onClick={() => setShowBadgesModal(true)}
+                />
+              ))}
         </div>
       </section>
+
+      {/* View All Badges Modal */}
+      {showBadgesModal && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-md backdrop-blur-sm animate-fade-in"
+          onClick={() => setShowBadgesModal(false)}
+        >
+          <div
+            className="relative flex max-h-[85vh] w-full max-w-4xl flex-col rounded-2xl border border-outline-variant bg-surface p-lg shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div className="flex items-start justify-between border-b border-outline-variant pb-md">
+              <div>
+                <h2 className="font-headline-lg text-headline-lg text-on-surface">Achievement Badges</h2>
+                <p className="mt-1 text-xs text-on-surface-variant">
+                  {earnedCount} of {badges?.length ?? 0} unlocked • Consistent actions unlock new African wealth milestones.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowBadgesModal(false)}
+                className="rounded-full p-1 text-on-surface-variant hover:bg-surface-variant hover:text-on-surface transition-colors"
+                aria-label="Close modal"
+              >
+                <Icon name="close" size={20} />
+              </button>
+            </div>
+
+            {/* Filter Tabs */}
+            <div className="flex gap-xs border-b border-outline-variant/40 py-sm">
+              {(["all", "earned", "locked"] as const).map((tab) => {
+                const count =
+                  tab === "all"
+                    ? badges?.length ?? 0
+                    : tab === "earned"
+                    ? earnedCount ?? 0
+                    : lockedCount ?? 0;
+                return (
+                  <button
+                    key={tab}
+                    type="button"
+                    onClick={() => setBadgeFilter(tab)}
+                    className={`rounded-full px-md py-xs text-xs font-semibold capitalize transition-all ${
+                      badgeFilter === tab
+                        ? "bg-primary text-on-primary shadow-sm"
+                        : "bg-surface-container text-on-surface-variant hover:bg-surface-container-high"
+                    }`}
+                  >
+                    {tab} ({count})
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Badges List */}
+            <div className="flex-grow overflow-y-auto py-md custom-scrollbar">
+              <div className="grid grid-cols-2 gap-md sm:grid-cols-3 md:grid-cols-4">
+                {(badges ?? [])
+                  .filter((b) => {
+                    if (badgeFilter === "earned") return b.earnedAt !== null;
+                    if (badgeFilter === "locked") return b.earnedAt === null;
+                    return true;
+                  })
+                  .map((badge) => (
+                    <BadgeTile key={badge.id} badge={badge} />
+                  ))}
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="flex justify-end border-t border-outline-variant pt-md">
+              <button
+                type="button"
+                onClick={() => setShowBadgesModal(false)}
+                className="rounded-full bg-surface-container-high px-lg py-xs text-xs font-semibold text-on-surface hover:bg-surface-variant transition-colors"
+              >
+                Done
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <button
         onClick={() => dispatch({ type: "OPEN_FEEDBACK_MODAL" })}
