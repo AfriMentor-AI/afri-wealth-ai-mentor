@@ -58,6 +58,7 @@ _cors_origins_raw = os.getenv("CORS_ORIGINS", "")
 _cors_origins = [o.strip() for o in _cors_origins_raw.split(",") if o.strip()] or [
     "http://localhost:3000",
     "http://localhost:3001",
+    "http://localhost:3002",
 ]
 
 app.add_middleware(
