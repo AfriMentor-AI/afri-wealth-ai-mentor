@@ -106,10 +106,10 @@ CONDITION_SPECS: dict[str, ConditionSpec] = {
                         adapter="Danleon56/chioma-sft-v1", source_when_live="live_hf_adapter"),
     "C3": ConditionSpec("C3", "Persona-Aware Contrastive Learning (DPO)",
                         kind="checkpoint", persona="chioma-base",
-                        adapter="afrimentor/chioma-dpo-v1", source_when_live="live_hf_adapter"),
+                        adapter="AfriMentor/chioma-dpo-v1", source_when_live="live_hf_adapter"),
     "C4": ConditionSpec("C4", "RLHF / Preference Optimization",
                         kind="checkpoint", persona="chioma-base",
-                        adapter="afrimentor/chioma-rlhf-v1", source_when_live="live_hf_adapter"),
+                        adapter="AfriMentor/chioma-rlhf-v1", source_when_live="live_hf_adapter"),
 }
 
 DEFAULT_CONDITIONS = ["C0", "C1", "C2", "C3", "C4"]

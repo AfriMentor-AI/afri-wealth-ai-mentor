@@ -122,7 +122,7 @@ python experiments/04_rlhf_preference_opt/run.py --stage reward_model
 python experiments/04_rlhf_preference_opt/run.py --stage ppo
 ```
 
-Trained adapters are published to HuggingFace Hub (`afrimentor/chioma-*`) and
+Trained adapters are published to HuggingFace Hub (`AfriMentor/chioma-*`) and
 quantized to 4-bit/GGUF/AWQ for deployment per ADR-0002 Tier 2.
 
 ---

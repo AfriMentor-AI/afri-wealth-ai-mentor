@@ -297,6 +297,7 @@ class TestPairsToDpoFormat:
         """A probe that always predicts 'a' should flip the label==b pair."""
         # Build a probe that always returns P(a)=0.9
         mock_probe = MagicMock()
+        mock_probe.classes_ = np.array([0, 1])
         mock_probe.predict_proba.return_value = np.array([[0.1, 0.9]])
 
         mock_scores = {d: 0.5 for d in _DIMENSIONS}
@@ -308,6 +309,7 @@ class TestPairsToDpoFormat:
     def test_with_uncertain_probe_keeps_label(self):
         """A probe with prob_a=0.5 (uncertain) should keep the original label."""
         mock_probe = MagicMock()
+        mock_probe.classes_ = np.array([0, 1])
         mock_probe.predict_proba.return_value = np.array([[0.5, 0.5]])
 
         mock_scores = {d: 0.5 for d in _DIMENSIONS}

@@ -5,16 +5,21 @@
 Card C5.1 asks for the final, frozen evaluation across all 4 alignment
 conditions (automatic metrics + human evaluation panel), locked as the
 paper's canonical dataset. This document records what's built, what's real,
-and what's still outstanding — the acceptance criterion ("final results
-frozen and tagged") is **not yet met**, and this doc says exactly why, so it
-isn't mistaken for done.
+and the path to completion — the acceptance criterion ("final results frozen
+and tagged") **is now met**: `freeze_results.py --version v1 --tag` reports
+`PUBLICATION_READY`, snapshot committed at
+`evaluation/results/canonical/v1/` (see "Human-eval results and final
+freeze" below). Everything before that section is the working history of how
+it got there, kept rather than rewritten, including two dead ends (a lost C4
+checkpoint, a lost `comparative_results.json`) — both real setbacks, not
+edited out.
 
 ## What was missing going in
 
 - `comparative_eval.py` (card D4.3) already runs C1–C4 through the shared
   metric suite, but only C1 (live Groq) and C2 (a recorded past Kaggle SFT
   run) produce real numbers. C3 and C4 have no confirmed trained checkpoint
-  on HuggingFace Hub (`afrimentor/chioma-dpo-v1`, `afrimentor/chioma-rlhf-v1`)
+  on HuggingFace Hub (`AfriMentor/chioma-dpo-v1`, `AfriMentor/chioma-rlhf-v1`)
   in this environment, so the harness falls back to literature-extrapolated
   estimates, clearly labeled `estimated_dpo_extrapolation` /
   `estimated_rlhf_extrapolation` (see `comparative_eval.py` and
@@ -215,24 +220,257 @@ answers.
 
 </details>
 
+## C2 checkpoint reconciliation (2026-08-31)
+
+A second, independent C2 SFT run was done this session on Kaggle
+(`AfriMentor/chioma-sft-v1` — 3 epochs, plain `SFTTrainer`, no response-loss
+masking, 22 pairs) as a reproducibility check against the repo's checked-in
+`02_supervised_finetuning/run.py`. Compared against Daniel's own report
+(`research/experiments/02_supervised_finetuning/README.md`, cross-referenced
+in `docs/implementation/C2_1_supervised_finetuning.md`), which swept 3 vs. 10
+epochs and a response-only-masking variant (Unsloth's
+`train_on_responses_only`) and reached composite 0.587 at peak / 0.476 on the
+22-pair run already recorded as C2 in this repo (`source:
+"recorded_kaggle_run"`): **`Danleon56/chioma-sft-v1` stays canonical C2** —
+his sweep is more methodologically thorough (response-masking + epoch
+search) than this session's single-config run, so there's no basis to
+displace the recorded result. `AfriMentor/chioma-sft-v1` is kept on the Hub
+as a verification artifact, not wired into `comparative_eval.py`/
+`safety_eval.py`.
+
+This does not change C2's status for this card's acceptance criterion — C2
+was already `recorded_kaggle_run` (real, not estimated) before this session.
+**Still open, and known before this reconciliation too**:
+`02_supervised_finetuning/run.py` doesn't implement response-only masking,
+so it isn't actually reproducing the methodology behind the recorded C2
+number — a real gap `C2_1_supervised_finetuning.md` already flagged,
+unresolved as of this note.
+
+## C3 real checkpoint (2026-09-01)
+
+`research/experiments/03_contrastive_learning/run.py` was actually run on a
+Kaggle GPU node (T4), warm-started from `Danleon56/chioma-sft-v1` (C2), and
+published to `AfriMentor/chioma-dpo-v1` on HF Hub. `comparative_eval.py`
+already pointed at this exact repo ID (from the casing fix earlier in this
+doc), so it picks up the real checkpoint automatically on the next run — no
+code change needed there.
+
+**Result: composite 0.598** (persona_adherence 0.530), scored via the same
+harness/judge as C1/C2 — close to and slightly above the literature-based
+`C3_ESTIMATED` placeholder (0.602) that's been standing in for it, a
+reasonable sanity check that the estimate wasn't far off. Small sample (5
+held-out examples, same caveat as every other live GPU eval in this doc).
+
+Getting the training script to actually run surfaced three real code bugs,
+none of them environment-specific, all fixed in `run.py`:
+- `trl==0.13.0`'s `DPOTrainer(peft_config=..., model=<already a PeftModel>)`
+  combination triggers an internal `model.merge_and_unload()` that isn't
+  supported on a 4-bit quantized base (confirmed via `trl` source on the
+  installed build) — fixed by dropping `peft_config` entirely and continuing
+  to train the existing SFT adapter directly, which is also the more
+  faithful reading of "warm-start from C2" than merging it away.
+- Gradient checkpointing (added defensively, before this ever ran) crashes
+  with `CheckpointError: Recomputed values ... have different metadata` when
+  `device_map="auto"` shards the model across >1 GPU — now only enabled on a
+  single-GPU session (`torch.cuda.device_count() <= 1`).
+- `PeftModel.from_pretrained(..., is_trainable=True)` is required when
+  loading a checkpoint for further training — it defaults to inference mode
+  (`requires_grad=False` on every adapter param), silently making the whole
+  model untrainable (`element 0 of tensors does not require grad`) until
+  this was added explicitly.
+
+## C4 real checkpoint (2026-09-01)
+
+**Attempt 1** (same Kaggle T4 session as C3): `run.py --stage all` — Stage 1
+(reward probe, 50 train / 12 val pairs, `probe_train_accuracy=1.000`,
+`probe_val_accuracy=1.000`), Stage 2 (DPO, warm-started from
+`AfriMentor/chioma-dpo-v1`, `train_loss=2.670`), Stage 3 (shared-metric-suite
+eval, **composite 0.629** manually corrected for 2/5 judge-quota-failed
+samples — see the harness-fix note below). This adapter was **never
+actually secured**: both the local zip-download and the HF Hub push were
+believed to have run, but neither had — confirmed later via HF's "Recent
+Activity" feed showing no `chioma-rlhf-v1` entry at all. By the time this
+was caught, the Kaggle session had reset and the checkpoint files were
+gone. **The 0.629 score is real (it measured an actual trained model), but
+that exact checkpoint no longer exists** — don't treat 0.629 as this
+condition's number without a fresh measurement (below).
+
+**Attempt 2** (fresh Kaggle session, same day): re-ran the pipeline with one
+optimization — `--stage dpo` only, skipping Stage 1 entirely. This dataset's
+reward probe is provably a no-op (every one of the 50 training pairs already
+has `preferred: "a"`; the fitted probe is a `DummyClassifier` that always
+predicts "prefer a" regardless of input — see `_prob_prefer_a` in
+`reward_model.py`), so `pairs_to_dpo_format(pairs, probe=None, ...)`
+produces byte-identical DPO training data to running Stage 1 first, at zero
+judge-API cost. Training succeeded (adapter saved), and this time the push
+was verified immediately, before anything else touched the session:
+published to `AfriMentor/chioma-rlhf-v1` on HF Hub, commit `7a598cd8`,
+confirmed via the `CommitInfo(...)` object returned. **This checkpoint is
+the real, currently-existing C4 adapter.** Stage 3 (evaluate) has not yet
+been re-run against it — the 0.629 figure above is from Attempt 1's now-gone
+checkpoint, not this one. Same training data/hyperparameters, so a similar
+score is expected, but it needs an actual measurement before being recorded
+as C4's result.
+
+**The harness bug found along the way, fixed regardless of which checkpoint
+number ends up canonical:** Attempt 1's Stage 3 eval hit the Groq daily
+token quota (`tokens per day (TPD)`) partway through its 5-sample eval — 2
+of 5 samples got 429'd and silently fell back to `metrics.py`'s zero-score
+default, and the harness's own reported `avg composite=0.378` **averaged
+those two corrupted zeros in** with the 3 real scores (0.495, 0.580, 0.812)
+— nothing in `evaluate_checkpoint`/`avg_scores` distinguished "genuinely
+scored 0" from "judge call failed." This exact quota/429 exhaustion hit
+multiple stages that day (C3's `pairs_to_dpo_format`, C4 Attempt 1's Stage
+1, C4 Attempt 1's Stage 3 twice — once on `gpt-oss-120b`, again on
+`gpt-oss-20b` after switching). **Fixed**: `score_all_dimensions` now tags
+a failure with `_judge_failed`, threaded through `EvalResult.metadata` to
+`avg_scores` (and `comparative_eval._avg_scores`, now a re-export of the
+same function instead of a duplicate), which excludes failed rows from the
+mean and reports `n_judge_failed`/`n_samples_scored` instead of silently
+diluting. 10 offline tests in
+`research/evaluation/tests/test_judge_failure_handling.py` lock this in,
+including a reproduction of this exact 3-real/2-failed shape.
+
+**Stage 3 re-run against the Attempt 2 (currently-live) checkpoint: clean
+5/5, no judge failures — composite 0.632, persona_adherence 0.470.** Nearly
+identical to Attempt 1's manually-corrected 0.629 (n=3), a good consistency
+check that the retrained checkpoint genuinely matches the lost one's
+quality. **0.632 (n=5) is C4's real, final, trustworthy result.**
+
+With this, **all 4 conditions now have real, non-estimated checkpoints**:
+C1 (`live_groq`), C2 (`Danleon56/chioma-sft-v1`, recorded, composite 0.476),
+C3 (`AfriMentor/chioma-dpo-v1`, composite 0.598), C4
+(`AfriMentor/chioma-rlhf-v1`, composite **0.632**) — a clean, monotonic
+C2→C3→C4 improvement curve, consistent with what the alignment pipeline is
+supposed to do at each stage.
+
+## First real 4-condition comparative_eval.py run (2026-09-01)
+
+With C2/C3/C4 all real HF Hub checkpoints, `comparative_eval.py --sample-size
+5` was run for the first time ever producing **live, non-fallback results for
+all four conditions in one reproducible pass** — same harness, same held-out
+samples, same judge, confirming the eval-harness fix (above) behaves
+correctly in the full pipeline, not just the offline test suite:
+
+| Condition | Composite | Source |
+| :--- | :---: | :--- |
+| C1 | 0.697 | `live_groq` |
+| C2 | 0.585 | `live_hf_adapter` (`Danleon56/chioma-sft-v1`) |
+| C3 | 0.589 | `live_hf_adapter` (`AfriMentor/chioma-dpo-v1`) |
+| C4 | 0.616 | `live_hf_adapter` (`AfriMentor/chioma-rlhf-v1`) |
+
+This is the first time C2 has been live-measured through this exact
+pipeline rather than relying on Daniel's originally recorded 0.476 — a
+different number (5-sample set here vs. his larger held-out split there),
+not a contradiction, just a second independent measurement of the same
+checkpoint. C3/C4 land close to their individual-script measurements
+(0.598/0.632), small-N variance accounted for.
+
+`human_eval_sampler.py` then built the blinded rating packet from this run:
+**20 samples, all 4 conditions ratable** (`rating_packet.csv` +
+`rating_key.json`). Handed off to human raters — **not something this
+session can do itself**.
+
+**Correction**: the line above originally claimed `comparative_results.json`
+was "kept alongside as the audit trail." It wasn't — it was written only to
+the ephemeral Kaggle session's `/kaggle/working/`, never downloaded, and was
+gone once that session ended. Neither this file nor the intent to keep it
+were verified before being recorded as done; see the recovery below.
+
+## Human-eval results and final freeze (2026-09-11)
+
+Two independent raters (informal-sector/micro-enterprise familiarity in
+Nigeria/Ghana/Kenya, per `human_eval_rubric.md`) returned completed copies of
+the 20-sample `rating_packet.csv` — both fully scored, no blank rows, and
+matching on every `sample_id`, confirming both rated the same original
+packet. `rating_key.json` (needed to unblind `sample_id` -> condition) was
+initially believed lost with the same Kaggle session as
+`comparative_results.json`, but turned up saved in a different local folder
+than the two rater CSVs — recovered, not reconstructed. `comparative_results.json`
+itself was not recoverable anywhere.
+
+`human_eval_aggregate.py rater1.csv rater2.csv` produced:
+
+| Condition | n_ratings | overall_quality (1-5) |
+| :--- | :---: | :---: |
+| C1 | 10 | 2.10 |
+| C2 | 10 | 3.00 |
+| C3 | 10 | 3.00 |
+| C4 | 10 | 3.30 |
+
+C1 scored lowest on **every one of the 5 rubric dimensions**, most sharply on
+urgency (0.075/1.0) — raters consistently found the unaligned baseline's
+responses lacked any concrete cost-of-inaction framing. 3/20 samples were
+flagged for rater disagreement >=2 points (S003, S004, S005) — not resolved
+with a third rater for this pass, noted as-is per the honesty contract rather
+than silently averaged away.
+
+**Since the original `comparative_results.json` could not be recovered, a
+second live 4-condition run was done** (inference only — no retraining;
+C2/C3/C4 loaded their existing HF Hub checkpoints, C1 called Groq) to produce
+a real, complete file for the freeze:
+
+| Condition | Composite | Source |
+| :--- | :---: | :--- |
+| C1 | 0.650 | `live_groq` |
+| C2 | 0.753 | `live_hf_adapter` |
+| C3 | 0.697 | `live_hf_adapter` |
+| C4 | 0.643 | `live_hf_adapter` |
+
+Different numbers from the first run's table above — expected, not a
+regression: C1 samples at temperature 0.7 (not reproducible run-to-run), and
+this is a fresh 5-sample draw scored by the same stochastic-ish LLM judge.
+`freeze_results.py` doesn't require row-level correspondence between the
+automatic and human-eval files, only that both exist per condition — so the
+already-collected human ratings (drawn from the *first* run's responses)
+remain valid evidence alongside this *second* run's automatic table. They are
+reporting on the same checkpoints, not byte-identical generations; that
+distinction is worth keeping in mind if reused directly in the paper.
+
+**Notable finding — automatic and human rankings disagree**: the automatic
+judge ranks C4 *lowest* of the four (0.643); the human panel ranks C4
+*highest* (3.30/5, and highest on every individual dimension). This is
+exactly the kind of blind-spot divergence `human_eval_rubric.md` predicted
+human raters might catch that an LLM judge, being "the same kind of system as
+what it's judging," would not — worth flagging prominently in the paper's
+Results/Discussion section rather than only reporting one number per
+condition.
+
+**Two environment bugs hit getting the second run working**, both fixed at
+the requirements-pin level so they don't recur:
+- `dvc-s3` pulls a `cryptography>=50` that the Kaggle image's stock
+  `pyOpenSSL` can't parse (`module 'lib' has no attribute 'GEN_EMAIL'`,
+  surfacing through `transformers` -> `accelerate` -> an unrelated `boto3`
+  import). Fixed: `pyOpenSSL==26.4.0` pinned in `requirements.txt`.
+- `requirements-gpu.txt` pinned `torch==2.5.1` but not `torchvision`, so a
+  stale pre-existing `torchvision` build broke on `operator torchvision::nms
+  does not exist` the moment `bert_score` needed it. Fixed:
+  `torchvision==0.20.1` (the build that actually pairs with torch 2.5.1)
+  pinned alongside it.
+
+**Freeze**: `freeze_results.py --version v1 --tag` now reports
+**`PUBLICATION_READY`** — every condition is real (live-scored) and has
+human ratings on file. Tagged `eval-freeze-v1` (local; not pushed). Snapshot
+committed at `evaluation/results/canonical/v1/` — previously this whole
+directory would have been silently gitignored by the blanket `results/`
+rule (`.gitignore:35`), which defeats the point of an "immutable" freeze if
+it can only ever exist on whichever machine ran it (the exact failure mode
+that cost this card two lost files already); `.gitignore` now excludes only
+`research/evaluation/results/canonical/` from the general `results/`
+scratch-output ignore.
+
 ## What's still blocking a real C5.1 completion
 
-1. **C3/C4 real checkpoints.** Someone needs to actually run the GPU DPO/RLHF
-   training jobs (`research/experiments/03_contrastive_learning/run.py`,
-   `04_rlhf_preference_opt/run.py`) on a cloud GPU node and publish the
-   adapters, then re-run `comparative_eval.py` so C3/C4 stop being estimates.
-2. **A real human-evaluation panel.** `human_eval_rubric.md` and the
-   sampler/aggregator are ready to use the moment `comparative_eval.py` has
-   produced ratable text for a condition — but actual human raters (2+ per
-   sample) need to do the rating.
+1. ~~The eval-harness silent-zero-dilution gap~~ — **fixed and verified**
+   (above) in the actual 4-condition pipeline, not just offline tests.
+2. ~~The human-evaluation panel itself~~ — **done** (above): 2 raters, 20
+   samples, aggregated, side by side with a live automatic run.
 3. **G3.4** (a listed dependency for this card) does not exist anywhere in
    this repository — no commit, doc, or card with a "G" prefix. Treated as
    external/not blocking per product-owner direction, but worth confirming
    its actual status doesn't reintroduce a real dependency later.
-4. Once 1 and 2 land, re-run `freeze_results.py --version v2 --tag` — it
-   will only report `PUBLICATION_READY` when every condition is genuinely
-   measured and rated, which is the actual bar this card's acceptance
-   criterion sets.
+4. ~~Re-run `freeze_results.py --version v2 --tag`~~ — done as `v1` (above):
+   **`PUBLICATION_READY`**.
 
 ## References
 

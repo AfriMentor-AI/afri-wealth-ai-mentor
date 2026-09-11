@@ -57,7 +57,7 @@ class Settings(BaseModel):
     # CHIOMA alignment condition (Sprint 4 comparative eval — card D1.4).
     # Identifies which research alignment condition is active in production.
     # "C4" (RLHF / Preference Optimization, composite 0.654) is the Sprint 4
-    # winner; update to "C4-gpu" once the afrimentor/chioma-rlhf-v1 adapter
+    # winner; update to "C4-gpu" once the AfriMentor/chioma-rlhf-v1 adapter
     # is trained and the service is pointed at it.
     chioma_alignment_condition: str = os.getenv("CHIOMA_ALIGNMENT_CONDITION", "C4")
 

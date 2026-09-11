@@ -47,8 +47,8 @@ def run(config_path: str | Path = DEFAULT_CONFIG) -> None:
 
     from datasets import load_dataset
     from peft import LoraConfig, get_peft_model, prepare_model_for_kbit_training
-    from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig, TrainingArguments
-    from trl import SFTTrainer
+    from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig
+    from trl import SFTConfig, SFTTrainer
 
     mlflow.set_tracking_uri(os.getenv("MLFLOW_TRACKING_URI", "sqlite:///research/tracking/mlflow.db"))
     mlflow.set_experiment(mlflow_cfg["experiment_name"])
@@ -72,7 +72,7 @@ def run(config_path: str | Path = DEFAULT_CONFIG) -> None:
         import torch as _torch
         bnb_config = BitsAndBytesConfig(
             load_in_4bit=bnb_cfg["load_in_4bit"],
-            bnb_4bit_compute_dtype=_torch.bfloat16,
+            bnb_4bit_compute_dtype=getattr(_torch, bnb_cfg["bnb_4bit_compute_dtype"]),
             bnb_4bit_quant_type=bnb_cfg["bnb_4bit_quant_type"],
             bnb_4bit_use_double_quant=bnb_cfg["bnb_4bit_use_double_quant"],
         )
@@ -103,7 +103,9 @@ def run(config_path: str | Path = DEFAULT_CONFIG) -> None:
             "validation": train_cfg["eval_dataset"],
         })
 
-        training_args = TrainingArguments(
+        # trl 0.13.0 moved SFT-specific args (max_seq_length, packing, ...) onto
+        # SFTConfig itself rather than accepting them as SFTTrainer kwargs.
+        training_args = SFTConfig(
             output_dir=model_cfg["output_dir"],
             num_train_epochs=train_cfg["num_train_epochs"],
             per_device_train_batch_size=train_cfg["per_device_train_batch_size"],
@@ -112,20 +114,28 @@ def run(config_path: str | Path = DEFAULT_CONFIG) -> None:
             lr_scheduler_type=train_cfg["lr_scheduler_type"],
             warmup_ratio=train_cfg["warmup_ratio"],
             bf16=train_cfg["bf16"],
+            fp16=train_cfg["fp16"],
             logging_steps=train_cfg["logging_steps"],
             eval_steps=train_cfg["eval_steps"],
             save_steps=train_cfg["save_steps"],
             save_total_limit=train_cfg["save_total_limit"],
+            max_seq_length=train_cfg["max_seq_length"],
             report_to="none",               # MLflow logging handled manually
         )
+
+        # sft_train.jsonl rows are {"messages": [...]} (chat format), but this
+        # trl version's SFTTrainer only reads a flat `text` field by default —
+        # it does not auto-detect a `messages` column. Render it explicitly.
+        def _format_example(example: dict) -> str:
+            return tokenizer.apply_chat_template(example["messages"], tokenize=False)
 
         trainer = SFTTrainer(
             model=model,
             args=training_args,
             train_dataset=dataset["train"],
             eval_dataset=dataset["validation"],
-            tokenizer=tokenizer,
-            max_seq_length=train_cfg["max_seq_length"],
+            processing_class=tokenizer,
+            formatting_func=_format_example,
         )
 
         trainer.train()

@@ -72,7 +72,7 @@ async def _get_system_prompt(persona_id: str | None) -> str:
       persona_adherence (0.20), cultural_fluency (0.15), anti_dependency (0.15),
       financial_accuracy (0.15), urgency (0.15), plus qa/line-consistency (0.19).
     Update this string whenever the persona-prompt-service template changes, and
-    replace with an adapter-routed call once afrimentor/chioma-rlhf-v1 is live.
+    replace with an adapter-routed call once AfriMentor/chioma-rlhf-v1 is live.
     """
     _FALLBACK = (
         # ── IDENTITY (persona_adherence) ──────────────────────────────────────
