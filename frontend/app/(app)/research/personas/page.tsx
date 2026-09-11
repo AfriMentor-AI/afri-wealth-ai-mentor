@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
 import { Icon } from "@/components/Icon";
 
 // ---------------------------------------------------------------------------
@@ -82,7 +81,7 @@ function LatencyChart() {
       </svg>
 
       {/* Legend */}
-      <div className="absolute bottom-4 left-4 flex gap-lg text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">
+      <div className="absolute bottom-2 left-2 flex flex-col gap-xs text-[9px] font-bold uppercase tracking-widest text-on-surface-variant sm:bottom-4 sm:left-4 sm:flex-row sm:gap-lg sm:text-[10px]">
         <div className="flex items-center gap-xs">
           <span className="h-0.5 w-3 bg-primary" />
           Persona CHIOMA
@@ -142,50 +141,52 @@ export default function ResearchConsolePage() {
   return (
     <main className="relative flex h-full flex-1 flex-col overflow-hidden">
 
-        {/* Console header bar */}
-        <header className="flex h-20 shrink-0 items-center justify-between border-b border-outline-variant bg-surface px-xl">
-          <div>
-            <h2 className="font-title-md text-title-md text-on-surface">
+        {/* Console header bar — stacks vertically on mobile */}
+        <header className="flex shrink-0 flex-col gap-md border-b border-outline-variant bg-surface px-md py-md md:h-20 md:flex-row md:items-center md:justify-between md:gap-lg md:px-xl md:py-0">
+          <div className="min-w-0 pl-10 md:pl-0">
+            <h2 className="truncate font-title-md text-title-md text-on-surface">
               Persona Consistency Dashboard
             </h2>
-            <p className="flex items-center gap-xs text-sm text-on-surface-variant">
-              <span className="h-2 w-2 rounded-full bg-secondary" />
-              Production Environment:&nbsp;
-              <code className="font-mono text-xs">afri-mentor-v2-prod</code>
+            <p className="flex items-center gap-xs text-xs text-on-surface-variant sm:text-sm">
+              <span className="h-2 w-2 shrink-0 rounded-full bg-secondary" />
+              Production:&nbsp;
+              <code className="truncate font-mono text-xs">afri-mentor-v2-prod</code>
             </p>
           </div>
-          <div className="flex items-center gap-lg">
+          <div className="flex items-center gap-sm md:gap-lg">
             {/* Search */}
-            <div className="flex items-center gap-sm rounded-lg border border-outline-variant bg-surface-container px-md py-xs">
-              <Icon name="search" size={20} className="text-on-surface-variant" />
+            <div className="flex flex-1 items-center gap-sm rounded-lg border border-outline-variant bg-surface-container px-md py-xs md:flex-initial">
+              <Icon name="search" size={20} className="shrink-0 text-on-surface-variant" />
               <input
                 type="text"
                 placeholder="Search sessions..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-48 border-none bg-transparent text-sm outline-none placeholder:text-on-surface-variant/60"
+                className="w-full min-w-0 border-none bg-transparent text-sm outline-none placeholder:text-on-surface-variant/60 md:w-48"
               />
             </div>
-            <button className="text-on-surface-variant transition-colors hover:text-primary">
-              <Icon name="notifications" size={22} />
-            </button>
-            <button className="text-on-surface-variant transition-colors hover:text-primary">
-              <Icon name="download" size={22} />
-            </button>
+            <div className="flex shrink-0 items-center gap-sm">
+              <button className="text-on-surface-variant transition-colors hover:text-primary">
+                <Icon name="notifications" size={22} />
+              </button>
+              <button className="text-on-surface-variant transition-colors hover:text-primary">
+                <Icon name="download" size={22} />
+              </button>
+            </div>
           </div>
         </header>
 
         {/* Scrollable dashboard content */}
-        <div className="flex-1 space-y-lg overflow-y-auto p-xl [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-outline-variant [&::-webkit-scrollbar-track]:bg-transparent">
+        <div className="flex-1 space-y-lg overflow-y-auto p-md sm:p-lg lg:p-xl [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-outline-variant [&::-webkit-scrollbar-track]:bg-transparent">
 
           {/* -------------------------------------------------------------- */}
           {/* Drift Alert Banner                                               */}
           {/* -------------------------------------------------------------- */}
           {!alertDismissed && (
-            <div className="flex animate-[pulse-red_2s_cubic-bezier(0.4,0,0.6,1)_infinite] items-center justify-between rounded-xl border border-error/20 bg-error-container p-md text-on-error-container shadow-sm">
-              <div className="flex items-center gap-md">
-                <Icon name="warning" filled size={24} className="text-error shrink-0" />
-                <div>
+            <div className="flex animate-[pulse-red_2s_cubic-bezier(0.4,0,0.6,1)_infinite] flex-col gap-md rounded-xl border border-error/20 bg-error-container p-md text-on-error-container shadow-sm lg:flex-row lg:items-center lg:justify-between">
+              <div className="flex items-start gap-md lg:items-center">
+                <Icon name="warning" filled size={24} className="mt-0.5 shrink-0 text-error lg:mt-0" />
+                <div className="min-w-0">
                   <p className="font-bold">
                     Drift Threshold Alert: CHIOMA Persona
                   </p>
@@ -196,13 +197,13 @@ export default function ResearchConsolePage() {
                   </p>
                 </div>
               </div>
-              <div className="flex shrink-0 gap-sm pl-md">
-                <button className="rounded-full bg-on-error-container px-md py-xs text-sm font-bold text-surface transition-opacity hover:opacity-90">
+              <div className="flex shrink-0 flex-col gap-sm sm:flex-row lg:pl-md">
+                <button className="rounded-full bg-on-error-container px-md py-xs text-center text-sm font-bold text-surface transition-opacity hover:opacity-90">
                   Deploy Hotfix
                 </button>
                 <button
                   onClick={() => setAlertDismissed(true)}
-                  className="rounded-full border border-on-error-container/30 px-md py-xs text-sm font-bold"
+                  className="rounded-full border border-on-error-container/30 px-md py-xs text-center text-sm font-bold"
                 >
                   Acknowledge
                 </button>
@@ -213,12 +214,12 @@ export default function ResearchConsolePage() {
           {/* -------------------------------------------------------------- */}
           {/* Bento Grid: Chart + Metrics                                     */}
           {/* -------------------------------------------------------------- */}
-          <div className="grid h-[400px] grid-cols-12 gap-lg">
-            {/* Chart card (8 cols) */}
-            <div className="col-span-12 flex flex-col rounded-xl border border-outline-variant bg-surface p-lg lg:col-span-8">
-              <div className="mb-lg flex items-start justify-between">
+          <div className="grid auto-rows-auto grid-cols-12 gap-md lg:gap-lg">
+            {/* Chart card (8 cols on desktop, full on mobile) */}
+            <div className="col-span-12 flex min-h-[220px] flex-col rounded-xl border border-outline-variant bg-surface p-md sm:min-h-[280px] lg:col-span-8 lg:min-h-[350px] lg:p-lg">
+              <div className="mb-md flex flex-col gap-sm sm:mb-lg sm:flex-row sm:items-start sm:justify-between">
                 <div>
-                  <h3 className="font-bold text-on-surface">
+                  <h3 className="text-sm font-bold text-on-surface sm:text-base">
                     Prompt-to-Line Latency &amp; Accuracy
                   </h3>
                   <p className="text-xs text-on-surface-variant">
@@ -237,21 +238,21 @@ export default function ResearchConsolePage() {
               <LatencyChart />
             </div>
 
-            {/* Consistency score card (4 cols) */}
-            <div className="col-span-12 flex flex-col justify-between rounded-xl border border-outline-variant bg-surface p-lg lg:col-span-4">
+            {/* Consistency score card (4 cols on desktop, full on mobile) */}
+            <div className="col-span-12 flex flex-col justify-between rounded-xl border border-outline-variant bg-surface p-md lg:col-span-4 lg:p-lg">
               <div>
                 <h3 className="font-bold text-on-surface">Consistency Score</h3>
                 <p className="mb-md text-xs text-on-surface-variant">
                   Aggregate CHIOMA Alignment
                 </p>
-                <div className="space-y-md">
+                <div className="grid grid-cols-2 gap-md lg:grid-cols-1 lg:space-y-0">
                   {/* Tone Match */}
                   <div className="rounded-lg bg-[#F1F4F9] p-md">
                     <span className="text-[10px] font-bold uppercase text-on-surface-variant">
                       Tone Match
                     </span>
                     <div className="flex items-end justify-between">
-                      <span className="font-mono text-4xl font-medium text-primary">
+                      <span className="font-mono text-3xl font-medium text-primary sm:text-4xl">
                         94.2
                       </span>
                       <span className="mb-1 flex items-center text-xs text-secondary">
@@ -266,7 +267,7 @@ export default function ResearchConsolePage() {
                       Fact Retrieval
                     </span>
                     <div className="flex items-end justify-between">
-                      <span className="font-mono text-4xl font-medium text-[#2B4C7E]">
+                      <span className="font-mono text-3xl font-medium text-[#2B4C7E] sm:text-4xl">
                         89.8
                       </span>
                       <span className="mb-1 flex items-center text-xs text-error">
@@ -277,7 +278,7 @@ export default function ResearchConsolePage() {
                   </div>
                 </div>
               </div>
-              <div className="flex items-center justify-between border-t border-outline-variant pt-md font-mono text-xs text-on-surface-variant">
+              <div className="mt-md flex items-center justify-between border-t border-outline-variant pt-md font-mono text-xs text-on-surface-variant">
                 <span>Last Evaluated</span>
                 <span>14:02 UTC</span>
               </div>
@@ -289,8 +290,8 @@ export default function ResearchConsolePage() {
           {/* -------------------------------------------------------------- */}
           <div className="overflow-hidden rounded-xl border border-outline-variant bg-surface shadow-sm">
             {/* Table header row */}
-            <div className="flex items-center justify-between border-b border-outline-variant bg-surface-container-lowest px-lg py-md">
-              <h3 className="font-bold text-on-surface">
+            <div className="flex flex-col gap-sm border-b border-outline-variant bg-surface-container-lowest px-md py-md sm:flex-row sm:items-center sm:justify-between sm:px-lg">
+              <h3 className="text-sm font-bold text-on-surface sm:text-base">
                 Recent CHIOMA Conversations (Persona Audit)
               </h3>
               <div className="flex gap-sm">
@@ -303,8 +304,8 @@ export default function ResearchConsolePage() {
               </div>
             </div>
 
-            {/* Table */}
-            <div className="overflow-x-auto">
+            {/* Desktop/Tablet Table — hidden on mobile */}
+            <div className="hidden overflow-x-auto md:block">
               <table className="w-full border-collapse text-left text-sm">
                 <thead className="bg-surface-container text-xs font-bold uppercase tracking-wider text-on-surface-variant">
                   <tr>
@@ -346,6 +347,36 @@ export default function ResearchConsolePage() {
                   ))}
                 </tbody>
               </table>
+            </div>
+
+            {/* Mobile Card Layout — visible only on mobile */}
+            <div className="divide-y divide-outline-variant/30 md:hidden">
+              {filteredSessions.map((session) => (
+                <div
+                  key={session.id}
+                  className={`cursor-pointer p-md transition-colors active:bg-[#F1F4F9] ${
+                    session.consistency < 0.75 ? "bg-error/5" : ""
+                  }`}
+                >
+                  <div className="mb-sm flex items-center justify-between">
+                    <span className="font-mono text-xs text-on-surface-variant">
+                      {session.id}
+                    </span>
+                    <Icon
+                      name="open_in_new"
+                      size={18}
+                      className="text-primary"
+                    />
+                  </div>
+                  <p className="mb-xs font-semibold text-on-surface">
+                    {session.intent}
+                  </p>
+                  <p className="mb-sm line-clamp-2 text-sm italic text-on-surface-variant">
+                    {session.prompt}
+                  </p>
+                  <ConsistencyBar value={session.consistency} />
+                </div>
+              ))}
             </div>
 
             {/* Pagination footer */}
@@ -449,14 +480,14 @@ export default function ResearchConsolePage() {
         {/* ---------------------------------------------------------------- */}
         {/* System status footer bar                                          */}
         {/* ---------------------------------------------------------------- */}
-        <footer className="flex h-8 shrink-0 items-center justify-between border-t border-outline-variant bg-surface-container px-lg font-mono text-[10px] uppercase tracking-widest text-on-surface-variant">
-          <div className="flex items-center gap-lg">
+        <footer className="flex h-auto shrink-0 flex-wrap items-center justify-center gap-x-lg gap-y-xs border-t border-outline-variant bg-surface-container px-md py-xs font-mono text-[9px] uppercase tracking-widest text-on-surface-variant sm:text-[10px] md:h-8 md:flex-nowrap md:justify-between md:px-lg md:py-0">
+          <div className="flex items-center gap-md sm:gap-lg">
             <span className="flex items-center gap-xs">
               <span className="h-2 w-2 animate-pulse rounded-full bg-secondary" />
               Node Status: Active
             </span>
             <span>Latency: 12ms</span>
-            <span>Version: 2.0.4-LTS</span>
+            <span className="hidden sm:inline">Version: 2.0.4-LTS</span>
           </div>
           <div>&copy; 2024 AfriMentor Research AI Labs</div>
         </footer>
@@ -466,7 +497,7 @@ export default function ResearchConsolePage() {
         {/* ------------------------------------------------------------------ */}
         <button
           aria-label="Open terminal"
-          className="fixed bottom-12 right-12 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-primary text-on-primary shadow-xl transition-all hover:scale-110 active:scale-95"
+          className="fixed bottom-20 right-4 z-50 flex h-12 w-12 items-center justify-center rounded-full bg-primary text-on-primary shadow-xl transition-all hover:scale-110 active:scale-95 md:bottom-12 md:right-12 md:h-14 md:w-14"
         >
           <Icon name="terminal" size={24} />
         </button>

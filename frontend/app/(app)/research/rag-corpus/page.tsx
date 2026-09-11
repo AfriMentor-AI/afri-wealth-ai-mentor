@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
 import { Icon } from "@/components/Icon";
 
 // ---------------------------------------------------------------------------
@@ -107,25 +106,25 @@ const RETRIEVED_PASSAGES: RetrievedPassage[] = [
 
 function UploadModal({ onClose }: { onClose: () => void }) {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-inverse-surface/40 backdrop-blur-sm">
-      <div className="w-full max-w-lg rounded-2xl border border-outline-variant bg-surface p-xl shadow-2xl">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-inverse-surface/40 p-md backdrop-blur-sm">
+      <div className="w-full max-w-lg rounded-2xl border border-outline-variant bg-surface p-lg shadow-2xl sm:p-xl">
         <h2 className="font-headline-lg text-headline-lg-mobile mb-md text-primary">
           Upload Document
         </h2>
-        <label className="flex cursor-pointer flex-col items-center justify-center gap-md rounded-2xl border-2 border-dashed border-outline-variant p-xl transition-colors hover:border-primary">
+        <label className="flex cursor-pointer flex-col items-center justify-center gap-md rounded-2xl border-2 border-dashed border-outline-variant p-lg transition-colors hover:border-primary sm:p-xl">
           <input type="file" accept=".pdf,.docx" className="sr-only" />
           <Icon name="cloud_upload" size={48} className="text-on-surface-variant" />
-          <p className="font-medium text-on-surface">
+          <p className="text-center font-medium text-on-surface">
             Drag and drop PDF or DOCX files here
           </p>
           <p className="font-label-sm text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">
             Maximum file size: 50MB
           </p>
         </label>
-        <div className="mt-xl flex justify-end gap-md">
+        <div className="mt-lg flex flex-col-reverse gap-sm sm:mt-xl sm:flex-row sm:justify-end sm:gap-md">
           <button
             onClick={onClose}
-            className="rounded-full px-lg py-md font-bold text-on-surface-variant transition-all hover:bg-surface-variant"
+            className="rounded-full px-lg py-md text-center font-bold text-on-surface-variant transition-all hover:bg-surface-variant"
           >
             Cancel
           </button>
@@ -163,24 +162,26 @@ export default function RagCorpusPage() {
       {/* ------------------------------------------------------------------ */}
       {/* Header                                                               */}
       {/* ------------------------------------------------------------------ */}
-      <header className="flex-col shrink-0 items-center border-b bg-surface px-lg">
-        <div className="flex flex-col">
+      <header className="flex shrink-0 flex-col gap-md border-b bg-surface px-md py-md md:px-lg md:py-lg">
+        {/* Title row */}
+        <div className="flex flex-col pl-10 md:pl-0">
           <h2 className="font-headline-lg text-headline-lg-mobile text-primary">
             RAG Corpus Admin
           </h2>
-          <p className="font-mono text-sm text-on-surface-variant">
+          <p className="font-mono text-xs text-on-surface-variant sm:text-sm">
             Environment: production-af-west-1
           </p>
         </div>
-        <div className="flex items-center justify-between gap-md">
+        {/* Search + Upload row */}
+        <div className="flex flex-col gap-sm sm:flex-row sm:items-center sm:justify-between sm:gap-md">
           {/* Search */}
-          <div className="group relative">
+          <div className="group relative flex-1 sm:max-w-xs md:max-w-sm lg:max-w-md">
             <input
               type="text"
               placeholder="Search corpus..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-80 rounded-full border border-outline-variant bg-surface-container-low px-xl py-sm text-sm outline-none transition-all focus:border-transparent focus:ring-2 focus:ring-primary"
+              className="w-full rounded-full border border-outline-variant bg-surface-container-low px-xl py-sm text-sm outline-none transition-all focus:border-transparent focus:ring-2 focus:ring-primary"
             />
             <Icon
               name="search"
@@ -191,10 +192,11 @@ export default function RagCorpusPage() {
           {/* Upload CTA */}
           <button
             onClick={() => setShowModal(true)}
-            className="flex items-center gap-sm rounded-full bg-primary px-lg py-md font-semibold text-on-primary shadow-sm transition-all hover:opacity-90 active:scale-95"
+            className="flex shrink-0 items-center justify-center gap-sm rounded-full bg-primary px-md py-sm font-semibold text-on-primary shadow-sm transition-all hover:opacity-90 active:scale-95 sm:px-lg sm:py-md"
           >
             <Icon name="upload_file" size={20} />
-            Upload New Document
+            <span className="hidden sm:inline">Upload New Document</span>
+            <span className="sm:hidden">Upload</span>
           </button>
         </div>
       </header>
@@ -203,249 +205,303 @@ export default function RagCorpusPage() {
       {/* Asymmetric two-column content grid                                  */}
       {/* ------------------------------------------------------------------ */}
       <div
-        className="flex-1 overflow-y-auto p-xl [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-outline-variant [&::-webkit-scrollbar-track]:bg-transparent"
-        
+        className="flex-1 overflow-y-auto p-md sm:p-lg lg:p-xl [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-outline-variant [&::-webkit-scrollbar-track]:bg-transparent"
       >
-        {/* ---------------------------------------------------------------- */}
-        {/* Left: Document index + stats                                      */}
-        {/* ---------------------------------------------------------------- */}
-        <section className="space-y-lg mb-2">
-          {/* Section title + filter/export actions */}
-          <div className="flex items-center justify-between">
-            <h3 className="flex items-center gap-sm font-title-md text-title-md text-on-surface">
-              <Icon name="description" size={20} className="text-primary" />
-              Document Index
-            </h3>
-            <div className="flex gap-xs">
-              <button className="rounded-lg border border-outline-variant px-md py-xs text-sm font-medium transition-colors hover:bg-surface-variant">
-                Filter
-              </button>
-              <button className="rounded-lg border border-outline-variant px-md py-xs text-sm font-medium transition-colors hover:bg-surface-variant">
-                Export CSV
-              </button>
-            </div>
-          </div>
+        {/* Two-column grid on lg+, single column on mobile/tablet */}
+        <div className="grid grid-cols-1 gap-lg lg:grid-cols-12">
 
-          {/* Document table */}
-          <div className="overflow-hidden rounded-2xl border border-outline-variant bg-surface-container-lowest shadow-sm">
-            <table className="w-full border-collapse text-left">
-              <thead className="border-b border-outline-variant bg-surface-container-low">
-                <tr>
-                  <th className="px-lg py-md font-label-sm text-label-sm uppercase tracking-wider text-on-surface-variant">
-                    Title
-                  </th>
-                  <th className="px-lg py-md font-label-sm text-label-sm uppercase tracking-wider text-on-surface-variant">
-                    Sector
-                  </th>
-                  <th className="px-lg py-md font-label-sm text-label-sm uppercase tracking-wider text-on-surface-variant">
-                    Country
-                  </th>
-                  <th className="px-lg py-md font-label-sm text-label-sm uppercase tracking-wider text-on-surface-variant">
-                    Author
-                  </th>
-                  <th className="px-lg py-md font-label-sm text-label-sm uppercase tracking-wider text-on-surface-variant">
-                    Date
-                  </th>
-                  <th className="px-lg py-md font-label-sm text-label-sm uppercase tracking-wider text-on-surface-variant">
-                    Status
-                  </th>
-                  <th className="px-lg py-md" />
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-outline-variant">
-                {filteredDocs.map((doc) => (
-                  <tr
-                    key={doc.id}
-                    className="group cursor-pointer transition-colors hover:bg-surface-container-low"
-                  >
-                    <td className="px-lg py-md">
-                      <div className="flex flex-col">
-                        <span className="font-body-md font-semibold text-on-surface">
-                          {doc.title}
-                        </span>
-                        <span className="font-mono text-xs text-on-surface-variant">
-                          ID: {doc.docId}
-                        </span>
-                      </div>
-                    </td>
-                    <td className="px-lg py-md">
-                      <span
-                        className={`rounded-full px-md py-xs text-xs font-bold ${doc.sectorColor}`}
-                      >
-                        {doc.sector}
-                      </span>
-                    </td>
-                    <td className="px-lg py-md font-medium text-on-surface">
-                      {doc.country}
-                    </td>
-                    <td className="px-lg py-md text-on-surface-variant">
-                      {doc.author}
-                    </td>
-                    <td className="px-lg py-md font-mono text-on-surface-variant">
-                      {doc.date}
-                    </td>
-                    <td className="px-lg py-md">
-                      {doc.status === "live" ? (
-                        <span className="flex items-center gap-xs text-xs font-bold uppercase text-secondary">
-                          <span className="h-2 w-2 rounded-full bg-secondary" />
-                          Live
-                        </span>
-                      ) : (
-                        <span className="flex items-center gap-xs text-xs font-bold uppercase text-tertiary">
-                          <span className="h-2 w-2 rounded-full bg-tertiary" />
-                          Draft
-                        </span>
-                      )}
-                    </td>
-                    <td className="px-lg py-md text-right">
-                      <button className="material-symbols-outlined text-on-surface-variant opacity-0 transition-opacity group-hover:opacity-100">
-                        more_vert
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-                {filteredDocs.length === 0 && (
-                  <tr>
-                    <td
-                      colSpan={7}
-                      className="px-lg py-xl text-center font-body-md text-on-surface-variant"
-                    >
-                      No documents match &ldquo;{searchQuery}&rdquo;
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-
-          {/* Stats bento row */}
-          <div className="grid grid-cols-3 gap-lg">
-            {/* Total index size */}
-            <div className="rounded-2xl border border-outline-variant bg-surface-container-low p-lg">
-              <p className="font-label-sm text-label-sm font-bold uppercase tracking-widest text-on-surface-variant">
-                Total Index Size
-              </p>
-              <h4 className="mt-sm font-headline-xl text-headline-xl text-primary">
-                1.42 GB
-              </h4>
-              <div className="mt-md flex items-center gap-xs text-xs font-bold text-secondary">
-                <Icon name="trending_up" size={16} />
-                +12% from last week
-              </div>
-            </div>
-
-            {/* Active vectors */}
-            <div className="rounded-2xl border border-outline-variant bg-surface-container-low p-lg">
-              <p className="font-label-sm text-label-sm font-bold uppercase tracking-widest text-on-surface-variant">
-                Active Vectors
-              </p>
-              <h4 className="mt-sm font-headline-xl text-headline-xl text-primary">
-                14.2M
-              </h4>
-              <div className="mt-md text-xs font-medium text-on-surface-variant">
-                HNSW Indexing Active
-              </div>
-            </div>
-
-            {/* Inference latency */}
-            <div className="rounded-2xl border border-outline-variant bg-surface-container-low p-lg">
-              <p className="font-label-sm text-label-sm font-bold uppercase tracking-widest text-on-surface-variant">
-                Inference Latency
-              </p>
-              <h4 className="mt-sm font-headline-xl text-headline-xl text-primary">
-                42ms
-              </h4>
-              <div className="mt-md flex items-center gap-xs text-xs font-bold text-secondary">
-                <Icon name="check_circle" size={16} />
-                Optimized
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* ---------------------------------------------------------------- */}
-        {/* Right: Test Query Bench (sticky panel)                            */}
-        {/* ---------------------------------------------------------------- */}
-        <aside className="space-y-lg">
-          <div className="sticky top-24 flex flex-col rounded-2xl border border-outline-variant bg-surface-container p-lg">
-            {/* Panel title */}
-            <div className="mb-lg flex items-center gap-sm">
-              <Icon name="terminal" filled size={22} className="text-primary" />
-              <h3 className="font-title-md text-title-md text-on-surface">
-                Test Query Bench
+          {/* ---------------------------------------------------------------- */}
+          {/* Left: Document index + stats                                      */}
+          {/* ---------------------------------------------------------------- */}
+          <section className="space-y-lg lg:col-span-8">
+            {/* Section title + filter/export actions */}
+            <div className="flex flex-col gap-sm sm:flex-row sm:items-center sm:justify-between">
+              <h3 className="flex items-center gap-sm font-title-md text-title-md text-on-surface">
+                <Icon name="description" size={20} className="text-primary" />
+                Document Index
               </h3>
-            </div>
-
-            <div className="flex-1 space-y-lg overflow-y-auto pr-sm">
-              {/* Prompt input */}
-              <div className="space-y-sm">
-                <label className="font-label-sm text-label-sm font-bold text-on-surface-variant">
-                  RESEARCHER PROMPT
-                </label>
-                <textarea
-                  value={testQuery}
-                  onChange={(e) => setTestQuery(e.target.value)}
-                  placeholder="e.g., What are the best practices for irrigation in Northern Ghana?"
-                  className="h-24 w-full rounded-xl border border-outline-variant bg-surface-bright p-md font-body-md text-sm outline-none focus:ring-1 focus:ring-primary"
-                />
-                <button
-                  onClick={() => setHasRunQuery(true)}
-                  className="w-full rounded-lg bg-primary py-sm text-sm font-bold text-on-primary transition-all hover:opacity-90 active:scale-95"
-                >
-                  Run Simulation
+              <div className="flex gap-xs">
+                <button className="rounded-lg border border-outline-variant px-md py-xs text-sm font-medium transition-colors hover:bg-surface-variant">
+                  Filter
+                </button>
+                <button className="rounded-lg border border-outline-variant px-md py-xs text-sm font-medium transition-colors hover:bg-surface-variant">
+                  Export CSV
                 </button>
               </div>
+            </div>
 
-              {/* Retrieved passages */}
-              {hasRunQuery && (
-                <div className="space-y-md border-t border-outline-variant pt-lg">
-                  <div className="flex items-center justify-between">
-                    <label className="font-label-sm text-label-sm font-bold uppercase text-on-surface-variant">
-                      Top Retrieved Passages (3)
-                    </label>
-                    <span className="rounded-full bg-surface-container-highest px-md py-xs font-mono text-xs">
-                      Score: 0.942
-                    </span>
-                  </div>
-
-                  {RETRIEVED_PASSAGES.map((passage) => (
-                    <div
-                      key={passage.ref}
-                      className={`space-y-xs rounded-r-lg border-l-4 p-md shadow-sm ${
-                        passage.isTop
-                          ? "border-primary bg-surface-bright"
-                          : "border-outline-variant bg-surface-bright"
-                      }`}
-                    >
-                      <div className="flex items-center justify-between text-xs font-bold text-on-surface-variant">
-                        <span>{passage.ref}</span>
-                        <span className="font-mono text-secondary">
-                          {passage.score.toFixed(2)} Match
-                        </span>
-                      </div>
-                      <p
-                        className={`text-sm italic leading-relaxed text-on-surface ${
-                          !passage.isTop ? "opacity-80" : ""
-                        }`}
+            {/* Document table — desktop/tablet */}
+            <div className="hidden overflow-hidden rounded-2xl border border-outline-variant bg-surface-container-lowest shadow-sm md:block">
+              <div className="overflow-x-auto [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-outline-variant [&::-webkit-scrollbar-track]:bg-transparent">
+                <table className="w-full min-w-[720px] border-collapse text-left">
+                  <thead className="border-b border-outline-variant bg-surface-container-low">
+                    <tr>
+                      <th className="whitespace-nowrap px-lg py-md font-label-sm text-label-sm uppercase tracking-wider text-on-surface-variant">
+                        Title
+                      </th>
+                      <th className="whitespace-nowrap px-lg py-md font-label-sm text-label-sm uppercase tracking-wider text-on-surface-variant">
+                        Sector
+                      </th>
+                      <th className="whitespace-nowrap px-lg py-md font-label-sm text-label-sm uppercase tracking-wider text-on-surface-variant">
+                        Country
+                      </th>
+                      <th className="whitespace-nowrap px-lg py-md font-label-sm text-label-sm uppercase tracking-wider text-on-surface-variant">
+                        Author
+                      </th>
+                      <th className="whitespace-nowrap px-lg py-md font-label-sm text-label-sm uppercase tracking-wider text-on-surface-variant">
+                        Date
+                      </th>
+                      <th className="whitespace-nowrap px-lg py-md font-label-sm text-label-sm uppercase tracking-wider text-on-surface-variant">
+                        Status
+                      </th>
+                      <th className="whitespace-nowrap px-lg py-md" />
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-outline-variant">
+                    {filteredDocs.map((doc) => (
+                      <tr
+                        key={doc.id}
+                        className="group cursor-pointer transition-colors hover:bg-surface-container-low"
                       >
-                        {passage.text}
-                      </p>
-                    </div>
-                  ))}
+                        <td className="whitespace-nowrap px-lg py-md">
+                          <div className="flex flex-col">
+                            <span className="font-body-md font-semibold text-on-surface">
+                              {doc.title}
+                            </span>
+                            <span className="font-mono text-xs text-on-surface-variant">
+                              ID: {doc.docId}
+                            </span>
+                          </div>
+                        </td>
+                        <td className="whitespace-nowrap px-lg py-md">
+                          <span
+                            className={`rounded-full px-md py-xs text-xs font-bold ${doc.sectorColor}`}
+                          >
+                            {doc.sector}
+                          </span>
+                        </td>
+                        <td className="whitespace-nowrap px-lg py-md font-medium text-on-surface">
+                          {doc.country}
+                        </td>
+                        <td className="whitespace-nowrap px-lg py-md text-on-surface-variant">
+                          {doc.author}
+                        </td>
+                        <td className="whitespace-nowrap px-lg py-md font-mono text-on-surface-variant">
+                          {doc.date}
+                        </td>
+                        <td className="whitespace-nowrap px-lg py-md">
+                          {doc.status === "live" ? (
+                            <span className="flex items-center gap-xs text-xs font-bold uppercase text-secondary">
+                              <span className="h-2 w-2 rounded-full bg-secondary" />
+                              Live
+                            </span>
+                          ) : (
+                            <span className="flex items-center gap-xs text-xs font-bold uppercase text-tertiary">
+                              <span className="h-2 w-2 rounded-full bg-tertiary" />
+                              Draft
+                            </span>
+                          )}
+                        </td>
+                        <td className="whitespace-nowrap px-lg py-md text-right">
+                          <button
+                            type="button"
+                            aria-label="More options"
+                            className="rounded-full p-1 text-on-surface-variant opacity-0 transition-opacity hover:bg-surface-variant group-hover:opacity-100"
+                          >
+                            <Icon name="more_vert" size={20} />
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                    {filteredDocs.length === 0 && (
+                      <tr>
+                        <td
+                          colSpan={7}
+                          className="px-lg py-xl text-center font-body-md text-on-surface-variant"
+                        >
+                          No documents match &ldquo;{searchQuery}&rdquo;
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* Document cards — mobile only */}
+            <div className="space-y-sm md:hidden">
+              {filteredDocs.length === 0 && (
+                <div className="rounded-2xl border border-outline-variant bg-surface-container-lowest p-lg text-center font-body-md text-on-surface-variant">
+                  No documents match &ldquo;{searchQuery}&rdquo;
                 </div>
               )}
+              {filteredDocs.map((doc) => (
+                <div
+                  key={doc.id}
+                  className="cursor-pointer rounded-xl border border-outline-variant bg-surface-container-lowest p-md shadow-sm transition-colors active:bg-surface-container-low"
+                >
+                  <div className="mb-xs flex items-start justify-between gap-sm">
+                    <div className="min-w-0">
+                      <p className="font-semibold text-on-surface">{doc.title}</p>
+                      <p className="font-mono text-xs text-on-surface-variant">
+                        ID: {doc.docId}
+                      </p>
+                    </div>
+                    {doc.status === "live" ? (
+                      <span className="flex shrink-0 items-center gap-xs text-xs font-bold uppercase text-secondary">
+                        <span className="h-2 w-2 rounded-full bg-secondary" />
+                        Live
+                      </span>
+                    ) : (
+                      <span className="flex shrink-0 items-center gap-xs text-xs font-bold uppercase text-tertiary">
+                        <span className="h-2 w-2 rounded-full bg-tertiary" />
+                        Draft
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex flex-wrap items-center gap-sm">
+                    <span
+                      className={`rounded-full px-sm py-0.5 text-xs font-bold ${doc.sectorColor}`}
+                    >
+                      {doc.sector}
+                    </span>
+                    <span className="text-xs font-medium text-on-surface">
+                      {doc.country}
+                    </span>
+                  </div>
+                </div>
+              ))}
             </div>
 
-            {/* Panel footer */}
-            <div className="mt-md flex items-center justify-between border-t border-outline-variant pt-lg font-mono text-xs text-on-surface-variant">
-              <span>Model: GPT-4-Afri-V2</span>
-              <span className="flex items-center gap-xs">
-                <span className="h-2 w-2 animate-pulse rounded-full bg-secondary" />
-                System Ready
-              </span>
+            {/* Stats bento row */}
+            <div className="grid grid-cols-1 gap-md sm:grid-cols-3 sm:gap-lg">
+              {/* Total index size */}
+              <div className="rounded-2xl border border-outline-variant bg-surface-container-low p-lg">
+                <p className="font-label-sm text-label-sm font-bold uppercase tracking-widest text-on-surface-variant">
+                  Total Index Size
+                </p>
+                <h4 className="mt-sm font-headline-xl text-headline-lg-mobile text-primary sm:text-headline-xl">
+                  1.42 GB
+                </h4>
+                <div className="mt-md flex items-center gap-xs text-xs font-bold text-secondary">
+                  <Icon name="trending_up" size={16} />
+                  +12% from last week
+                </div>
+              </div>
+
+              {/* Active vectors */}
+              <div className="rounded-2xl border border-outline-variant bg-surface-container-low p-lg">
+                <p className="font-label-sm text-label-sm font-bold uppercase tracking-widest text-on-surface-variant">
+                  Active Vectors
+                </p>
+                <h4 className="mt-sm font-headline-xl text-headline-lg-mobile text-primary sm:text-headline-xl">
+                  14.2M
+                </h4>
+                <div className="mt-md text-xs font-medium text-on-surface-variant">
+                  HNSW Indexing Active
+                </div>
+              </div>
+
+              {/* Inference latency */}
+              <div className="rounded-2xl border border-outline-variant bg-surface-container-low p-lg">
+                <p className="font-label-sm text-label-sm font-bold uppercase tracking-widest text-on-surface-variant">
+                  Inference Latency
+                </p>
+                <h4 className="mt-sm font-headline-xl text-headline-lg-mobile text-primary sm:text-headline-xl">
+                  42ms
+                </h4>
+                <div className="mt-md flex items-center gap-xs text-xs font-bold text-secondary">
+                  <Icon name="check_circle" size={16} />
+                  Optimized
+                </div>
+              </div>
             </div>
-          </div>
-        </aside>
+          </section>
+
+          {/* ---------------------------------------------------------------- */}
+          {/* Right: Test Query Bench (sticky panel on desktop)                 */}
+          {/* ---------------------------------------------------------------- */}
+          <aside className="lg:col-span-4">
+            <div className="flex flex-col rounded-2xl border border-outline-variant bg-surface-container p-md sm:p-lg lg:sticky lg:top-0">
+              {/* Panel title */}
+              <div className="mb-lg flex items-center gap-sm">
+                <Icon name="terminal" filled size={22} className="text-primary" />
+                <h3 className="font-title-md text-title-md text-on-surface">
+                  Test Query Bench
+                </h3>
+              </div>
+
+              <div className="flex-1 space-y-lg overflow-y-auto">
+                {/* Prompt input */}
+                <div className="space-y-sm">
+                  <label className="font-label-sm text-label-sm font-bold text-on-surface-variant">
+                    RESEARCHER PROMPT
+                  </label>
+                  <textarea
+                    value={testQuery}
+                    onChange={(e) => setTestQuery(e.target.value)}
+                    placeholder="e.g., What are the best practices for irrigation in Northern Ghana?"
+                    className="h-24 w-full rounded-xl border border-outline-variant bg-surface-bright p-md font-body-md text-sm outline-none focus:ring-1 focus:ring-primary"
+                  />
+                  <button
+                    onClick={() => setHasRunQuery(true)}
+                    className="w-full rounded-lg bg-primary py-sm text-sm font-bold text-on-primary transition-all hover:opacity-90 active:scale-95"
+                  >
+                    Run Simulation
+                  </button>
+                </div>
+
+                {/* Retrieved passages */}
+                {hasRunQuery && (
+                  <div className="space-y-md border-t border-outline-variant pt-lg">
+                    <div className="flex flex-col gap-xs sm:flex-row sm:items-center sm:justify-between">
+                      <label className="font-label-sm text-label-sm font-bold uppercase text-on-surface-variant">
+                        Top Retrieved Passages (3)
+                      </label>
+                      <span className="rounded-full bg-surface-container-highest px-md py-xs font-mono text-xs">
+                        Score: 0.942
+                      </span>
+                    </div>
+
+                    {RETRIEVED_PASSAGES.map((passage) => (
+                      <div
+                        key={passage.ref}
+                        className={`space-y-xs rounded-r-lg border-l-4 p-md shadow-sm ${
+                          passage.isTop
+                            ? "border-primary bg-surface-bright"
+                            : "border-outline-variant bg-surface-bright"
+                        }`}
+                      >
+                        <div className="flex flex-col gap-xs text-xs font-bold text-on-surface-variant sm:flex-row sm:items-center sm:justify-between">
+                          <span>{passage.ref}</span>
+                          <span className="font-mono text-secondary">
+                            {passage.score.toFixed(2)} Match
+                          </span>
+                        </div>
+                        <p
+                          className={`text-sm italic leading-relaxed text-on-surface ${
+                            !passage.isTop ? "opacity-80" : ""
+                          }`}
+                        >
+                          {passage.text}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Panel footer */}
+              <div className="mt-md flex items-center justify-between border-t border-outline-variant pt-lg font-mono text-xs text-on-surface-variant">
+                <span>Model: GPT-4-Afri-V2</span>
+                <span className="flex items-center gap-xs">
+                  <span className="h-2 w-2 animate-pulse rounded-full bg-secondary" />
+                  System Ready
+                </span>
+              </div>
+            </div>
+          </aside>
+        </div>
       </div>
 
       {/* Upload modal */}
