@@ -163,7 +163,7 @@ export default function RagCorpusPage() {
       {/* ------------------------------------------------------------------ */}
       {/* Header                                                               */}
       {/* ------------------------------------------------------------------ */}
-      <header className="sticky top-0 z-40 flex h-20 shrink-0 items-center justify-between border-b border-outline-variant bg-surface px-xl">
+      <header className="flex-col shrink-0 items-center border-b bg-surface px-lg">
         <div className="flex flex-col">
           <h2 className="font-headline-lg text-headline-lg-mobile text-primary">
             RAG Corpus Admin
@@ -172,7 +172,7 @@ export default function RagCorpusPage() {
             Environment: production-af-west-1
           </p>
         </div>
-        <div className="flex items-center gap-md">
+        <div className="flex items-center justify-between gap-md">
           {/* Search */}
           <div className="group relative">
             <input
@@ -204,12 +204,12 @@ export default function RagCorpusPage() {
       {/* ------------------------------------------------------------------ */}
       <div
         className="flex-1 overflow-y-auto p-xl [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-outline-variant [&::-webkit-scrollbar-track]:bg-transparent"
-        style={{ display: "grid", gridTemplateColumns: "1fr 380px", gap: "24px" }}
+        
       >
         {/* ---------------------------------------------------------------- */}
         {/* Left: Document index + stats                                      */}
         {/* ---------------------------------------------------------------- */}
-        <section className="space-y-lg">
+        <section className="space-y-lg mb-2">
           {/* Section title + filter/export actions */}
           <div className="flex items-center justify-between">
             <h3 className="flex items-center gap-sm font-title-md text-title-md text-on-surface">

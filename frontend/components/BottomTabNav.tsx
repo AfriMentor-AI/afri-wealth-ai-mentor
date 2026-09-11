@@ -10,7 +10,7 @@ const tabs = [
   { href: "/goals", label: "Goals", icon: "target" },
   { href: "/library", label: "Library", icon: "auto_stories" },
   { href: "/progress", label: "Progress", icon: "query_stats" },
-  { href: "/research", label: "Research Console", icon: "analytics" },
+  { href: "/research/personas", label: "Research Console", icon: "analytics" },
 ];
 
 // A normal flex sibling in the app shell now, not `fixed` — sized by its

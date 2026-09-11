@@ -5,10 +5,10 @@ import { usePathname } from "next/navigation";
 import { Icon } from "@/components/Icon";
 
 const NAV_ITEMS = [
-  { label: "Personas", icon: "person", href: "/research" },
+  { label: "Personas", icon: "person", href: "/research/personas" },
   { label: "RAG Corpus", icon: "folder_shared", href: "/research/rag-corpus" },
-  { label: "Analytics", icon: "analytics", href: "/research" },
-  { label: "Settings", icon: "settings", href: "/research" },
+  { label: "Analytics", icon: "analytics", href: "/research/analytics" },
+  { label: "Settings", icon: "settings", href: "/research/settings" },
 ];
 
 export default function ResearchLayout({
@@ -42,9 +42,7 @@ export default function ResearchLayout({
         <nav className="flex-1 space-y-xs px-md" aria-label="Console">
           {NAV_ITEMS.map(({ label, icon, href }) => {
             const isActive =
-              href === "/research"
-                ? pathname === "/research"
-                : pathname === href || pathname?.startsWith(href + "/");
+              pathname === href || pathname?.startsWith(href + "/");
             return (
               <Link
                 key={label}
