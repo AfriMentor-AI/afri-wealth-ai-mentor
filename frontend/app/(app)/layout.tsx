@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import Image from "next/image";
 import { BottomTabNav } from "@/components/BottomTabNav";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { NotificationPopover } from "@/components/NotificationPopover";
 import { FeedbackSurveyModal } from "@/components/FeedbackSurveyModal";
 import { useAppDispatch, useAppState } from "@/lib/store";
 import { fetchChatMessages, fetchProfile } from "@/lib/api";
@@ -57,7 +58,10 @@ export default function AppShellLayout({ children }: { children: React.ReactNode
               </div>
               <p className="font-title-md text-title-md text-on-surface">AfriMentor AI</p>
             </div>
-            <ThemeToggle />
+            <div className="flex items-center gap-xs">
+              <NotificationPopover />
+              <ThemeToggle />
+            </div>
           </header>
         )}
         <div className="min-h-0 flex-1 overflow-y-auto">{children}</div>

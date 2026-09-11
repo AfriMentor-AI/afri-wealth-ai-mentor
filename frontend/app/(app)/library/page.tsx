@@ -8,6 +8,7 @@ import type { InsightItem, RagChunk, RagCorpusStats } from "@/lib/types";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { useAppDispatch, useAppState } from "@/lib/store";
 import { InsightReaderModal } from "@/components/InsightReaderModal";
+import { NotificationPopover } from "@/components/NotificationPopover";
 
 const FILTERS = [
   { label: "Sector", icon: "expand_more" },
@@ -200,7 +201,7 @@ export default function InsightLibraryPage() {
           />
         </label>
         <div className="flex items-center gap-md text-on-surface-variant">
-          <Icon name="notifications_none" />
+          <NotificationPopover />
           <Icon name="settings" />
           <img src="/images/chioma-avatar.png" alt="Chioma" className="h-8 w-8 rounded-full border-2 border-primary object-cover" />
         </div>

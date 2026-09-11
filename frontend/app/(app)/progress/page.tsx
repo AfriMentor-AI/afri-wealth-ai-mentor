@@ -6,6 +6,7 @@ import { fetchProgressSummary, recordAction } from "@/lib/api";
 import type { BadgeWithStatus, StreakStat } from "@/lib/types";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { useAppDispatch, useAppState } from "@/lib/store";
+import { NotificationPopover } from "@/components/NotificationPopover";
 
 const WEEKDAY_BARS = [40, 60, 55, 85, 100, 95, 98]; // % height, matches reference chart shape
 const HEATMAP_INTENSITIES = ["bg-surface-container", "bg-secondary-fixed", "bg-secondary-container", "bg-secondary"];
@@ -106,7 +107,7 @@ export default function ProgressBoardPage() {
             <Icon name="search" size={18} className="absolute left-sm top-1/2 -translate-y-1/2 text-on-surface-variant" />
             <input placeholder="Search analytics..." className="h-9 w-full rounded-full border-0 bg-surface-container-low pl-9 pr-md text-xs focus:ring-2 focus:ring-primary" />
           </label>
-          <Icon name="notifications_none" className="text-on-surface-variant" />
+          <NotificationPopover />
           <Icon name="settings" className="text-on-surface-variant" />
           <button type="button" onClick={handleRecordAction} disabled={recordingAction} className="flex items-center gap-xs rounded-full bg-secondary px-md py-sm text-xs font-semibold text-on-secondary shadow transition-opacity hover:opacity-90 disabled:opacity-50">
             <Icon name="check_circle" size={16} /> {recordingAction ? "Recording..." : "Log Today's Action"}

@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Icon } from "./Icon";
-import { NotificationPopover } from "./NotificationPopover";
 
 const tabs = [
   { href: "/chat", label: "Chat", icon: "chat_bubble" },
@@ -27,9 +26,6 @@ export function BottomTabNav() {
       <div className="hidden lg:flex lg:flex-col lg:gap-0.5 lg:px-lg lg:pb-lg">
         <p className="font-headline-lg text-2xl font-bold text-primary">AfriMentor</p>
         <p className="font-label-sm text-[10px] uppercase tracking-wider text-on-surface-variant">Dignified Growth</p>
-      </div>
-      <div className="hidden md:flex md:flex-col md:items-center md:pb-sm md:border-b md:border-outline-variant lg:items-stretch">
-        <NotificationPopover />
       </div>
       {tabs.map(({ href, label, icon }) => {
         const isActive = pathname?.startsWith(href);
