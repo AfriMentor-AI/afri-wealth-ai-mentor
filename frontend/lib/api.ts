@@ -364,6 +364,69 @@ export async function completeMilestone(milestoneId: string): Promise<Milestone 
   return toMilestone(await res.json());
 }
 
+/** PATCH /api/v1/goals/{goalId} */
+export async function updateGoal(
+  goalId: string,
+  updates: {
+    title?: string;
+    description?: string | null;
+    deadline?: string | null;
+    status?: string;
+  }
+): Promise<Goal> {
+  const res = await apiFetch(`/api/v1/goals/${goalId}`, {
+    method: "PATCH",
+    body: JSON.stringify(updates),
+  });
+  if (!res.ok) throw new Error(`updateGoal failed: ${res.status}`);
+  return toGoal(await res.json());
+}
+
+/** DELETE /api/v1/goals/{goalId} */
+export async function deleteGoal(goalId: string): Promise<void> {
+  const res = await apiFetch(`/api/v1/goals/${goalId}`, { method: "DELETE" });
+  if (!res.ok && res.status !== 204) throw new Error(`deleteGoal failed: ${res.status}`);
+}
+
+/** POST /api/v1/goals/{goalId}/milestones */
+export async function createMilestone(
+  goalId: string,
+  input: {
+    title: string;
+    status?: Milestone["status"];
+  }
+): Promise<Milestone> {
+  const res = await apiFetch(`/api/v1/goals/${goalId}/milestones`, {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+  if (!res.ok) throw new Error(`createMilestone failed: ${res.status}`);
+  return toMilestone(await res.json());
+}
+
+/** PATCH /api/v1/milestones/{milestoneId} */
+export async function updateMilestone(
+  milestoneId: string,
+  updates: {
+    title?: string;
+    status?: Milestone["status"];
+    order?: number;
+  }
+): Promise<Milestone> {
+  const res = await apiFetch(`/api/v1/milestones/${milestoneId}`, {
+    method: "PATCH",
+    body: JSON.stringify(updates),
+  });
+  if (!res.ok) throw new Error(`updateMilestone failed: ${res.status}`);
+  return toMilestone(await res.json());
+}
+
+/** DELETE /api/v1/milestones/{milestoneId} */
+export async function deleteMilestone(milestoneId: string): Promise<void> {
+  const res = await apiFetch(`/api/v1/milestones/${milestoneId}`, { method: "DELETE" });
+  if (!res.ok && res.status !== 204) throw new Error(`deleteMilestone failed: ${res.status}`);
+}
+
 /** GET /api/v1/goals/{goalId}/commitments */
 export async function fetchCommitmentsByGoal(goalId: string): Promise<Commitment[]> {
   const res = await apiFetch(`/api/v1/goals/${goalId}/commitments`);

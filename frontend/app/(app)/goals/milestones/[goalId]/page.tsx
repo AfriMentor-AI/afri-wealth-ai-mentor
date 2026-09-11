@@ -5,13 +5,17 @@ import { useRouter } from "next/navigation";
 import { Icon } from "@/components/Icon";
 import {
   completeMilestone,
+  createMilestone,
+  deleteMilestone,
   fetchCommitmentsByGoal,
   fetchGoalById,
   fetchMilestonesByGoal,
+  updateMilestone,
 } from "@/lib/api";
 import type { Commitment, Goal, Milestone } from "@/lib/types";
 import { MilestoneRoad } from "@/components/ui/MilestoneRoad";
 import { Skeleton } from "@/components/ui/Skeleton";
+import { EditGoalModal } from "@/components/EditGoalModal";
 
 import { useAppDispatch } from "@/lib/store";
 import { Fragment } from "react";
@@ -57,6 +61,7 @@ export default function GoalMilestonePathPage({
   const [goal, setGoal] = useState<Goal | null | undefined>(null);
   const [milestones, setMilestones] = useState<Milestone[] | null>(null);
   const [commitments, setCommitments] = useState<Commitment[] | null>(null);
+  const [isEditGoalOpen, setIsEditGoalOpen] = useState(false);
 
   useEffect(() => {
     dispatch({ type: "SET_ACTIVE_GOAL_ID", goalId: params.goalId });
@@ -65,16 +70,42 @@ export default function GoalMilestonePathPage({
     fetchCommitmentsByGoal(params.goalId).then(setCommitments);
   }, [params.goalId, dispatch]);
 
-  async function handleCompleteMilestone(milestoneId: string) {
-    await completeMilestone(milestoneId);
-
+  async function reloadData() {
     const [refreshedGoal, refreshedMilestones] = await Promise.all([
       fetchGoalById(params.goalId),
       fetchMilestonesByGoal(params.goalId),
     ]);
-
     setGoal(refreshedGoal);
     setMilestones(refreshedMilestones);
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new CustomEvent("goal-created", { detail: refreshedGoal }));
+    }
+  }
+
+  async function handleCompleteMilestone(milestoneId: string) {
+    await completeMilestone(milestoneId);
+    await reloadData();
+  }
+
+  async function handleUpdateMilestone(
+    milestoneId: string,
+    updates: { title?: string; status?: Milestone["status"] }
+  ) {
+    await updateMilestone(milestoneId, updates);
+    await reloadData();
+  }
+
+  async function handleDeleteMilestone(milestoneId: string) {
+    await deleteMilestone(milestoneId);
+    await reloadData();
+  }
+
+  async function handleCreateMilestone(input: {
+    title: string;
+    status?: Milestone["status"];
+  }) {
+    await createMilestone(params.goalId, input);
+    await reloadData();
   }
 
   return (
@@ -109,20 +140,37 @@ export default function GoalMilestonePathPage({
               Active Goal
             </p>
 
-            <h2 className="font-headline-lg-mobile text-headline-lg-mobile mt-xs text-on-background">
-              {goal.title}
-            </h2>
+            <div className="mt-xs flex items-start justify-between gap-sm">
+              <div>
+                <h2 className="font-headline-lg-mobile text-headline-lg-mobile text-on-background">
+                  {goal.title}
+                </h2>
+                {goal.description && (
+                  <p className="mt-xs font-body-md text-body-md text-on-surface-variant">
+                    {goal.description}
+                  </p>
+                )}
+                {goal.deadline && (
+                  <p className="mt-xs font-label-sm text-label-sm text-on-surface-variant">
+                    Target:{" "}
+                    {new Date(goal.deadline).toLocaleDateString(undefined, {
+                      year: "numeric",
+                      month: "long",
+                      day: "numeric",
+                    })}
+                  </p>
+                )}
+              </div>
 
-            {goal.deadline && (
-              <p className="mt-xs font-body-md text-body-md text-on-surface-variant">
-                Target:{" "}
-                {new Date(goal.deadline).toLocaleDateString(undefined, {
-                  year: "numeric",
-                  month: "long",
-                  day: "numeric",
-                })}
-              </p>
-            )}
+              <button
+                type="button"
+                onClick={() => setIsEditGoalOpen(true)}
+                className="flex items-center gap-xs rounded-full border border-outline-variant bg-surface-container-low px-md py-xs text-xs font-semibold text-on-surface hover:bg-surface-variant active:scale-95 transition-all shrink-0"
+              >
+                <Icon name="edit" size={16} />
+                <span>Edit Goal</span>
+              </button>
+            </div>
 
             <div className="mt-xl">
               {milestones === null ? (
@@ -131,6 +179,9 @@ export default function GoalMilestonePathPage({
                 <MilestoneRoad
                   milestones={milestones}
                   onCompleteMilestone={handleCompleteMilestone}
+                  onUpdateMilestone={handleUpdateMilestone}
+                  onDeleteMilestone={handleDeleteMilestone}
+                  onCreateMilestone={handleCreateMilestone}
                 />
               )}
             </div>
@@ -170,6 +221,24 @@ export default function GoalMilestonePathPage({
                     ))}
               </div>
             </section>
+
+            <EditGoalModal
+              goal={goal || null}
+              isOpen={isEditGoalOpen}
+              onClose={() => setIsEditGoalOpen(false)}
+              onGoalUpdated={(updated) => {
+                setGoal(updated);
+                if (typeof window !== "undefined") {
+                  window.dispatchEvent(new CustomEvent("goal-created", { detail: updated }));
+                }
+              }}
+              onGoalDeleted={() => {
+                if (typeof window !== "undefined") {
+                  window.dispatchEvent(new CustomEvent("goal-created", { detail: null }));
+                }
+                router.replace("/goals");
+              }}
+            />
           </>
         )}
       </main>

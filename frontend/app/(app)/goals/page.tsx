@@ -10,6 +10,7 @@ import { ProgressRing } from "@/components/ui/ProgressRing";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { Button } from "@/components/ui/Button";
 import { useAppDispatch } from "@/lib/store";
+import { EditGoalModal } from "@/components/EditGoalModal";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -169,10 +170,12 @@ function GoalRoadmapPanel({
   goal,
   milestones,
   onClose,
+  onEdit,
 }: {
   goal: Goal;
   milestones: Milestone[] | undefined;
   onClose: () => void;
+  onEdit: () => void;
 }) {
   const nextSuggestedStep = milestones?.find(
     (m) => m.status === "in_progress" || m.status === "blocked"
@@ -186,17 +189,31 @@ function GoalRoadmapPanel({
           <span className="font-label-sm text-label-sm uppercase tracking-widest text-primary">
             Active Roadmap
           </span>
-          <button
-            onClick={onClose}
-            aria-label="Close roadmap panel"
-            className="text-on-surface-variant hover:text-on-surface transition-colors"
-          >
-            <Icon name="close" size={20} />
-          </button>
+          <div className="flex items-center gap-xs">
+            <button
+              type="button"
+              onClick={onEdit}
+              aria-label="Edit goal"
+              className="flex items-center gap-1 rounded-full border border-outline-variant px-sm py-0.5 text-xs font-semibold text-on-surface hover:bg-surface-variant transition-colors"
+            >
+              <Icon name="edit" size={14} />
+              Edit
+            </button>
+            <button
+              onClick={onClose}
+              aria-label="Close roadmap panel"
+              className="text-on-surface-variant hover:text-on-surface transition-colors p-1"
+            >
+              <Icon name="close" size={20} />
+            </button>
+          </div>
         </div>
         <h3 className="font-headline-lg text-headline-lg text-on-surface">
           {goal.title}
         </h3>
+        {goal.description && (
+          <p className="mt-xs text-xs text-on-surface-variant line-clamp-2">{goal.description}</p>
+        )}
       </header>
 
       {/* Milestone path */}
@@ -267,6 +284,7 @@ export default function GoalsOverviewPage() {
     Record<string, Milestone[]>
   >({});
   const [activeGoalId, setActiveGoalId] = useState<string | null>(null);
+  const [editingGoal, setEditingGoal] = useState<Goal | null>(null);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [newGoalTitle, setNewGoalTitle] = useState("");
   const [creating, setCreating] = useState(false);
@@ -425,22 +443,35 @@ export default function GoalsOverviewPage() {
                           : "border border-outline-variant bg-surface-container-low hover:bg-surface-container-high"
                       }`}
                     >
-                      {/* Top row: icon + progress ring */}
+                      {/* Top row: icon + edit button + progress ring */}
                       <div className="flex items-start justify-between">
-                        <div
-                          className={`rounded-lg p-sm ${
-                            isActive ? "bg-primary-fixed" : "bg-surface-variant"
-                          }`}
-                        >
-                          <Icon
-                            name="ads_click"
-                            size={24}
-                            className={
-                              isActive
-                                ? "text-primary"
-                                : "text-on-surface-variant"
-                            }
-                          />
+                        <div className="flex items-center gap-sm">
+                          <div
+                            className={`rounded-lg p-sm ${
+                              isActive ? "bg-primary-fixed" : "bg-surface-variant"
+                            }`}
+                          >
+                            <Icon
+                              name="ads_click"
+                              size={24}
+                              className={
+                                isActive
+                                  ? "text-primary"
+                                  : "text-on-surface-variant"
+                              }
+                            />
+                          </div>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setEditingGoal(goal);
+                            }}
+                            title="Edit goal"
+                            className="flex h-8 w-8 items-center justify-center rounded-full text-on-surface-variant hover:bg-surface-variant hover:text-on-surface transition-colors"
+                          >
+                            <Icon name="edit" size={16} />
+                          </button>
                         </div>
                         <ProgressRing progressPct={goal.progressPct} size={64} />
                       </div>
@@ -575,6 +606,7 @@ export default function GoalsOverviewPage() {
           goal={activeGoal}
           milestones={activeMilestones}
           onClose={() => setActiveGoalId(null)}
+          onEdit={() => setEditingGoal(activeGoal)}
         />
       )}
 
@@ -590,6 +622,20 @@ export default function GoalsOverviewPage() {
           <Icon name="add" filled size={24} />
         </button>
       )}
+
+      {/* Edit Goal Modal */}
+      <EditGoalModal
+        goal={editingGoal}
+        isOpen={!!editingGoal}
+        onClose={() => setEditingGoal(null)}
+        onGoalUpdated={() => {
+          loadGoals();
+        }}
+        onGoalDeleted={() => {
+          setActiveGoalId(null);
+          loadGoals();
+        }}
+      />
     </div>
   );
 }
