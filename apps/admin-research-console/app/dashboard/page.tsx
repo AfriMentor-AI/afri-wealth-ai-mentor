@@ -13,11 +13,54 @@ import {
   triggerConsistencyRun,
   triggerManualAudit,
   reviewAuditSession,
+  fetchFalsePositiveRate,
   type DriftAlert,
   type AuditSession,
   type ConsistencyMetrics,
   type PersonaMeta,
+  type FalsePositiveRate,
 } from "@/lib/api";
+
+function fpPct(rate: number | null): string {
+  return rate == null ? "no data yet" : `${(rate * 100).toFixed(0)}%`;
+}
+
+// Card C5.3 — surfaces the measured false-positive rate so tuning the flag
+// thresholds (CONSISTENCY_REVIEW_FLOOR / DRIFT_THRESHOLD_PCT, app/config.py)
+// is a decision made against real numbers, not a guess. Broken out by reason
+// because the floor and the drift threshold are two separate knobs.
+function FalsePositiveRatePanel({ fpr }: { fpr: FalsePositiveRate | null }) {
+  if (!fpr) return null;
+  const reasons = Object.entries(fpr.by_reason);
+  return (
+    <div className="mb-6 rounded-md border border-border bg-surface-raised px-4 py-3">
+      <div className="flex items-center justify-between">
+        <p className="text-sm font-semibold">Manual-audit false-positive rate</p>
+        <p className="text-sm">
+          {fpPct(fpr.overall.rate)}{" "}
+          <span className="text-xs text-on-surface-dim">
+            ({fpr.overall.n_false_positive}/{fpr.overall.n} reviewed sessions with a verdict)
+          </span>
+        </p>
+      </div>
+      {reasons.length > 0 && (
+        <div className="mt-2 flex flex-wrap gap-x-6 gap-y-1 text-xs text-on-surface-dim">
+          {reasons.map(([reason, bucket]) => (
+            <span key={reason}>
+              {reason}: {fpPct(bucket.rate)} ({bucket.n_false_positive}/{bucket.n})
+            </span>
+          ))}
+        </div>
+      )}
+      {fpr.overall.n === 0 && (
+        <p className="mt-1 text-xs text-on-surface-dim">
+          No reviewed sessions carry a verdict yet — use the ✓/✗ buttons below as flagged
+          sessions are reviewed.
+        </p>
+      )}
+    </div>
+  );
+}
 
 function pct(n: number | null): string {
   if (n == null) return "—";
@@ -66,6 +109,7 @@ function DashboardScreen() {
   const [sessions, setSessions] = useState<AuditSession[]>([]);
   const [metrics, setMetrics] = useState<ConsistencyMetrics | null>(null);
   const [personas, setPersonas] = useState<PersonaMeta[]>([]);
+  const [fpRate, setFpRate] = useState<FalsePositiveRate | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   // Card C4.2 — "Filter by Drift" toggle and "New Manual Audit" in-flight flag.
@@ -76,16 +120,18 @@ function DashboardScreen() {
   // re-armed on toggle and always fetch the currently-selected filter.
   async function load(flagged = flaggedOnly) {
     try {
-      const [a, s, m, p] = await Promise.all([
+      const [a, s, m, p, fpr] = await Promise.all([
         fetchDriftAlerts(),
         fetchAuditSessions({ flaggedOnly: flagged }),
         fetchConsistencyMetrics(),
         fetchPersonas(),
+        fetchFalsePositiveRate(),
       ]);
       setAlerts(a);
       setSessions(s);
       setMetrics(m);
       setPersonas(p);
+      setFpRate(fpr);
       setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load dashboard data");
@@ -135,9 +181,12 @@ function DashboardScreen() {
   }
 
   // Card C4.2 — "Mark reviewed": close the human-review loop on a flagged row.
-  async function handleMarkReviewed(id: string) {
+  // Card C5.3 — verdict is the ground truth the false-positive rate above is
+  // computed from; the ✓/✗ buttons pass it directly rather than requiring a
+  // separate step a reviewer could skip.
+  async function handleMarkReviewed(id: string, verdict: "true_positive" | "false_positive") {
     try {
-      await reviewAuditSession(id);
+      await reviewAuditSession(id, verdict);
       await load();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Mark reviewed failed");
@@ -185,6 +234,8 @@ function DashboardScreen() {
         {error && <p className="mb-4 text-sm text-danger">{error}</p>}
 
         <DriftBanner alerts={alerts} onAcknowledge={handleAcknowledge} />
+
+        <FalsePositiveRatePanel fpr={fpRate} />
 
         <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
           <div className="rounded-md border border-border bg-surface-raised p-4">
@@ -313,16 +364,28 @@ function DashboardScreen() {
                           >
                             Pending{s.review_reason ? ` · ${s.review_reason}` : ""}
                           </span>
+                          {/* Card C5.3 — the verdict IS the mark-reviewed action, not a
+                              separate step: a reviewer who judges the flag correct or
+                              wrong records that in the same click. */}
                           <button
-                            onClick={() => handleMarkReviewed(s.id)}
+                            onClick={() => handleMarkReviewed(s.id, "true_positive")}
+                            title="Correct flag — genuine issue"
                             className="shrink-0 rounded border border-border px-2 py-1 text-xs text-on-surface-dim hover:text-on-surface"
                           >
-                            Mark reviewed
+                            ✓ Correct
+                          </button>
+                          <button
+                            onClick={() => handleMarkReviewed(s.id, "false_positive")}
+                            title="False positive — flag was noise"
+                            className="shrink-0 rounded border border-border px-2 py-1 text-xs text-on-surface-dim hover:text-on-surface"
+                          >
+                            ✗ False positive
                           </button>
                         </div>
                       ) : s.review_status === "reviewed" ? (
                         <span className="text-xs text-on-surface-dim" title={s.review_reason || ""}>
                           Reviewed{s.review_reason ? ` · ${s.review_reason}` : ""}
+                          {s.review_verdict ? ` · ${s.review_verdict.replace("_", " ")}` : ""}
                         </span>
                       ) : (
                         <span className="text-on-surface-dim">—</span>
