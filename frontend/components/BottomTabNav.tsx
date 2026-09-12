@@ -10,7 +10,7 @@ const tabs = [
   { href: "/goals", label: "Goals", icon: "target" },
   { href: "/library", label: "Library", icon: "auto_stories" },
   { href: "/progress", label: "Progress", icon: "query_stats" },
-  { href: "/research/personas", label: "Research Console", icon: "analytics" },
+  // Research Console is hidden from the consumer app; dedicated console lives in apps/admin-research-console
 ];
 
 // A normal flex sibling in the app shell now, not `fixed` — sized by its
