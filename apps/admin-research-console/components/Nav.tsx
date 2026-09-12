@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { clearSession, currentUser, type ConsoleRole } from "@/lib/session";
+import { clearSession, currentUser } from "@/lib/session";
 
 interface NavItem {
   href: string;
