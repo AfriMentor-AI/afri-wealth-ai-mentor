@@ -295,7 +295,7 @@ export default function ProgressBoardPage() {
 
   return (
     <main
-      className="min-h-full w-full max-w-full overflow-x-hidden bg-surface pb-8 pt-md md:pb-lg md:pt-0"
+      className="min-h-full w-full max-w-full overflow-x-hidden bg-surface pb-24 pt-md md:pb-lg md:pt-0"
       style={{ backgroundImage: "radial-gradient(circle, rgba(126,87,0,0.035) 2px, transparent 2px)", backgroundSize: "60px 60px" }}
     >
       <header className="hidden h-16 items-center justify-between border-b border-outline-variant bg-surface px-lg lg:flex">
