@@ -117,8 +117,6 @@ function InsightCard({
       tabIndex={0}
       className="group relative flex cursor-pointer flex-col overflow-hidden rounded-xl border border-outline-variant bg-surface-container transition-all duration-300 hover:border-primary hover:shadow-lg active:scale-[0.99]"
     >
-      <div className="relative h-44 overflow-hidden">
-        <img src={imageSrc} alt={item.title} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
       <div className="relative h-44 overflow-hidden bg-surface-container-high">
         <img
           src={imageSrc}
@@ -529,12 +527,8 @@ export default function InsightLibraryPage() {
                     }}
                     role="button"
                     tabIndex={0}
-                    className="w-44 shrink-0 cursor-pointer overflow-hidden rounded border border-outline-variant/30 bg-surface-container-low transition-all duration-300 hover:border-primary/40 active:scale-[0.98]"
                     className="w-48 shrink-0 cursor-pointer overflow-hidden rounded-xl border border-outline-variant/30 bg-surface-container-low transition-all duration-300 hover:border-primary/40 active:scale-[0.98]"
                   >
-                    <div className="relative flex h-24 items-center justify-center bg-gradient-to-br from-primary-container to-secondary-container">
-                      <Icon name={i === 0 ? "storefront" : "agriculture"} filled size={32} className="text-on-primary-container" />
-                      <span className="absolute left-2 top-2 rounded-full bg-inverse-surface/80 px-sm py-[2px] text-[10px] font-bold text-inverse-on-surface">
                     <div className="relative h-28 w-full overflow-hidden bg-surface-container">
                       <img
                         src={item.thumbnailUrl || CARD_ART[(i + curated.length) % CARD_ART.length].image}
@@ -557,7 +551,6 @@ export default function InsightLibraryPage() {
                     </div>
                     <div className="p-sm">
                       <p className="font-label-sm text-[11px] font-bold uppercase text-primary">{item.category}</p>
-                      <p className="mt-xs font-body-md text-[13px] font-semibold leading-tight text-on-surface">
                       <p className="mt-xs line-clamp-2 font-body-md text-[13px] font-semibold leading-tight text-on-surface">
                         {item.title}
                       </p>
