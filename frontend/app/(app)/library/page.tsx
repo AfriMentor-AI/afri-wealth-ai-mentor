@@ -20,29 +20,20 @@ const FILTERS = [
 
 const CARD_ART = [
   {
-    image:
-      "https://lh3.googleusercontent.com/aida-public/AB6AXuAFseUcS0GHZY8TrW2_-IIfdTaltL9yULdhzDmDusWk7CIme3S5mYIxBt9Up7J1hnw6GeqfBjkQu2kDyMDK8Mm-zVRlUM6V0w64Psx1zsheJ80MG9p0nIJf8kgTCadXhpUlaDZoERCap9qC6bRX-_rzR9T7GpP6KdKaFj7hkMqbqqcnS1U9uIt-yGEpqRpuT1koCxOAeIOgVVexoQUdY7qpBwq5MEe2FnjVImRB4OGrEpSMAwp0a6Hv2A",
     image: "/images/market-transaction.jpeg",
     label: "African Origin",
-    icon: "group",
     icon: "payments",
     note: "Shared by 40+ Mentors in your sector",
   },
   {
-    image:
-      "https://lh3.googleusercontent.com/aida-public/AB6AXuCVZeh65H3-mwGuYfjCq9_AoXGcbxm8t4v6sCK_9PujExnOeHkprSrj1NpXi-Lsygxjh_lRp-ODoQBZ8TN5s4SY92FcGJ4QoQVpMGAq2BdidE3n7Cy8gLNK9rBCDxbY0GwrxzZjCmzBLjjBHhDmi2dwViq_WFoNE5x7aUoBH01FZjUIdDrh7LFfn7J5JHlUm4vCkyXYLbnIdD-6-e3LcB4pSKobfwzv3UA0b_NZoL02mABYaxhUBOsB-g",
     image: "/images/market-woman.jpeg",
     label: "African Origin",
     icon: "history_edu",
     note: "Recommended by CHIOMA",
   },
   {
-    image:
-      "https://lh3.googleusercontent.com/aida-public/AB6AXuAlVqaxkhZRGgLUxqZPPwO9Mvf9XC8tN-7yGghROPeA2j-daXAjGoPdMC0jhJWIIR8PnIXhwZIoBFNxoZ2mX6r-zYhclluftn9oyxWs7qxzF268RUstR7nfipUgC745YYeclEAuh5msL0tUFbjGLNwJQiQkBAOoHRu4J9XD42BkfU8X0hQGijSBySlgtO70cYRuodH27kQ42RjS9yzEwj4fjMIKtkPbgG5zKVicOk7dl_rZFh9fRTTPQ",
     image: "/images/biz-planning.jpeg",
     label: "African Origin",
-    icon: "eco",
-    note: "Top trending in Agri-tech",
     icon: "analytics",
     note: "Top trending in Business Planning",
   },

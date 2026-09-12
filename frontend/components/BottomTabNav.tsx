@@ -22,7 +22,7 @@ export function BottomTabNav() {
 
   return (
     <nav
-      className="flex h-16 shrink-0 items-center justify-around border-t border-outline-variant bg-surface px-sm md:h-full md:w-20 md:flex-col md:justify-start md:gap-2 md:border-b-0 md:border-t-0 md:border-r md:py-lg lg:w-56 lg:items-stretch"
+      className="fixed bottom-0 left-0 right-0 z-40 flex h-16 w-full items-center justify-around border-t border-outline-variant bg-surface px-sm md:static md:h-full md:w-20 md:flex-col md:justify-start md:gap-2 md:border-b-0 md:border-t-0 md:border-r md:py-lg lg:w-56 lg:items-stretch"
       aria-label="Main"
     >
       <div className="hidden lg:flex lg:flex-col lg:gap-0.5 lg:px-lg lg:pb-lg">
