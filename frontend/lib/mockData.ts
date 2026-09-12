@@ -195,8 +195,6 @@ export const mockInsights: InsightItem[] = [
   {
     id: "i1",
     title: "How to price your trade",
-    summary: "Based on TEF curriculum",
-    category: "Sector",
     summary: "A practical framework for setting prices that cover hidden transport, fees, and leave room for reinvestment.",
     category: "Trade & Commerce",
     durationMinutes: 5,
@@ -207,8 +205,6 @@ export const mockInsights: InsightItem[] = [
   {
     id: "i2",
     title: "Saving during lean seasons",
-    summary: "Based on TEF curriculum",
-    category: "Sector",
     summary: "Building an automated cash buffer during harvest cycles so slow months never force emergency debt.",
     category: "Financial Literacy",
     durationMinutes: 3,
@@ -219,7 +215,6 @@ export const mockInsights: InsightItem[] = [
   {
     id: "i3",
     title: "Bookkeeping with Mobile Money",
-    summary: "New — Finance 101",
     summary: "Turning daily transaction alerts into a clean business ledger ready for credit applications.",
     category: "Finance 101",
     durationMinutes: 4,
@@ -229,9 +224,6 @@ export const mockInsights: InsightItem[] = [
   },
   {
     id: "i4",
-    title: "Supply Chain Mastery",
-    summary: "Popular — Agri-Business",
-    category: "Agri-Business",
     title: "Supply Chain Mastery in Agri-Markets",
     summary: "Direct wholesale sourcing, minimizing post-harvest spoilage, and negotiating bulk farmgate rates.",
     category: "Agriculture & Agri-tech",
