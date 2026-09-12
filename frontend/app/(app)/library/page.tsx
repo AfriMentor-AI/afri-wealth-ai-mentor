@@ -22,13 +22,16 @@ const CARD_ART = [
   {
     image:
       "https://lh3.googleusercontent.com/aida-public/AB6AXuAFseUcS0GHZY8TrW2_-IIfdTaltL9yULdhzDmDusWk7CIme3S5mYIxBt9Up7J1hnw6GeqfBjkQu2kDyMDK8Mm-zVRlUM6V0w64Psx1zsheJ80MG9p0nIJf8kgTCadXhpUlaDZoERCap9qC6bRX-_rzR9T7GpP6KdKaFj7hkMqbqqcnS1U9uIt-yGEpqRpuT1koCxOAeIOgVVexoQUdY7qpBwq5MEe2FnjVImRB4OGrEpSMAwp0a6Hv2A",
+    image: "/images/market-transaction.jpeg",
     label: "African Origin",
     icon: "group",
+    icon: "payments",
     note: "Shared by 40+ Mentors in your sector",
   },
   {
     image:
       "https://lh3.googleusercontent.com/aida-public/AB6AXuCVZeh65H3-mwGuYfjCq9_AoXGcbxm8t4v6sCK_9PujExnOeHkprSrj1NpXi-Lsygxjh_lRp-ODoQBZ8TN5s4SY92FcGJ4QoQVpMGAq2BdidE3n7Cy8gLNK9rBCDxbY0GwrxzZjCmzBLjjBHhDmi2dwViq_WFoNE5x7aUoBH01FZjUIdDrh7LFfn7J5JHlUm4vCkyXYLbnIdD-6-e3LcB4pSKobfwzv3UA0b_NZoL02mABYaxhUBOsB-g",
+    image: "/images/market-woman.jpeg",
     label: "African Origin",
     icon: "history_edu",
     note: "Recommended by CHIOMA",
@@ -36,9 +39,54 @@ const CARD_ART = [
   {
     image:
       "https://lh3.googleusercontent.com/aida-public/AB6AXuAlVqaxkhZRGgLUxqZPPwO9Mvf9XC8tN-7yGghROPeA2j-daXAjGoPdMC0jhJWIIR8PnIXhwZIoBFNxoZ2mX6r-zYhclluftn9oyxWs7qxzF268RUstR7nfipUgC745YYeclEAuh5msL0tUFbjGLNwJQiQkBAOoHRu4J9XD42BkfU8X0hQGijSBySlgtO70cYRuodH27kQ42RjS9yzEwj4fjMIKtkPbgG5zKVicOk7dl_rZFh9fRTTPQ",
+    image: "/images/biz-planning.jpeg",
     label: "African Origin",
     icon: "eco",
     note: "Top trending in Agri-tech",
+    icon: "analytics",
+    note: "Top trending in Business Planning",
+  },
+  {
+    image: "/images/african-market.jpeg",
+    label: "African Origin",
+    icon: "storefront",
+    note: "Field-tested in local markets",
+  },
+  {
+    image: "/images/clothe-business.jpeg",
+    label: "African Origin",
+    icon: "checkroom",
+    note: "Popular in Trade & Commerce",
+  },
+  {
+    image: "/images/super-mart.jpeg",
+    label: "African Origin",
+    icon: "shopping_bag",
+    note: "Essential retail cashflow",
+  },
+  {
+    image: "/images/pharmacy.jpeg",
+    label: "African Origin",
+    icon: "local_pharmacy",
+    note: "Healthcare & inventory control",
+  },
+  {
+    image: "/images/manufacturing.jpeg",
+    label: "African Origin",
+    icon: "precision_manufacturing",
+    note: "Light manufacturing & fabrication",
+  },
+  {
+    image: "/images/crypto-biz.jpeg",
+    label: "African Origin",
+    icon: "currency_exchange",
+    note: "Digital payments & remittances",
+  },
+  {
+    image: "/images/sage.jpg",
+    label: "African Origin",
+    icon: "psychology",
+    note: "Foundational wisdom from elders",
   },
 ];
 
@@ -71,6 +119,17 @@ function InsightCard({
     >
       <div className="relative h-44 overflow-hidden">
         <img src={imageSrc} alt={item.title} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
+      <div className="relative h-44 overflow-hidden bg-surface-container-high">
+        <img
+          src={imageSrc}
+          alt={item.title}
+          loading="lazy"
+          decoding="async"
+          onError={(e) => {
+            (e.currentTarget as HTMLImageElement).src = "/images/market-woman.jpeg";
+          }}
+          className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+        />
         <span className="absolute left-md top-md inline-flex items-center gap-xs rounded-lg border border-primary/20 bg-surface/90 px-sm py-1 text-[10px] font-bold uppercase tracking-wider text-primary backdrop-blur-sm">
           <Icon name="verified" filled size={14} />
           {art.label}
@@ -471,16 +530,35 @@ export default function InsightLibraryPage() {
                     role="button"
                     tabIndex={0}
                     className="w-44 shrink-0 cursor-pointer overflow-hidden rounded border border-outline-variant/30 bg-surface-container-low transition-all duration-300 hover:border-primary/40 active:scale-[0.98]"
+                    className="w-48 shrink-0 cursor-pointer overflow-hidden rounded-xl border border-outline-variant/30 bg-surface-container-low transition-all duration-300 hover:border-primary/40 active:scale-[0.98]"
                   >
                     <div className="relative flex h-24 items-center justify-center bg-gradient-to-br from-primary-container to-secondary-container">
                       <Icon name={i === 0 ? "storefront" : "agriculture"} filled size={32} className="text-on-primary-container" />
                       <span className="absolute left-2 top-2 rounded-full bg-inverse-surface/80 px-sm py-[2px] text-[10px] font-bold text-inverse-on-surface">
+                    <div className="relative h-28 w-full overflow-hidden bg-surface-container">
+                      <img
+                        src={item.thumbnailUrl || CARD_ART[(i + curated.length) % CARD_ART.length].image}
+                        alt={item.title}
+                        loading="lazy"
+                        decoding="async"
+                        onError={(e) => {
+                          (e.currentTarget as HTMLImageElement).src = "/images/market-woman.jpeg";
+                        }}
+                        className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                      />
+                      <span className="absolute left-2 top-2 rounded-full bg-inverse-surface/80 px-sm py-[2px] text-[10px] font-bold text-inverse-on-surface backdrop-blur-xs">
                         {i === 0 ? "New" : "Popular"}
                       </span>
+                      {item.isAudio && (
+                        <span className="absolute bottom-2 right-2 flex h-6 w-6 items-center justify-center rounded-full bg-primary text-on-primary shadow">
+                          <Icon name="play_arrow" filled size={14} />
+                        </span>
+                      )}
                     </div>
                     <div className="p-sm">
                       <p className="font-label-sm text-[11px] font-bold uppercase text-primary">{item.category}</p>
                       <p className="mt-xs font-body-md text-[13px] font-semibold leading-tight text-on-surface">
+                      <p className="mt-xs line-clamp-2 font-body-md text-[13px] font-semibold leading-tight text-on-surface">
                         {item.title}
                       </p>
                     </div>
