@@ -29,16 +29,32 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
   }, [router]);
 
   if (state === "checking") {
-    return <div className="flex min-h-screen items-center justify-center text-on-surface-dim">Loading…</div>;
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background text-on-surface-variant text-sm font-medium">
+        <span className="material-symbols-outlined text-primary text-2xl animate-spin mr-2">sync</span>
+        Loading Console…
+      </div>
+    );
   }
   if (state === "denied") {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center gap-2 text-center">
-        <p className="text-lg font-semibold text-danger">Access denied</p>
-        <p className="max-w-sm text-sm text-on-surface-dim">
-          This console is restricted to admin, researcher, or lead_architect accounts. Ask a
-          lead to grant your account one of these roles.
+      <div className="flex min-h-screen flex-col items-center justify-center gap-3 bg-background text-center px-4">
+        <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-error-container text-error shadow-sm">
+          <span className="material-symbols-outlined text-2xl">lock</span>
+        </div>
+        <p className="text-lg font-bold text-error">Access Restricted</p>
+        <p className="max-w-sm text-xs text-on-surface-variant leading-relaxed">
+          This console requires an <strong className="text-on-surface">admin</strong>,{" "}
+          <strong className="text-on-surface">researcher</strong>, or{" "}
+          <strong className="text-on-surface">lead_architect</strong> role. Please contact an engineering lead to
+          grant access.
         </p>
+        <button
+          onClick={() => router.replace("/login")}
+          className="mt-2 rounded-full border border-outline-variant bg-surface px-lg py-sm text-xs font-bold text-on-surface hover:bg-surface-variant transition-colors"
+        >
+          Back to Login
+        </button>
       </div>
     );
   }
