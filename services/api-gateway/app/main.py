@@ -54,13 +54,10 @@ app = FastAPI(
 instrument(app, SERVICE_NAME)
 
 # Mobile app + admin console origins (supports local, Codespaces, and Vercel).
-_cors_origins_raw = os.getenv("CORS_ORIGINS", "")
-_cors_origins = [o.strip() for o in _cors_origins_raw.split(",") if o.strip()] or [
 _default_origins = {
     "http://localhost:3000",
     "http://localhost:3001",
     "http://localhost:3002",
-]
     "http://127.0.0.1:3000",
     "http://127.0.0.1:3001",
     "http://127.0.0.1:3002",
