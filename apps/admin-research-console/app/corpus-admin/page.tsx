@@ -256,7 +256,7 @@ function CorpusAdminScreen() {
               RAG Corpus Admin
             </h1>
             <p className="text-xs text-on-surface-variant font-mono truncate">
-              Environment: <span className="font-semibold">production-af-west-1</span> &bull; {total} Indexed Sources
+              Environment: <span className="font-semibold">production-af-west-1</span> • {total} Indexed Sources
             </p>
           </div>
 
@@ -368,7 +368,7 @@ function CorpusAdminScreen() {
                             <div className="flex flex-col min-w-0">
                               <span className="font-semibold text-on-surface truncate">{doc.title || doc.filename}</span>
                               <span className="text-[11px] text-on-surface-variant font-mono truncate">
-                                ID: {doc.id} &bull; {doc.chunk_count ?? 0} chunks
+                                ID: {doc.id} • {doc.chunk_count ?? 0} chunks
                               </span>
                             </div>
                           </td>
@@ -534,7 +534,7 @@ function CorpusAdminScreen() {
                             )}
                           </div>
                           <p className="text-xs leading-relaxed italic text-on-surface line-clamp-4">
-                            &ldquo;{content}&rdquo;
+                            “{content}”
                           </p>
                         </div>
                       );

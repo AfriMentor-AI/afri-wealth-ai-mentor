@@ -343,7 +343,7 @@ function DashboardScreen() {
                       </p>
                       <p className="text-xs md:text-sm opacity-90 mt-0.5">{a.message}</p>
                       <p className="text-[11px] font-mono opacity-80 mt-1">
-                        Baseline {a.baseline_aggregate.toFixed(3)} &rarr; Current {a.current_aggregate.toFixed(3)} (
+                        Baseline {a.baseline_aggregate.toFixed(3)} → Current {a.current_aggregate.toFixed(3)} (
                         {pct(a.delta_pct)})
                       </p>
                     </div>
@@ -372,7 +372,7 @@ function DashboardScreen() {
                 <span className="material-symbols-outlined text-secondary text-lg">check_circle</span>
                 <span>No active drift alerts — behavioral consistency is within baseline thresholds.</span>
               </div>
-              <span className="font-mono text-[11px]">Threshold: &plusmn;10%</span>
+              <span className="font-mono text-[11px]">Threshold: ±10%</span>
             </div>
           )}
 
@@ -382,7 +382,7 @@ function DashboardScreen() {
             <div className="lg:col-span-8 bg-surface rounded-2xl p-md lg:p-lg border border-outline-variant flex flex-col shadow-xs min-h-[320px]">
               <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-sm mb-md">
                 <div>
-                  <h3 className="font-title-md font-bold text-on-surface">Prompt-to-Line Latency &amp; Accuracy</h3>
+                  <h3 className="font-title-md font-bold text-on-surface">Prompt-to-Line Latency & Accuracy</h3>
                   <p className="text-xs text-on-surface-variant">
                     Rolling 24h consistency vs baseline tokenization ({metrics?.session_count ?? 0} sessions scored)
                   </p>
@@ -533,7 +533,7 @@ function DashboardScreen() {
                     <th className="px-md lg:px-lg py-sm">Primary Intent</th>
                     <th className="px-md lg:px-lg py-sm">Prompt Context</th>
                     <th className="px-md lg:px-lg py-sm">Consistency Δ</th>
-                    <th className="px-md lg:px-lg py-sm">Review &amp; Verdict</th>
+                    <th className="px-md lg:px-lg py-sm">Review & Verdict</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-outline-variant/40 text-xs md:text-sm">
@@ -554,7 +554,7 @@ function DashboardScreen() {
                         {s.primary_intent || "Financial Advisory"}
                       </td>
                       <td className="px-md lg:px-lg py-md max-w-xs truncate text-on-surface-variant italic" title={s.prompt_context || ""}>
-                        &ldquo;{s.prompt_context || "Dialogue turn context"}&rdquo;
+                        “{s.prompt_context || "Dialogue turn context"}”
                       </td>
                       <td className="px-md lg:px-lg py-md">
                         <ConsistencyBar value={s.aggregate} />
@@ -572,21 +572,21 @@ function DashboardScreen() {
                             <button
                               onClick={() => handleMarkReviewed(s.id, "true_positive")}
                               title="Correct flag — true issue"
-                              className="rounded-full border border-secondary px-2 py-0.5 text-[11px] font-bold text-secondary hover:bg-secondary-container/50 transition-colors"
+                              className="inline-flex items-center gap-1 rounded-full border border-secondary px-2.5 py-0.5 text-[11px] font-bold text-secondary hover:bg-secondary-container/50 transition-colors"
                             >
-                              &check; Correct
+                              <span className="material-symbols-outlined text-[13px] leading-none">check</span> Correct
                             </button>
                             <button
                               onClick={() => handleMarkReviewed(s.id, "false_positive")}
                               title="False positive — noise"
-                              className="rounded-full border border-error px-2 py-0.5 text-[11px] font-bold text-error hover:bg-error-container/50 transition-colors"
+                              className="inline-flex items-center gap-1 rounded-full border border-error px-2.5 py-0.5 text-[11px] font-bold text-error hover:bg-error-container/50 transition-colors"
                             >
-                              &cross; Noise
+                              <span className="material-symbols-outlined text-[13px] leading-none">close</span> Noise
                             </button>
                           </div>
                         ) : s.review_status === "reviewed" ? (
                           <span className="text-xs text-on-surface-variant">
-                            Reviewed{s.review_verdict ? ` &bull; ${s.review_verdict.replace("_", " ")}` : ""}
+                            Reviewed{s.review_verdict ? ` • ${s.review_verdict.replace("_", " ")}` : ""}
                           </span>
                         ) : (
                           <span className="text-on-surface-variant opacity-40">—</span>
@@ -617,7 +617,7 @@ function DashboardScreen() {
             <span>Latency: 12ms</span>
             <span className="hidden sm:inline">Version: 2.0.4-LTS</span>
           </div>
-          <div>&copy; 2024 AfriMentor Research AI Labs</div>
+          <div>© 2024 AfriMentor Research AI Labs</div>
         </footer>
       </div>
     </div>
