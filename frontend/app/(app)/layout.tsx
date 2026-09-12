@@ -49,8 +49,8 @@ export default function AppShellLayout({ children }: { children: React.ReactNode
   // the previous approach (fixed nav + guessing how much padding clears
   // it) breaks any time the nav's real height doesn't match the guess.
   return (
-    <div className="flex h-screen w-full flex-col bg-surface md:flex-row-reverse">
-      <div className="flex min-h-0 flex-1 flex-col">
+    <div className="flex h-full h-[100dvh] w-full max-w-full flex-col overflow-hidden bg-surface md:flex-row-reverse">
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col pb-16 md:pb-0">
         {!hasOwnHeader && (
           <header className="flex shrink-0 items-center justify-between px-margin-mobile py-md md:hidden">
             <div className="flex items-center gap-sm">
@@ -65,7 +65,7 @@ export default function AppShellLayout({ children }: { children: React.ReactNode
             </div>
           </header>
         )}
-        <div className="min-h-0 flex-1 overflow-y-auto">{children}</div>
+        <div className="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden overscroll-contain">{children}</div>
       </div>
       <BottomTabNav />
       <FeedbackSurveyModal />

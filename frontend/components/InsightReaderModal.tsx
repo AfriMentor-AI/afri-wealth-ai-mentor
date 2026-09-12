@@ -214,6 +214,185 @@ const LESSON_CURRICULUM: Record<string, LessonContent> = {
     keyTakeaway:
       "A good loan grows your profit faster than the interest rate. A bad loan transfers your profit directly to the lender. Read before you sign.",
   },
+
+  "Supply Chain Mastery in Agri-Markets": {
+    headline: "Direct Sourcing, Cold-Chain Realities & Farmgate Negotiations",
+    mentorTip:
+      "Every middleman you bypass puts 10-15% margin back in your pocket, but only if you take full responsibility for transport logistics and spoilage control.",
+    audioNarration:
+      "Welcome to this masterclass on agri-supply chain efficiency. In African food and agricultural markets, post-harvest losses can swallow up to 40% of potential profit. In this lesson, we explore direct cooperative aggregation, shared transport logistics, and timing your market delivery to maximize wholesale spreads.",
+    overview:
+      "Agricultural margins are decided at the farmgate and wholesale aggregation hubs. By building trust-based relationships with farmer groups and adopting moisture/temperature protection during transit, you guarantee product quality that commanding premium retail prices.",
+    practicalSteps: [
+      {
+        title: "1. Map Farmgate Aggregation Hubs",
+        detail:
+          "Identify regional cooperative collection points where farmers bring fresh produce. Negotiate direct bulk purchases 24 hours before market loading days.",
+      },
+      {
+        title: "2. Pool Transport With Allied Traders",
+        detail:
+          "Never hire a half-empty truck. Share cargo space with non-competing vendors to cut transport costs per crate by up to 35%.",
+      },
+      {
+        title: "3. Implement Crating & Ventilation Standards",
+        detail:
+          "Ditch heavy polypropylene sacks for fragile vegetables. Use stackable plastic crates to eliminate bruising and extend stall shelf life by 3 to 5 days.",
+      },
+      {
+        title: "4. Establish Daily Pricing Intelligence",
+        detail:
+          "Keep direct phone contact with morning wholesale brokers in key urban centers to route trucks toward highest-margin terminals.",
+      },
+    ],
+    keyTakeaway:
+      "In fresh trade, speed and preservation equal capital. Protect the harvest and your margins will protect you.",
+  },
+
+  "Inventory & Margin Secrets in Retail Fashion": {
+    headline: "Fast Turns, Fabric Quality & Working Capital Protection",
+    mentorTip:
+      "Unsold clothes on your racks are frozen cash. Discount old stock boldly after 30 days so you can reinvest in this season's fastest movers.",
+    audioNarration:
+      "Greetings! Fashion and textile commerce moves on fast-shifting customer trends. The biggest trap is tying up your working capital in dead inventory. Let's look at setting minimum viable order quantities, running flash clearances, and negotiating consignment with fabric designers.",
+    overview:
+      "African fashion and textile trade is one of our most dynamic creative economies. Success requires disciplined inventory tracking: knowing which cuts, colors, and fabrics turnover rapidly, and rotating stock before seasonal demand cools.",
+    practicalSteps: [
+      {
+        title: "1. The 30-Day Inventory Velocity Audit",
+        detail:
+          "Tag every garment with the arrival date. If an item doesn't sell within 30 days, move it to a promotional bundle or run a flash sale to free cash.",
+      },
+      {
+        title: "2. Pre-Sell Through WhatsApp Status & Live Showcases",
+        detail:
+          "Take deposits before placing bulk orders for popular fabric cuts. Let customer advance payments fund your inventory acquisition.",
+      },
+      {
+        title: "3. Consignment Arrangements with Local Artisans",
+        detail:
+          "Partner with bespoke tailors and craftspeople on a 60/40 consignment basis, eliminating upfront inventory purchase risk.",
+      },
+    ],
+    keyTakeaway:
+      "A packed showroom is only valuable if it converts to cash in your till. Keep inventory moving fast.",
+  },
+
+  "Working Capital in Healthcare & Community Pharmacies": {
+    headline: "Managing Essential Drug Stock, Distributor Credit & Cashflow",
+    mentorTip:
+      "Never allow slow-moving specialty medications to drain your liquidity for high-demand essential first-line treatments.",
+    audioNarration:
+      "Welcome. Operating a community healthcare or pharmacy enterprise carries both profound community responsibility and tight financial parameters. Maintaining liquidity while ensuring zero stockouts of life-saving essentials requires rigorous working capital planning.",
+    overview:
+      "Pharmacies must balance regulatory compliance, perishable drug expiry dates, and delayed customer payments. This guide shows how to segment your stock by turnover velocity and secure favorable payment terms from licensed distributors.",
+    practicalSteps: [
+      {
+        title: "1. Vital, Essential, Non-Essential (VEN) Categorization",
+        detail:
+          "Prioritize 80% of your working capital for fast-moving vital essentials (antibiotics, antimalarials, pain management, pediatric care).",
+      },
+      {
+        title: "2. First-Expired, First-Out (FEFO) Rotation",
+        detail:
+          "Audit inventory weekly. Return goods with 6-month expiry horizons to distributors for credit notes before write-down penalties hit.",
+      },
+      {
+        title: "3. Negotiate 30-Day Distributor Settlement Cycles",
+        detail:
+          "Demonstrate consistent monthly re-orders to qualify for 30-day post-dated cheque or credit accounts with national drug wholesalers.",
+      },
+    ],
+    keyTakeaway:
+      "Strict inventory velocity in pharmacy is both good medicine and great business.",
+  },
+
+  "Equipment Financing for Light Manufacturing": {
+    headline: "Acquiring Productive Machinery Without Starving Cashflow",
+    mentorTip:
+      "Never buy industrial equipment with high-interest short-term loans. Match the financing duration to the multi-year productive lifespan of the machine.",
+    audioNarration:
+      "Hello! Scaling from manual craft to light manufacturing—whether food processing, metal fabrication, or garment production—requires machinery. But spending your operational cash on heavy equipment can trigger a fatal liquidity squeeze. Let's master lease-to-own and equipment sharing models.",
+    overview:
+      "Manufacturing adds immense value to local raw materials. We explore how to evaluate machine capacity utilization, structure vendor lease-to-own agreements, and pool expensive machinery across artisan associations.",
+    practicalSteps: [
+      {
+        title: "1. Calculate Minimum Machine Payback Horizon",
+        detail:
+          "Ensure the machine increases daily output enough to cover its monthly financing installment in no more than 15 production days.",
+      },
+      {
+        title: "2. Structure Vendor Lease-to-Own Agreements",
+        detail:
+          "Pay 25% down, with the remaining 75% settled over 12-18 months from actual production revenues, rather than a single lump sum.",
+      },
+      {
+        title: "3. Form Machine-Sharing Production Hubs",
+        detail:
+          "Cooperate with nearby workshops to share high-cost tooling, splitting maintenance and capital outlay.",
+      },
+    ],
+    keyTakeaway:
+      "A machine must pay for itself through increased output. Guard your cash reserves fiercely.",
+  },
+
+  "Digital Currencies & Cross-Border Remittances": {
+    headline: "Lowering FX Friction and Settlement Delays in Regional Trade",
+    mentorTip:
+      "Use digital rails strictly for settlement speed and lower fees—never speculate with money needed for tomorrow's inventory purchase.",
+    audioNarration:
+      "Welcome to this guide on cross-border payments. In inter-African trade, moving money between currencies can cost 5 to 12% in bank fees and take several business days. In this session, learn how licensed fintechs and digital stablecoin rails can settle trade transactions within minutes.",
+    overview:
+      "Cross-border merchants often lose substantial margins to multiple currency conversions and banking delays. By adopting modern digital settlement methods, you speed up supplier turnaround and keep trade margins inside your enterprise.",
+    practicalSteps: [
+      {
+        title: "1. Choose Regulated Cross-Border Payment Apps",
+        detail:
+          "Use licensed pan-African payment platforms that support direct local currency to local currency payouts across borders.",
+      },
+      {
+        title: "2. Hedge Against Currency Devaluation",
+        detail:
+          "Lock in import prices on the exact day of order confirmation to prevent exchange rate slippage between placement and delivery.",
+      },
+      {
+        title: "3. Maintain Transparent Transaction Invoices",
+        detail:
+          "Ensure every digital payment corresponds to a clear commercial invoice, customs declaration, or bill of lading for tax compliance.",
+      },
+    ],
+    keyTakeaway:
+      "Reducing cross-border transfer friction turns distant suppliers into next-door neighbors.",
+  },
+
+  "Elder Wisdom: Sustaining Enterprise Across Generations": {
+    headline: "The Unwritten Laws of Business Longevity and Family Trust",
+    mentorTip:
+      "Reputation takes twenty years to build in the market and five minutes of greed to destroy. Protect your integrity above quick profit.",
+    audioNarration:
+      "Warm greetings. African markets have thrived for centuries on the unwritten laws of integrity, community trust, and intergenerational stewardship. In this reflection, we examine the principles that distinguish enterprises that endure for decades from those that flare up and disappear.",
+    overview:
+      "Market elders who have sustained enterprises through political shifts, currency resets, and economic downturns share one common trait: unbreakable trust with their community. Learn how to cultivate social capital that acts as your ultimate insurance.",
+    practicalSteps: [
+      {
+        title: "1. Treat Customer Trust as Balance Sheet Capital",
+        detail:
+          "Never shortchange weight, quality, or promised delivery times. In difficult seasons, community goodwill will keep your doors open.",
+      },
+      {
+        title: "2. Separate Family Entitlement from Business Operations",
+        detail:
+          "Pay family members who work for you fixed fair wages. Never permit unregulated draws from the till for personal or extended family obligations.",
+      },
+      {
+        title: "3. Mentor the Next Generation Early",
+        detail:
+          "Involve young apprentices in supplier negotiations, ledger bookkeeping, and problem solving, passing down judgment alongside technical trade skills.",
+      },
+    ],
+    keyTakeaway:
+      "Wealth is not how much money you make in a good year, but how resilient your enterprise remains when hard seasons test you.",
+  },
 };
 
 export function InsightReaderModal({
@@ -458,6 +637,35 @@ export function InsightReaderModal({
 
         {/* Scrollable Content Body */}
         <div className="flex-1 space-y-md overflow-y-auto px-md py-md md:space-y-lg md:px-lg md:py-lg">
+          {/* Lesson Hero Banner Image */}
+          <div className="relative h-44 w-full overflow-hidden rounded-xl border border-outline-variant/20 bg-surface-container-high shadow-sm sm:h-52">
+            <img
+              src={item.thumbnailUrl || "/images/market-woman.jpeg"}
+              alt={item.title}
+              loading="eager"
+              decoding="async"
+              onError={(e) => {
+                (e.currentTarget as HTMLImageElement).src = "/images/market-woman.jpeg";
+              }}
+              className="h-full w-full object-cover"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/25 to-transparent" />
+            <div className="absolute bottom-3 left-4 right-4 flex items-end justify-between">
+              <div>
+                <span className="inline-block rounded-md bg-primary px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-on-primary shadow-sm">
+                  {item.category}
+                </span>
+                <p className="mt-1 text-xs font-medium text-white/90">
+                  {item.isAudio ? "Audio Masterclass" : "Comprehensive Guide"} • {item.durationMinutes} min read
+                </p>
+              </div>
+              <span className="inline-flex items-center gap-1 rounded-full bg-black/40 px-2 py-0.5 text-[10px] font-semibold text-white backdrop-blur-sm border border-white/10">
+                <Icon name="verified" filled size={12} className="text-secondary" />
+                African Origin
+              </span>
+            </div>
+          </div>
+
           {/* Title & Headline */}
           <div>
             <h1 id="insight-title" className="font-headline-sm text-2xl font-bold leading-tight text-on-surface md:text-3xl">

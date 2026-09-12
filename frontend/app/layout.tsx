@@ -78,11 +78,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           }}
         />
       </head>
-      <body className="font-body min-h-screen" suppressHydrationWarning>
+      <body className="font-body h-full overflow-hidden" suppressHydrationWarning>
         <AppStateProvider>
           <InstallBanner />
           <OfflineBanner />
-          <div className="min-h-screen">{children}</div>
+          <div className="h-full overflow-hidden">{children}</div>
         </AppStateProvider>
       </body>
     </html>

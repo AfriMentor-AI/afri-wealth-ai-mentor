@@ -2,20 +2,49 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  --surface: #14140f;
-  --surface-raised: #1c1c18;
-  --surface-inset: #101009;
-  --border: #343333;
-  --on-surface: #f4f3ec;
-  --on-surface-dim: #a9a89f;
-  --accent: #3fae4a;
-  --on-accent: #04150a;
-  --warn: #e0a83a;
-  --danger: #d9584f;
+.material-symbols-outlined {
+  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+  display: inline-block;
+  line-height: 1;
+  text-transform: none;
+  letter-spacing: normal;
+  word-wrap: normal;
+  white-space: nowrap;
+  direction: ltr;
+  vertical-align: middle;
+}
+
+.mono-metrics {
+  font-family: 'JetBrains Mono', monospace;
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #d4c4b0;
+  border-radius: 10px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #827564;
+}
+
+@keyframes pulse-red {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+.drift-glow {
+  animation: pulse-red 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
 body {
-  background: var(--surface);
-  color: var(--on-surface);
+  background-color: #fcf9f3;
+  color: #1c1c18;
+  font-family: 'Inter', system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
 }

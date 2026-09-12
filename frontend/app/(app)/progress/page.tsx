@@ -295,7 +295,7 @@ export default function ProgressBoardPage() {
 
   return (
     <main
-      className="min-h-full bg-surface pb-24 pt-md md:pb-lg md:pt-0"
+      className="min-h-full w-full max-w-full overflow-x-hidden bg-surface pb-8 pt-md md:pb-lg md:pt-0"
       style={{ backgroundImage: "radial-gradient(circle, rgba(126,87,0,0.035) 2px, transparent 2px)", backgroundSize: "60px 60px" }}
     >
       <header className="hidden h-16 items-center justify-between border-b border-outline-variant bg-surface px-lg lg:flex">
@@ -319,7 +319,7 @@ export default function ProgressBoardPage() {
         </div>
       </header>
 
-      <div className="mx-auto flex max-w-6xl flex-col gap-lg px-margin-mobile py-md md:gap-lg md:p-lg xl:p-xl">
+      <div className="mx-auto flex w-full max-w-6xl min-w-0 flex-col gap-lg px-margin-mobile py-md md:gap-lg md:p-lg xl:p-xl">
         <section className="flex flex-col gap-sm md:flex-row md:items-end md:justify-between lg:hidden">
           <div>
             <h2 className="font-headline-lg-mobile text-headline-lg-mobile text-on-surface">Your Growth</h2>
@@ -383,8 +383,8 @@ export default function ProgressBoardPage() {
         </div>
       )}
 
-      <div className="grid gap-lg lg:grid-cols-12">
-      <section className="space-y-md lg:col-span-8">
+      <div className="grid min-w-0 gap-lg lg:grid-cols-12">
+      <section className="min-w-0 space-y-md lg:col-span-8">
         <div className="flex items-center justify-between rounded-t-xl bg-surface-container-lowest px-md pt-md md:px-lg md:pt-lg">
           <h3 className="font-title-md text-title-md text-on-surface">Activity Heatmap</h3>
           <div className="flex items-center gap-sm text-[10px] text-on-surface-variant">
@@ -397,47 +397,47 @@ export default function ProgressBoardPage() {
             <span>More</span>
           </div>
         </div>
-        <div className="rounded-b-xl border border-t-0 border-outline-variant/20 bg-surface-container-lowest p-md md:p-lg">
+        <div className="overflow-hidden rounded-b-xl border border-t-0 border-outline-variant/20 bg-surface-container-lowest p-md md:p-lg">
           {heatmap === null ? (
             <Skeleton className="h-28 w-full" />
           ) : (
-            <div className="flex flex-col gap-1">
+            <div className="flex min-w-0 flex-col gap-1">
               <p className="sr-only">
                 A 52-week heatmap of your daily actions over the year, from less active to more active.
               </p>
               {/* Days labels and heatmap grid */}
-              <div className="flex">
-                <div className="w-8 flex flex-col justify-between py-1 text-[10px] text-on-surface-variant uppercase font-bold shrink-0">
+              <div className="flex min-w-0">
+                <div className="flex w-8 shrink-0 flex-col justify-between py-1 font-bold uppercase text-[10px] text-on-surface-variant">
                   <span>Mon</span>
                   <span>Wed</span>
                   <span>Fri</span>
                 </div>
-                <div className="flex-grow overflow-x-auto pb-xs">
-                  <div className="grid grid-flow-col grid-rows-7 gap-1 min-w-max">
+                <div className="min-w-0 flex-1 overflow-x-auto pb-xs">
+                  <div className="grid min-w-max grid-flow-col grid-rows-7 gap-1">
                     {heatmap.map((week, wi) =>
                       week.map((cell, di) => (
                         <div
                           key={`${wi}-${di}`}
                           title={`${cell.count} action${cell.count === 1 ? "" : "s"} on ${cell.date}`}
-                          className={`h-3 w-3 rounded-sm transition-transform hover:scale-125 hover:z-10 cursor-pointer ${HEATMAP_INTENSITIES[cell.intensity]}`}
+                          className={`h-3 w-3 cursor-pointer rounded-sm transition-transform hover:z-10 hover:scale-125 ${HEATMAP_INTENSITIES[cell.intensity]}`}
                         />
                       ))
                     )}
                   </div>
+                  {/* 12 Months row inside scrollable area so it scrolls synchronously with the 52 weeks */}
+                  <div className="flex min-w-max justify-between pt-2 font-bold uppercase text-[10px] text-on-surface-variant">
+                    {MONTH_NAMES.map((m) => (
+                      <span key={m} className="w-16 text-center">{m}</span>
+                    ))}
+                  </div>
                 </div>
-              </div>
-              {/* 12 Months row matching screen.png */}
-              <div className="flex pl-8 mt-2 justify-between text-[10px] text-on-surface-variant uppercase font-bold">
-                {MONTH_NAMES.map((m) => (
-                  <span key={m}>{m}</span>
-                ))}
               </div>
             </div>
           )}
         </div>
       </section>
 
-      <section className="flex flex-col justify-between rounded-xl border border-outline-variant/20 bg-surface-container-lowest p-md md:p-lg lg:col-span-4">
+      <section className="flex min-w-0 flex-col justify-between rounded-xl border border-outline-variant/20 bg-surface-container-lowest p-md md:p-lg lg:col-span-4">
         <div>
           <div className="mb-lg flex items-center justify-between">
             <div>
