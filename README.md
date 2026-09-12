@@ -9,6 +9,20 @@ Repository: **[AfriMentor-AI/afri-wealth-ai-mentor](https://github.com/AfriMento
 · Organisation: **[AfriMentor-AI](https://github.com/AfriMentor-AI)**
 · Default branch: `develop`
 
+## 🚀 Live Application
+
+**Deployed Web Application:**
+https://afriwealthaimentor.vercel.app/
+
+The deployed application provides access to the AfriMentor AI platform and demonstrates the user-facing financial mentorship experience.
+
+## 📋 Agile Task Board
+
+**Trello Scrum Board:**
+https://trello.com/b/idp26vqA/afrimentor-ai-sprint-plan
+
+The Trello board documents the project's agile development process, including tasks carried out by group members, sprint planning, user stories, progress tracking, and completed work.
+
 ## Architecture & Technical Documentation
 
 13 backend microservices behind a single API gateway, decomposed by business capability.
