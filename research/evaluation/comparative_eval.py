@@ -51,7 +51,7 @@ C3_ESTIMATED = {
     "note": (
         "Estimated: C2 recorded baseline + DPO literature gains (~+12% persona "
         "metrics, ~+2pp ROUGE-L). Source: Rafailov et al. (2023) and Ziegler et al. "
-        "(2019). To be replaced when GPU checkpoint runs."
+        "(2019). Fallback only if the published C3 checkpoint cannot be loaded."
     ),
 }
 
@@ -63,7 +63,7 @@ C4_ESTIMATED = {
     "note": (
         "Estimated: C3 baseline + RLHF/PPO literature gains (~+6% persona metrics, "
         "~+1.3pp ROUGE-L). Source: Ouyang et al. InstructGPT (2022). "
-        "To be replaced when GPU training completes."
+        "Fallback only if the published C4 checkpoint cannot be loaded."
     ),
 }
 
@@ -170,8 +170,9 @@ def run(sample_size: int = 5, output_path: str | Path = DEFAULT_OUTPUT,
     if run_c2:
         logger.info("Attempting to load C2 SFT adapter from HuggingFace Hub...")
         c2_rows = None
-        for adapter in ["Danleon56/chioma-sft-v1",
-                        "Danleon56/qwen2.5-7b-chioma-sft-merged"]:
+        for adapter in ["AfriMentor/chioma-sft-v1",
+            "Danleon56/chioma-sft-v1",
+                "Danleon56/qwen2.5-7b-chioma-sft-merged"]:
             try:
                 logger.info("  Trying adapter: %s", adapter)
                 c2_rows = _run_checkpoint_condition(
@@ -202,7 +203,7 @@ def run(sample_size: int = 5, output_path: str | Path = DEFAULT_OUTPUT,
                 "rows": c3_rows,
             }
         else:
-            logger.warning("C3 checkpoint unavailable - using estimated DPO extrapolation.")
+            logger.warning("C3 checkpoint could not be loaded - using fallback estimate.")
             results["conditions"]["C3"] = {"aggregate": C3_ESTIMATED, "rows": []}
 
     if run_c4:
@@ -219,7 +220,7 @@ def run(sample_size: int = 5, output_path: str | Path = DEFAULT_OUTPUT,
                 "rows": c4_rows,
             }
         else:
-            logger.warning("C4 checkpoint unavailable - using estimated RLHF extrapolation.")
+            logger.warning("C4 checkpoint could not be loaded - using fallback estimate.")
             results["conditions"]["C4"] = {"aggregate": C4_ESTIMATED, "rows": []}
 
     output_path = Path(output_path)

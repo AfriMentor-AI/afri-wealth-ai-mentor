@@ -103,7 +103,7 @@ CONDITION_SPECS: dict[str, ConditionSpec] = {
                         base_model=C1_MODEL_ID, source_when_live="live_api"),
     "C2": ConditionSpec("C2", "Supervised Persona Fine-Tuning (SFT)",
                         kind="checkpoint", persona="chioma-base",
-                        adapter="Danleon56/chioma-sft-v1", source_when_live="live_hf_adapter"),
+                        adapter="AfriMentor/chioma-sft-v1", source_when_live="live_hf_adapter"),
     "C3": ConditionSpec("C3", "Persona-Aware Contrastive Learning (DPO)",
                         kind="checkpoint", persona="chioma-base",
                         adapter="AfriMentor/chioma-dpo-v1", source_when_live="live_hf_adapter"),

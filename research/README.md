@@ -23,8 +23,24 @@ distinct things that serve completely different purposes:
 - `research/evaluation/metrics.py` scoring logic will be **ported** (not imported)
   into the microservice as a lightweight inference-time scorer in Sprint 5 — without
   the heavy ML training dependencies.
-- Trained adapter weights from `research/` are deployed into `chat-orchestration-service`
-  via the `LLM_MODEL` env var, not through the research-evaluation-service.
+- Trained adapter weights from `research/` are published to Hugging Face as public
+  checkpoint artifacts and may later be deployed into `chat-orchestration-service`
+  via the `LLM_MODEL` / `LLM_BASE_URL` env vars. The live runtime app does not
+  import a local model checkpoint directly; it calls an OpenAI-compatible provider
+  endpoint (currently Groq by default).
+
+**Current runtime contract:**
+- `chat-orchestration-service` reads `LLM_API_KEY`, `LLM_BASE_URL`, and `LLM_MODEL`
+  from the environment.
+- The default runtime provider is Groq (`https://api.groq.com/openai/v1`).
+- The canonical SFT adapter is `AfriMentor/chioma-sft-v1`, trained on
+  `Qwen/Qwen2.5-7B-Instruct`. The DPO and RLHF artifacts are
+  `AfriMentor/chioma-dpo-v1` and `AfriMentor/chioma-rlhf-v1`. These adapters are
+  research artifacts for evaluation and future hosted deployment; they are not
+  directly compatible with the current GPT-OSS runtime.
+- The live application currently uses `openai/gpt-oss-20b` through Groq. To run
+  the trained adapters, deploy the Qwen base model plus the selected adapter behind
+  an OpenAI-compatible endpoint and switch `LLM_BASE_URL` / `LLM_MODEL`.
 
 ---
 

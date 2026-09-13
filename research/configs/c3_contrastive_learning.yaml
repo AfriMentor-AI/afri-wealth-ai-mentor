@@ -8,10 +8,9 @@ experiment:
 
 model:
   base_model_id: "Qwen/Qwen2.5-7B-Instruct"
-  # Daniel's confirmed-canonical C2 checkpoint on HF Hub (2026-08-31 reconciliation,
-  # see docs/implementation/C5_1_final_evaluation.md) — PeftModel.from_pretrained
+  # Canonical C2 checkpoint on HF Hub — PeftModel.from_pretrained
   # resolves a Hub repo ID the same way it resolves a local path.
-  sft_checkpoint: "Danleon56/chioma-sft-v1"
+  sft_checkpoint: "AfriMentor/chioma-sft-v1"
   adapter_type: "dpo"
   output_dir: "research/experiments/03_contrastive_learning/checkpoints"
   hub_repo: "AfriMentor/chioma-dpo-v1"

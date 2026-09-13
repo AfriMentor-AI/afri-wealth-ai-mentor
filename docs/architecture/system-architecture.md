@@ -84,7 +84,7 @@ C4Container
         ContainerQueue(broker_rmq, "RabbitMQ 3.13", "AMQP Topic Broker", "Asynchronous domain event exchange (afrimentor.events).")
     }
 
-    System_Ext(ext_llm, "External LLM Providers", "Gemini 2.5 Flash / Groq / OpenAI / Mistral", "Generative language models with culturally tuned system prompts.")
+    System_Ext(ext_llm, "External LLM Providers", "Groq / OpenAI-compatible providers / future Qwen adapter endpoint", "Generative language models with culturally tuned system prompts; the app currently defaults to GPT-OSS through Groq via LLM_BASE_URL and LLM_MODEL. The canonical trained SFT adapter is AfriMentor/chioma-sft-v1 and requires the Qwen base model.")
     System_Ext(ext_sms, "Telecom SMS / Push Gateways", "AfricasTalking / Firebase FCM", "SMS alerts and mobile push delivery.")
 
     Rel(user, mobile_app, "Interacts with", "HTTPS / WSS")
@@ -148,7 +148,7 @@ sequenceDiagram
     participant Persona as persona-prompt (:8008)
     participant RAG as rag-corpus (:8010)
     participant Chroma as ChromaDB (:8000)
-    participant LLM as External LLM (Gemini/Groq)
+    participant LLM as External LLM (Groq / OpenAI-compatible provider)
     participant RMQ as RabbitMQ (afrimentor.events)
 
     User->>GW: POST /api/v1/chat/conversations/{id}/messages (Bearer JWT)

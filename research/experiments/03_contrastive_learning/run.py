@@ -177,7 +177,7 @@ def train(cfg: dict) -> tuple[str | None, dict]:
         report_to="none",
     )
 
-    # No peft_config here deliberately: `model` is already Danleon56/chioma-sft-v1
+    # No peft_config here deliberately: `model` is already the canonical C2 adapter
     # loaded as a PeftModel. Passing peft_config alongside an existing PeftModel
     # makes trl call model.merge_and_unload() first — unsupported on a 4-bit
     # quantized base (confirmed via trl source on the actual installed build) and
