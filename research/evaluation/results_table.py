@@ -47,7 +47,7 @@ SOURCE_MARKERS: dict[str, str] = {
 FOOTNOTE_LEGEND = (
     "† Estimated from C2 baseline + literature-calibrated alignment gains "
     "(DPO: Rafailov et al., 2023; RLHF: Ouyang et al., 2022). "
-    "To be replaced by live checkpoint scores after GPU training."
+    "Used only when a published checkpoint cannot be loaded for a run."
 )
 
 
@@ -123,7 +123,7 @@ def render_latex(results: dict) -> str:
     footnote_tex = (
         "\\footnotesize $\\dagger$ Estimated from C2 baseline + literature-calibrated "
         "alignment gains (DPO: Rafailov et al., 2023; RLHF: Ouyang et al., 2022). "
-        "To be replaced by live checkpoint scores after GPU training."
+        "Used only when a published checkpoint cannot be loaded for a run."
     )
     lines += [
         "\\bottomrule",

@@ -71,11 +71,26 @@ AfriMentor AI requires a base LLM for two distinct operational requirements:
 
 ### Tier 1 — Production Runtime Inference (Sprint 1–3)
 
-Deploy **Together AI / Groq Serverless APIs** serving **Qwen/Qwen2.5-7B-Instruct** as
-the primary model for `chat-orchestration-service`, with
-**meta-llama/Llama-3.1-8B-Instruct** as the active Sprint 1 model.
+The live application runtime currently calls an OpenAI-compatible provider over
+`LLM_BASE_URL` / `LLM_MODEL` environment variables. The default configuration in
+this repo is the Groq endpoint (`https://api.groq.com/openai/v1`) with
+`openai/gpt-oss-20b` as the active runtime model.
 
-Rationale for Qwen 2.5 7B as primary:
+The original sprint strategy still distinguishes between:
+- **runtime provider**: Groq / Together AI / local vLLM through a standard
+  OpenAI-compatible API; this is what `chat-orchestration-service` actually calls
+- **research checkpoint artifacts**: the canonical SFT adapter
+  `AfriMentor/chioma-sft-v1` and the DPO/RLHF adapters
+  `AfriMentor/chioma-dpo-v1` and `AfriMentor/chioma-rlhf-v1`. They are published
+  for auditability and future hosted deployment but are not directly imported by
+  the FastAPI service. All three use the Qwen base-model family.
+
+The original rationale for Qwen 2.5 7B as the research base remains valid, but the
+current live runtime is GPT-OSS through Groq. A Qwen checkpoint becomes a runtime
+option only after deploying the Qwen base plus adapter behind an OpenAI-compatible
+endpoint.
+
+Rationale for Qwen 2.5 7B as primary target model for research hosting:
 
 - **Structured JSON output** — superior strict JSON schema enforcement and function
   calling; critical for rendering interactive UI widgets and milestone action cards

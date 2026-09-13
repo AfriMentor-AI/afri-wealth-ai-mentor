@@ -6,25 +6,36 @@ Card C5.1 asks for the final, frozen evaluation across all 4 alignment
 conditions (automatic metrics + human evaluation panel), locked as the
 paper's canonical dataset. This document records what's built, what's real,
 and the path to completion — the acceptance criterion ("final results frozen
-and tagged") **is now met**: `freeze_results.py --version v1 --tag` reports
+and tagged") **is now met**: `freeze_results.py --version v2` reports
 `PUBLICATION_READY`, snapshot committed at
-`evaluation/results/canonical/v1/` (see "Human-eval results and final
+`evaluation/results/canonical/v2/` (see "Human-eval results and final
 freeze" below). Everything before that section is the working history of how
 it got there, kept rather than rewritten, including two dead ends (a lost C4
 checkpoint, a lost `comparative_results.json`) — both real setbacks, not
 edited out.
 
+### Current runtime architecture note
+
+The runtime app is not a direct local checkpoint loader. The live application
+layer in `services/chat-orchestration-service` reads `LLM_BASE_URL`, `LLM_MODEL`,
+and `LLM_API_KEY` and then calls an OpenAI-compatible provider endpoint. The
+current default runtime is Groq (`https://api.groq.com/openai/v1`), while the
+The canonical trained SFT adapter is `AfriMentor/chioma-sft-v1`; the DPO and RLHF
+adapters are `AfriMentor/chioma-dpo-v1` and `AfriMentor/chioma-rlhf-v1`. All use
+the Qwen base-model family and are checkpoint artifacts for research evaluation
+and future hosted deployment. They are not the runtime import path for the FastAPI
+services, which currently use GPT-OSS through Groq.
+
 ## What was missing going in
 
-- `comparative_eval.py` (card D4.3) already runs C1–C4 through the shared
-  metric suite, but only C1 (live Groq) and C2 (a recorded past Kaggle SFT
-  run) produce real numbers. C3 and C4 have no confirmed trained checkpoint
-  on HuggingFace Hub (`AfriMentor/chioma-dpo-v1`, `AfriMentor/chioma-rlhf-v1`)
-  in this environment, so the harness falls back to literature-extrapolated
-  estimates, clearly labeled `estimated_dpo_extrapolation` /
-  `estimated_rlhf_extrapolation` (see `comparative_eval.py` and
-  `results_table.py`'s footnote-marker convention — this honesty pattern
-  predates this card and is preserved, not invented, here).
+- **Historical state before the checkpoint uploads:** `comparative_eval.py`
+  already ran C1–C4 through the shared metric suite, but C3 and C4 had not yet
+  been confirmed on Hugging Face, so the harness used clearly labeled
+  literature-extrapolated fallbacks (`estimated_dpo_extrapolation` /
+  `estimated_rlhf_extrapolation`). This is preserved here as history, not as
+  the current model status. The public C2, C3, and C4 adapters are now
+  `AfriMentor/chioma-sft-v1`, `AfriMentor/chioma-dpo-v1`, and
+  `AfriMentor/chioma-rlhf-v1` respectively.
 - There was no human-evaluation-panel infrastructure at all — no rubric, no
   rater tool, no aggregation.
 - There was no "frozen and tagged as canonical" mechanism — no git-tag
@@ -92,8 +103,8 @@ a freeze, blinding determinism, and disagreement flagging.
 ## Current honest state
 
 Running `comparative_eval.py --sample-size 3 --skip-c2 --skip-c3 --skip-c4`
-(C1 only — this environment has no GPU for C2–C4 checkpoint inference, and
-C3/C4 adapters aren't confirmed to exist) and then `freeze_results.py
+(C1 only — this environment has no GPU for C2–C4 checkpoint inference) and then
+`freeze_results.py
 --version v1-partial` produces a freeze whose status is
 **`PARTIAL_MISSING_HUMAN_EVAL`**: C1 is labeled `live_groq` (real, not
 estimated) and — as of the fix in the section below — that label is now
@@ -231,12 +242,13 @@ in `docs/implementation/C2_1_supervised_finetuning.md`), which swept 3 vs. 10
 epochs and a response-only-masking variant (Unsloth's
 `train_on_responses_only`) and reached composite 0.587 at peak / 0.476 on the
 22-pair run already recorded as C2 in this repo (`source:
-"recorded_kaggle_run"`): **`Danleon56/chioma-sft-v1` stays canonical C2** —
+"recorded_kaggle_run"`). The earlier **`Danleon56/chioma-sft-v1`** adapter
+is retained as historical training provenance; the selected canonical C2
+repository is now **`AfriMentor/chioma-sft-v1`** —
 his sweep is more methodologically thorough (response-masking + epoch
-search) than this session's single-config run, so there's no basis to
-displace the recorded result. `AfriMentor/chioma-sft-v1` is kept on the Hub
-as a verification artifact, not wired into `comparative_eval.py`/
-`safety_eval.py`.
+search) than this session's single-config run. The current evaluator tries
+the selected `AfriMentor` adapter first and retains the earlier Danleon ID as
+a compatibility fallback.
 
 This does not change C2's status for this card's acceptance criterion — C2
 was already `recorded_kaggle_run` (real, not estimated) before this session.
@@ -249,7 +261,7 @@ unresolved as of this note.
 ## C3 real checkpoint (2026-09-01)
 
 `research/experiments/03_contrastive_learning/run.py` was actually run on a
-Kaggle GPU node (T4), warm-started from `Danleon56/chioma-sft-v1` (C2), and
+Kaggle GPU node (T4), warm-started from the C2 SFT adapter, and
 published to `AfriMentor/chioma-dpo-v1` on HF Hub. `comparative_eval.py`
 already pointed at this exact repo ID (from the casing fix earlier in this
 doc), so it picks up the real checkpoint automatically on the next run — no
@@ -337,12 +349,20 @@ identical to Attempt 1's manually-corrected 0.629 (n=3), a good consistency
 check that the retrained checkpoint genuinely matches the lost one's
 quality. **0.632 (n=5) is C4's real, final, trustworthy result.**
 
-With this, **all 4 conditions now have real, non-estimated checkpoints**:
-C1 (`live_groq`), C2 (`Danleon56/chioma-sft-v1`, recorded, composite 0.476),
-C3 (`AfriMentor/chioma-dpo-v1`, composite 0.598), C4
-(`AfriMentor/chioma-rlhf-v1`, composite **0.632**) — a clean, monotonic
-C2→C3→C4 improvement curve, consistent with what the alignment pipeline is
-supposed to do at each stage.
+The September 11 run is now the current automatic evaluation record. It uses
+the same five-sample split and shared judge across all conditions:
+C1 (`live_groq`, composite **0.6505**), C2 (`AfriMentor/chioma-sft-v1`,
+composite **0.753**), C3 (`AfriMentor/chioma-dpo-v1`, composite **0.6965**),
+and C4 (`AfriMentor/chioma-rlhf-v1`, composite **0.6425**). These are live,
+non-estimated measurements; earlier Danleon/C2 and C3/C4 values remain
+historical comparison runs.
+
+**Provenance note:** the pasted Kaggle console output for this run shows the
+loader trying `Danleon56/chioma-sft-v1` for C2. The project decision is now to
+use `AfriMentor/chioma-sft-v1` as canonical, and the result artifacts identify
+C2 with that repository. A fresh run with the AfriMentor-first configuration
+is required before claiming that the exact `0.753` score is an independent
+AfriMentor-only measurement.
 
 ## First real 4-condition comparative_eval.py run (2026-09-01)
 
@@ -413,9 +433,9 @@ a real, complete file for the freeze:
 | Condition | Composite | Source |
 | :--- | :---: | :--- |
 | C1 | 0.650 | `live_groq` |
-| C2 | 0.753 | `live_hf_adapter` |
-| C3 | 0.697 | `live_hf_adapter` |
-| C4 | 0.643 | `live_hf_adapter` |
+| C2 | 0.753 | `live_hf_adapter` (`AfriMentor/chioma-sft-v1`) |
+| C3 | 0.697 | `live_hf_adapter` (`AfriMentor/chioma-dpo-v1`) |
+| C4 | 0.643 | `live_hf_adapter` (`AfriMentor/chioma-rlhf-v1`) |
 
 Different numbers from the first run's table above — expected, not a
 regression: C1 samples at temperature 0.7 (not reproducible run-to-run), and
@@ -448,10 +468,11 @@ the requirements-pin level so they don't recur:
   `torchvision==0.20.1` (the build that actually pairs with torch 2.5.1)
   pinned alongside it.
 
-**Freeze**: `freeze_results.py --version v1 --tag` now reports
+**Freeze**: `freeze_results.py --version v2` now reports
 **`PUBLICATION_READY`** — every condition is real (live-scored) and has
-human ratings on file. Tagged `eval-freeze-v1` (local; not pushed). Snapshot
-committed at `evaluation/results/canonical/v1/` — previously this whole
+human ratings on file. This v2 freeze is untagged; the earlier v1 tag remains
+local historical metadata. Snapshot
+committed at `evaluation/results/canonical/v2/` — previously this whole
 directory would have been silently gitignored by the blanket `results/`
 rule (`.gitignore:35`), which defeats the point of an "immutable" freeze if
 it can only ever exist on whichever machine ran it (the exact failure mode

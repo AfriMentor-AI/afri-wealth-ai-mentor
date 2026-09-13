@@ -45,15 +45,24 @@ injected as secrets instead of a mounted directory.
 
 ## Deploying
 
-For the chat UX load profile, set a fast streaming-capable model and keep generated
-answers bounded so time-to-first-token is decoupled from total completion time:
+For the chat UX load profile, the current runtime app defaults to a Groq OpenAI-compatible
+provider and the model is passed through `LLM_BASE_URL` / `LLM_MODEL` environment variables.
+Use the active default configuration for the working app runtime:
 
 ```bash
-export LLM_MODEL='Qwen/Qwen2.5-7B-Instruct'
-export LLM_MAX_TOKENS=384
+export LLM_BASE_URL='https://api.groq.com/openai/v1'
+export LLM_MODEL='openai/gpt-oss-20b'
+export LLM_MAX_TOKENS=2048
 export LLM_STREAMING_ENABLED=true
 export CHAT_CACHE_TTL_SECONDS=300
 ```
+
+The canonical trained SFT adapter is `AfriMentor/chioma-sft-v1`, based on
+`Qwen/Qwen2.5-7B-Instruct`; the DPO and RLHF adapters are
+`AfriMentor/chioma-dpo-v1` and `AfriMentor/chioma-rlhf-v1`. They remain research
+and future hosted-deployment artifacts. The current GPT-OSS runtime cannot load
+these Qwen adapters directly; use a Qwen-plus-adapter OpenAI-compatible endpoint
+before changing `LLM_BASE_URL` / `LLM_MODEL` to them.
 
 Clients that need progressive rendering should call
 `POST /api/v1/chat/sessions/{id}/messages/stream`; it emits `token` SSE events followed
