@@ -10,7 +10,7 @@ model:
   base_model_id: "Qwen/Qwen2.5-7B-Instruct"  # HuggingFace model ID
   adapter_type: "qlora"
   output_dir: "research/experiments/02_supervised_finetuning/checkpoints"
-  hub_repo: "AfriMentor/chioma-sft-v1"        # HuggingFace Hub publish target
+  hub_repo: "AfriMentor/chioma-sft-v1"        # Canonical HuggingFace Hub adapter
 
 lora:
   r: 16

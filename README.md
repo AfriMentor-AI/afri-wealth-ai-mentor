@@ -27,6 +27,22 @@ Frontend / Admin ─► api-gateway ─► 12 capability services
                     events over RabbitMQ (afrimentor.events)
 ```
 
+## Runtime model configuration
+
+The current app runtime is configured to call an OpenAI-compatible provider endpoint, not to import a local checkpoint directly from Hugging Face at runtime.
+
+The active default configuration in [.env](.env) is:
+
+```env
+LLM_BASE_URL=https://api.groq.com/openai/v1
+LLM_MODEL=openai/gpt-oss-20b
+LLM_API_KEY=<your-groq-key>
+LLM_MAX_TOKENS=2048
+LLM_TEMPERATURE=0.7
+```
+
+This means the production application layer is currently wired to Groq via the standard `LLM_BASE_URL` / `LLM_MODEL` environment variables. The current live model is GPT-OSS; it does not load the Qwen-trained adapters directly. The canonical trained SFT artifact is `AfriMentor/chioma-sft-v1`, based on `Qwen/Qwen2.5-7B-Instruct`, and can be used when a Qwen-plus-adapter OpenAI-compatible endpoint is deployed.
+
 ## Quick start
 
 ```bash

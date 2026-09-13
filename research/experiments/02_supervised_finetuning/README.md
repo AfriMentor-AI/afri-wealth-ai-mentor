@@ -1,6 +1,6 @@
 # Alignment Condition C2: Supervised Persona Fine-Tuning
 
-This experiment fine-tunes the base model (Qwen/Qwen2.5-7B-Instruct) on a curated dataset of African financial mentorship conversations using QLoRA to test whether the Chioma persona can be reinforced in model generations.
+This experiment fine-tunes the base model (Qwen/Qwen2.5-7B-Instruct) on a curated dataset of African financial mentorship conversations using QLoRA to test whether the Chioma persona can be reinforced in model generations. The selected canonical Hub artifact is `AfriMentor/chioma-sft-v1`; older Danleon runs remain historical training provenance.
 
 ## Scope and status
 
@@ -62,7 +62,8 @@ behavioral-consistency, and safety evaluation.
 
 ## Artifacts & Model Checkpoints
 
-*   **LoRA Adapter Checkpoint reported by the run**: `Danleon56/chioma-sft-v1`
+*   **Canonical LoRA Adapter Checkpoint**: `AfriMentor/chioma-sft-v1`
+*   **Historical adapter reported by the earlier run**: `Danleon56/chioma-sft-v1`
 *   **Final Merged 16-Bit Standalone Model reported by the run**: `Danleon56/qwen2.5-7b-chioma-sft-merged`
 *   **Experiment Tracking**: Full metric progressions, configurations, and evaluation artifacts are logged under the `C2_supervised_persona_finetuning` MLflow experiment.
 
