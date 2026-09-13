@@ -12,7 +12,21 @@
 
 function resolveApiBase(): string {
   const configured = process.env.NEXT_PUBLIC_API_BASE_URL?.trim();
-  return configured || "http://localhost:8000";
+  if (configured) return configured;
+
+  // When deployed (e.g. Vercel) with NEXT_PUBLIC_API_BASE_URL unset, fall
+  // through to same-origin relative paths so next.config.js's rewrites()
+  // proxy handles the request — a hardcoded localhost fallback would otherwise
+  // make every deployed browser try to reach its own machine.
+  if (typeof window !== "undefined") {
+    const host = window.location.host;
+    const isLocalhost = host === "localhost" || host.startsWith("localhost:") || host.startsWith("127.0.0.1");
+    if (!isLocalhost) {
+      return "";
+    }
+  }
+
+  return "http://localhost:8000";
 }
 
 export const API_BASE = resolveApiBase();
