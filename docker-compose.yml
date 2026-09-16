@@ -135,6 +135,10 @@ services:
     ports: ["8000:8000"]
     environment:
       <<: *svc-env
+      # Comma-separated browser origins allowed by the gateway. Override this
+      # in .env for a public frontend, for example:
+      # CORS_ORIGINS=https://app.example.com,http://129.146.27.138:3000
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000,http://localhost:3001,http://localhost:3002}
       REDIS_URL: redis://redis:6379/0
       AUTH_SERVICE_URL: http://auth-user-service:8001
       INTAKE_SERVICE_URL: http://intake-profiling-service:8002

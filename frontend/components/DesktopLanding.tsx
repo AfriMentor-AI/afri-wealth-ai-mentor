@@ -59,9 +59,7 @@ export function DesktopLanding() {
           </div>
           <div className="flex items-center gap-xl">
             <nav className="hidden items-center gap-xl md:flex">
-              <a className="font-label-sm text-label-sm text-on-surface-variant transition-colors hover:text-primary" href="#">About</a>
               <a className="font-label-sm text-label-sm text-on-surface-variant transition-colors hover:text-primary" href="#" onClick={(e) => { e.preventDefault(); router.push("/persona"); }}>Mentors</a>
-              <a className="font-label-sm text-label-sm text-on-surface-variant transition-colors hover:text-primary" href="#">Support</a>
             </nav>
             <ThemeToggle />
             <Button
@@ -135,11 +133,11 @@ export function DesktopLanding() {
             </div>
           </div>
 
-          {/* sage.jpg — absolute right, overlapping */}
+          {/* wise-elder.jpeg — absolute right, overlapping */}
           <div className="absolute right-0 top-0 hidden h-full w-3/5 select-none md:block">
             <div className="h-full w-full overflow-hidden rounded-bl-[120px] bg-surface-container">
               <Image
-                src="/images/sage.jpg"
+                src="/images/wise-elder.jpeg"
                 alt="A wise African mentor"
                 fill
                 className="scale-105 object-cover object-center opacity-90 dark:opacity-60"

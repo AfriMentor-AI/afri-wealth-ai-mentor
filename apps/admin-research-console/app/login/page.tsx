@@ -30,15 +30,32 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center px-4">
+    <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <form
         onSubmit={handleSubmit}
-        className="w-full max-w-sm rounded-md border border-border bg-surface-raised p-8"
+        className="w-full max-w-sm rounded-2xl border border-outline-variant bg-surface p-8 shadow-xl"
       >
-        <h1 className="mb-1 text-lg font-semibold">Research Console</h1>
-        <p className="mb-6 text-sm text-on-surface-dim">Admin / researcher / lead architect sign-in</p>
+        <div className="mb-6 flex items-center gap-3">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary text-on-primary shadow-sm">
+            <span className="material-symbols-outlined text-2xl" style={{ fontVariationSettings: "'FILL' 1" }}>
+              account_tree
+            </span>
+          </div>
+          <div>
+            <h1 className="font-headline font-bold text-lg text-primary leading-tight">AfriMentor</h1>
+            <p className="font-label-sm text-[10px] uppercase tracking-widest text-on-surface-variant opacity-75">
+              Research Console
+            </p>
+          </div>
+        </div>
 
-        <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-on-surface-dim">
+        <p className="mb-6 text-xs text-on-surface-variant">
+          Sign in with an authorized <strong className="text-on-surface">admin</strong>,{" "}
+          <strong className="text-on-surface">researcher</strong>, or{" "}
+          <strong className="text-on-surface">lead_architect</strong> account.
+        </p>
+
+        <label className="mb-1 block text-[11px] font-bold uppercase tracking-wider text-on-surface-variant">
           Email
         </label>
         <input
@@ -46,10 +63,11 @@ export default function LoginPage() {
           required
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          className="mb-4 w-full rounded border border-border bg-surface-inset px-3 py-2 text-sm outline-none focus:border-accent"
+          placeholder="researcher@afrimentor.ai"
+          className="mb-4 w-full rounded-xl border border-outline-variant bg-surface-container-low px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
         />
 
-        <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-on-surface-dim">
+        <label className="mb-1 block text-[11px] font-bold uppercase tracking-wider text-on-surface-variant">
           Password
         </label>
         <input
@@ -57,17 +75,22 @@ export default function LoginPage() {
           required
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          className="mb-6 w-full rounded border border-border bg-surface-inset px-3 py-2 text-sm outline-none focus:border-accent"
+          placeholder="••••••••"
+          className="mb-6 w-full rounded-xl border border-outline-variant bg-surface-container-low px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
         />
 
-        {error && <p className="mb-4 text-sm text-danger">{error}</p>}
+        {error && (
+          <div className="mb-4 rounded-xl border border-error/30 bg-error-container p-3 text-xs font-semibold text-on-error-container">
+            {error}
+          </div>
+        )}
 
         <button
           type="submit"
           disabled={submitting}
-          className="w-full rounded bg-accent py-2 text-sm font-semibold text-on-accent disabled:opacity-60"
+          className="w-full rounded-full bg-primary py-2.5 text-sm font-bold text-on-primary shadow-xs hover:opacity-90 active:scale-98 transition-all disabled:opacity-50"
         >
-          {submitting ? "Signing in…" : "Sign in"}
+          {submitting ? "Signing in…" : "Sign in to Console"}
         </button>
       </form>
     </div>

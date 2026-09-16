@@ -20,6 +20,7 @@ RUN useradd --create-home --uid 10001 app
 WORKDIR /app
 COPY --from=builder /opt/venv /opt/venv
 COPY --chown=app:app app ./app
+COPY --chown=app:app scripts ./scripts
 COPY --chown=app:app alembic ./alembic
 COPY --chown=app:app alembic.ini ./alembic.ini
 COPY --chown=app:app docker-entrypoint.sh ./docker-entrypoint.sh

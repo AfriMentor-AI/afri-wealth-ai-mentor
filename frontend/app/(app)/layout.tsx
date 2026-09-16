@@ -5,7 +5,9 @@ import { usePathname, useRouter } from "next/navigation";
 import Image from "next/image";
 import { BottomTabNav } from "@/components/BottomTabNav";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { NotificationPopover } from "@/components/NotificationPopover";
 import { FeedbackSurveyModal } from "@/components/FeedbackSurveyModal";
+import { CreateGoalModal } from "@/components/CreateGoalModal";
 import { useAppDispatch, useAppState } from "@/lib/store";
 import { fetchChatMessages, fetchProfile } from "@/lib/api";
 import { isIntakeCompleted } from "@/lib/session";
@@ -15,7 +17,8 @@ export default function AppShellLayout({ children }: { children: React.ReactNode
   const dispatch = useAppDispatch();
   const pathname = usePathname();
   const router = useRouter();
-  const hasOwnHeader = pathname?.startsWith("/chat") || pathname === "/goals/action";
+  const hasOwnHeader = pathname?.startsWith("/chat") || pathname === "/goals/action" || pathname?.startsWith("/research/personas");
+
 
   // Route guard: the app shell (chat/goals/library/progress) is only reachable
   // after intake + persona selection. If this device hasn't completed intake,
@@ -46,8 +49,8 @@ export default function AppShellLayout({ children }: { children: React.ReactNode
   // the previous approach (fixed nav + guessing how much padding clears
   // it) breaks any time the nav's real height doesn't match the guess.
   return (
-    <div className="flex h-[var(--app-height)] w-full flex-col bg-surface md:flex-row-reverse">
-      <div className="flex min-h-0 flex-1 flex-col">
+    <div className="flex h-full h-[100dvh] w-full max-w-full flex-col overflow-hidden bg-surface md:flex-row-reverse">
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col pb-16 md:pb-0">
         {!hasOwnHeader && (
           <header className="flex shrink-0 items-center justify-between px-margin-mobile pb-md pt-[max(env(safe-area-inset-top),0.5rem)] md:hidden">
             <div className="flex items-center gap-sm">
@@ -56,13 +59,17 @@ export default function AppShellLayout({ children }: { children: React.ReactNode
               </div>
               <p className="font-title-md text-title-md text-on-surface">AfriMentor AI</p>
             </div>
-            <ThemeToggle />
+            <div className="flex items-center gap-xs">
+              <NotificationPopover />
+              <ThemeToggle />
+            </div>
           </header>
         )}
-        <div className="min-h-0 flex-1 overflow-y-auto">{children}</div>
+        <div className="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden overscroll-contain">{children}</div>
       </div>
       <BottomTabNav />
       <FeedbackSurveyModal />
+      <CreateGoalModal />
     </div>
   );
 }

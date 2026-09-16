@@ -29,6 +29,19 @@ def test_health(client):
     assert r.json()["service"] == "api-gateway"
 
 
+def test_cors_preflight_allows_local_frontend_port(client):
+    r = client.options(
+        "/api/v1/auth/login",
+        headers={
+            "Origin": "http://localhost:3002",
+            "Access-Control-Request-Method": "POST",
+            "Access-Control-Request-Headers": "content-type",
+        },
+    )
+    assert r.status_code == 200
+    assert r.headers["access-control-allow-origin"] == "http://localhost:3002"
+
+
 def test_unknown_route_404(client):
     r = client.get("/api/v1/nonexistent/thing")
     assert r.status_code == 404

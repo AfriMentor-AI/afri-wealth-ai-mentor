@@ -3,13 +3,14 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Icon } from "./Icon";
-import { NotificationPopover } from "./NotificationPopover";
+import { useAppDispatch } from "@/lib/store";
 
 const tabs = [
   { href: "/chat", label: "Chat", icon: "chat_bubble" },
   { href: "/goals", label: "Goals", icon: "target" },
   { href: "/library", label: "Library", icon: "auto_stories" },
   { href: "/progress", label: "Progress", icon: "query_stats" },
+  // Research Console is hidden from the consumer app; dedicated console lives in apps/admin-research-console
 ];
 
 // A normal flex sibling in the app shell now, not `fixed` — sized by its
@@ -17,14 +18,16 @@ const tabs = [
 // overlay that content elsewhere has to guess padding to clear.
 export function BottomTabNav() {
   const pathname = usePathname();
+  const dispatch = useAppDispatch();
 
   return (
     <nav
-      className="flex h-16 shrink-0 items-center justify-around border-t border-outline-variant bg-surface px-sm pb-[max(env(safe-area-inset-bottom),0.5rem)] md:h-full md:w-20 md:flex-col md:justify-start md:gap-2 md:border-b-0 md:border-t-0 md:border-r md:py-lg lg:w-56 lg:items-stretch"
+      className="fixed bottom-0 left-0 right-0 z-40 flex h-16 w-full items-center justify-around border-t border-outline-variant bg-surface px-sm md:static md:h-full md:w-20 md:flex-col md:justify-start md:gap-2 md:border-b-0 md:border-t-0 md:border-r md:py-lg lg:w-56 lg:items-stretch"
       aria-label="Main"
     >
-      <div className="hidden md:flex md:flex-col md:items-center md:pb-sm md:border-b md:border-outline-variant lg:items-stretch">
-        <NotificationPopover />
+      <div className="hidden lg:flex lg:flex-col lg:gap-0.5 lg:px-lg lg:pb-lg">
+        <p className="font-headline-lg text-2xl font-bold text-primary">AfriMentor</p>
+        <p className="font-label-sm text-[10px] uppercase tracking-wider text-on-surface-variant">Dignified Growth</p>
       </div>
       {tabs.map(({ href, label, icon }) => {
         const isActive = pathname?.startsWith(href);
@@ -45,6 +48,14 @@ export function BottomTabNav() {
           </Link>
         );
       })}
+      <button
+        type="button"
+        onClick={() => dispatch({ type: "OPEN_NEW_GOAL_MODAL" })}
+        className="mt-auto hidden items-center justify-center gap-sm rounded-full bg-primary px-lg py-md font-title-md text-title-md text-on-primary transition-opacity hover:opacity-90 active:scale-95 lg:flex"
+      >
+        <Icon name="add" size={20} />
+        New Goal
+      </button>
     </nav>
   );
 }

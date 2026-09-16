@@ -74,8 +74,8 @@ export default function SplashPage() {
 
               <div className="relative mb-xl aspect-[4/5] max-h-[45vh] w-full overflow-hidden rounded border border-outline-variant/30 shadow-sm">
                 <Image
-                  src="/images/chioma-avatar.png"
-                  alt="Chioma, your AI mentor, in her home"
+                  src="/images/wise-elder.jpeg"
+                  alt="A wise African mentor"
                   fill
                   className="object-cover"
                   priority

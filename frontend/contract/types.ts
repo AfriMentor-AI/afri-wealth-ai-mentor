@@ -188,6 +188,13 @@ export interface InsightItem {
   /** URL to the audio/article asset. Absent in mock data today; required
    * once real content exists. */
   mediaUrl?: string;
+  thumbnailUrl?: string;
+  /** Full article / lesson content from the catalog. */
+  content?: string;
+  /** Audio narration script or transcript. */
+  audioNarration?: string;
+  /** Difficulty level: beginner, intermediate, advanced. */
+  difficulty?: string;
   createdAt: ISODateTime;
   /** Whether the current user has bookmarked this insight. Present on live
    * API responses (insight-library-service embeds it per-request); absent
@@ -346,3 +353,87 @@ export interface WeeklySummaryShare {
   badgesEarnedThisWeek: ID[];
   shareText: string;
 }
+
+// ---------------------------------------------------------------------------
+// Research Evaluation & Corpus Admin
+// ---------------------------------------------------------------------------
+
+export interface CorpusDocument {
+  id: string;
+  filename: string;
+  source_origin?: string;
+  figure_id?: string | null;
+  market?: string | null;
+  language?: string;
+  status: string;
+  chunk_count: number;
+  error_message?: string | null;
+  created_at: ISODateTime;
+  updated_at?: ISODateTime;
+  title: string | null;
+  author: string | null;
+  sector: string | null;
+  content_type?: string | null;
+  published_date?: string | null;
+  source_url?: string | null;
+  channel?: string | null;
+  byte_size: number;
+}
+
+export interface DriftAlert {
+  id: string;
+  job_run_id?: string;
+  persona_id: string;
+  baseline_aggregate?: number;
+  current_aggregate?: number;
+  delta_pct: number;
+  message: string;
+  status: string;
+  created_at: ISODateTime;
+  acknowledged_at?: ISODateTime | null;
+}
+
+export interface ConsistencyMetricsSession {
+  conversation_id: string;
+  persona_id: string;
+  prompt_to_line: number;
+  line_to_line: number;
+  qa_consistency: number;
+  aggregate: number;
+  trait_fit_cosine?: number | null;
+  composite_score?: number | null;
+  turn_count: number;
+  scored_at: string | null;
+  intent?: string | null;
+  prompt_context?: string | null;
+}
+
+export interface ConsistencyMetrics {
+  job_run_id: string | null;
+  session_count: number;
+  scored_at: string | null;
+  aggregates: {
+    mean_prompt_to_line: number;
+    mean_line_to_line: number;
+    mean_qa_consistency: number;
+    mean_aggregate: number;
+    mean_trait_fit_cosine?: number;
+    mean_composite?: number;
+  };
+  sessions: ConsistencyMetricsSession[];
+}
+
+export interface AuditSession {
+  id: string;
+  session_id: string;
+  persona_id: string;
+  primary_intent: string | null;
+  prompt_context: string | null;
+  consistency_delta_pct: number | null;
+  aggregate: number;
+  review_status: string | null;
+  review_reason: string | null;
+  reviewed_at: string | null;
+  scored_at: string | null;
+}
+

@@ -46,7 +46,7 @@ export function FeedbackSurveyModal() {
   }
 
   return (
-    <div className="fixed inset-0 z-30 flex items-end justify-center bg-inverse-surface/40 md:items-center" role="dialog" aria-modal="true" aria-labelledby="feedback-title">
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-inverse-surface/40 md:items-center" role="dialog" aria-modal="true" aria-labelledby="feedback-title">
       <div className="mx-auto w-full max-w-[400px] rounded-t bg-surface shadow-2xl md:rounded">
         <div className="flex justify-center pb-xs pt-sm">
           <div className="h-1 w-10 rounded-full bg-outline-variant opacity-50" />

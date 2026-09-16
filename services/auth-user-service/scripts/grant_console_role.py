@@ -13,25 +13,47 @@ target environment):
 """
 from __future__ import annotations
 
+import argparse
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from app.database import SessionLocal  # noqa: E402
+from app.database import SessionLocal, init_db  # noqa: E402
 from app.models import User  # noqa: E402
+from app.security import hash_password  # noqa: E402
 
 ALLOWED_ROLES = {"admin", "researcher", "lead_architect"}
 
 
-def grant(email: str, role: str) -> None:
+def grant(email: str, role: str, password: str | None = None) -> None:
     if role not in ALLOWED_ROLES:
         raise SystemExit(f"Unknown role {role!r} — expected one of {sorted(ALLOWED_ROLES)}")
+
+    # Ensure tables exist in dev/test SQLite databases
+    init_db()
 
     with SessionLocal() as db:
         user = db.query(User).filter(User.email == email).one_or_none()
         if user is None:
-            raise SystemExit(f"No user found with email {email!r}")
+            if password:
+                user = User(
+                    email=email,
+                    password_hash=hash_password(password),
+                    roles=role,
+                    name=email.split("@")[0],
+                )
+                db.add(user)
+                db.commit()
+                print(f"Created new user {email} with role {role!r}")
+                return
+
+            raise SystemExit(
+                f"No user found with email {email!r}.\n"
+                f"To create the user now with this role, provide a password:\n"
+                f"    python scripts/grant_console_role.py {email} {role} --password <password>\n"
+                f"Or register first through the UI / API and re-run."
+            )
 
         roles = set(user.role_list)
         if role in roles:
@@ -45,6 +67,11 @@ def grant(email: str, role: str) -> None:
 
 
 if __name__ == "__main__":
-    if len(sys.argv) != 3:
-        raise SystemExit(__doc__)
-    grant(sys.argv[1], sys.argv[2])
+    parser = argparse.ArgumentParser(description="Grant console role to an account (or create one)")
+    parser.add_argument("email", help="User email address")
+    parser.add_argument("role", choices=sorted(ALLOWED_ROLES), help="Role to grant")
+    parser.add_argument("--password", "-p", help="Optional password to create user if they do not exist yet")
+    args = parser.parse_args()
+
+    grant(args.email, args.role, password=args.password)
+

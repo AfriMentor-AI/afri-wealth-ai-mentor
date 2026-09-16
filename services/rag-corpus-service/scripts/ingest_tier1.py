@@ -1,9 +1,10 @@
-#!/usr/bin/env python3
 import json, os, sys, urllib.request, urllib.error
 
+HERE         = os.path.dirname(os.path.abspath(__file__))
+SERVICE_ROOT = os.path.dirname(HERE)
 API_URL      = os.getenv("RAG_API_URL", "http://localhost:8005")
 USER_ID      = "system-ingest-001"
-CORPUS_JSONL = "corpus/data/corpus.jsonl"
+CORPUS_JSONL = os.path.join(SERVICE_ROOT, "corpus", "data", "corpus.jsonl")
 
 def map_source_origin(meta):
     sector = meta.get("primary_sector", "").lower()

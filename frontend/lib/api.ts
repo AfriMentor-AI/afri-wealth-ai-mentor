@@ -19,8 +19,13 @@ import type {
   Persona,
   DailyAction,
   FeedbackSurvey,
+  CorpusDocument,
+  DriftAlert,
+  ConsistencyMetrics,
+  AuditSession,
 } from "./types";
 import { mockProfile, mockInsights, mockPersonas, mockDailyAction } from "./mockData";
+
 
 interface BackendMessage {
   id: string;
@@ -358,6 +363,69 @@ export async function completeMilestone(milestoneId: string): Promise<Milestone 
   return toMilestone(await res.json());
 }
 
+/** PATCH /api/v1/goals/{goalId} */
+export async function updateGoal(
+  goalId: string,
+  updates: {
+    title?: string;
+    description?: string | null;
+    deadline?: string | null;
+    status?: string;
+  }
+): Promise<Goal> {
+  const res = await apiFetch(`/api/v1/goals/${goalId}`, {
+    method: "PATCH",
+    body: JSON.stringify(updates),
+  });
+  if (!res.ok) throw new Error(`updateGoal failed: ${res.status}`);
+  return toGoal(await res.json());
+}
+
+/** DELETE /api/v1/goals/{goalId} */
+export async function deleteGoal(goalId: string): Promise<void> {
+  const res = await apiFetch(`/api/v1/goals/${goalId}`, { method: "DELETE" });
+  if (!res.ok && res.status !== 204) throw new Error(`deleteGoal failed: ${res.status}`);
+}
+
+/** POST /api/v1/goals/{goalId}/milestones */
+export async function createMilestone(
+  goalId: string,
+  input: {
+    title: string;
+    status?: Milestone["status"];
+  }
+): Promise<Milestone> {
+  const res = await apiFetch(`/api/v1/goals/${goalId}/milestones`, {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+  if (!res.ok) throw new Error(`createMilestone failed: ${res.status}`);
+  return toMilestone(await res.json());
+}
+
+/** PATCH /api/v1/milestones/{milestoneId} */
+export async function updateMilestone(
+  milestoneId: string,
+  updates: {
+    title?: string;
+    status?: Milestone["status"];
+    order?: number;
+  }
+): Promise<Milestone> {
+  const res = await apiFetch(`/api/v1/milestones/${milestoneId}`, {
+    method: "PATCH",
+    body: JSON.stringify(updates),
+  });
+  if (!res.ok) throw new Error(`updateMilestone failed: ${res.status}`);
+  return toMilestone(await res.json());
+}
+
+/** DELETE /api/v1/milestones/{milestoneId} */
+export async function deleteMilestone(milestoneId: string): Promise<void> {
+  const res = await apiFetch(`/api/v1/milestones/${milestoneId}`, { method: "DELETE" });
+  if (!res.ok && res.status !== 204) throw new Error(`deleteMilestone failed: ${res.status}`);
+}
+
 /** GET /api/v1/goals/{goalId}/commitments */
 export async function fetchCommitmentsByGoal(goalId: string): Promise<Commitment[]> {
   const res = await apiFetch(`/api/v1/goals/${goalId}/commitments`);
@@ -688,8 +756,10 @@ export interface BackendInsightItem {
   is_audio?: boolean;
   media_type?: string;
   media_url: string | null;
+  thumbnail_url?: string | null;
   content?: string | null;
   audio_narration?: string | null;
+  difficulty?: string;
   created_at: string;
   is_favorited: boolean;
 }
@@ -708,7 +778,12 @@ function toInsightItem(b: BackendInsightItem): InsightItem {
     durationMinutes,
     isAudio,
     mediaUrl: b.media_url ?? undefined,
+    thumbnailUrl: b.thumbnail_url ?? undefined,
+    content: b.content ?? undefined,
+    audioNarration: b.audio_narration ?? undefined,
+    difficulty: b.difficulty,
     createdAt: b.created_at,
+    isFavorited: b.is_favorited,
   };
 }
 
@@ -785,6 +860,119 @@ export async function fetchRagStats(): Promise<RagCorpusStats | null> {
   }
   return null;
 }
+
+export const mockCorpusDocuments: CorpusDocument[] = [
+  {
+    id: "DOC-4920-GH",
+    filename: "cassava_yield_optimization_v2.pdf",
+    title: "Cassava Yield Optimization v2",
+    sector: "Agriculture",
+    market: "Ghana",
+    author: "Dr. Amma Boateng",
+    status: "indexed",
+    chunk_count: 24,
+    byte_size: 1420000,
+    created_at: "2023-11-12T10:00:00Z",
+  },
+  {
+    id: "DOC-8812-NG",
+    filename: "microfinance_literacy_framework.docx",
+    title: "Microfinance Literacy Framework",
+    sector: "Finance",
+    market: "Nigeria",
+    author: "Folake Adeleke",
+    status: "pending",
+    chunk_count: 12,
+    byte_size: 890000,
+    created_at: "2023-12-05T14:30:00Z",
+  },
+  {
+    id: "DOC-1103-KE",
+    filename: "solar_grid_decentralization_tech.pdf",
+    title: "Solar Grid Decentralization Tech",
+    sector: "Energy",
+    market: "Kenya",
+    author: "John Kariuki",
+    status: "indexed",
+    chunk_count: 38,
+    byte_size: 3200000,
+    created_at: "2024-01-14T09:15:00Z",
+  },
+  {
+    id: "DOC-5542-ZA",
+    filename: "urban_water_management_policy.pdf",
+    title: "Urban Water Management Policy",
+    sector: "Public Policy",
+    market: "South Africa",
+    author: "Lindiwe Dube",
+    status: "indexed",
+    chunk_count: 19,
+    byte_size: 1750000,
+    created_at: "2024-02-01T16:45:00Z",
+  },
+];
+
+/** GET /api/v1/rag/documents - list ingested corpus documents */
+export async function fetchCorpusDocuments(q?: string): Promise<{ documents: CorpusDocument[]; total: number }> {
+  try {
+    const qs = q ? `?q=${encodeURIComponent(q)}` : "";
+    const res = await apiFetch(`/api/v1/rag/documents${qs}`);
+    if (res.ok) {
+      const documents: CorpusDocument[] = await res.json();
+      const total = Number(res.headers.get("X-Total-Count") ?? documents.length);
+      return { documents, total };
+    }
+  } catch (err) {
+    console.warn("fetchCorpusDocuments error, fallback to mock:", err);
+  }
+  const filtered = q
+    ? mockCorpusDocuments.filter(
+        (d) =>
+          d.title?.toLowerCase().includes(q.toLowerCase()) ||
+          d.sector?.toLowerCase().includes(q.toLowerCase()) ||
+          d.author?.toLowerCase().includes(q.toLowerCase()) ||
+          d.filename.toLowerCase().includes(q.toLowerCase())
+      )
+    : mockCorpusDocuments;
+  return { documents: filtered, total: filtered.length };
+}
+
+/** POST /api/v1/rag/documents - ingest a new document into RAG corpus */
+export async function ingestCorpusDocument(body: {
+  filename: string;
+  text: string;
+  title?: string;
+  author?: string;
+  sector?: string;
+  market?: string;
+}): Promise<CorpusDocument> {
+  const res = await apiFetch("/api/v1/rag/documents", {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) {
+    throw new Error(`ingestCorpusDocument failed: ${res.status}`);
+  }
+  return res.json();
+}
+
+/** Authenticated CSV export helper for admin/research endpoints */
+export async function downloadCsv(path: string, filename: string): Promise<void> {
+  const res = await apiFetch(path);
+  if (!res.ok) throw new Error(`Export failed: ${res.status}`);
+  const blob = await res.blob();
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  link.click();
+  URL.revokeObjectURL(url);
+}
+
+export function exportDocumentsCsv(): Promise<void> {
+  return downloadCsv("/api/v1/rag/documents/export.csv", "rag-documents.csv");
+}
+
 
 // ---------------------------------------------------------------------------
 // Persona Prompt Service (persona-prompt-service, port 8004)
@@ -1008,4 +1196,162 @@ export async function markAllNotificationsRead(): Promise<boolean> {
     console.warn("markAllNotificationsRead error:", err);
     return false;
   }
+}
+
+// ---------------------------------------------------------------------------
+// Research Evaluation Service (research-evaluation-service, port 8010)
+// ---------------------------------------------------------------------------
+
+export const mockConsistencyMetrics: ConsistencyMetrics = {
+  job_run_id: "run-prod-2024-09",
+  session_count: 1244,
+  scored_at: new Date().toISOString(),
+  aggregates: {
+    mean_prompt_to_line: 0.962,
+    mean_line_to_line: 0.941,
+    mean_qa_consistency: 0.898,
+    mean_aggregate: 0.942,
+    mean_trait_fit_cosine: 0.912,
+    mean_composite: 0.935,
+  },
+  sessions: [
+    {
+      conversation_id: "S-7729-AX",
+      persona_id: "chioma",
+      prompt_to_line: 0.98,
+      line_to_line: 0.97,
+      qa_consistency: 0.99,
+      aggregate: 0.98,
+      turn_count: 6,
+      scored_at: "2024-09-10T14:02:00Z",
+      intent: "Financial Education",
+      prompt_context: "Explain compound interest using cocoa farming metaphor...",
+    },
+    {
+      conversation_id: "S-7801-BQ",
+      persona_id: "chioma",
+      prompt_to_line: 0.65,
+      line_to_line: 0.60,
+      qa_consistency: 0.62,
+      aggregate: 0.62,
+      turn_count: 4,
+      scored_at: "2024-09-10T13:45:00Z",
+      intent: "Micro-Loan Guidance",
+      prompt_context: "Why can't I pay back in Susu if I don't have a digital wallet?",
+    },
+    {
+      conversation_id: "S-7844-CZ",
+      persona_id: "chioma",
+      prompt_to_line: 0.86,
+      line_to_line: 0.84,
+      qa_consistency: 0.85,
+      aggregate: 0.85,
+      turn_count: 8,
+      scored_at: "2024-09-10T12:30:00Z",
+      intent: "Community Support",
+      prompt_context: "Kofi says he reached level 4, how do I find him?",
+    },
+    {
+      conversation_id: "S-7859-DL",
+      persona_id: "chioma",
+      prompt_to_line: 0.93,
+      line_to_line: 0.91,
+      qa_consistency: 0.92,
+      aggregate: 0.92,
+      turn_count: 5,
+      scored_at: "2024-09-10T11:15:00Z",
+      intent: "Goal Tracking",
+      prompt_context: "Update my goal for building the kiosk by December.",
+    },
+  ],
+};
+
+export const mockDriftAlerts: DriftAlert[] = [
+  {
+    id: "alert-chioma-twi-01",
+    job_run_id: "run-prod-2024-09",
+    persona_id: "chioma",
+    baseline_aggregate: 0.942,
+    current_aggregate: 0.808,
+    delta_pct: 14.2,
+    message: "Consonantal frequency in Twi-English code-switching has deviated by 14.2% from baseline model. Potential hallucination risk in 'Sankofa' narrative branch.",
+    status: "active",
+    created_at: new Date().toISOString(),
+    acknowledged_at: null,
+  },
+];
+
+/** GET /api/v1/metrics/consistency - persona consistency metrics & session list */
+export async function fetchConsistencyMetrics(): Promise<ConsistencyMetrics> {
+  try {
+    const res = await apiFetch("/api/v1/metrics/consistency");
+    if (res.ok) {
+      return await res.json();
+    }
+  } catch (err) {
+    console.warn("fetchConsistencyMetrics error, fallback to mock:", err);
+  }
+  return mockConsistencyMetrics;
+}
+
+/** GET /api/v1/research/drift-alerts - list active or acknowledged drift alerts */
+export async function fetchDriftAlerts(status?: string): Promise<DriftAlert[]> {
+  try {
+    const qs = status ? `?status=${encodeURIComponent(status)}` : "";
+    const res = await apiFetch(`/api/v1/research/drift-alerts${qs}`);
+    if (res.ok) {
+      const data = await res.json();
+      return data.alerts || data;
+    }
+  } catch (err) {
+    console.warn("fetchDriftAlerts error, fallback to mock:", err);
+  }
+  return mockDriftAlerts;
+}
+
+/** POST /api/v1/research/drift-alerts/{id}/acknowledge - acknowledge a drift alert */
+export async function acknowledgeDriftAlert(id: string): Promise<boolean> {
+  try {
+    const res = await apiFetch(`/api/v1/research/drift-alerts/${id}/acknowledge`, {
+      method: "POST",
+    });
+    return res.ok;
+  } catch (err) {
+    console.warn("acknowledgeDriftAlert error:", err);
+    return false;
+  }
+}
+
+/** GET /api/v1/research/audit-sessions - list evaluated audit sessions */
+export async function fetchAuditSessions(opts?: {
+  minAbsDeltaPct?: number;
+  flaggedOnly?: boolean;
+}): Promise<AuditSession[]> {
+  try {
+    const params = new URLSearchParams();
+    if (opts?.minAbsDeltaPct != null) params.set("min_abs_delta_pct", String(opts.minAbsDeltaPct));
+    if (opts?.flaggedOnly) params.set("flagged_only", "true");
+    const qs = params.toString() ? `?${params.toString()}` : "";
+    const res = await apiFetch(`/api/v1/research/audit-sessions${qs}`);
+    if (res.ok) {
+      const data = await res.json();
+      return data.sessions || data;
+    }
+  } catch (err) {
+    console.warn("fetchAuditSessions error:", err);
+  }
+  return [];
+}
+
+/** POST /api/v1/research/audits - trigger a new manual audit sample */
+export async function triggerManualAudit(sampleSize?: number): Promise<{ run: Record<string, unknown>; sessions: AuditSession[] }> {
+  const qs = sampleSize != null ? `?sample_size=${sampleSize}` : "";
+  const res = await apiFetch(`/api/v1/research/audits${qs}`, { method: "POST" });
+  if (!res.ok) throw new Error(`triggerManualAudit failed: ${res.status}`);
+  return res.json();
+}
+
+/** GET /api/v1/research/export/pilot-data.csv - export research pilot data */
+export function exportPilotDataCsv(): Promise<void> {
+  return downloadCsv("/api/v1/research/export/pilot-data.csv", "pilot-data-export.csv");
 }
