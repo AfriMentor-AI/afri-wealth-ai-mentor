@@ -78,11 +78,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           }}
         />
       </head>
-      <body className="font-body min-h-screen" suppressHydrationWarning>
+      <body className="font-body min-h-[var(--app-height)]" suppressHydrationWarning>
         <AppStateProvider>
           <InstallBanner />
           <OfflineBanner />
-          <div className="min-h-screen">{children}</div>
+          <div className="min-h-[var(--app-height)]">{children}</div>
         </AppStateProvider>
       </body>
     </html>
