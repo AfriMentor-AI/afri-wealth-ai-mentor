@@ -52,7 +52,7 @@ export default function AppShellLayout({ children }: { children: React.ReactNode
     <div className="flex h-full h-[100dvh] w-full max-w-full flex-col overflow-hidden bg-surface md:flex-row-reverse">
       <div className="flex min-h-0 min-w-0 flex-1 flex-col pb-16 md:pb-0">
         {!hasOwnHeader && (
-          <header className="flex shrink-0 items-center justify-between px-margin-mobile py-md md:hidden">
+          <header className="flex shrink-0 items-center justify-between px-margin-mobile pb-md pt-[max(env(safe-area-inset-top),0.5rem)] md:hidden">
             <div className="flex items-center gap-sm">
               <div className="relative h-9 w-9 shrink-0 overflow-hidden rounded-full border-2 border-primary">
                 <Image src="/images/chioma-avatar.png" alt="Chioma" fill className="object-cover" />
