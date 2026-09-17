@@ -10,23 +10,120 @@
 # VM with a public IP: ADR-0001's single-ingress design means only
 # api-gateway should ever be reachable from the internet — the other
 # services are meant to be called through it, not directly.
+#
+# It also sizes the stack for the free-tier shape (1 OCPU / 6 GB RAM). Every
+# service gets a hard cgroup RAM ceiling (mem_limit) plus a bounded total
+# mem+swap ceiling (memswap_limit) so a single runaway container (e.g.
+# mlflow/chromadb indexing a large run) is OOM-killed and auto-restarted by
+# its `restart: unless-stopped` policy instead of exhausting host RAM/swap and
+# freezing the whole VM (seen 2026-09-17). This kernel (Oracle UEK) ships
+# without CONFIG_PSI, so systemd-oomd cannot be used here; per-container
+# cgroup limits are the only safe guard. memswap_limit = mem_limit + ~256m:
+# the swap margin keeps room for the occasional spillover without letting any
+# container eat the host's whole swapfile.
 name: afrimentor-staging
 
 services:
-  auth-user-service:
+  postgres:
+    mem_limit: 1g
+    memswap_limit: 1536m
+
+  redis:
+    mem_limit: 256m
+    memswap_limit: 512m
+
+  rabbitmq:
+    mem_limit: 512m
+    memswap_limit: 768m
+    # Not reset by docker-compose.staging.yml either — its AMQP port and
+    # management UI (real credentials, not the local dev defaults) would
+    # otherwise be published straight to this VM's public IP.
     ports: !reset []
 
+  chromadb:
+    mem_limit: 1g
+    memswap_limit: 1536m
+
+  mlflow:
+    mem_limit: 2g
+    memswap_limit: 2560m
+
+  api-gateway:
+    mem_limit: 512m
+    memswap_limit: 768m
+
+  auth-user-service:
+    mem_limit: 768m
+    memswap_limit: 1024m
+    ports: !reset []
+
+  intake-profiling-service:
+    mem_limit: 512m
+    memswap_limit: 768m
+
   chat-orchestration-service:
+    mem_limit: 768m
+    memswap_limit: 1024m
     ports: !reset []
 
   persona-prompt-service:
+    mem_limit: 768m
+    memswap_limit: 1024m
     ports: !reset []
 
   rag-corpus-service:
+    mem_limit: 768m
+    memswap_limit: 1024m
     ports: !reset []
 
-  # Not reset by docker-compose.staging.yml either — its AMQP port and
-  # management UI (real credentials, not the local dev defaults) would
-  # otherwise be published straight to this VM's public IP.
-  rabbitmq:
-    ports: !reset []
+  goals-milestones-service:
+    mem_limit: 512m
+    memswap_limit: 768m
+
+  progress-gamification-service:
+    mem_limit: 512m
+    memswap_limit: 768m
+
+  insight-library-service:
+    mem_limit: 512m
+    memswap_limit: 768m
+
+  feedback-service:
+    mem_limit: 512m
+    memswap_limit: 768m
+
+  research-evaluation-service:
+    mem_limit: 768m
+    memswap_limit: 1024m
+
+  voice-service:
+    mem_limit: 512m
+    memswap_limit: 768m
+
+  notification-service:
+    mem_limit: 512m
+    memswap_limit: 768m
+
+  admin-research-console:
+    mem_limit: 768m
+    memswap_limit: 1024m
+
+  prometheus:
+    mem_limit: 384m
+    memswap_limit: 640m
+
+  loki:
+    mem_limit: 384m
+    memswap_limit: 640m
+
+  promtail:
+    mem_limit: 128m
+    memswap_limit: 384m
+
+  grafana:
+    mem_limit: 512m
+    memswap_limit: 768m
+
+  jaeger:
+    mem_limit: 384m
+    memswap_limit: 640m
