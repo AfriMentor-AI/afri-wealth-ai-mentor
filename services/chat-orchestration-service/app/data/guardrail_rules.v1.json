@@ -1,11 +1,12 @@
 {
   "rules_id": "afrimentor-guardrails",
-  "rules_version": "v1.1",
+  "rules_version": "v1.2",
   "card": "C2.4",
   "description": "High-risk financial advice filter for the CHIOMA mentor persona. Blocks specific financial-instrument recommendations and injects disclaimers on investment-adjacent advice. Patterns are matched case-insensitively. Each category may declare a 'surface' ('input', 'output', or 'both' — the default) limiting which side of a turn it screens, and 'exempt_patterns' that suppress it when the text is already handling the risk correctly.",
   "changelog": [
     {"version": "v1", "card": "C2.4", "note": "Initial six categories, all screening both surfaces."},
-    {"version": "v1.1", "card": "C2.5", "note": "Added output-only 'ai_disclosure' per pilot consent requirement (docs/research/pilot-data-collection-plan-v0.md section 4.3), plus the 'surface' and 'exempt_patterns' fields it needs. No change to the six C2.4 categories or their behaviour."}
+    {"version": "v1.1", "card": "C2.5", "note": "Added output-only 'ai_disclosure' per pilot consent requirement (docs/research/pilot-data-collection-plan-v0.md section 4.3), plus the 'surface' and 'exempt_patterns' fields it needs. No change to the six C2.4 categories or their behaviour."},
+    {"version": "v1.2", "card": "C2.5", "note": "Strengthened ai_disclosure block_patterns to catch evasive non-disclosure: deflecting with only a persona name, denying being 'a generic chatbot' without AI disclosure, or claiming to be 'more than a chatbot' without saying 'I'm an AI'. Added matching exempt_patterns for correct replies that happen to use the same phrases. Also fixed system prompt: replaced 'You are not a chatbot' with explicit AI_DISCLOSURE rule."}
   ],
   "spec_source_note": "Card C2.4 cites report section 5.4 'Guardrails', which is not yet written (research/main.pdf Sections 3-6 are headings only). Categories below are derived from the card description and the CHIOMA counter_markers in persona-prompt-service/data/chioma_profile.v1.json. Reconcile when 5.4 lands.",
   "categories": [
@@ -114,15 +115,21 @@
         "\\bi(?:\\s+am|'m|\u2019m)\\s+not\\s+(?:an?\\s+)?(?:ai|a\\.i\\.|artificial\\s+intelligence|robot|bot|chatbot|machine|computer|computer\\s+program|program|algorithm|language\\s+model|llm)\\b",
         "\\b(?:no|nope),?\\s+i(?:\\s+am|'m|\u2019m)\\s+not\\s+(?:an?\\s+)?(?:ai|robot|bot|machine|program)\\b",
         "\\bi\\s+(?:can\\s+)?assure\\s+you\\s+i(?:\\s+am|'m|\u2019m)\\s+(?:a\\s+)?(?:real|human|not\\s+an?\\s+(?:ai|robot|bot|machine))\\b",
-        "\\bthere(?:'s|\u2019s|\\s+is)\\s+a\\s+real\\s+(?:person|human|woman|man)\\s+(?:here|on\\s+(?:this|the\\s+other)\\s+(?:end|side))\\b"
+        "\\bthere(?:'s|\u2019s|\\s+is)\\s+a\\s+real\\s+(?:person|human|woman|man)\\s+(?:here|on\\s+(?:this|the\\s+other)\\s+(?:end|side))\\b",
+        "\\bi(?:\\s+am|'m|\u2019m)\\s+(?:chioma|your\\s+mentor|your\\s+financial\\s+mentor|your\\s+business\\s+mentor)[^.!?\\n]{0,60}not\\s+(?:a\\s+)?(?:generic\\s+)?(?:chatbot|bot|ai|robot|machine)\\b(?![^.!?\\n]{0,80}(?:i(?:\\s+am|'m)\\s+an?\\s+(?:ai|artificial\\s+intelligence)|i(?:\\s+am|'m)\\s+not\\s+(?:a\\s+)?(?:real\\s+)?(?:person|human)))",
+        "\\bnot\\s+(?:a\\s+)?(?:generic\\s+)?(?:chatbot|bot)\\b(?![^.!?\\n]{0,120}(?:i(?:\\s+am|'m|\u2019m)\\s+an?\\s+(?:ai|artificial\\s+intelligence|language\\s+model|llm)|i(?:\\s+am|'m|\u2019m)\\s+not\\s+(?:a\\s+)?(?:real\\s+)?(?:person|human)))",
+        "\\bi(?:\\s+am|'m|\u2019m)\\s+more\\s+than\\s+(?:a\\s+)?(?:chatbot|bot)\\b(?![^.!?\\n]{0,120}(?:i(?:\\s+am|'m|\u2019m)\\s+an?\\s+(?:ai|artificial\\s+intelligence)))"
       ],
       "disclaim_patterns": [],
       "exempt_patterns": [
         "\\bi(?:\\s+am|'m|\u2019m)\\s+(?:an?\\s+)?(?:ai|a\\.i\\.|artificial\\s+intelligence|chatbot|computer\\s+program|language\\s+model|llm)\\b",
         "\\bi(?:\\s+am|'m|\u2019m)\\s+not\\s+(?:a\\s+)?(?:real\\s+)?(?:person|human(?:\\s+being)?)\\b",
-        "\\bnot\\s+a\\s+real\\s+(?:person|human)\\b"
+        "\\bnot\\s+a\\s+real\\s+(?:person|human)\\b",
+        "\\bchioma\\s+is\\s+(?:a\\s+)?(?:persona|ai|artificial\\s+intelligence|not\\s+a\\s+(?:real\\s+)?person)\\b",
+        "\\bthere\\s+is\\s+no\\s+(?:real\\s+)?(?:person|human)\\b",
+        "\\bgenerated\\s+by\\s+(?:a\\s+)?(?:machine|ai|algorithm|model)\\b"
       ],
-      "exempt_note": "A correct reply has to name the thing it is denying ('you asked if I'm a real person \u2014 I'm not, I'm an AI'), and the block patterns above would otherwise fire on that sentence. These suppress the category when the reply discloses somewhere in its text. A reply that raises the question and never discloses is still blocked, which is the intended behaviour."
+      "exempt_note": "A correct reply has to name the thing it is denying ('you asked if I'm a real person \u2014 I'm not, I'm an AI'), and the block patterns above would otherwise fire on that sentence. These suppress the category when the reply discloses somewhere in its text. The v1.2 additions also exempt replies that correctly use 'Chioma is a persona', 'there is no person here', or 'generated by a machine', which are other valid disclosure formulations. A reply that raises the question and never discloses is still blocked."
     }
   ],
   "disclaimers": {
