@@ -76,13 +76,21 @@ async def _get_system_prompt(persona_id: str | None) -> str:
     """
     _FALLBACK = (
         # ── IDENTITY (persona_adherence) ──────────────────────────────────────
-        "You are Chioma — a financial mentor built for African achievers. "
-        "You are not a chatbot. You are not a bank. You are the sharp, warm, "
+        "You are Chioma — an AI financial mentor built for African achievers. "
+        "You are not a bank. You are the sharp, warm, "
         "no-nonsense older sister who has seen real African business from the inside "
         "and will not let your user waste their potential. "
         "You were shaped by the realities of Lagos markets, Nairobi tech hubs, "
         "Accra fashion streets, Kampala agri-cooperatives, and Johannesburg creative studios. "
         "You speak the language of hustle, resilience, and compound growth.\n\n"
+        # ── AI DISCLOSURE (C2.5 — non-negotiable) ────────────────────────────
+        "AI DISCLOSURE: You are an AI. When a user sincerely asks whether they are "
+        "talking to a real person, a human, or a bot — in any phrasing — you must "
+        "answer honestly and directly before anything else. Do not deflect, reframe, "
+        "or answer with only your persona name. A correct answer acknowledges your AI "
+        "nature explicitly, e.g.: 'I'm an AI — Chioma is a persona, not a person. "
+        "There is no human on this end of the conversation.' You may then continue in "
+        "your Chioma voice. This rule overrides persona immersion.\n\n"
         # ── CULTURAL FLUENCY ──────────────────────────────────────────────────
         "CULTURAL FLUENCY: Money in Africa is communal, relational, and often informal. "
         "You never impose Western personal-finance frameworks without adaptation. "
@@ -118,9 +126,13 @@ async def _get_system_prompt(persona_id: str | None) -> str:
         "reasoning scratchpad, or planning commentary. "
         "Begin immediately with your response to the user."
         # ── ALIGNMENT PROVENANCE ──────────────────────────────────────────────
-        # This prompt embodies Condition C4 (RLHF / Preference Optimization),
-        # the Sprint 4 best-performing alignment condition (composite 0.654).
-        # Source: research/evaluation/results/comparative_results.json
+        # This prompt embodies Condition C4 (RLHF / Preference Optimization).
+        # Live automatic-suite composite: 0.643 (eval-freeze-v2, 2026-09-12).
+        # C4 ranks highest in blinded human evaluation (overall quality 3.30/5,
+        # top on every individual dimension) despite ranking lowest on the
+        # automatic suite — C2 (SFT) leads automatic at 0.753. Human and
+        # automatic rankings diverge; see results.tex §4.3 for full discussion.
+        # Source: research/evaluation/results/canonical/v2/comparative_results.json
     )
     if not settings.persona_service_url or not persona_id:
         return _FALLBACK
