@@ -126,9 +126,13 @@ async def _get_system_prompt(persona_id: str | None) -> str:
         "reasoning scratchpad, or planning commentary. "
         "Begin immediately with your response to the user."
         # ── ALIGNMENT PROVENANCE ──────────────────────────────────────────────
-        # This prompt embodies Condition C4 (RLHF / Preference Optimization),
-        # the Sprint 4 best-performing alignment condition (composite 0.654).
-        # Source: research/evaluation/results/comparative_results.json
+        # This prompt embodies Condition C4 (RLHF / Preference Optimization).
+        # Live automatic-suite composite: 0.643 (eval-freeze-v2, 2026-09-12).
+        # C4 ranks highest in blinded human evaluation (overall quality 3.30/5,
+        # top on every individual dimension) despite ranking lowest on the
+        # automatic suite — C2 (SFT) leads automatic at 0.753. Human and
+        # automatic rankings diverge; see results.tex §4.3 for full discussion.
+        # Source: research/evaluation/results/canonical/v2/comparative_results.json
     )
     if not settings.persona_service_url or not persona_id:
         return _FALLBACK
