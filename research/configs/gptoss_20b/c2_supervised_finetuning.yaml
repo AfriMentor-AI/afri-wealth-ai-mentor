@@ -5,7 +5,7 @@ experiment:
   condition_id: C2
   sprint: 4
 model:
-  base_model_id: openai/gpt-oss-20b
+  base_model_id: unsloth/gpt-oss-20b-unsloth-bnb-4bit
   adapter_type: qlora
   output_dir: research/experiments/02_supervised_finetuning/checkpoints_gptoss-20b
   hub_repo: AfriMentor/chioma-gptoss-20b-sft-v2

@@ -44,7 +44,7 @@ MODEL_SETS = {
     "llama31_8b": {"base": "meta-llama/Llama-3.1-8B-Instruct",
                    "c2": ["AfriMentor/chioma-llama31-8b-sft-v2"],
                    "c3": "AfriMentor/chioma-llama31-8b-dpo-v2", "c4": "AfriMentor/chioma-llama31-8b-rlhf-v2"},
-    "gptoss_20b": {"base": "openai/gpt-oss-20b",
+    "gptoss_20b": {"base": "unsloth/gpt-oss-20b-unsloth-bnb-4bit",  # pre-quantized 4-bit: stock MXFP4 weights expand to ~40GB on a T4
                    "c2": ["AfriMentor/chioma-gptoss-20b-sft-v2"],
                    "c3": "AfriMentor/chioma-gptoss-20b-dpo-v2", "c4": "AfriMentor/chioma-gptoss-20b-rlhf-v2"},
 }
@@ -120,6 +120,8 @@ def _run_c1_live(samples: list[dict], api_key: str) -> list[dict]:
 def _run_checkpoint_condition(condition_id, base_model_id, adapter_path,
                               samples, max_new_tokens=512, temperature=0.0):
     from evaluation.checkpoint_eval import HFCheckpointGenerator
+    if "gpt-oss" in base_model_id.lower():
+        max_new_tokens = max(max_new_tokens, 1536)  # analysis channel spends tokens before the answer
     generator = HFCheckpointGenerator(
         base_model_id=base_model_id, adapter_path=adapter_path,
         max_new_tokens=max_new_tokens, temperature=temperature,
@@ -128,10 +130,19 @@ def _run_checkpoint_condition(condition_id, base_model_id, adapter_path,
     for i, sample in enumerate(samples):
         system_prompt = render_system_prompt(sample["persona"])
         response = generator(system_prompt, sample["user"])
+        truncated = bool(getattr(generator, "last_truncated", False))
+        if truncated:
+            # No final answer (reasoning ate the token budget): never let the judge
+            # score an empty string as if it were a real response.
+            logger.warning("  [%s] sample %d/%d: generation truncated before final answer",
+                           condition_id, i + 1, len(samples))
+            rows.append({"judge_failed": True, "persona": sample["persona"],
+                         "user_message": sample["user"], "response": "", "generation_truncated": 1})
+            continue
         result = evaluate_response(sample["user"], response, sample.get("reference"))
         rows.append({**result.to_dict(), "persona": sample["persona"],
                      "composite_score": result.composite_score,
-                     "user_message": sample["user"], "response": response})
+                     "user_message": sample["user"], "response": response, "generation_truncated": 0})
         logger.info("  [%s] sample %d/%d persona=%-14s composite=%.3f",
                     condition_id, i + 1, len(samples), sample["persona"],
                     result.composite_score)
