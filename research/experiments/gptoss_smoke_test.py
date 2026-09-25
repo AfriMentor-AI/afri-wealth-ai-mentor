@@ -39,7 +39,7 @@ def main() -> int:
 
     try:
         tok = AutoTokenizer.from_pretrained(MODEL)
-        model = AutoModelForCausalLM.from_pretrained(MODEL, device_map="auto", torch_dtype=torch.float16)
+        model = AutoModelForCausalLM.from_pretrained(MODEL, device_map="auto")
         used = sum(torch.cuda.memory_allocated(i) for i in range(torch.cuda.device_count())) / 2**30
         stage("load 4-bit model", True, f"{used:.1f} GiB allocated")
     except Exception as exc:  # noqa: BLE001
@@ -51,11 +51,12 @@ def main() -> int:
     try:
         msgs = [{"role": "system", "content": "You are Chioma, a direct, warm business mentor."},
                 {"role": "user", "content": "My supplier raised prices 15%. What do I do with my prices?"}]
-        ids = tok.apply_chat_template(msgs, add_generation_prompt=True, return_tensors="pt",
-                                      reasoning_effort="low").to(model.device)
+        enc = tok.apply_chat_template(msgs, add_generation_prompt=True, return_tensors="pt",
+                                      return_dict=True, reasoning_effort="low").to(model.device)
+        n_prompt = enc["input_ids"].shape[-1]
         with torch.no_grad():
-            out = model.generate(ids, max_new_tokens=1024, do_sample=False)
-        raw = tok.decode(out[0][ids.shape[-1]:], skip_special_tokens=False)
+            out = model.generate(**enc, max_new_tokens=1024, do_sample=False)
+        raw = tok.decode(out[0][n_prompt:], skip_special_tokens=False)
         text, truncated = extract_final_response(raw)
         stage("generate + parse final channel", bool(text) and not truncated,
               f"truncated={truncated} answer[:120]={text[:120]!r}")

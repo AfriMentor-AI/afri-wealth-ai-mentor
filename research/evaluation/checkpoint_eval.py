@@ -335,19 +335,22 @@ class HFCheckpointGenerator:
             {"role": "user", "content": user_message},
         ]
         template_kwargs = {"reasoning_effort": "low"} if self.harmony else {}
-        inputs = self._tokenizer.apply_chat_template(
-            messages, add_generation_prompt=True, return_tensors="pt", **template_kwargs
+        # return_dict=True: transformers>=5 returns a dict by default, 4.x a tensor —
+        # asking for the dict explicitly behaves the same on both.
+        enc = self._tokenizer.apply_chat_template(
+            messages, add_generation_prompt=True, return_tensors="pt", return_dict=True, **template_kwargs
         ).to(self._model.device)
+        prompt_len = enc["input_ids"].shape[-1]
 
         with torch.no_grad():
             output = self._model.generate(
-                inputs,
+                **enc,
                 max_new_tokens=self.max_new_tokens,
                 temperature=self.temperature,
                 do_sample=self.temperature > 0,
                 pad_token_id=self._tokenizer.pad_token_id,
             )
-        generated = output[0][inputs.shape[-1]:]
+        generated = output[0][prompt_len:]
         if self.harmony:
             raw = self._tokenizer.decode(generated, skip_special_tokens=False)
             text, self.last_truncated = extract_final_response(raw)
