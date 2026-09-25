@@ -70,3 +70,17 @@ State this in the paper.
   should be different families: teacher e.g. `qwen/qwen-2.5-72b-instruct`, judge
   `openai/gpt-oss-120b`, evaluated Llama-3.1-8B. Configure via `GEN_*` and
   `LLM_BASE_URL`/`LLM_API_KEY`/`EVAL_JUDGE_MODEL` (OpenRouter works for both).
+
+## Update: gpt-oss-20b DOES fit via Unsloth (smoke test passed)
+
+`gptoss_unsloth_smoke_test.py` on 2x T4: loads at 5.8 GiB/GPU, generates a parseable harmony answer,
+5 LoRA steps with falling loss (peak 9.7 GiB). Required `pip uninstall -y kernels` after installing unsloth.
+Unsloth forces float32 for gpt-oss on T4 (no bf16), so training is slower than Llama.
+
+`experiments/gptoss_unsloth/train.py` (explicit PyTorch loop, no TRL): `sft` = C2; `dpo` = C3 (warm-start from
+`model.sft_checkpoint`); `dpo --rlhf` = C4 (warm-start from `prior_checkpoint`, probe-guided pairs via
+`pairs_to_dpo_format`; run `04_rlhf_preference_opt/run.py --stage reward_model` first to produce the probe,
+otherwise dataset labels are used and a warning is printed). Evaluation uses
+`evaluation/unsloth_generator.py` automatically for gpt-oss model sets.
+NOT yet run end-to-end on a GPU — do a timing run first:
+`train.py sft --config research/configs/gptoss_20b/c2_supervised_finetuning.yaml --dataset research/datasets/splits/sft_train.jsonl --max-examples 8 --epochs 1 --no-push`

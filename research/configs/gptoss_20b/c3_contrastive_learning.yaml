@@ -5,7 +5,7 @@ experiment:
   condition_id: C3
   sprint: 4
 model:
-  base_model_id: unsloth/gpt-oss-20b-unsloth-bnb-4bit
+  base_model_id: unsloth/gpt-oss-20b
   sft_checkpoint: AfriMentor/chioma-gptoss-20b-sft-v2
   adapter_type: dpo
   output_dir: research/experiments/03_contrastive_learning/checkpoints_gptoss-20b

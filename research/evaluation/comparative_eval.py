@@ -44,7 +44,7 @@ MODEL_SETS = {
     "llama31_8b": {"base": "meta-llama/Llama-3.1-8B-Instruct",
                    "c2": ["AfriMentor/chioma-llama31-8b-sft-v2"],
                    "c3": "AfriMentor/chioma-llama31-8b-dpo-v2", "c4": "AfriMentor/chioma-llama31-8b-rlhf-v2"},
-    "gptoss_20b": {"base": "unsloth/gpt-oss-20b-unsloth-bnb-4bit",  # pre-quantized 4-bit: stock MXFP4 weights expand to ~40GB on a T4
+    "gptoss_20b": {"base": "unsloth/gpt-oss-20b",  # loaded via Unsloth (plain HF expands experts to ~40GB on a T4)
                    "c2": ["AfriMentor/chioma-gptoss-20b-sft-v2"],
                    "c3": "AfriMentor/chioma-gptoss-20b-dpo-v2", "c4": "AfriMentor/chioma-gptoss-20b-rlhf-v2"},
 }
@@ -120,9 +120,12 @@ def _run_c1_live(samples: list[dict], api_key: str) -> list[dict]:
 def _run_checkpoint_condition(condition_id, base_model_id, adapter_path,
                               samples, max_new_tokens=512, temperature=0.0):
     from evaluation.checkpoint_eval import HFCheckpointGenerator
+    generator_cls = HFCheckpointGenerator
     if "gpt-oss" in base_model_id.lower():
+        from evaluation.unsloth_generator import UnslothCheckpointGenerator
+        generator_cls = UnslothCheckpointGenerator
         max_new_tokens = max(max_new_tokens, 1536)  # analysis channel spends tokens before the answer
-    generator = HFCheckpointGenerator(
+    generator = generator_cls(
         base_model_id=base_model_id, adapter_path=adapter_path,
         max_new_tokens=max_new_tokens, temperature=temperature,
     )

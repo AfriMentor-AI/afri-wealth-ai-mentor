@@ -5,7 +5,7 @@ experiment:
   condition_id: C2
   sprint: 4
 model:
-  base_model_id: unsloth/gpt-oss-20b-unsloth-bnb-4bit
+  base_model_id: unsloth/gpt-oss-20b
   adapter_type: qlora
   output_dir: research/experiments/02_supervised_finetuning/checkpoints_gptoss-20b
   hub_repo: AfriMentor/chioma-gptoss-20b-sft-v2
@@ -34,7 +34,7 @@ training:
   learning_rate: 0.0002
   lr_scheduler_type: cosine
   warmup_ratio: 0.05
-  max_seq_length: 2048
+  max_seq_length: 1536
   fp16: true
   bf16: false
   logging_steps: 10
