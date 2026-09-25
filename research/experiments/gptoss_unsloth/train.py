@@ -20,7 +20,15 @@ import sys
 import time
 from pathlib import Path
 
-from unsloth import FastLanguageModel  # noqa: I001 - import unsloth before transformers/peft
+import os
+
+# torch.compile/dynamo crashed on the first real (long-sequence) forward with
+# "StopIteration in dict_keys_getitem" inside Unsloth's compiled gpt-oss router. Eager mode is slower
+# but robust; override with UNSLOTH_COMPILE_DISABLE=0 TORCHDYNAMO_DISABLE=0 to experiment.
+os.environ.setdefault("UNSLOTH_COMPILE_DISABLE", "1")
+os.environ.setdefault("TORCHDYNAMO_DISABLE", "1")
+
+from unsloth import FastLanguageModel  # noqa: E402,I001 - import unsloth before transformers/peft
 
 import torch
 import yaml
@@ -155,7 +163,7 @@ def _loop(model, cfg, args, n_items: int, step_fn):
     opt = torch.optim.AdamW(params, lr=tc["learning_rate"], weight_decay=0.0)
     total_steps = max(1, epochs * n_items // accum)
     step, seen, t0 = 0, 0, time.time()
-    model.train()
+    FastLanguageModel.for_training(model)  # same setup call the passing smoke test used
     for ep in range(epochs):
         order = list(range(n_items))
         rng.shuffle(order)

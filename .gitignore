@@ -65,3 +65,5 @@ infra/keys/
 
 # Local deployment overrides
 docker-compose.cloud.yml
+# Unsloth generated kernels
+unsloth_compiled_cache/
