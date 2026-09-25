@@ -1,0 +1,59 @@
+# EXPERIMENTAL: 20B MoE; needs newer trl/transformers/peft than requirements-gpu.txt pins, and may not fit/train on a Kaggle T4. Attempt only after the Llama run works.
+# Generated from the Qwen configs for the papers-revision retrain; dataset = splits_v2 (synthetic, see datasets/scripts/generate_dataset.py).
+experiment:
+  name: C2_supervised_persona_finetuning_gptoss-20b_v2
+  condition_id: C2
+  sprint: 4
+model:
+  base_model_id: openai/gpt-oss-20b
+  adapter_type: qlora
+  output_dir: research/experiments/02_supervised_finetuning/checkpoints_gptoss-20b
+  hub_repo: AfriMentor/chioma-gptoss-20b-sft-v2
+lora:
+  r: 16
+  lora_alpha: 32
+  lora_dropout: 0.05
+  target_modules:
+  - q_proj
+  - k_proj
+  - v_proj
+  - o_proj
+  bias: none
+  task_type: CAUSAL_LM
+quantization:
+  load_in_4bit: true
+  bnb_4bit_compute_dtype: float16
+  bnb_4bit_quant_type: nf4
+  bnb_4bit_use_double_quant: true
+training:
+  dataset: research/datasets/splits_v2/sft_train.jsonl
+  eval_dataset: research/datasets/splits_v2/sft_val.jsonl
+  num_train_epochs: 3
+  per_device_train_batch_size: 4
+  gradient_accumulation_steps: 4
+  learning_rate: 0.0002
+  lr_scheduler_type: cosine
+  warmup_ratio: 0.05
+  max_seq_length: 2048
+  fp16: true
+  bf16: false
+  logging_steps: 10
+  eval_steps: 50
+  save_steps: 100
+  save_total_limit: 3
+  seed: 42
+evaluation:
+  metrics:
+  - persona_adherence
+  - cultural_fluency
+  - anti_dependency
+  - financial_accuracy
+  - urgency
+  - rouge_l
+  - bert_score_f1
+  compare_against: C1_baseline_prompting
+mlflow:
+  experiment_name: C2_supervised_persona_finetuning_gptoss-20b_v2
+  run_name_prefix: c2
+  log_artifacts: true
+  log_model: true

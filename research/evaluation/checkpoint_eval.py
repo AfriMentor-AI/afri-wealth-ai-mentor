@@ -103,7 +103,10 @@ def load_eval_samples(
     are measured on identical inputs. Falls back to one synthetic sample per
     persona when the split has not been generated yet, so the harness always runs.
     """
-    eval_path = Path(splits_dir) / eval_file
+    splits_dir = Path(splits_dir)
+    if not splits_dir.is_absolute():
+        splits_dir = _RESEARCH_ROOT.parent / splits_dir  # config paths are repo-root relative
+    eval_path = splits_dir / eval_file
     samples: list[dict] = []
 
     if eval_path.exists():

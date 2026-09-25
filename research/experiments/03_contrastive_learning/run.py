@@ -108,6 +108,10 @@ def train(cfg: dict) -> tuple[str | None, dict]:
     dpo_cfg = cfg["dpo"]
     train_cfg = cfg["training"]
     bnb_cfg = cfg["quantization"]
+    # Explicit seed (config: training.seed, default 42) — previously never set or logged.
+    from transformers import set_seed as _set_seed
+    _seed = train_cfg.get("seed", 42)
+    _set_seed(_seed)
 
     bnb_config = BitsAndBytesConfig(
         load_in_4bit=bnb_cfg["load_in_4bit"],
@@ -157,6 +161,8 @@ def train(cfg: dict) -> tuple[str | None, dict]:
         output_dir=model_cfg["output_dir"],
         num_train_epochs=train_cfg["num_train_epochs"],
         per_device_train_batch_size=train_cfg["per_device_train_batch_size"],
+        seed=_seed,
+        data_seed=_seed,
         gradient_accumulation_steps=train_cfg["gradient_accumulation_steps"],
         learning_rate=train_cfg["learning_rate"],
         lr_scheduler_type=train_cfg["lr_scheduler_type"],
@@ -223,7 +229,7 @@ def evaluate(
     """
     eval_cfg = cfg.get("evaluation", {})
     sample_size = eval_cfg.get("sample_size", 6)
-    samples = load_eval_samples(sample_size)
+    samples = load_eval_samples(sample_size, splits_dir=eval_cfg.get("splits_dir", "research/datasets/splits"))
     logger.info("Loaded %d eval samples for the metric suite", len(samples))
 
     if generate_fn is None:

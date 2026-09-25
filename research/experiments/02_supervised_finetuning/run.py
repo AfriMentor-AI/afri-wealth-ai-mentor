@@ -69,6 +69,10 @@ def run(config_path: str | Path = DEFAULT_CONFIG) -> None:
 
         # 4-bit quantization config
         bnb_cfg = cfg["quantization"]
+        # Explicit seed (config: training.seed, default 42) — previously never set or logged.
+        from transformers import set_seed as _set_seed
+        _seed = train_cfg.get("seed", 42)
+        _set_seed(_seed)
         import torch as _torch
         bnb_config = BitsAndBytesConfig(
             load_in_4bit=bnb_cfg["load_in_4bit"],
@@ -109,6 +113,8 @@ def run(config_path: str | Path = DEFAULT_CONFIG) -> None:
             output_dir=model_cfg["output_dir"],
             num_train_epochs=train_cfg["num_train_epochs"],
             per_device_train_batch_size=train_cfg["per_device_train_batch_size"],
+            seed=_seed,
+            data_seed=_seed,
             gradient_accumulation_steps=train_cfg["gradient_accumulation_steps"],
             learning_rate=train_cfg["learning_rate"],
             lr_scheduler_type=train_cfg["lr_scheduler_type"],

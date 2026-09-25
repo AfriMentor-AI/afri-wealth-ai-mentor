@@ -1,0 +1,108 @@
+# EXPERIMENTAL: 20B MoE; needs newer trl/transformers/peft than requirements-gpu.txt pins, and may not fit/train on a Kaggle T4. Attempt only after the Llama run works.
+# Generated from the Qwen configs for the papers-revision retrain; dataset = splits_v2 (synthetic, see datasets/scripts/generate_dataset.py).
+experiment:
+  name: C4_rlhf_preference_optimization_gptoss-20b_v2
+  condition_id: C4
+  sprint: 5
+model:
+  base_model_id: openai/gpt-oss-20b
+  prior_checkpoint: AfriMentor/chioma-gptoss-20b-dpo-v2
+  output_dir: research/experiments/04_rlhf_preference_opt/checkpoints_gptoss-20b
+  hub_repo: AfriMentor/chioma-gptoss-20b-rlhf-v2
+reward_model:
+  dataset: research/datasets/splits_v2/rlhf_train.jsonl
+  eval_dataset: research/datasets/splits_v2/rlhf_val.jsonl
+  test_dataset: research/datasets/splits_v2/rlhf_test.jsonl
+  probe_output: research/experiments/04_rlhf_preference_opt/reward_model_gptoss-20b/reward_probe.pkl
+  include_consistency: true
+  reward_weights:
+    persona_adherence: 0.2
+    cultural_fluency: 0.15
+    anti_dependency: 0.15
+    financial_accuracy: 0.15
+    urgency: 0.15
+    prompt_to_line: 0.08
+    line_to_line: 0.06
+    qa_consistency: 0.06
+  require_two_classes: true
+ablation:
+  enabled: true
+  conditions:
+    without_consistency:
+      name: reward_without_consistency
+      include_consistency: false
+      reward_weights:
+        persona_adherence: 0.25
+        cultural_fluency: 0.2
+        anti_dependency: 0.2
+        financial_accuracy: 0.2
+        urgency: 0.15
+    with_consistency:
+      name: reward_with_consistency
+      include_consistency: true
+      reward_weights:
+        persona_adherence: 0.2
+        cultural_fluency: 0.15
+        anti_dependency: 0.15
+        financial_accuracy: 0.15
+        urgency: 0.15
+        prompt_to_line: 0.08
+        line_to_line: 0.06
+        qa_consistency: 0.06
+dpo:
+  beta: 0.1
+  loss_type: sigmoid
+  max_length: 2048
+  max_prompt_length: 512
+  converted_dataset: research/experiments/04_rlhf_preference_opt/checkpoints_gptoss-20b/dpo_converted_train.jsonl
+  converted_eval_dataset: research/experiments/04_rlhf_preference_opt/checkpoints_gptoss-20b/dpo_converted_val.jsonl
+lora:
+  r: 16
+  lora_alpha: 32
+  lora_dropout: 0.05
+  target_modules:
+  - q_proj
+  - k_proj
+  - v_proj
+  - o_proj
+  bias: none
+  task_type: CAUSAL_LM
+quantization:
+  load_in_4bit: true
+  bnb_4bit_compute_dtype: float16
+  bnb_4bit_quant_type: nf4
+  bnb_4bit_use_double_quant: true
+training:
+  num_train_epochs: 2
+  per_device_train_batch_size: 2
+  gradient_accumulation_steps: 8
+  learning_rate: 5.0e-05
+  lr_scheduler_type: cosine
+  warmup_ratio: 0.05
+  fp16: true
+  bf16: false
+  logging_steps: 10
+  eval_steps: 50
+  save_steps: 100
+  save_total_limit: 3
+  seed: 42
+evaluation:
+  sample_size: 60
+  eval_split: sft_test.jsonl
+  max_new_tokens: 512
+  temperature: 0.0
+  metrics:
+  - persona_adherence
+  - cultural_fluency
+  - anti_dependency
+  - financial_accuracy
+  - urgency
+  - rouge_l
+  - bert_score_f1
+  compare_against: C3_persona_contrastive_learning
+  splits_dir: research/datasets/splits_v2
+mlflow:
+  experiment_name: C4_rlhf_preference_optimization_gptoss-20b_v2
+  run_name_prefix: c4
+  log_artifacts: true
+  log_model: false
