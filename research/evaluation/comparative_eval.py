@@ -127,6 +127,21 @@ def _run_checkpoint_condition(condition_id, base_model_id, adapter_path,
         max_new_tokens=max_new_tokens, temperature=temperature,
     )
     rows = []
+    try:
+        _generate_rows(rows, condition_id, generator, samples)
+    finally:
+        del generator
+        import gc
+        gc.collect()
+        try:
+            import torch
+            torch.cuda.empty_cache()
+        except Exception:  # noqa: BLE001 - no torch/CUDA on CPU-only machines
+            pass
+    return rows
+
+
+def _generate_rows(rows, condition_id, generator, samples):
     for i, sample in enumerate(samples):
         system_prompt = render_system_prompt(sample["persona"])
         response = generator(system_prompt, sample["user"])
@@ -152,8 +167,13 @@ def _run_checkpoint_condition(condition_id, base_model_id, adapter_path,
 def run(sample_size: int = 5, output_path: str | Path = DEFAULT_OUTPUT,
         *, run_c1: bool = True, run_c2: bool = True,
         run_c3: bool = True, run_c4: bool = True,
-        model_set: str = "qwen", splits_dir: str | Path = SPLITS_DIR) -> dict:
+        model_set: str = "qwen", splits_dir: str | Path = SPLITS_DIR,
+        c1_source: str | None = None) -> dict:
     ms = MODEL_SETS[model_set]
+    # C1 must be the SAME base model the adapters were trained from, or C1-vs-C2..C4 confounds
+    # "alignment" with "different model". "api" (legacy Qwen run: a hosted model) vs "local"
+    # (base weights + persona prompt, no adapter, greedy) — local is the default for new sets.
+    c1_source = c1_source or ("api" if model_set == "qwen" else "local")
     splits_dir = Path(splits_dir)
     samples = load_eval_samples(sample_size, splits_dir=splits_dir)
     logger.info("Loaded %d eval samples from %s", len(samples),
@@ -174,7 +194,14 @@ def run(sample_size: int = 5, output_path: str | Path = DEFAULT_OUTPUT,
         "conditions": {},
     }
 
-    if run_c1:
+    if run_c1 and c1_source == "local":
+        logger.info("Running C1 as the local base model (%s) with the persona prompt, no adapter...", ms["base"])
+        c1_rows = _run_checkpoint_condition("C1", ms["base"], None, samples)
+        results["conditions"]["C1"] = {
+            "aggregate": {**_avg_scores(c1_rows), "source": "live_hf_base"},
+            "rows": c1_rows,
+        }
+    elif run_c1:
         api_key = os.getenv("LLM_API_KEY") or os.getenv("GROQ_API_KEY", "")
         if not api_key:
             logger.warning("LLM_API_KEY not set - C1 uses recorded fallback.")
@@ -264,6 +291,8 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Comparative evaluation across C1-C4")
     parser.add_argument("--sample-size", type=int, default=5)
     parser.add_argument("--model-set", choices=sorted(MODEL_SETS), default="qwen")
+    parser.add_argument("--c1-source", choices=["api", "local"], default=None,
+                        help="C1 via hosted API, or local base model + persona prompt (default: local for new model sets)")
     parser.add_argument("--splits-dir", default=str(SPLITS_DIR),
                         help="dir holding sft_test.jsonl (v2: research/datasets/splits_v2)")
     parser.add_argument("--output", default=str(DEFAULT_OUTPUT))
@@ -277,7 +306,7 @@ if __name__ == "__main__":
         sample_size=args.sample_size, output_path=args.output,
         run_c1=not args.skip_c1, run_c2=not args.skip_c2,
         run_c3=not args.skip_c3, run_c4=not args.skip_c4,
-        model_set=args.model_set, splits_dir=args.splits_dir,
+        model_set=args.model_set, splits_dir=args.splits_dir, c1_source=args.c1_source,
     )
 
     print("\n=== Comparative Evaluation Results ===")

@@ -53,3 +53,20 @@ State this in the paper.
 
 - Nothing here has been run on a GPU yet; only offline tests (generator, aggregation, probe guard).
 - Paper 2's blockers (pilot not run, ethics/jurisdiction open, C3.5/C4.5 data) are not addressed by code.
+
+## Decisions after the first Kaggle attempts (gpt-oss-20b)
+
+- **gpt-oss-20b is not viable on Kaggle T4s with the plain Hugging Face stack.** Plain
+  transformers dequantizes the MoE experts to bf16 (~40GB) and spills to CPU
+  (`Some modules are dispatched on the CPU or the disk`). Unsloth's loader is the only documented
+  route that fits (~14GB); it was not successfully tested (an unpinned `kernels` package broke
+  imports). Treated as a follow-up needing either Unsloth porting of C2-C4 or a larger GPU.
+- **Main results use Llama-3.1-8B-Instruct.** Scripts for gpt-oss (`gptoss_smoke_test.py`,
+  `gptoss_unsloth_smoke_test.py`, harmony parsing) are kept for that follow-up.
+- **C1 is now the same base model** (`--c1-source local`, source tag `live_hf_base`): base Llama +
+  persona prompt, no adapter, greedy. The v1 C1 was a different, hosted model, which confounded
+  "alignment" with "which model".
+- **Avoid self-preference in the judge.** Teacher (data generation), judge, and evaluated models
+  should be different families: teacher e.g. `qwen/qwen-2.5-72b-instruct`, judge
+  `openai/gpt-oss-120b`, evaluated Llama-3.1-8B. Configure via `GEN_*` and
+  `LLM_BASE_URL`/`LLM_API_KEY`/`EVAL_JUDGE_MODEL` (OpenRouter works for both).
