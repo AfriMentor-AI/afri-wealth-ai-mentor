@@ -75,3 +75,22 @@ def test_write_packet_produces_matching_csv_and_key(tmp_path):
         rows = list(csv.DictReader(f))
     assert len(rows) == 2
     assert {r["sample_id"] for r in rows} == set(json.loads(key_out.read_text()).keys())
+
+
+def test_select_paired_prompts_keeps_only_prompts_all_conditions_answered():
+    from evaluation.human_eval_sampler import select_paired_prompts
+    ratable = [
+        {"condition": c, "user_message": u, "response": "x"}
+        for u in ("q1", "q2") for c in ("C1", "C2")
+    ] + [{"condition": "C1", "user_message": "q3", "response": "x"}]  # q3 missing C2
+    kept = {r["user_message"] for r in select_paired_prompts(ratable, None)}
+    assert kept == {"q1", "q2"}
+    assert len({r["user_message"] for r in select_paired_prompts(ratable, 1)}) == 1
+
+
+def test_per_rater_orders_share_ids_but_not_order():
+    from evaluation.human_eval_sampler import per_rater_orders
+    rows = [{"sample_id": f"S{i:03d}"} for i in range(30)]
+    a, b, c = per_rater_orders(rows, 3)
+    assert {r["sample_id"] for r in a} == {r["sample_id"] for r in b} == {r["sample_id"] for r in c}
+    assert [r["sample_id"] for r in a] != [r["sample_id"] for r in b]

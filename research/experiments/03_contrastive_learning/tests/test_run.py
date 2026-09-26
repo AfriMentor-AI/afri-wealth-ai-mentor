@@ -26,6 +26,12 @@ import pytest
 import yaml
 from evaluation.checkpoint_eval import avg_scores, evaluate_checkpoint, load_eval_samples
 
+def _judge_all(value):
+    """Stand-in for metrics.score_all_dimensions: every rubric dimension scores ``value``."""
+    dims = ("persona_adherence", "cultural_fluency", "anti_dependency", "financial_accuracy", "urgency")
+    return lambda *a, **k: dict.fromkeys(dims, value)
+
+
 _EXP_DIR = Path(__file__).resolve().parents[1]
 _RESEARCH_ROOT = _EXP_DIR.parents[1]
 _SPLITS_DIR = _RESEARCH_ROOT / "datasets" / "splits"
@@ -73,7 +79,7 @@ def _offline(judge_score: float = 0.8):
     with patch.object(_run, "mlflow", mock_mlflow), \
          patch.object(_metrics, "mlflow", mock_mlflow), \
          patch.dict(sys.modules, {"mlflow": mock_mlflow}), \
-         patch.object(_metrics, "_llm_score", return_value=judge_score):
+         patch.object(_metrics, "score_all_dimensions", side_effect=_judge_all(judge_score)):
         yield mock_mlflow
 
 
@@ -133,7 +139,7 @@ class TestEvaluateCheckpoint:
             return _fake_generate(sp, um)
 
         import evaluation.metrics as _metrics
-        with patch.object(_metrics, "_llm_score", return_value=0.8):
+        with patch.object(_metrics, "score_all_dimensions", side_effect=_judge_all(0.8)):
             agg = evaluate_checkpoint(_gen, samples, system_prompt_fn=_sp, log_to_mlflow=False)
 
         assert len(calls) == len(samples)          # generated once per sample
@@ -143,7 +149,7 @@ class TestEvaluateCheckpoint:
     def test_composite_matches_rubric_weights(self):
         samples = load_eval_samples(1, splits_dir=Path("/nonexistent"))
         import evaluation.metrics as _metrics
-        with patch.object(_metrics, "_llm_score", return_value=1.0):
+        with patch.object(_metrics, "score_all_dimensions", side_effect=_judge_all(1.0)):
             agg = evaluate_checkpoint(
                 _fake_generate, samples, system_prompt_fn=_sp, log_to_mlflow=False
             )
@@ -220,7 +226,7 @@ class TestConfig:
         """C3's scored dimensions must equal the shared rubric (else not comparable)."""
         samples = load_eval_samples(1, splits_dir=Path("/nonexistent"))
         import evaluation.metrics as _metrics
-        with patch.object(_metrics, "_llm_score", return_value=0.5):
+        with patch.object(_metrics, "score_all_dimensions", side_effect=_judge_all(0.5)):
             agg = evaluate_checkpoint(
                 _fake_generate, samples, system_prompt_fn=_sp, log_to_mlflow=False
             )

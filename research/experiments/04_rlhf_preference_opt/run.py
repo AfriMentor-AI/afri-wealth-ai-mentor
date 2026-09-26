@@ -144,7 +144,7 @@ def run_reward_model(
 
     # Fit logistic probe
     logger.info("Fitting logistic preference probe on %d scored pairs…", len(scored_train))
-    probe, train_report = fit_reward_probe(scored_train)
+    probe, train_report = fit_reward_probe(scored_train, require_two_classes=rm_cfg.get("require_two_classes", False))
 
     mlflow.log_metric("probe_train_accuracy", train_report["train_accuracy"])
     mlflow.log_metric("probe_train_samples", train_report["n_samples"])
@@ -226,6 +226,10 @@ def run_dpo(cfg: dict, probe=None) -> tuple[str | None, dict]:
     train_cfg = cfg["training"]
     lora_cfg = cfg["lora"]
     bnb_cfg = cfg["quantization"]
+    # Explicit seed (config: training.seed, default 42) — previously never set or logged.
+    from transformers import set_seed as _set_seed
+    _seed = train_cfg.get("seed", 42)
+    _set_seed(_seed)
 
     logger.info("=== Stage 2: DPO (personality-focused) ===")
 
@@ -328,6 +332,8 @@ def run_dpo(cfg: dict, probe=None) -> tuple[str | None, dict]:
         output_dir=str(output_dir),
         num_train_epochs=train_cfg["num_train_epochs"],
         per_device_train_batch_size=train_cfg["per_device_train_batch_size"],
+        seed=_seed,
+        data_seed=_seed,
         gradient_accumulation_steps=train_cfg["gradient_accumulation_steps"],
         learning_rate=train_cfg["learning_rate"],
         lr_scheduler_type=train_cfg["lr_scheduler_type"],
@@ -405,7 +411,7 @@ def run_evaluate(cfg: dict, adapter_path: str | None = None, generate_fn=None) -
 
     logger.info("=== Stage 3: Evaluate (shared metric suite) ===")
     logger.info("Loading %d eval samples from sft_test.jsonl…", sample_size)
-    samples = load_eval_samples(sample_size)
+    samples = load_eval_samples(sample_size, splits_dir=eval_cfg.get("splits_dir", "research/datasets/splits"))
     logger.info("Loaded %d samples", len(samples))
 
     if generate_fn is None:

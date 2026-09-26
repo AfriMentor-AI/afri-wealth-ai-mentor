@@ -103,7 +103,10 @@ def load_eval_samples(
     are measured on identical inputs. Falls back to one synthetic sample per
     persona when the split has not been generated yet, so the harness always runs.
     """
-    eval_path = Path(splits_dir) / eval_file
+    splits_dir = Path(splits_dir)
+    if not splits_dir.is_absolute():
+        splits_dir = _RESEARCH_ROOT.parent / splits_dir  # config paths are repo-root relative
+    eval_path = splits_dir / eval_file
     samples: list[dict] = []
 
     if eval_path.exists():
@@ -235,6 +238,32 @@ def evaluate_checkpoint(
     return agg
 
 
+# ── Harmony (gpt-oss) output handling ───────────────────────────────────────────
+
+_HARMONY_FINAL = "<|channel|>final<|message|>"
+_HARMONY_TRAILERS = ("<|return|>", "<|end|>", "<|start|>", "<|endoftext|>", "<|call|>")
+
+
+def extract_final_response(raw: str) -> tuple[str, bool]:
+    """Pull the user-visible answer out of a gpt-oss "harmony" generation.
+
+    gpt-oss emits a hidden ``analysis`` channel (chain-of-thought) before the
+    ``final`` channel. Scoring the raw decode would judge the reasoning trace, not
+    the answer — the same failure that once corrupted the Qwen baseline. Returns
+    ``(text, truncated)``; ``truncated`` is True when generation stopped before a
+    final channel appeared (token budget spent on reasoning), in which case the
+    text is empty and the caller must count it, not score it as a real answer.
+    """
+    if _HARMONY_FINAL in raw:
+        text = raw.rsplit(_HARMONY_FINAL, 1)[1]
+        for t in _HARMONY_TRAILERS:
+            text = text.split(t, 1)[0]
+        return text.strip(), False
+    if "<|channel|>" in raw:  # analysis started, final never reached
+        return "", True
+    return raw.strip(), False  # not a harmony transcript at all
+
+
 # ── Real generator (GPU node) ──────────────────────────────────────────────────
 
 class HFCheckpointGenerator:
@@ -261,6 +290,9 @@ class HFCheckpointGenerator:
         self.load_in_4bit = load_in_4bit
         self._model = None
         self._tokenizer = None
+        self.harmony = "gpt-oss" in base_model_id.lower()
+        self.last_truncated = False
+        self.n_truncated = 0
 
     def _ensure_loaded(self) -> None:
         if self._model is not None:
@@ -302,17 +334,27 @@ class HFCheckpointGenerator:
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": user_message},
         ]
-        inputs = self._tokenizer.apply_chat_template(
-            messages, add_generation_prompt=True, return_tensors="pt"
+        template_kwargs = {"reasoning_effort": "low"} if self.harmony else {}
+        # return_dict=True: transformers>=5 returns a dict by default, 4.x a tensor —
+        # asking for the dict explicitly behaves the same on both.
+        enc = self._tokenizer.apply_chat_template(
+            messages, add_generation_prompt=True, return_tensors="pt", return_dict=True, **template_kwargs
         ).to(self._model.device)
+        prompt_len = enc["input_ids"].shape[-1]
 
         with torch.no_grad():
             output = self._model.generate(
-                inputs,
+                **enc,
                 max_new_tokens=self.max_new_tokens,
                 temperature=self.temperature,
                 do_sample=self.temperature > 0,
                 pad_token_id=self._tokenizer.pad_token_id,
             )
-        generated = output[0][inputs.shape[-1]:]
+        generated = output[0][prompt_len:]
+        if self.harmony:
+            raw = self._tokenizer.decode(generated, skip_special_tokens=False)
+            text, self.last_truncated = extract_final_response(raw)
+            self.n_truncated += int(self.last_truncated)
+            return text
+        self.last_truncated = False
         return self._tokenizer.decode(generated, skip_special_tokens=True).strip()

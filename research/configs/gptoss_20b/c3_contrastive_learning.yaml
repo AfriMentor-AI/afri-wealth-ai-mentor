@@ -1,0 +1,76 @@
+# EXPERIMENTAL: 20B MoE; needs newer trl/transformers/peft than requirements-gpu.txt pins, and may not fit/train on a Kaggle T4. Attempt only after the Llama run works.
+# Generated from the Qwen configs for the papers-revision retrain; dataset = splits_v2 (synthetic, see datasets/scripts/generate_dataset.py).
+experiment:
+  name: C3_persona_contrastive_learning_gptoss-20b_v2
+  condition_id: C3
+  sprint: 4
+model:
+  base_model_id: unsloth/gpt-oss-20b
+  sft_checkpoint: AfriMentor/chioma-gptoss-20b-sft-v2
+  adapter_type: dpo
+  output_dir: research/experiments/03_contrastive_learning/checkpoints_gptoss-20b
+  hub_repo: AfriMentor/chioma-gptoss-20b-dpo-v2
+lora:
+  r: 16
+  lora_alpha: 32
+  lora_dropout: 0.05
+  target_modules:
+  - q_proj
+  - k_proj
+  - v_proj
+  - o_proj
+  bias: none
+  task_type: CAUSAL_LM
+quantization:
+  load_in_4bit: true
+  bnb_4bit_compute_dtype: float16
+  bnb_4bit_quant_type: nf4
+  bnb_4bit_use_double_quant: true
+dpo:
+  beta: 0.1
+  loss_type: sigmoid
+  dataset: research/datasets/splits_v2/dpo_train.jsonl
+  eval_dataset: research/datasets/splits_v2/dpo_val.jsonl
+  max_length: 2048
+  max_prompt_length: 512
+training:
+  num_train_epochs: 2
+  per_device_train_batch_size: 2
+  gradient_accumulation_steps: 8
+  learning_rate: 5.0e-05
+  lr_scheduler_type: cosine
+  warmup_ratio: 0.05
+  fp16: true
+  bf16: false
+  logging_steps: 10
+  eval_steps: 50
+  save_steps: 100
+  save_total_limit: 3
+  seed: 42
+evaluation:
+  sample_size: 60
+  eval_split: sft_test.jsonl
+  max_new_tokens: 512
+  temperature: 0.0
+  metrics:
+  - persona_adherence
+  - cultural_fluency
+  - anti_dependency
+  - financial_accuracy
+  - urgency
+  - rouge_l
+  - bert_score_f1
+  compare_against: C2_supervised_persona_finetuning
+  splits_dir: research/datasets/splits_v2
+mlflow:
+  experiment_name: C3_persona_contrastive_learning_gptoss-20b_v2
+  run_name_prefix: c3
+  log_artifacts: true
+  log_model: true
+probing:
+  profile_path: services/persona-prompt-service/data/chioma_profile.v1.json
+  pooling: mean
+  heldout_fraction: 0.3
+  max_markers: null
+  max_length: 256
+  output_path: research/experiments/03_contrastive_learning/checkpoints/persona_vectors.npz

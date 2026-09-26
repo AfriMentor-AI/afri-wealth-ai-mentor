@@ -35,6 +35,20 @@ C1_BASE_URL = os.getenv("LLM_BASE_URL", "https://api.groq.com/openai/v1")
 C1_MAX_TOKENS = int(os.getenv("LLM_MAX_TOKENS", "2048"))
 C1_TEMPERATURE = float(os.getenv("LLM_TEMPERATURE", "0.7"))
 
+# Which base model + published adapters each run evaluates. "qwen" is the original
+# (v1) run frozen as eval-freeze-v1; the others are the papers-revision retrains.
+MODEL_SETS = {
+    "qwen": {"base": "Qwen/Qwen2.5-7B-Instruct",
+             "c2": ["Danleon56/chioma-sft-v1", "Danleon56/qwen2.5-7b-chioma-sft-merged"],
+             "c3": "AfriMentor/chioma-dpo-v1", "c4": "AfriMentor/chioma-rlhf-v1"},
+    "llama31_8b": {"base": "meta-llama/Llama-3.1-8B-Instruct",
+                   "c2": ["AfriMentor/chioma-llama31-8b-sft-v2"],
+                   "c3": "AfriMentor/chioma-llama31-8b-dpo-v2", "c4": "AfriMentor/chioma-llama31-8b-rlhf-v2"},
+    "gptoss_20b": {"base": "unsloth/gpt-oss-20b",  # loaded via Unsloth (plain HF expands experts to ~40GB on a T4)
+                   "c2": ["AfriMentor/chioma-gptoss-20b-sft-v2"],
+                   "c3": "AfriMentor/chioma-gptoss-20b-dpo-v2", "c4": "AfriMentor/chioma-gptoss-20b-rlhf-v2"},
+}
+
 C2_RECORDED = {
     "persona_adherence": 0.4900, "cultural_fluency": 0.4500,
     "anti_dependency": 0.4900, "financial_accuracy": 0.4600,
@@ -106,18 +120,47 @@ def _run_c1_live(samples: list[dict], api_key: str) -> list[dict]:
 def _run_checkpoint_condition(condition_id, base_model_id, adapter_path,
                               samples, max_new_tokens=512, temperature=0.0):
     from evaluation.checkpoint_eval import HFCheckpointGenerator
-    generator = HFCheckpointGenerator(
+    generator_cls = HFCheckpointGenerator
+    if "gpt-oss" in base_model_id.lower():
+        from evaluation.unsloth_generator import UnslothCheckpointGenerator
+        generator_cls = UnslothCheckpointGenerator
+        max_new_tokens = max(max_new_tokens, 1536)  # analysis channel spends tokens before the answer
+    generator = generator_cls(
         base_model_id=base_model_id, adapter_path=adapter_path,
         max_new_tokens=max_new_tokens, temperature=temperature,
     )
     rows = []
+    try:
+        _generate_rows(rows, condition_id, generator, samples)
+    finally:
+        del generator
+        import gc
+        gc.collect()
+        try:
+            import torch
+            torch.cuda.empty_cache()
+        except Exception:  # noqa: BLE001 - no torch/CUDA on CPU-only machines
+            pass
+    return rows
+
+
+def _generate_rows(rows, condition_id, generator, samples):
     for i, sample in enumerate(samples):
         system_prompt = render_system_prompt(sample["persona"])
         response = generator(system_prompt, sample["user"])
+        truncated = bool(getattr(generator, "last_truncated", False))
+        if truncated:
+            # No final answer (reasoning ate the token budget): never let the judge
+            # score an empty string as if it were a real response.
+            logger.warning("  [%s] sample %d/%d: generation truncated before final answer",
+                           condition_id, i + 1, len(samples))
+            rows.append({"judge_failed": True, "persona": sample["persona"],
+                         "user_message": sample["user"], "response": "", "generation_truncated": 1})
+            continue
         result = evaluate_response(sample["user"], response, sample.get("reference"))
         rows.append({**result.to_dict(), "persona": sample["persona"],
                      "composite_score": result.composite_score,
-                     "user_message": sample["user"], "response": response})
+                     "user_message": sample["user"], "response": response, "generation_truncated": 0})
         logger.info("  [%s] sample %d/%d persona=%-14s composite=%.3f",
                     condition_id, i + 1, len(samples), sample["persona"],
                     result.composite_score)
@@ -126,15 +169,24 @@ def _run_checkpoint_condition(condition_id, base_model_id, adapter_path,
 
 def run(sample_size: int = 5, output_path: str | Path = DEFAULT_OUTPUT,
         *, run_c1: bool = True, run_c2: bool = True,
-        run_c3: bool = True, run_c4: bool = True) -> dict:
-    samples = load_eval_samples(sample_size, splits_dir=SPLITS_DIR)
+        run_c3: bool = True, run_c4: bool = True,
+        model_set: str = "qwen", splits_dir: str | Path = SPLITS_DIR,
+        c1_source: str | None = None) -> dict:
+    ms = MODEL_SETS[model_set]
+    # C1 must be the SAME base model the adapters were trained from, or C1-vs-C2..C4 confounds
+    # "alignment" with "different model". "api" (legacy Qwen run: a hosted model) vs "local"
+    # (base weights + persona prompt, no adapter, greedy) — local is the default for new sets.
+    c1_source = c1_source or ("api" if model_set == "qwen" else "local")
+    splits_dir = Path(splits_dir)
+    samples = load_eval_samples(sample_size, splits_dir=splits_dir)
     logger.info("Loaded %d eval samples from %s", len(samples),
-                SPLITS_DIR / "sft_test.jsonl")
+                splits_dir / "sft_test.jsonl")
 
     results = {
         "meta": {
             "sample_size": len(samples),
             "eval_split": "sft_test.jsonl",
+            "model_set": model_set, "base_model": ms["base"], "splits_dir": str(splits_dir),
             "metric_suite": [
                 "persona_adherence", "cultural_fluency", "anti_dependency",
                 "financial_accuracy", "urgency", "rouge_l", "bert_score_f1",
@@ -145,7 +197,14 @@ def run(sample_size: int = 5, output_path: str | Path = DEFAULT_OUTPUT,
         "conditions": {},
     }
 
-    if run_c1:
+    if run_c1 and c1_source == "local":
+        logger.info("Running C1 as the local base model (%s) with the persona prompt, no adapter...", ms["base"])
+        c1_rows = _run_checkpoint_condition("C1", ms["base"], None, samples)
+        results["conditions"]["C1"] = {
+            "aggregate": {**_avg_scores(c1_rows), "source": "live_hf_base"},
+            "rows": c1_rows,
+        }
+    elif run_c1:
         api_key = os.getenv("LLM_API_KEY") or os.getenv("GROQ_API_KEY", "")
         if not api_key:
             logger.warning("LLM_API_KEY not set - C1 uses recorded fallback.")
@@ -176,7 +235,7 @@ def run(sample_size: int = 5, output_path: str | Path = DEFAULT_OUTPUT,
             try:
                 logger.info("  Trying adapter: %s", adapter)
                 c2_rows = _run_checkpoint_condition(
-                    "C2", "Qwen/Qwen2.5-7B-Instruct", adapter, samples)
+                    "C2", ms["base"], adapter, samples)
                 break
             except Exception as e:
                 logger.warning("  Failed to load %s: %s", adapter, e)
@@ -194,7 +253,7 @@ def run(sample_size: int = 5, output_path: str | Path = DEFAULT_OUTPUT,
         c3_rows = None
         try:
             c3_rows = _run_checkpoint_condition(
-                "C3", "Qwen/Qwen2.5-7B-Instruct", "AfriMentor/chioma-dpo-v1", samples)
+                "C3", ms["base"], ms["c3"], samples)
         except Exception as e:
             logger.warning("C3 adapter unavailable: %s", e)
         if c3_rows:
@@ -211,7 +270,7 @@ def run(sample_size: int = 5, output_path: str | Path = DEFAULT_OUTPUT,
         c4_rows = None
         try:
             c4_rows = _run_checkpoint_condition(
-                "C4", "Qwen/Qwen2.5-7B-Instruct", "AfriMentor/chioma-rlhf-v1", samples)
+                "C4", ms["base"], ms["c4"], samples)
         except Exception as e:
             logger.warning("C4 adapter unavailable: %s", e)
         if c4_rows:
@@ -234,6 +293,11 @@ def run(sample_size: int = 5, output_path: str | Path = DEFAULT_OUTPUT,
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Comparative evaluation across C1-C4")
     parser.add_argument("--sample-size", type=int, default=5)
+    parser.add_argument("--model-set", choices=sorted(MODEL_SETS), default="qwen")
+    parser.add_argument("--c1-source", choices=["api", "local"], default=None,
+                        help="C1 via hosted API, or local base model + persona prompt (default: local for new model sets)")
+    parser.add_argument("--splits-dir", default=str(SPLITS_DIR),
+                        help="dir holding sft_test.jsonl (v2: research/datasets/splits_v2)")
     parser.add_argument("--output", default=str(DEFAULT_OUTPUT))
     parser.add_argument("--skip-c1", action="store_true")
     parser.add_argument("--skip-c2", action="store_true")
@@ -245,6 +309,7 @@ if __name__ == "__main__":
         sample_size=args.sample_size, output_path=args.output,
         run_c1=not args.skip_c1, run_c2=not args.skip_c2,
         run_c3=not args.skip_c3, run_c4=not args.skip_c4,
+        model_set=args.model_set, splits_dir=args.splits_dir, c1_source=args.c1_source,
     )
 
     print("\n=== Comparative Evaluation Results ===")

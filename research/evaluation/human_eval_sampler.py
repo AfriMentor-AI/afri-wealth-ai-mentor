@@ -54,6 +54,32 @@ def collect_ratable_rows(comparative_results: dict) -> list[dict]:
     return ratable
 
 
+def select_paired_prompts(ratable: list[dict], max_prompts: int | None, seed: int = 42) -> list[dict]:
+    """Keep only prompts answered by *every* condition (a paired design), then
+    optionally subsample ``max_prompts`` of them so rater workload stays bounded
+    (max_prompts x n_conditions responses per rater)."""
+    conds = {r["condition"] for r in ratable}
+    by_prompt: dict[str, set[str]] = {}
+    for r in ratable:
+        by_prompt.setdefault(r["user_message"], set()).add(r["condition"])
+    full = sorted(u for u, c in by_prompt.items() if c == conds)
+    if max_prompts is not None and len(full) > max_prompts:
+        full = random.Random(seed).sample(full, max_prompts)
+    keep = set(full)
+    return [r for r in ratable if r["user_message"] in keep]
+
+
+def per_rater_orders(packet_rows: list[dict], n_raters: int, seed: int = 42) -> list[list[dict]]:
+    """Same sample_ids for every rater, each in an independent shuffled order
+    (reduces order/fatigue effects and makes copying a neighbour's sheet useless)."""
+    out = []
+    for i in range(n_raters):
+        rows = list(packet_rows)
+        random.Random(f"{seed}-rater{i + 1}").shuffle(rows)
+        out.append(rows)
+    return out
+
+
 def build_packet(ratable: list[dict], seed: int = 42) -> tuple[list[dict], dict[str, str]]:
     """Shuffle and assign blinded sample ids. Deterministic given ``seed``."""
     shuffled = list(ratable)
@@ -92,6 +118,10 @@ def main() -> None:
     parser.add_argument("--packet-out", default=str(DEFAULT_PACKET_OUT))
     parser.add_argument("--key-out", default=str(DEFAULT_KEY_OUT))
     parser.add_argument("--seed", type=int, default=42)
+    parser.add_argument("--max-prompts", type=int, default=None,
+                        help="rate only this many prompts, each answered by all conditions (paired)")
+    parser.add_argument("--n-raters", type=int, default=3,
+                        help="also write rating_packet_rater<i>.csv per rater, independently ordered")
     args = parser.parse_args()
 
     input_path = Path(args.input)
@@ -100,9 +130,17 @@ def main() -> None:
         raise SystemExit(1)
 
     comparative_results = json.loads(input_path.read_text(encoding="utf-8"))
-    ratable = collect_ratable_rows(comparative_results)
+    ratable = select_paired_prompts(collect_ratable_rows(comparative_results), args.max_prompts, args.seed)
     packet_rows, key = build_packet(ratable, seed=args.seed)
     write_packet(packet_rows, key, Path(args.packet_out), Path(args.key_out))
+    packet_dir = Path(args.packet_out).parent
+    for i, rows in enumerate(per_rater_orders(packet_rows, args.n_raters, args.seed), start=1):
+        with open(packet_dir / f"rating_packet_rater{i}.csv", "w", newline="", encoding="utf-8") as f:
+            w = csv.DictWriter(f, fieldnames=["sample_id", "user_message", "response", *RUBRIC_COLUMNS])
+            w.writeheader()
+            w.writerows(rows)
+    print(f"\n*** BACK UP {args.key_out} NOW (outside the machine/session that produced it). "
+          f"Without it the ratings cannot be unblinded. ***")
 
     conditions_with_text = sorted({item["condition"] for item in ratable})
     all_conditions = sorted(comparative_results.get("conditions", {}).keys())
