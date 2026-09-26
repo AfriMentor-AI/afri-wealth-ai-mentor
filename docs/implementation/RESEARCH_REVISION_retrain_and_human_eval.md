@@ -84,3 +84,18 @@ otherwise dataset labels are used and a warning is printed). Evaluation uses
 `evaluation/unsloth_generator.py` automatically for gpt-oss model sets.
 NOT yet run end-to-end on a GPU — do a timing run first:
 `train.py sft --config research/configs/gptoss_20b/c2_supervised_finetuning.yaml --dataset research/datasets/splits/sft_train.jsonl --max-examples 8 --epochs 1 --no-push`
+
+## Final gpt-oss-20b finding (2026-09-26): stopped; not trainable on Kaggle T4 via Unsloth
+
+Loads (5.8 GiB/GPU), generates coherently (including from a 189-token prompt), and the LoRA loop runs at
+~3 s/example. But the plain training-style forward pass gives wrong logits at realistic lengths:
+teacher-forced loss on one real example by prefix length = 3.95 (48 tok), 5.5 (96), 6.0 (128), 5.9 (160),
+7.5 (224), 10.4 (320), 11.9 (392) — worse than uniform guessing (~12.2) in the second half. Identical with and
+without an attention mask, and unchanged by `attn_implementation="eager"`. First SFT loss was 15.7. Training on
+these logits would be meaningless, so no full run was made. Likely an Unsloth/T4 numerical path issue (float32 forced,
+128-token sliding-window layers); would need an A100/H100 or a fixed Unsloth release. Label masking was verified
+correct offline with the real tokenizer. Scripts kept for that follow-up:
+`experiments/gptoss_unsloth/{train,core,loss_diag,loss_diag2}.py`, `evaluation/unsloth_generator.py`.
+
+Paper wording: "gpt-oss-20b loads and generates on 2xT4 via Unsloth, but fine-tuning on T4 was numerically unreliable and
+is left to future work on larger GPUs." Main results use Llama-3.1-8B-Instruct.
