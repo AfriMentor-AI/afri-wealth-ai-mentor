@@ -161,6 +161,7 @@ def train(cfg: dict) -> tuple[str | None, dict]:
         output_dir=model_cfg["output_dir"],
         num_train_epochs=train_cfg["num_train_epochs"],
         per_device_train_batch_size=train_cfg["per_device_train_batch_size"],
+        per_device_eval_batch_size=1,
         seed=_seed,
         data_seed=_seed,
         gradient_accumulation_steps=train_cfg["gradient_accumulation_steps"],
@@ -201,12 +202,17 @@ def train(cfg: dict) -> tuple[str | None, dict]:
     trainer.train()
     adapter_path = f"{model_cfg['output_dir']}/final"
     trainer.save_model(adapter_path)
+    from evaluation.hub_push import push_adapter
+    push_adapter(adapter_path, model_cfg.get("hub_repo"), cfg["experiment"]["name"])
 
     # DPO-loss metrics (reward margins, accuracies) — kept for the run, but they
     # are NOT the persona metric suite; the AC is satisfied by evaluate() below.
     dpo_eval: dict = {}
     if has_val:
-        dpo_eval = {k.replace("eval_", "dpo_"): v for k, v in trainer.evaluate().items()}
+        try:
+            dpo_eval = {k.replace("eval_", "dpo_"): v for k, v in trainer.evaluate().items()}
+        except Exception as exc:  # noqa: BLE001 - adapter already saved + pushed
+            logger.warning("post-training DPO evaluate() failed (non-fatal): %r", exc)
 
     logger.info("C3 DPO training complete. Adapter saved to %s", adapter_path)
     return adapter_path, dpo_eval

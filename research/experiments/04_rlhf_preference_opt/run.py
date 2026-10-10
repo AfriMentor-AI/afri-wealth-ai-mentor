@@ -332,6 +332,7 @@ def run_dpo(cfg: dict, probe=None) -> tuple[str | None, dict]:
         output_dir=str(output_dir),
         num_train_epochs=train_cfg["num_train_epochs"],
         per_device_train_batch_size=train_cfg["per_device_train_batch_size"],
+        per_device_eval_batch_size=1,
         seed=_seed,
         data_seed=_seed,
         gradient_accumulation_steps=train_cfg["gradient_accumulation_steps"],
@@ -375,13 +376,18 @@ def run_dpo(cfg: dict, probe=None) -> tuple[str | None, dict]:
     adapter_path = str(output_dir / "final")
     trainer.save_model(adapter_path)
     logger.info("C4 DPO adapter saved to %s", adapter_path)
+    from evaluation.hub_push import push_adapter
+    push_adapter(adapter_path, model_cfg.get("hub_repo"), cfg["experiment"]["name"])
 
     dpo_metrics: dict = {}
     if has_val:
-        raw = trainer.evaluate()
-        dpo_metrics = {k.replace("eval_", "dpo_"): v for k, v in raw.items()}
-        for k, v in dpo_metrics.items():
-            mlflow.log_metric(k, v)
+        try:
+            raw = trainer.evaluate()
+            dpo_metrics = {k.replace("eval_", "dpo_"): v for k, v in raw.items()}
+            for k, v in dpo_metrics.items():
+                mlflow.log_metric(k, v)
+        except Exception as exc:  # noqa: BLE001 - adapter already saved + pushed
+            logger.warning("post-training DPO evaluate() failed (non-fatal): %r", exc)
 
     return adapter_path, dpo_metrics
 

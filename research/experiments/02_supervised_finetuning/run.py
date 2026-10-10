@@ -113,6 +113,7 @@ def run(config_path: str | Path = DEFAULT_CONFIG) -> None:
             output_dir=model_cfg["output_dir"],
             num_train_epochs=train_cfg["num_train_epochs"],
             per_device_train_batch_size=train_cfg["per_device_train_batch_size"],
+            per_device_eval_batch_size=1,  # default 8 x ~2.5k tokens OOMs a T4 (crashed the first Llama run)
             seed=_seed,
             data_seed=_seed,
             gradient_accumulation_steps=train_cfg["gradient_accumulation_steps"],
@@ -146,10 +147,15 @@ def run(config_path: str | Path = DEFAULT_CONFIG) -> None:
 
         trainer.train()
         trainer.save_model(f"{model_cfg['output_dir']}/final")
+        from evaluation.hub_push import push_adapter
+        push_adapter(f"{model_cfg['output_dir']}/final", model_cfg.get("hub_repo"), exp_cfg["name"])
 
-        # Log final eval metrics
-        eval_results = trainer.evaluate()
-        mlflow.log_metrics({k.replace("eval_", ""): v for k, v in eval_results.items()})
+        # Log final eval metrics (non-fatal: the adapter is already saved and pushed)
+        try:
+            eval_results = trainer.evaluate()
+            mlflow.log_metrics({k.replace("eval_", ""): v for k, v in eval_results.items()})
+        except Exception as exc:  # noqa: BLE001
+            print(f"post-training evaluate() failed (non-fatal): {exc!r}")
 
         if mlflow_cfg.get("log_model"):
             mlflow.peft.log_model(model, "sft_adapter")
