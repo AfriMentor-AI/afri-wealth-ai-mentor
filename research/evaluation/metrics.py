@@ -18,6 +18,14 @@ def _get_judge() -> OpenAI:
         _judge_client = OpenAI(api_key=api_key, base_url=base_url)
     return _judge_client
 
+def _judge_extra_kwargs() -> dict:
+    """``reasoning_format`` is a Groq-only request field; other OpenAI-compatible hosts (OpenRouter)
+    may reject unknown fields, which would make every judge call fail. Send it only to Groq."""
+    if "groq" in os.getenv("LLM_BASE_URL", "https://api.groq.com/openai/v1").lower():
+        return {"extra_body": {"reasoning_format": "hidden"}}
+    return {}
+
+
 # Configured for openai/gpt-oss-120b
 _JUDGE_MODEL = os.getenv("EVAL_JUDGE_MODEL", "openai/gpt-oss-120b")
 # gpt-oss-120b spends a variable, invisible amount of its budget on internal
@@ -107,7 +115,7 @@ def score_all_dimensions(user_message: str, response: str) -> dict[str, float]:
                 # quota is exhausted) leaking its <think> trace into `content`
                 # the same way it did for C1 generation earlier in this repo's
                 # history — see docs/implementation/C5_1_final_evaluation.md.
-                extra_body={"reasoning_format": "hidden"},
+                **_judge_extra_kwargs(),
             )
 
             msg = res.choices[0].message

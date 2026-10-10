@@ -160,3 +160,11 @@ class TestEvaluateCheckpointExcludesFailures:
         # 0.6 weighted across all 5 dims (0.25+0.20+0.20+0.20+0.15=1.0) == 0.6,
         # not diluted toward 0 by the failed sample.
         assert abs(agg["composite_score"] - 0.6) < 1e-9
+
+
+def test_reasoning_format_is_only_sent_to_groq(monkeypatch):
+    from evaluation.metrics import _judge_extra_kwargs
+    monkeypatch.setenv("LLM_BASE_URL", "https://api.groq.com/openai/v1")
+    assert _judge_extra_kwargs() == {"extra_body": {"reasoning_format": "hidden"}}
+    monkeypatch.setenv("LLM_BASE_URL", "https://openrouter.ai/api/v1")
+    assert _judge_extra_kwargs() == {}
