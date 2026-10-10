@@ -659,7 +659,7 @@ def run(
             results["dpo_metrics"] = dpo_metrics
 
         # ── Stage 3: Evaluate ──
-        if stage in ("evaluate", "all"):
+        if stage in ("evaluate", "all") and not os.getenv("SKIP_STAGE3_EVAL"):
             if generate_fn is not None or _gpu_available() or adapter_path:
                 results["eval_metrics"] = run_evaluate(
                     cfg,

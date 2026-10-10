@@ -21,3 +21,8 @@ def test_only_the_last_final_block_is_used():
     raw = ("<|channel|>final<|message|>draft<|end|><|start|>assistant"
            "<|channel|>final<|message|>real answer<|return|>")
     assert extract_final_response(raw)[0] == "real answer"
+
+
+def test_free_gpu_memory_is_safe_without_cuda():
+    from evaluation.checkpoint_eval import free_gpu_memory
+    free_gpu_memory()  # must not raise on a CPU-only box

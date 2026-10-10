@@ -238,6 +238,25 @@ def evaluate_checkpoint(
     return agg
 
 
+def free_gpu_memory() -> None:
+    """Release GPU memory held by a finished trainer/model in this process.
+
+    Training followed by evaluation in one process left the trained model resident, so loading a
+    second copy for generation failed ("Some modules are dispatched on the CPU or the disk").
+    """
+    import gc
+
+    gc.collect()
+    try:
+        import torch
+
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
+            torch.cuda.ipc_collect()
+    except Exception:  # noqa: BLE001 - CPU-only machines
+        pass
+
+
 # ── Harmony (gpt-oss) output handling ───────────────────────────────────────────
 
 _HARMONY_FINAL = "<|channel|>final<|message|>"
@@ -300,6 +319,7 @@ class HFCheckpointGenerator:
         import torch
         from transformers import AutoModelForCausalLM, AutoTokenizer
 
+        free_gpu_memory()
         kwargs: dict = {"device_map": "auto"}
         if self.load_in_4bit:
             from transformers import BitsAndBytesConfig
