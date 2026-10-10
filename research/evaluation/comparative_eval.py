@@ -171,7 +171,7 @@ def run(sample_size: int = 5, output_path: str | Path = DEFAULT_OUTPUT,
         *, run_c1: bool = True, run_c2: bool = True,
         run_c3: bool = True, run_c4: bool = True,
         model_set: str = "qwen", splits_dir: str | Path = SPLITS_DIR,
-        c1_source: str | None = None) -> dict:
+        c1_source: str | None = None, resume: bool = True) -> dict:
     ms = MODEL_SETS[model_set]
     # C1 must be the SAME base model the adapters were trained from, or C1-vs-C2..C4 confounds
     # "alignment" with "different model". "api" (legacy Qwen run: a hosted model) vs "local"
@@ -182,29 +182,65 @@ def run(sample_size: int = 5, output_path: str | Path = DEFAULT_OUTPUT,
     logger.info("Loaded %d eval samples from %s", len(samples),
                 splits_dir / "sft_test.jsonl")
 
-    results = {
-        "meta": {
-            "sample_size": len(samples),
-            "eval_split": "sft_test.jsonl",
-            "model_set": model_set, "base_model": ms["base"], "splits_dir": str(splits_dir),
-            "metric_suite": [
-                "persona_adherence", "cultural_fluency", "anti_dependency",
-                "financial_accuracy", "urgency", "rouge_l", "bert_score_f1",
-                "composite_score",
-            ],
-            "generated_at": __import__("datetime").datetime.now().isoformat(),
-        },
-        "conditions": {},
+    meta = {
+        "sample_size": len(samples),
+        "eval_split": "sft_test.jsonl",
+        "model_set": model_set, "base_model": ms["base"], "splits_dir": str(splits_dir),
+        "metric_suite": [
+            "persona_adherence", "cultural_fluency", "anti_dependency",
+            "financial_accuracy", "urgency", "rouge_l", "bert_score_f1",
+            "composite_score",
+        ],
+        "generated_at": __import__("datetime").datetime.now().isoformat(),
     }
+    output_path = Path(output_path)
+    results = {"meta": meta, "conditions": {}}
+
+    # Resume: a multi-hour run must survive a dropped session. Reuse conditions already measured live
+    # in an earlier run of the *same* configuration; never reuse anything else.
+    if resume and output_path.exists():
+        prev = json.loads(output_path.read_text(encoding="utf-8"))
+        same = all(prev.get("meta", {}).get(k) == meta[k]
+                   for k in ("sample_size", "model_set", "base_model", "splits_dir"))
+        if same:
+            for cid, cond in prev.get("conditions", {}).items():
+                if str(cond.get("aggregate", {}).get("source", "")).startswith("live_"):
+                    results["conditions"][cid] = cond
+                    logger.info("Resuming: keeping previously measured %s", cid)
+
+    def save() -> None:
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        with open(output_path, "w", encoding="utf-8") as f:
+            json.dump(results, f, indent=2, default=str)
+
+    def measure(cid: str, adapters: list[str | None], fallback: dict | None) -> None:
+        if cid in results["conditions"]:
+            return
+        rows = None
+        for adapter in adapters:
+            try:
+                logger.info("  [%s] trying adapter: %s", cid, adapter)
+                rows = _run_checkpoint_condition(cid, ms["base"], adapter, samples)
+                break
+            except Exception as e:  # noqa: BLE001
+                logger.warning("  [%s] failed to run %s: %s", cid, adapter, e)
+        if rows:
+            source = "live_hf_base" if adapters == [None] else "live_hf_adapter"
+            results["conditions"][cid] = {"aggregate": {**_avg_scores(rows), "source": source}, "rows": rows}
+        elif fallback is not None and model_set == "qwen":
+            logger.warning("%s unavailable - using the recorded/estimated value (qwen set only).", cid)
+            results["conditions"][cid] = {"aggregate": fallback, "rows": []}
+        else:
+            # Estimates/recordings belong to the original Qwen run. For any other model they would be
+            # someone else's numbers presented as this model's — fail instead.
+            raise RuntimeError(f"{cid} could not be measured for model set {model_set!r} "
+                               f"(tried {adapters}); refusing to substitute estimated results.")
+        save()
 
     if run_c1 and c1_source == "local":
         logger.info("Running C1 as the local base model (%s) with the persona prompt, no adapter...", ms["base"])
-        c1_rows = _run_checkpoint_condition("C1", ms["base"], None, samples)
-        results["conditions"]["C1"] = {
-            "aggregate": {**_avg_scores(c1_rows), "source": "live_hf_base"},
-            "rows": c1_rows,
-        }
-    elif run_c1:
+        measure("C1", [None], None)
+    elif run_c1 and "C1" not in results["conditions"]:
         api_key = os.getenv("LLM_API_KEY") or os.getenv("GROQ_API_KEY", "")
         if not api_key:
             logger.warning("LLM_API_KEY not set - C1 uses recorded fallback.")
@@ -225,67 +261,16 @@ def run(sample_size: int = 5, output_path: str | Path = DEFAULT_OUTPUT,
                 "aggregate": {**_avg_scores(rows), "source": "live_groq"},
                 "rows": rows,
             }
+        save()
 
     if run_c2:
-        logger.info("Attempting to load C2 SFT adapter from HuggingFace Hub...")
-        c2_rows = None
-        for adapter in ["AfriMentor/chioma-sft-v1",
-            "Danleon56/chioma-sft-v1",
-                "Danleon56/qwen2.5-7b-chioma-sft-merged"]:
-            try:
-                logger.info("  Trying adapter: %s", adapter)
-                c2_rows = _run_checkpoint_condition(
-                    "C2", ms["base"], adapter, samples)
-                break
-            except Exception as e:
-                logger.warning("  Failed to load %s: %s", adapter, e)
-        if c2_rows:
-            results["conditions"]["C2"] = {
-                "aggregate": {**_avg_scores(c2_rows), "source": "live_hf_adapter"},
-                "rows": c2_rows,
-            }
-        else:
-            logger.warning("C2 adapter unavailable - using recorded Kaggle results.")
-            results["conditions"]["C2"] = {"aggregate": C2_RECORDED, "rows": []}
-
+        measure("C2", list(ms["c2"]), C2_RECORDED)
     if run_c3:
-        logger.info("Attempting to load C3 DPO adapter from HuggingFace Hub...")
-        c3_rows = None
-        try:
-            c3_rows = _run_checkpoint_condition(
-                "C3", ms["base"], ms["c3"], samples)
-        except Exception as e:
-            logger.warning("C3 adapter unavailable: %s", e)
-        if c3_rows:
-            results["conditions"]["C3"] = {
-                "aggregate": {**_avg_scores(c3_rows), "source": "live_hf_adapter"},
-                "rows": c3_rows,
-            }
-        else:
-            logger.warning("C3 checkpoint could not be loaded - using fallback estimate.")
-            results["conditions"]["C3"] = {"aggregate": C3_ESTIMATED, "rows": []}
-
+        measure("C3", [ms["c3"]], C3_ESTIMATED)
     if run_c4:
-        logger.info("Attempting to load C4 RLHF policy from HuggingFace Hub...")
-        c4_rows = None
-        try:
-            c4_rows = _run_checkpoint_condition(
-                "C4", ms["base"], ms["c4"], samples)
-        except Exception as e:
-            logger.warning("C4 adapter unavailable: %s", e)
-        if c4_rows:
-            results["conditions"]["C4"] = {
-                "aggregate": {**_avg_scores(c4_rows), "source": "live_hf_adapter"},
-                "rows": c4_rows,
-            }
-        else:
-            logger.warning("C4 checkpoint could not be loaded - using fallback estimate.")
-            results["conditions"]["C4"] = {"aggregate": C4_ESTIMATED, "rows": []}
+        measure("C4", [ms["c4"]], C4_ESTIMATED)
 
-    output_path = Path(output_path)
-    output_path.parent.mkdir(parents=True, exist_ok=True)
-    with open(output_path, "w", encoding="utf-8") as f:
-        json.dump(results, f, indent=2, default=str)
+    save()
     logger.info("Comparative results written to %s", output_path)
     return results
 
@@ -296,6 +281,8 @@ if __name__ == "__main__":
     parser.add_argument("--model-set", choices=sorted(MODEL_SETS), default="qwen")
     parser.add_argument("--c1-source", choices=["api", "local"], default=None,
                         help="C1 via hosted API, or local base model + persona prompt (default: local for new model sets)")
+    parser.add_argument("--no-resume", action="store_true",
+                        help="ignore an existing output file instead of reusing already-measured conditions")
     parser.add_argument("--splits-dir", default=str(SPLITS_DIR),
                         help="dir holding sft_test.jsonl (v2: research/datasets/splits_v2)")
     parser.add_argument("--output", default=str(DEFAULT_OUTPUT))
@@ -310,6 +297,7 @@ if __name__ == "__main__":
         run_c1=not args.skip_c1, run_c2=not args.skip_c2,
         run_c3=not args.skip_c3, run_c4=not args.skip_c4,
         model_set=args.model_set, splits_dir=args.splits_dir, c1_source=args.c1_source,
+        resume=not args.no_resume,
     )
 
     print("\n=== Comparative Evaluation Results ===")
