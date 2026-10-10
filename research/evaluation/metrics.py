@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import hashlib
 import os
 import re
 import time
@@ -82,7 +83,51 @@ AI output: {response}
 Output format: Return ONLY a JSON object with float scores (between 0.0 and 1.0) for:
 "persona_adherence", "cultural_fluency", "anti_dependency", "financial_accuracy", "urgency"."""
 
+_judge_cache: dict[str, dict] | None = None
+_judge_cache_lock = __import__("threading").Lock()
+
+
+def _judge_cache_lookup(key: str) -> dict | None:
+    """Disk-backed cache of *successful* judge scores (env JUDGE_CACHE=path.jsonl). Kaggle sessions and
+    browser tabs die mid-run; without this a dropped tab re-pays every judge call. Failures are never cached."""
+    global _judge_cache
+    path = os.getenv("JUDGE_CACHE")
+    if not path:
+        return None
+    with _judge_cache_lock:
+        if _judge_cache is None:
+            _judge_cache = {}
+            if os.path.exists(path):
+                for line in open(path, encoding="utf-8"):
+                    if line.strip():
+                        rec = json.loads(line)
+                        _judge_cache[rec["k"]] = rec["v"]
+        return _judge_cache.get(key)
+
+
+def _judge_cache_store(key: str, value: dict) -> None:
+    path = os.getenv("JUDGE_CACHE")
+    if not path or value.get("_judge_failed"):
+        return
+    with _judge_cache_lock:
+        if _judge_cache is not None:
+            _judge_cache[key] = value
+        os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
+        with open(path, "a", encoding="utf-8") as f:
+            f.write(json.dumps({"k": key, "v": value}) + "\n")
+
+
 def score_all_dimensions(user_message: str, response: str) -> dict[str, float]:
+    key = hashlib.sha256(f"{_JUDGE_MODEL}\x1f{user_message}\x1f{response}".encode()).hexdigest()[:32]
+    cached = _judge_cache_lookup(key)
+    if cached is not None:
+        return dict(cached)
+    result = _score_all_dimensions_uncached(user_message, response)
+    _judge_cache_store(key, result)
+    return result
+
+
+def _score_all_dimensions_uncached(user_message: str, response: str) -> dict[str, float]:
     prompt = _COMBINED_EVAL_PROMPT.format(
         user_message=user_message,
         response=response,
