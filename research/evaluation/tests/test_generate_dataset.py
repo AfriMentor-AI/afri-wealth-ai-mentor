@@ -80,3 +80,39 @@ def test_cache_makes_reruns_free(tmp_path):
     first = fake_chat.calls
     _records(tmp_path, n=10)  # same seed, same cache file
     assert fake_chat.calls == first
+
+
+def test_length_parity_filter_rejects_lopsided_pairs():
+    assert gd.within_length_parity("word " * 100, "word " * 90)
+    assert not gd.within_length_parity("word " * 300, "word " * 100)   # the pilot's 331 vs 113 case
+    assert not gd.within_length_parity("word " * 30, "word " * 100)
+    assert not gd.within_length_parity("word", "")
+
+
+def test_style_suffix_is_used_for_generation_but_not_stored(tmp_path):
+    seen = []
+
+    def spy(system, user, temperature):
+        seen.append(user)
+        return "x " * 80 if not system.startswith("You write realistic") else f"prompt {len(seen)} " * 4 + "?"
+
+    llm = gd.CachedLLM(spy, tmp_path / "c.jsonl")
+    rng = random.Random(1)
+    prompts = gd.generate_prompts(llm, 3, rng)
+    recs = gd.build_records(llm, prompts, lambda s: "P", rng)
+    assert any(gd.CHOSEN_STYLE in u for u in seen) and any(gd.REJECTED_STYLE in u for u in seen)
+    assert all(gd.CHOSEN_STYLE not in r["prompt"] for r in recs)
+
+
+def test_persona_names_never_reach_or_survive_in_user_prompts(tmp_path):
+    seen_user = []
+
+    def chat(system, user, temperature):
+        seen_user.append(user)
+        return "I sell things at my chioma business every day and want advice on pricing now" if len(seen_user) % 2 else \
+            f"Honest question number {len(seen_user)} about my stall and my supplier in town today?"
+
+    llm = gd.CachedLLM(chat, tmp_path / "c.jsonl")
+    prompts = gd.generate_prompts(llm, 4, random.Random(3))
+    assert all("chioma" not in p["prompt"].lower() for p in prompts)
+    assert not any("chioma" in u.lower() or "market-queen" in u for u in seen_user)

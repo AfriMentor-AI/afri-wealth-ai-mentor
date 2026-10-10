@@ -26,6 +26,8 @@ from __future__ import annotations
 
 import argparse
 import difflib
+import threading
+from concurrent.futures import ThreadPoolExecutor
 import hashlib
 import json
 import os
@@ -40,6 +42,15 @@ if str(_RESEARCH_ROOT) not in sys.path:
     sys.path.insert(0, str(_RESEARCH_ROOT))
 
 DEFAULT_OUT = _RESEARCH_ROOT / "datasets" / "splits_v2"
+
+# Plain-language description of each persona's audience. The internal slug ("chioma-base", "market-queen")
+# must never reach the prompt model: the pilot produced a user message saying "my chioma business".
+PERSONA_BLURB = {
+    "chioma-base": "small-business owner", "market-queen": "market trader selling goods at a stall",
+    "tech-founder": "founder of an early-stage tech startup", "trader": "importer/wholesale trader",
+    "rural-hustler": "smallholder farmer or rural micro-entrepreneur", "creative": "freelance creative or artisan",
+}
+FORBIDDEN_IN_PROMPTS = ("chioma", "kwame", "persona", "mentor ai", "as an ai")
 
 PERSONAS = ["chioma-base", "market-queen", "tech-founder", "trader", "rural-hustler", "creative"]
 COUNTRIES = {
@@ -72,6 +83,27 @@ DEFECTS = {
                            "or a guaranteed-return promise).",
 }
 
+# Appended to the USER turn only while generating (never stored). Both sides get the same length band and
+# format so a judge / DPO cannot win by "longer, more structured is better" — a confound seen in the pilot
+# (chosen 331 words vs rejected 113).
+WORD_MIN, WORD_MAX = 70, 140
+CHOSEN_STYLE = (f"\n\n[Reply in {WORD_MIN}-{WORD_MAX} words of plain conversational prose: no headings, no bullet or "
+                "numbered lists, no markdown. Include at least one concrete number or step relevant to their "
+                "situation and end with ONE sharp next action or ONE question.]")
+REJECTED_STYLE = (f"\n\n[Reply in {WORD_MIN}-{WORD_MAX} words of plain prose: no headings, no bullet or numbered "
+                  "lists, no markdown.]")
+LENGTH_RATIO_BOUNDS = (0.6, 1.6)  # chosen_words / rejected_words must fall inside
+
+
+def words(text: str) -> int:
+    return len(text.split())
+
+
+def within_length_parity(chosen: str, rejected: str) -> bool:
+    lo, hi = LENGTH_RATIO_BOUNDS
+    return bool(words(rejected)) and lo <= words(chosen) / words(rejected) <= hi
+
+
 ChatFn = Callable[[str, str, float], str]  # (system, user, temperature) -> text
 
 
@@ -86,6 +118,7 @@ class CachedLLM:
         self.chat_fn = chat_fn
         self.cache_path = cache_path
         self.cache: dict[str, str] = {}
+        self._lock = threading.Lock()
         if cache_path.exists():
             for line in cache_path.read_text(encoding="utf-8").splitlines():
                 if line.strip():
@@ -94,24 +127,26 @@ class CachedLLM:
 
     def __call__(self, system: str, user: str, temperature: float, salt: str = "") -> str:
         k = _key(system, user, f"{temperature}", salt)
-        if k in self.cache:
-            return self.cache[k]
-        text = self.chat_fn(system, user, temperature).strip()
-        self.cache[k] = text
-        self.cache_path.parent.mkdir(parents=True, exist_ok=True)
-        with open(self.cache_path, "a", encoding="utf-8") as f:
-            f.write(json.dumps({"k": k, "v": text}) + "\n")
+        with self._lock:
+            if k in self.cache:
+                return self.cache[k]
+        text = self.chat_fn(system, user, temperature).strip()  # network call outside the lock
+        with self._lock:
+            self.cache[k] = text
+            self.cache_path.parent.mkdir(parents=True, exist_ok=True)
+            with open(self.cache_path, "a", encoding="utf-8") as f:
+                f.write(json.dumps({"k": k, "v": text}) + "\n")
         return text
 
 
-def make_openai_chat_fn(api_key: str, base_url: str, model: str, max_tokens: int = 900) -> ChatFn:
+def make_openai_chat_fn(api_key: str, base_url: str, model: str, max_tokens: int = 400) -> ChatFn:
     from openai import OpenAI
 
     client = OpenAI(api_key=api_key, base_url=base_url)
 
     def chat(system: str, user: str, temperature: float) -> str:
         last: Exception | None = None
-        for attempt in range(6):
+        for attempt in range(12):
             try:
                 resp = client.chat.completions.create(
                     model=model, temperature=temperature, max_tokens=max_tokens,
@@ -120,7 +155,8 @@ def make_openai_chat_fn(api_key: str, base_url: str, model: str, max_tokens: int
                 return resp.choices[0].message.content or ""
             except Exception as exc:  # noqa: BLE001 — rate limits/timeouts: back off and retry
                 last = exc
-                time.sleep(min(60, 2 ** attempt * 3))
+                # 402/429 = provider budget / rate limit: wait it out (OpenRouter suggests ~120s)
+                time.sleep(min(120, 2 ** attempt * 3))
         raise RuntimeError(f"LLM call failed after retries: {last}")
 
     return chat
@@ -146,20 +182,27 @@ def is_near_duplicate(text: str, seen: list[str], threshold: float = 0.82) -> bo
     return any(difflib.SequenceMatcher(None, t, s).ratio() >= threshold for s in seen)
 
 
-def generate_prompts(llm: CachedLLM, n: int, rng: random.Random) -> list[dict]:
+def generate_prompts(llm: CachedLLM, n: int, rng: random.Random, workers: int = 1) -> list[dict]:
     system = ("You write realistic first-person messages that a young African micro-entrepreneur "
               "would send to an AI business mentor. One message, 1-3 sentences, concrete details "
               "(numbers, local context), no greeting, no mention of an AI or a persona name. "
               "Output only the message text.")
+    scenarios = sample_scenarios(n, rng)
+
+    def one(idx_sc):
+        idx, sc = idx_sc
+        kind = PERSONA_BLURB.get(sc["persona_slug"], "small-business owner")
+        user = f"Country: {sc['country']}. Topic: {sc['topic']}. The person is a {kind}."
+        return llm(system, user, 0.95, salt=str(idx))
+
+    with ThreadPoolExecutor(max_workers=max(1, workers)) as pool:
+        texts = list(pool.map(one, enumerate(scenarios)))  # ordered, so dedupe below is deterministic
     out: list[dict] = []
     seen: list[str] = []
-    for sc in sample_scenarios(n, rng):
+    for sc, text in zip(scenarios, texts):
         if len(out) >= n:
             break
-        user = (f"Country: {sc['country']}. Topic: {sc['topic']}. "
-                f"The person is a {sc['persona_slug'].replace('-', ' ')} type of entrepreneur.")
-        text = llm(system, user, 0.95, salt=str(len(out)))
-        if len(text) < 20 or is_near_duplicate(text, seen):
+        if len(text) < 20 or is_near_duplicate(text, seen) or any(f in text.lower() for f in FORBIDDEN_IN_PROMPTS):
             continue
         seen.append(normalise(text))
         out.append({**sc, "prompt": text})
@@ -169,21 +212,27 @@ def generate_prompts(llm: CachedLLM, n: int, rng: random.Random) -> list[dict]:
 # ── response / preference generation ──────────────────────────────────────────────
 
 def build_records(llm: CachedLLM, prompts: list[dict], persona_prompt_fn: Callable[[str], str],
-                  rng: random.Random) -> list[dict]:
-    records = []
+                  rng: random.Random, workers: int = 1) -> list[dict]:
+    # All random choices are made up front, in order, so parallel execution cannot change the dataset.
+    plan = []
     for i, p in enumerate(prompts):
-        chosen = llm(persona_prompt_fn(p["persona_slug"]), p["prompt"], 0.7)
         reason = rng.choice(sorted(DEFECTS))
-        rejected = llm(DEFECTS[reason], p["prompt"], 0.7)
-        chosen_is_a = rng.random() < 0.5
+        plan.append((i, p, reason, rng.random() < 0.5))
+
+    def gen(item):
+        i, p, reason, chosen_is_a = item
+        chosen = llm(persona_prompt_fn(p["persona_slug"]), p["prompt"] + CHOSEN_STYLE, 0.7)
+        rejected = llm(DEFECTS[reason], p["prompt"] + REJECTED_STYLE, 0.7)
         a, b = (chosen, rejected) if chosen_is_a else (rejected, chosen)
-        records.append({
+        return {
             "pair_id": f"g{i:04d}", "persona_slug": p["persona_slug"],
             "country": p["country_code"], "topic": p["topic"], "prompt": p["prompt"],
             "chosen": chosen, "rejected": rejected, "rejection_reason": reason,
             "response_a": a, "response_b": b, "preferred": "a" if chosen_is_a else "b",
-        })
-    return records
+        }
+
+    with ThreadPoolExecutor(max_workers=max(1, workers)) as pool:
+        return list(pool.map(gen, plan))
 
 
 def split_by_prompt(records: list[dict], test_frac: float, val_frac: float,
@@ -239,6 +288,7 @@ def main() -> None:
     ap.add_argument("--test-frac", type=float, default=0.20)
     ap.add_argument("--val-frac", type=float, default=0.10)
     ap.add_argument("--seed", type=int, default=42)
+    ap.add_argument("--workers", type=int, default=8, help="parallel API calls")
     ap.add_argument("--review-sample", type=int, default=30)
     ap.add_argument("--out", default=str(DEFAULT_OUT))
     args = ap.parse_args()
@@ -255,14 +305,19 @@ def main() -> None:
     rng = random.Random(args.seed)
     llm = CachedLLM(make_openai_chat_fn(key, base, model), out / "cache.jsonl")
 
-    prompts = generate_prompts(llm, args.n_prompts, rng)
-    records = build_records(llm, prompts, render_system_prompt, rng)
+    prompts = generate_prompts(llm, int(args.n_prompts * 1.3), rng, args.workers)  # headroom for the parity filter
+    candidates = build_records(llm, prompts, render_system_prompt, rng, args.workers)
+    records = [r for r in candidates if within_length_parity(r["chosen"], r["rejected"])][: args.n_prompts]
+    print(f"length-parity filter kept {len(records)}/{len(candidates)} pairs "
+          f"(mean words chosen {sum(words(r['chosen']) for r in records)/max(1,len(records)):.0f}, "
+          f"rejected {sum(words(r['rejected']) for r in records)/max(1,len(records)):.0f})", flush=True)
     splits = split_by_prompt(records, args.test_frac, args.val_frac, rng)
     stats = write_splits(splits, out, render_system_prompt)
     export_review_sample(records, out, args.review_sample, rng)
 
     manifest = {"dataset_version": "2.0", "synthetic": True, "teacher_model": model, "teacher_base_url": base,
-                "seed": args.seed, "n_prompts_requested": args.n_prompts, "n_records": len(records),
+                "seed": args.seed, "n_prompts_requested": args.n_prompts, "n_records": len(records), "n_candidates_before_length_filter": len(candidates),
+                "word_band": [WORD_MIN, WORD_MAX], "length_ratio_bounds": list(LENGTH_RATIO_BOUNDS),
                 "splits": stats}
     (out / "manifest.json").write_text(json.dumps(manifest, indent=2), encoding="utf-8")
     print(json.dumps(manifest, indent=2))

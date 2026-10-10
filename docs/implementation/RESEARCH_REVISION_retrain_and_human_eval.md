@@ -99,3 +99,20 @@ correct offline with the real tokenizer. Scripts kept for that follow-up:
 
 Paper wording: "gpt-oss-20b loads and generates on 2xT4 via Unsloth, but fine-tuning on T4 was numerically unreliable and
 is left to future work on larger GPUs." Main results use Llama-3.1-8B-Instruct.
+
+## Dataset v2 generated (2026-10-10) — what it is and its limits
+
+`research/datasets/splits_v2/`: 300 pairs (train 210 / val 30 / test 60), teacher `qwen/qwen-2.5-72b-instruct` via OpenRouter,
+split by prompt (0 overlap), A/B balanced (train 97a/113b, val 18/12, test 33/27), 6 personas x 7 countries, lengths matched
+(chosen 89 vs rejected 84 words after a 0.6-1.6x parity filter), no persona-name/markup/instruction leakage, no identical pairs.
+`cache.jsonl` holds every raw teacher call (resumable + auditable). `human_review_sample.jsonl` (40 pairs) is for team review.
+
+**Limitations to disclose in the paper**
+1. **Synthetic**: all prompts, chosen and rejected answers are teacher-LLM output.
+2. **The preference signal is largely stylistic.** Chosen ends with a question 98% (rejected 1%) and contains a number 98%
+   (rejected 32%); 71% of chosen answers open with a "friend"-style phrase. This is the persona spec, but it means gains
+   can come from learning the surface template rather than better advice. The automatic judge's rubric also rewards
+   "concrete numbers" and "sharp next action", so it may favour the same template.
+3. **`rejection_reason` labels are unreliable.** Spot checks show some "culturally_misaligned" / "factually_incorrect"
+   rejections are reasonable advice; what actually separates the pair is voice and concreteness. Do not report per-reason results.
+4. Human raters should be told to judge advice substance and appropriateness, not template adherence.

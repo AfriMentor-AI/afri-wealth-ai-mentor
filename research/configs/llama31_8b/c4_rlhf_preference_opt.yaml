@@ -1,5 +1,7 @@
 # Llama-3.1-8B-Instruct (gated on HF: accept Meta's licence for the account whose HF_TOKEN Kaggle uses). Matches the Llama deployed via OpenRouter.
 # Generated from the Qwen configs for the papers-revision retrain; dataset = splits_v2 (synthetic, see datasets/scripts/generate_dataset.py).
+# Sequences are ~2k tokens (the persona system prompt alone is ~1.7k): batch 1 x accum 16, and run with
+# CUDA_VISIBLE_DEVICES=0 so gradient checkpointing works (it breaks when the model is sharded over 2 GPUs).
 experiment:
   name: C4_rlhf_preference_optimization_llama31-8b_v2
   condition_id: C4
@@ -52,8 +54,8 @@ ablation:
 dpo:
   beta: 0.1
   loss_type: sigmoid
-  max_length: 2048
-  max_prompt_length: 512
+  max_length: 2560
+  max_prompt_length: 2304
   converted_dataset: research/experiments/04_rlhf_preference_opt/checkpoints_llama31-8b/dpo_converted_train.jsonl
   converted_eval_dataset: research/experiments/04_rlhf_preference_opt/checkpoints_llama31-8b/dpo_converted_val.jsonl
 lora:
@@ -74,8 +76,8 @@ quantization:
   bnb_4bit_use_double_quant: true
 training:
   num_train_epochs: 2
-  per_device_train_batch_size: 2
-  gradient_accumulation_steps: 8
+  per_device_train_batch_size: 1
+  gradient_accumulation_steps: 16
   learning_rate: 5.0e-05
   lr_scheduler_type: cosine
   warmup_ratio: 0.05
