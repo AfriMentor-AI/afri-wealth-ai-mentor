@@ -54,6 +54,12 @@ def collect_ratable_rows(comparative_results: dict) -> list[dict]:
     return ratable
 
 
+def drop_conditions(ratable: list[dict], exclude: list[str]) -> list[dict]:
+    """Remove conditions whose outputs are trivially identifiable (e.g. a 243-word markdown essay among
+    70-140 word plain-prose answers), which would break the blinding the panel depends on."""
+    return [r for r in ratable if r["condition"] not in set(exclude)]
+
+
 def select_paired_prompts(ratable: list[dict], max_prompts: int | None, seed: int = 42) -> list[dict]:
     """Keep only prompts answered by *every* condition (a paired design), then
     optionally subsample ``max_prompts`` of them so rater workload stays bounded
@@ -118,6 +124,8 @@ def main() -> None:
     parser.add_argument("--packet-out", default=str(DEFAULT_PACKET_OUT))
     parser.add_argument("--key-out", default=str(DEFAULT_KEY_OUT))
     parser.add_argument("--seed", type=int, default=42)
+    parser.add_argument("--exclude", default="",
+                        help="comma-separated condition ids to leave out of the packet, e.g. C1")
     parser.add_argument("--max-prompts", type=int, default=None,
                         help="rate only this many prompts, each answered by all conditions (paired)")
     parser.add_argument("--n-raters", type=int, default=3,
@@ -130,7 +138,9 @@ def main() -> None:
         raise SystemExit(1)
 
     comparative_results = json.loads(input_path.read_text(encoding="utf-8"))
-    ratable = select_paired_prompts(collect_ratable_rows(comparative_results), args.max_prompts, args.seed)
+    ratable = select_paired_prompts(
+        drop_conditions(collect_ratable_rows(comparative_results), [c for c in args.exclude.split(",") if c]),
+        args.max_prompts, args.seed)
     packet_rows, key = build_packet(ratable, seed=args.seed)
     write_packet(packet_rows, key, Path(args.packet_out), Path(args.key_out))
     packet_dir = Path(args.packet_out).parent

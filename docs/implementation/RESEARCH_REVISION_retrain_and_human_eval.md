@@ -135,3 +135,15 @@ prompts, judge `openai/gpt-oss-120b`: C1 0.512, C2 0.441, C3 0.399, **C4 0.099**
   (`configs/llama31_8b_v2b`: C3 lr 1e-5 x 2 ep, C4 lr 5e-6 x 1 ep, rpo_alpha 1.0). v2a results are retained in
   `evaluation/results/comparative_llama31_8b_v2a.json` and must be reported as the first attempt in the paper.
 - Known remaining limitation: DPO prompts omit the persona system prompt (SFT and evaluation include it).
+
+## Llama v2b result (2026-10-11): null result at small scale
+
+Gentler DPO (v2b) trained cleanly; all adapters passed the health check. Composite (60 prompts, gpt-oss-120b judge):
+C1 0.512, **C1S 0.545**, C2 0.441, C3 0.436, C4 0.440. Paired 95% bootstrap CIs over prompts: C2/C3/C4 mutually
+indistinguishable (|diff| <= 0.005); C1S beats each trained model by ~0.10 (CIs exclude 0); C1S vs C1 +0.033 [-0.004, +0.073];
+C2 vs C1 -0.071 [-0.112, -0.031]. Persona adherence: C1S 0.71 vs C2/C3/C4 0.52-0.56. Trained models include a digit in only
+70-77% of answers (C1S 98%) and end with a question 93-98%, i.e. they learned the template's shape but not its content.
+ROUGE-L/BERTScore favour the trained models (closer to teacher text) — expected and not evidence of better advice.
+Interpretation: with 210 synthetic examples, fine-tuning did not beat a format-matched prompt; DPO/RLHF added nothing over
+SFT. One judge, n=60, synthetic data, judge length bias -> report as a null result, not as "fine-tuning fails".
+Human panel excludes C1 (`--exclude C1`): its 243-word markdown answers are trivially identifiable and break blinding.

@@ -94,3 +94,10 @@ def test_per_rater_orders_share_ids_but_not_order():
     a, b, c = per_rater_orders(rows, 3)
     assert {r["sample_id"] for r in a} == {r["sample_id"] for r in b} == {r["sample_id"] for r in c}
     assert [r["sample_id"] for r in a] != [r["sample_id"] for r in b]
+
+
+def test_drop_conditions_removes_only_the_excluded_ones():
+    from evaluation.human_eval_sampler import drop_conditions
+    rows = [{"condition": c, "user_message": "q", "response": "x"} for c in ("C1", "C1S", "C2")]
+    assert {r["condition"] for r in drop_conditions(rows, ["C1"])} == {"C1S", "C2"}
+    assert len(drop_conditions(rows, [])) == 3
