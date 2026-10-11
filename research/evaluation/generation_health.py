@@ -34,9 +34,13 @@ def health_report(texts: list[str], max_bad_fraction: float = 0.2) -> dict:
             "reasons": sorted(set(bad)), "healthy": bool(texts) and frac <= max_bad_fraction}
 
 
-def sample_validation_responses(model, tokenizer, prompts_with_persona: list[tuple[str, str]],
+def sample_validation_responses(model, tokenizer, prompts: list,
                                 max_new_tokens: int = 400) -> list[str]:
-    """Greedy answers from a freshly trained (PEFT) model. GPU-only helper; the logic above is unit-tested."""
+    """Greedy answers from a freshly trained (PEFT) model. GPU-only helper; the logic above is unit-tested.
+
+    Each item is either a ready message list (conversational data: the exact system prompt the model was
+    trained with) or a (persona, user_text) tuple, which gets the full persona system prompt.
+    """
     import torch
 
     from evaluation.checkpoint_eval import render_system_prompt
@@ -44,8 +48,12 @@ def sample_validation_responses(model, tokenizer, prompts_with_persona: list[tup
     was_training = model.training
     model.eval()
     out = []
-    for persona, user in prompts_with_persona:
-        msgs = [{"role": "system", "content": render_system_prompt(persona)}, {"role": "user", "content": user}]
+    for item in prompts:
+        if isinstance(item, tuple):
+            persona, user = item
+            msgs = [{"role": "system", "content": render_system_prompt(persona)}, {"role": "user", "content": user}]
+        else:
+            msgs = list(item)
         enc = tokenizer.apply_chat_template(msgs, add_generation_prompt=True, return_tensors="pt",
                                             return_dict=True).to(model.device)
         with torch.no_grad():

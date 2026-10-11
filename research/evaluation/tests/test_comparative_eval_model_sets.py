@@ -82,3 +82,22 @@ def test_reuse_copies_live_conditions_and_refuses_incomparable_files(tmp_path, m
     with pytest.raises(RuntimeError, match="different base model"):
         ce.run(5, tmp_path / "x.json", model_set="llama31_8b_v2b", splits_dir=tmp_path,
                reuse_from=old, reuse=("C1",))
+
+
+def test_v3_set_runs_prompt_free_conditions_with_the_minimal_prompt(tmp_path, monkeypatch):
+    from evaluation.style_prompts import minimal_system_prompt
+    seen = {}
+
+    def fake(cid, base, adapter, samples, **kw):
+        seen[cid] = (adapter, kw.get("system_prompt_fn"), kw.get("user_suffix", ""))
+        return [{"composite_score": 0.5, "persona_adherence": 0.5, "persona": "trader",
+                 "user_message": "q", "response": "r", "generation_truncated": 0}]
+
+    monkeypatch.setattr(ce, "_run_checkpoint_condition", fake)
+    ce.run(2, tmp_path / "o.json", run_c4=False, model_set="llama31_8b_v3", splits_dir=tmp_path)
+    assert set(seen) == {"C1P", "C1S", "C2", "C3"}                       # no plain C1, no C4
+    assert seen["C1P"][0] is None and seen["C1P"][1] is minimal_system_prompt
+    assert seen["C1S"][1] is None and seen["C1S"][2]                      # FULL persona prompt + format suffix
+    assert seen["C2"][1] is minimal_system_prompt and seen["C3"][1] is minimal_system_prompt
+    assert seen["C2"][0] == "AfriMentor/chioma-llama31-8b-sft-v3"
+    assert seen["C3"][0] == "AfriMentor/chioma-llama31-8b-dpo-v3"

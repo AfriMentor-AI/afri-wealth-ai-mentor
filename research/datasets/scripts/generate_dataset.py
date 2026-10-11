@@ -43,13 +43,7 @@ if str(_RESEARCH_ROOT) not in sys.path:
 
 DEFAULT_OUT = _RESEARCH_ROOT / "datasets" / "splits_v2"
 
-# Plain-language description of each persona's audience. The internal slug ("chioma-base", "market-queen")
-# must never reach the prompt model: the pilot produced a user message saying "my chioma business".
-PERSONA_BLURB = {
-    "chioma-base": "small-business owner", "market-queen": "market trader selling goods at a stall",
-    "tech-founder": "founder of an early-stage tech startup", "trader": "importer/wholesale trader",
-    "rural-hustler": "smallholder farmer or rural micro-entrepreneur", "creative": "freelance creative or artisan",
-}
+from evaluation.style_prompts import PERSONA_BLURB  # noqa: E402  (single source of truth)
 FORBIDDEN_IN_PROMPTS = ("chioma", "kwame", "persona", "mentor ai", "as an ai")
 
 PERSONAS = ["chioma-base", "market-queen", "tech-founder", "trader", "rural-hustler", "creative"]
@@ -150,6 +144,7 @@ def make_openai_chat_fn(api_key: str, base_url: str, model: str, max_tokens: int
                 return resp.choices[0].message.content or ""
             except Exception as exc:  # noqa: BLE001 — rate limits/timeouts: back off and retry
                 last = exc
+                print(f"[retry {attempt + 1}/12] {type(exc).__name__}: {str(exc)[:160]}", flush=True)
                 # 402/429 = provider budget / rate limit: wait it out (OpenRouter suggests ~120s)
                 time.sleep(min(120, 2 ** attempt * 3))
         raise RuntimeError(f"LLM call failed after retries: {last}")

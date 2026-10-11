@@ -260,3 +260,16 @@ def test_val_prompts_reads_persona_and_prompt(tmp_path):
     f = tmp_path / "val.jsonl"
     f.write_text('{"prompt": "q1", "persona_slug": "trader"}\n{"prompt": "q2"}\n', encoding="utf-8")
     assert mod._val_prompts(f) == [("trader", "q1"), ("chioma-base", "q2")]
+
+
+def test_val_prompts_returns_message_lists_for_conversational_data(tmp_path):
+    import importlib.util
+    import json as _json
+    from pathlib import Path
+    spec = importlib.util.spec_from_file_location("c3run2", Path(__file__).resolve().parents[1] / "run.py")
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    msgs = [{"role": "system", "content": "You are Chioma"}, {"role": "user", "content": "q"}]
+    f = tmp_path / "val.jsonl"
+    f.write_text(_json.dumps({"prompt": msgs, "persona_slug": "trader"}) + "\n", encoding="utf-8")
+    assert mod._val_prompts(f) == [msgs]

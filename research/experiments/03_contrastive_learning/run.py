@@ -61,14 +61,16 @@ def load_config(path: str | Path) -> dict:
         return yaml.safe_load(f)
 
 
-def _val_prompts(path: str | Path, k: int = 6) -> list[tuple[str, str]]:
-    """First k (persona, user prompt) pairs from a DPO/RLHF-style validation file."""
+def _val_prompts(path: str | Path, k: int = 6) -> list:
+    """First k validation prompts: (persona, user text) for plain-string data, or the message list itself
+    for conversational data (so the health check uses the exact system prompt the model was trained with)."""
     out = []
     with open(path, encoding="utf-8") as f:
         for line in f:
             if line.strip() and len(out) < k:
                 r = json.loads(line)
-                out.append((r.get("persona_slug") or "chioma-base", r["prompt"]))
+                out.append(r["prompt"] if isinstance(r["prompt"], list)
+                           else (r.get("persona_slug") or "chioma-base", r["prompt"]))
     return out
 
 

@@ -49,6 +49,12 @@ MODEL_SETS = {
     "llama31_8b_v2b": {"base": "meta-llama/Llama-3.1-8B-Instruct",
                        "c2": ["AfriMentor/chioma-llama31-8b-sft-v2"],
                        "c3": "AfriMentor/chioma-llama31-8b-dpo-v2b", "c4": "AfriMentor/chioma-llama31-8b-rlhf-v2b"},
+    # v3: best-of-4 judge-selected data, trained with the ~30-token minimal system prompt ("prompt-free").
+    # C1P = base + the same minimal prompt (the fair prompt-free baseline); C1S = base + FULL persona prompt + format
+    # instruction (the strong, expensive baseline). C4 is not run in this set.
+    "llama31_8b_v3": {"base": "meta-llama/Llama-3.1-8B-Instruct", "trained_system": "minimal",
+                      "c2": ["AfriMentor/chioma-llama31-8b-sft-v3"],
+                      "c3": "AfriMentor/chioma-llama31-8b-dpo-v3", "c4": "AfriMentor/chioma-llama31-8b-rlhf-v3"},
     "gptoss_20b": {"base": "unsloth/gpt-oss-20b",  # loaded via Unsloth (plain HF expands experts to ~40GB on a T4)
                    "c2": ["AfriMentor/chioma-gptoss-20b-sft-v2"],
                    "c3": "AfriMentor/chioma-gptoss-20b-dpo-v2", "c4": "AfriMentor/chioma-gptoss-20b-rlhf-v2"},
@@ -123,7 +129,7 @@ def _run_c1_live(samples: list[dict], api_key: str) -> list[dict]:
 
 
 def _run_checkpoint_condition(condition_id, base_model_id, adapter_path,
-                              samples, max_new_tokens=512, temperature=0.0, user_suffix=""):
+                              samples, max_new_tokens=512, temperature=0.0, user_suffix="", system_prompt_fn=None):
     from evaluation.checkpoint_eval import HFCheckpointGenerator
     generator_cls = HFCheckpointGenerator
     if "gpt-oss" in base_model_id.lower():
@@ -136,7 +142,7 @@ def _run_checkpoint_condition(condition_id, base_model_id, adapter_path,
     )
     rows = []
     try:
-        _generate_rows(rows, condition_id, generator, samples, user_suffix)
+        _generate_rows(rows, condition_id, generator, samples, user_suffix, system_prompt_fn)
     finally:
         del generator
         import gc
@@ -149,9 +155,9 @@ def _run_checkpoint_condition(condition_id, base_model_id, adapter_path,
     return rows
 
 
-def _generate_rows(rows, condition_id, generator, samples, user_suffix=""):
+def _generate_rows(rows, condition_id, generator, samples, user_suffix="", system_prompt_fn=None):
     for i, sample in enumerate(samples):
-        system_prompt = render_system_prompt(sample["persona"])
+        system_prompt = (system_prompt_fn or render_system_prompt)(sample["persona"])
         # the suffix (C1S only) is part of what the model is asked, never of the recorded user_message
         response = generator(system_prompt, sample["user"] + user_suffix)
         truncated = bool(getattr(generator, "last_truncated", False))
@@ -236,14 +242,16 @@ def run(sample_size: int = 5, output_path: str | Path = DEFAULT_OUTPUT,
         with open(output_path, "w", encoding="utf-8") as f:
             json.dump(results, f, indent=2, default=str)
 
-    def measure(cid: str, adapters: list[str | None], fallback: dict | None, user_suffix: str = "") -> None:
+    def measure(cid: str, adapters: list[str | None], fallback: dict | None, user_suffix: str = "",
+                system_prompt_fn=None) -> None:
         if cid in results["conditions"]:
             return
         rows = None
         for adapter in adapters:
             try:
                 logger.info("  [%s] trying adapter: %s", cid, adapter)
-                rows = _run_checkpoint_condition(cid, ms["base"], adapter, samples, user_suffix=user_suffix)
+                rows = _run_checkpoint_condition(cid, ms["base"], adapter, samples, user_suffix=user_suffix,
+                                                 system_prompt_fn=system_prompt_fn)
                 break
             except Exception as e:  # noqa: BLE001
                 logger.warning("  [%s] failed to run %s: %s", cid, adapter, e)
@@ -260,7 +268,16 @@ def run(sample_size: int = 5, output_path: str | Path = DEFAULT_OUTPUT,
                                f"(tried {adapters}); refusing to substitute estimated results.")
         save()
 
-    if run_c1 and c1_source == "local":
+    minimal = ms.get("trained_system") == "minimal"
+    if minimal:
+        from evaluation.style_prompts import minimal_system_prompt
+        sysfn = minimal_system_prompt
+        if run_c1:
+            measure("C1P", [None], None, system_prompt_fn=sysfn)   # base + minimal prompt: the fair prompt-free baseline
+    else:
+        sysfn = None
+
+    if run_c1 and c1_source == "local" and not minimal:
         logger.info("Running C1 as the local base model (%s) with the persona prompt, no adapter...", ms["base"])
         measure("C1", [None], None)
     elif run_c1 and "C1" not in results["conditions"]:
@@ -294,11 +311,11 @@ def run(sample_size: int = 5, output_path: str | Path = DEFAULT_OUTPUT,
         measure("C1S", [None], None, user_suffix=CHOSEN_STYLE)
 
     if run_c2:
-        measure("C2", list(ms["c2"]), C2_RECORDED)
+        measure("C2", list(ms["c2"]), C2_RECORDED, system_prompt_fn=sysfn)
     if run_c3:
-        measure("C3", [ms["c3"]], C3_ESTIMATED)
+        measure("C3", [ms["c3"]], C3_ESTIMATED, system_prompt_fn=sysfn)
     if run_c4:
-        measure("C4", [ms["c4"]], C4_ESTIMATED)
+        measure("C4", [ms["c4"]], C4_ESTIMATED, system_prompt_fn=sysfn)
 
     save()
     logger.info("Comparative results written to %s", output_path)
