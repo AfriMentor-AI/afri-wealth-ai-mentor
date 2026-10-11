@@ -86,12 +86,7 @@ DEFECTS = {
 # Appended to the USER turn only while generating (never stored). Both sides get the same length band and
 # format so a judge / DPO cannot win by "longer, more structured is better" — a confound seen in the pilot
 # (chosen 331 words vs rejected 113).
-WORD_MIN, WORD_MAX = 70, 140
-CHOSEN_STYLE = (f"\n\n[Reply in {WORD_MIN}-{WORD_MAX} words of plain conversational prose: no headings, no bullet or "
-                "numbered lists, no markdown. Include at least one concrete number or step relevant to their "
-                "situation and end with ONE sharp next action or ONE question.]")
-REJECTED_STYLE = (f"\n\n[Reply in {WORD_MIN}-{WORD_MAX} words of plain prose: no headings, no bullet or numbered "
-                  "lists, no markdown.]")
+from evaluation.style_prompts import CHOSEN_STYLE, REJECTED_STYLE, WORD_MAX, WORD_MIN  # noqa: E402
 LENGTH_RATIO_BOUNDS = (0.6, 1.6)  # chosen_words / rejected_words must fall inside
 
 

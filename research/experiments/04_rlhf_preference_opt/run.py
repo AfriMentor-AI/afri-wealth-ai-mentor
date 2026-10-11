@@ -350,6 +350,7 @@ def run_dpo(cfg: dict, probe=None) -> tuple[str | None, dict]:
         save_total_limit=train_cfg["save_total_limit"],
         beta=dpo_cfg["beta"],
         loss_type=dpo_cfg["loss_type"],
+        rpo_alpha=dpo_cfg.get("rpo_alpha"),
         max_length=dpo_cfg["max_length"],
         max_prompt_length=dpo_cfg["max_prompt_length"],
         report_to="none",
@@ -376,8 +377,29 @@ def run_dpo(cfg: dict, probe=None) -> tuple[str | None, dict]:
     adapter_path = str(output_dir / "final")
     trainer.save_model(adapter_path)
     logger.info("C4 DPO adapter saved to %s", adapter_path)
+
+    # Collapse guard: never publish an adapter that degenerates (v2a C4 became "friend friend friend ...").
+    # Uses validation prompts only — the test set must not influence what gets released.
+    try:
+        from evaluation.generation_health import health_report, sample_validation_responses
+        _val = [(r.get("persona_slug") or "chioma-base", r["prompt"]) for r in dpo_val[:6]]
+        if not _val:
+            raise RuntimeError("no validation prompts available")
+        _texts = sample_validation_responses(trainer.model, tokenizer, _val)
+        _rep = health_report(_texts)
+        print(f"GENERATION HEALTH: {_rep}", flush=True)
+        if not _rep["healthy"]:
+            print("!!! ADAPTER FAILED THE HEALTH CHECK - NOT pushing to the Hub. Sample: "
+                  + repr(_texts[0][:300]), flush=True)
+            _healthy = False
+        else:
+            _healthy = True
+    except Exception as exc:  # noqa: BLE001 - a broken check must not block a good run
+        print(f"health check could not run ({exc!r}); pushing anyway", flush=True)
+        _healthy = True
     from evaluation.hub_push import push_adapter
-    push_adapter(adapter_path, model_cfg.get("hub_repo"), cfg["experiment"]["name"])
+    if _healthy:
+        push_adapter(adapter_path, model_cfg.get("hub_repo"), cfg["experiment"]["name"])
 
     dpo_metrics: dict = {}
     if has_val:

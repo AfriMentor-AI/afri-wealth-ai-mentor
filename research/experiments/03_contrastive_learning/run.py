@@ -29,6 +29,7 @@ Usage (on a GPU node):
 from __future__ import annotations
 
 import argparse
+import json
 import logging
 import os
 import sys
@@ -58,6 +59,17 @@ DEFAULT_CONFIG = _RESEARCH_ROOT / "configs" / "c3_contrastive_learning.yaml"
 def load_config(path: str | Path) -> dict:
     with open(path) as f:
         return yaml.safe_load(f)
+
+
+def _val_prompts(path: str | Path, k: int = 6) -> list[tuple[str, str]]:
+    """First k (persona, user prompt) pairs from a DPO/RLHF-style validation file."""
+    out = []
+    with open(path, encoding="utf-8") as f:
+        for line in f:
+            if line.strip() and len(out) < k:
+                r = json.loads(line)
+                out.append((r.get("persona_slug") or "chioma-base", r["prompt"]))
+    return out
 
 
 def _count_jsonl_lines(path: str | Path) -> int:
@@ -179,6 +191,7 @@ def train(cfg: dict) -> tuple[str | None, dict]:
         save_total_limit=train_cfg["save_total_limit"],
         beta=dpo_cfg["beta"],
         loss_type=dpo_cfg["loss_type"],
+        rpo_alpha=dpo_cfg.get("rpo_alpha"),  # NLL anchor on the chosen answer; counters likelihood collapse
         max_length=dpo_cfg["max_length"],
         max_prompt_length=dpo_cfg["max_prompt_length"],
         report_to="none",
@@ -202,8 +215,29 @@ def train(cfg: dict) -> tuple[str | None, dict]:
     trainer.train()
     adapter_path = f"{model_cfg['output_dir']}/final"
     trainer.save_model(adapter_path)
+
+    # Collapse guard: never publish an adapter that degenerates (v2a C4 became "friend friend friend ...").
+    # Uses validation prompts only — the test set must not influence what gets released.
+    try:
+        from evaluation.generation_health import health_report, sample_validation_responses
+        _val = _val_prompts(dpo_cfg["eval_dataset"])
+        if not _val:
+            raise RuntimeError("no validation prompts available")
+        _texts = sample_validation_responses(trainer.model, tokenizer, _val)
+        _rep = health_report(_texts)
+        print(f"GENERATION HEALTH: {_rep}", flush=True)
+        if not _rep["healthy"]:
+            print("!!! ADAPTER FAILED THE HEALTH CHECK - NOT pushing to the Hub. Sample: "
+                  + repr(_texts[0][:300]), flush=True)
+            _healthy = False
+        else:
+            _healthy = True
+    except Exception as exc:  # noqa: BLE001 - a broken check must not block a good run
+        print(f"health check could not run ({exc!r}); pushing anyway", flush=True)
+        _healthy = True
     from evaluation.hub_push import push_adapter
-    push_adapter(adapter_path, model_cfg.get("hub_repo"), cfg["experiment"]["name"])
+    if _healthy:
+        push_adapter(adapter_path, model_cfg.get("hub_repo"), cfg["experiment"]["name"])
 
     # DPO-loss metrics (reward margins, accuracies) — kept for the run, but they
     # are NOT the persona metric suite; the AC is satisfied by evaluate() below.
@@ -321,6 +355,9 @@ def run(
                 )
                 do_eval = False
 
+        if do_eval and os.getenv("SKIP_STAGE3_EVAL"):
+            logger.info("SKIP_STAGE3_EVAL set: not scoring in-script (comparative_eval scores all conditions together)")
+            do_eval = False
         if do_eval:
             results["eval_metrics"] = evaluate(
                 cfg, adapter_path=adapter_path, generate_fn=generate_fn

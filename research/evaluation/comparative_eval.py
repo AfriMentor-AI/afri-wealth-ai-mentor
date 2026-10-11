@@ -44,6 +44,11 @@ MODEL_SETS = {
     "llama31_8b": {"base": "meta-llama/Llama-3.1-8B-Instruct",
                    "c2": ["AfriMentor/chioma-llama31-8b-sft-v2"],
                    "c3": "AfriMentor/chioma-llama31-8b-dpo-v2", "c4": "AfriMentor/chioma-llama31-8b-rlhf-v2"},
+    # v2b: C3/C4 retrained with gentler DPO after the first attempt (v2a) collapsed (C4 degenerate).
+    # C1/C2 are unchanged and can be reused from the v2a results via --reuse-from.
+    "llama31_8b_v2b": {"base": "meta-llama/Llama-3.1-8B-Instruct",
+                       "c2": ["AfriMentor/chioma-llama31-8b-sft-v2"],
+                       "c3": "AfriMentor/chioma-llama31-8b-dpo-v2b", "c4": "AfriMentor/chioma-llama31-8b-rlhf-v2b"},
     "gptoss_20b": {"base": "unsloth/gpt-oss-20b",  # loaded via Unsloth (plain HF expands experts to ~40GB on a T4)
                    "c2": ["AfriMentor/chioma-gptoss-20b-sft-v2"],
                    "c3": "AfriMentor/chioma-gptoss-20b-dpo-v2", "c4": "AfriMentor/chioma-gptoss-20b-rlhf-v2"},
@@ -118,7 +123,7 @@ def _run_c1_live(samples: list[dict], api_key: str) -> list[dict]:
 
 
 def _run_checkpoint_condition(condition_id, base_model_id, adapter_path,
-                              samples, max_new_tokens=512, temperature=0.0):
+                              samples, max_new_tokens=512, temperature=0.0, user_suffix=""):
     from evaluation.checkpoint_eval import HFCheckpointGenerator
     generator_cls = HFCheckpointGenerator
     if "gpt-oss" in base_model_id.lower():
@@ -131,7 +136,7 @@ def _run_checkpoint_condition(condition_id, base_model_id, adapter_path,
     )
     rows = []
     try:
-        _generate_rows(rows, condition_id, generator, samples)
+        _generate_rows(rows, condition_id, generator, samples, user_suffix)
     finally:
         del generator
         import gc
@@ -144,10 +149,11 @@ def _run_checkpoint_condition(condition_id, base_model_id, adapter_path,
     return rows
 
 
-def _generate_rows(rows, condition_id, generator, samples):
+def _generate_rows(rows, condition_id, generator, samples, user_suffix=""):
     for i, sample in enumerate(samples):
         system_prompt = render_system_prompt(sample["persona"])
-        response = generator(system_prompt, sample["user"])
+        # the suffix (C1S only) is part of what the model is asked, never of the recorded user_message
+        response = generator(system_prompt, sample["user"] + user_suffix)
         truncated = bool(getattr(generator, "last_truncated", False))
         if truncated:
             # No final answer (reasoning ate the token budget): never let the judge
@@ -160,7 +166,8 @@ def _generate_rows(rows, condition_id, generator, samples):
         result = evaluate_response(sample["user"], response, sample.get("reference"))
         rows.append({**result.to_dict(), "persona": sample["persona"],
                      "composite_score": result.composite_score,
-                     "user_message": sample["user"], "response": response, "generation_truncated": 0})
+                     "user_message": sample["user"], "response": response, "generation_truncated": 0,
+                     "response_words": len(response.split())})
         logger.info("  [%s] sample %d/%d persona=%-14s composite=%.3f",
                     condition_id, i + 1, len(samples), sample["persona"],
                     result.composite_score)
@@ -171,7 +178,9 @@ def run(sample_size: int = 5, output_path: str | Path = DEFAULT_OUTPUT,
         *, run_c1: bool = True, run_c2: bool = True,
         run_c3: bool = True, run_c4: bool = True,
         model_set: str = "qwen", splits_dir: str | Path = SPLITS_DIR,
-        c1_source: str | None = None, resume: bool = True) -> dict:
+        c1_source: str | None = None, resume: bool = True,
+        reuse_from: str | Path | None = None, reuse: tuple[str, ...] = (),
+        run_c1s: bool | None = None) -> dict:
     ms = MODEL_SETS[model_set]
     # C1 must be the SAME base model the adapters were trained from, or C1-vs-C2..C4 confounds
     # "alignment" with "different model". "api" (legacy Qwen run: a hosted model) vs "local"
@@ -208,19 +217,33 @@ def run(sample_size: int = 5, output_path: str | Path = DEFAULT_OUTPUT,
                     results["conditions"][cid] = cond
                     logger.info("Resuming: keeping previously measured %s", cid)
 
+    if reuse_from and reuse:
+        prev = json.loads(Path(reuse_from).read_text(encoding="utf-8"))
+        pm = prev.get("meta", {})
+        if not all(pm.get(k) == meta[k] for k in ("sample_size", "base_model", "splits_dir")):
+            raise RuntimeError("--reuse-from file was produced with a different base model / sample size / split; "
+                               "its conditions are not comparable")
+        for cid in reuse:
+            cond = prev.get("conditions", {}).get(cid)
+            if not cond or not str(cond.get("aggregate", {}).get("source", "")).startswith("live_"):
+                raise RuntimeError(f"cannot reuse {cid}: not a live measurement in {reuse_from}")
+            if cid not in results["conditions"]:
+                results["conditions"][cid] = {**cond, "reused_from": str(reuse_from)}
+                logger.info("Reusing %s from %s", cid, reuse_from)
+
     def save() -> None:
         output_path.parent.mkdir(parents=True, exist_ok=True)
         with open(output_path, "w", encoding="utf-8") as f:
             json.dump(results, f, indent=2, default=str)
 
-    def measure(cid: str, adapters: list[str | None], fallback: dict | None) -> None:
+    def measure(cid: str, adapters: list[str | None], fallback: dict | None, user_suffix: str = "") -> None:
         if cid in results["conditions"]:
             return
         rows = None
         for adapter in adapters:
             try:
                 logger.info("  [%s] trying adapter: %s", cid, adapter)
-                rows = _run_checkpoint_condition(cid, ms["base"], adapter, samples)
+                rows = _run_checkpoint_condition(cid, ms["base"], adapter, samples, user_suffix=user_suffix)
                 break
             except Exception as e:  # noqa: BLE001
                 logger.warning("  [%s] failed to run %s: %s", cid, adapter, e)
@@ -263,6 +286,13 @@ def run(sample_size: int = 5, output_path: str | Path = DEFAULT_OUTPUT,
             }
         save()
 
+    if run_c1s is None:
+        run_c1s = c1_source == "local" and run_c1
+    if run_c1s:
+        # Fair baseline: the untrained base model told the same format the teacher was told (see style_prompts).
+        from evaluation.style_prompts import CHOSEN_STYLE
+        measure("C1S", [None], None, user_suffix=CHOSEN_STYLE)
+
     if run_c2:
         measure("C2", list(ms["c2"]), C2_RECORDED)
     if run_c3:
@@ -281,6 +311,9 @@ if __name__ == "__main__":
     parser.add_argument("--model-set", choices=sorted(MODEL_SETS), default="qwen")
     parser.add_argument("--c1-source", choices=["api", "local"], default=None,
                         help="C1 via hosted API, or local base model + persona prompt (default: local for new model sets)")
+    parser.add_argument("--reuse-from", default=None, help="earlier results json to copy live conditions from")
+    parser.add_argument("--reuse", default="", help="comma-separated condition ids to reuse, e.g. C1,C2")
+    parser.add_argument("--skip-c1s", action="store_true", help="omit the format-matched base-model baseline")
     parser.add_argument("--no-resume", action="store_true",
                         help="ignore an existing output file instead of reusing already-measured conditions")
     parser.add_argument("--splits-dir", default=str(SPLITS_DIR),
@@ -298,6 +331,8 @@ if __name__ == "__main__":
         run_c3=not args.skip_c3, run_c4=not args.skip_c4,
         model_set=args.model_set, splits_dir=args.splits_dir, c1_source=args.c1_source,
         resume=not args.no_resume,
+        reuse_from=args.reuse_from, reuse=tuple(x for x in args.reuse.split(",") if x),
+        run_c1s=False if args.skip_c1s else None,
     )
 
     print("\n=== Comparative Evaluation Results ===")

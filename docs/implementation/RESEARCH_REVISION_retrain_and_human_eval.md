@@ -116,3 +116,22 @@ split by prompt (0 overlap), A/B balanced (train 97a/113b, val 18/12, test 33/27
 3. **`rejection_reason` labels are unreliable.** Spot checks show some "culturally_misaligned" / "factually_incorrect"
    rejections are reasonable advice; what actually separates the pair is voice and concreteness. Do not report per-reason results.
 4. Human raters should be told to judge advice substance and appropriateness, not template adherence.
+
+## Llama-3.1-8B first full run (v2a) — result and what it means (2026-10-11)
+
+Adapters: `AfriMentor/chioma-llama31-8b-{sft,dpo,rlhf}-v2` (kept on the Hub for the record). Scored on 60 held-out
+prompts, judge `openai/gpt-oss-120b`: C1 0.512, C2 0.441, C3 0.399, **C4 0.099**.
+
+- **C4 collapsed.** Responses degenerate into "friend friend friend ..." (13/60 repeat loops, 10/60 ran to the token
+  cap; none in C1-C3). Cause: DPO stacked on an already-saturated C3 (reward accuracy 1.0, margin 6.5, loss 0.013) for 2 more
+  epochs at lr 5e-5 collapsed onto the token 71% of chosen answers open with. This is a training failure, not evidence about RLHF.
+- **Length confound.** Mean words C1 243 / C2 112 / C3 67 (training data was length-capped at 70-140 words). The judge
+  rewards length (corr(words, composite) = +0.40 pooled; +0.41 within C1; mean composite 0.40 for <80 words -> 0.53 for >250).
+  At matched length C2/C3 are level with the base model (e.g. 0-80 words: 0.39 / 0.40 / 0.41). Raw composites are therefore
+  not a fair measure of alignment; report `evaluation/length_analysis.py` output alongside.
+- **No fair baseline.** C1 was never told the answer format the trained models learned. Added **C1S** (base model + the
+  teacher's format instruction, `evaluation/style_prompts.py`).
+- **Safeguards added**: generation-health check before any push (blocks collapsed adapters); `rpo_alpha` NLL anchor; v2b configs
+  (`configs/llama31_8b_v2b`: C3 lr 1e-5 x 2 ep, C4 lr 5e-6 x 1 ep, rpo_alpha 1.0). v2a results are retained in
+  `evaluation/results/comparative_llama31_8b_v2a.json` and must be reported as the first attempt in the paper.
+- Known remaining limitation: DPO prompts omit the persona system prompt (SFT and evaluation include it).

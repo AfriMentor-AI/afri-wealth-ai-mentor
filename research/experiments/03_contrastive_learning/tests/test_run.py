@@ -246,3 +246,17 @@ def _write_cfg(sample_size: int = 3) -> str:
     yaml.dump(cfg, f)
     f.close()
     return f.name
+
+
+def test_val_prompts_reads_persona_and_prompt(tmp_path):
+    """_val_prompts runs inside the post-training health check; a bug there fails *silently* into
+    'push anyway', so exercise it directly."""
+    import importlib.util
+    from pathlib import Path
+    spec = importlib.util.spec_from_file_location(
+        "c3run", Path(__file__).resolve().parents[1] / "run.py")
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    f = tmp_path / "val.jsonl"
+    f.write_text('{"prompt": "q1", "persona_slug": "trader"}\n{"prompt": "q2"}\n', encoding="utf-8")
+    assert mod._val_prompts(f) == [("trader", "q1"), ("chioma-base", "q2")]

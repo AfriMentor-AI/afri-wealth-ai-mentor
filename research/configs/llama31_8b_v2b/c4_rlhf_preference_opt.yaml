@@ -1,0 +1,114 @@
+# v2b: gentler DPO after the first attempt (v2a, configs/llama31_8b) collapsed — C4 degenerated into
+# 'friend friend friend ...' (13/60 repeat-loops, 10/60 ran to the token cap) and C3 shrank answers to ~67 words
+# at 100% reward accuracy / margin 6.5 (saturated). Changes: learning rate 5e-5 -> 1e-5 (C3) / 5e-6 (C4),
+# C4 1 epoch (was 2) on top of C3, rpo_alpha=1.0 (NLL anchor on the chosen answer), plus a generation-health
+# check that blocks pushing a collapsed adapter. C2 is unchanged and reused.
+# The v2a result stays on the Hub and in the paper's appendix: hyperparameters were revised after seeing a
+# degenerate model, not tuned to raise a score, and decisions used validation prompts only.
+experiment:
+  name: C4_rlhf_preference_optimization_llama31-8b_v2b
+  condition_id: C4
+  sprint: 5
+model:
+  base_model_id: meta-llama/Llama-3.1-8B-Instruct
+  prior_checkpoint: AfriMentor/chioma-llama31-8b-dpo-v2b
+  output_dir: research/experiments/04_rlhf_preference_opt/checkpoints_llama31-8b_v2b
+  hub_repo: AfriMentor/chioma-llama31-8b-rlhf-v2b
+reward_model:
+  dataset: research/datasets/splits_v2/rlhf_train.jsonl
+  eval_dataset: research/datasets/splits_v2/rlhf_val.jsonl
+  test_dataset: research/datasets/splits_v2/rlhf_test.jsonl
+  probe_output: research/experiments/04_rlhf_preference_opt/reward_model_llama31-8b_v2b/reward_probe.pkl
+  include_consistency: true
+  reward_weights:
+    persona_adherence: 0.2
+    cultural_fluency: 0.15
+    anti_dependency: 0.15
+    financial_accuracy: 0.15
+    urgency: 0.15
+    prompt_to_line: 0.08
+    line_to_line: 0.06
+    qa_consistency: 0.06
+  require_two_classes: true
+ablation:
+  enabled: true
+  conditions:
+    without_consistency:
+      name: reward_without_consistency
+      include_consistency: false
+      reward_weights:
+        persona_adherence: 0.25
+        cultural_fluency: 0.2
+        anti_dependency: 0.2
+        financial_accuracy: 0.2
+        urgency: 0.15
+    with_consistency:
+      name: reward_with_consistency
+      include_consistency: true
+      reward_weights:
+        persona_adherence: 0.2
+        cultural_fluency: 0.15
+        anti_dependency: 0.15
+        financial_accuracy: 0.15
+        urgency: 0.15
+        prompt_to_line: 0.08
+        line_to_line: 0.06
+        qa_consistency: 0.06
+dpo:
+  beta: 0.1
+  loss_type: sigmoid
+  max_length: 2560
+  max_prompt_length: 2304
+  converted_dataset: research/experiments/04_rlhf_preference_opt/checkpoints_llama31-8b_v2b/dpo_converted_train.jsonl
+  converted_eval_dataset: research/experiments/04_rlhf_preference_opt/checkpoints_llama31-8b_v2b/dpo_converted_val.jsonl
+  rpo_alpha: 1.0
+lora:
+  r: 16
+  lora_alpha: 32
+  lora_dropout: 0.05
+  target_modules:
+  - q_proj
+  - v_proj
+  - k_proj
+  - o_proj
+  bias: none
+  task_type: CAUSAL_LM
+quantization:
+  load_in_4bit: true
+  bnb_4bit_compute_dtype: float16
+  bnb_4bit_quant_type: nf4
+  bnb_4bit_use_double_quant: true
+training:
+  num_train_epochs: 1
+  per_device_train_batch_size: 1
+  gradient_accumulation_steps: 16
+  learning_rate: 5.0e-06
+  lr_scheduler_type: cosine
+  warmup_ratio: 0.05
+  fp16: true
+  bf16: false
+  logging_steps: 10
+  eval_steps: 50
+  save_steps: 100
+  save_total_limit: 3
+  seed: 42
+evaluation:
+  sample_size: 60
+  eval_split: sft_test.jsonl
+  max_new_tokens: 512
+  temperature: 0.0
+  metrics:
+  - persona_adherence
+  - cultural_fluency
+  - anti_dependency
+  - financial_accuracy
+  - urgency
+  - rouge_l
+  - bert_score_f1
+  compare_against: C3_persona_contrastive_learning
+  splits_dir: research/datasets/splits_v2
+mlflow:
+  experiment_name: C4_rlhf_preference_optimization_llama31-8b_v2b
+  run_name_prefix: c4
+  log_artifacts: true
+  log_model: false
