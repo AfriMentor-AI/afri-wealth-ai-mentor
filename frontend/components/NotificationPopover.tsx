@@ -12,39 +12,47 @@ import {
 function formatTimestamp(iso: string): string {
   try {
     const d = new Date(iso);
-    const now = new Date();
-    const diffHours = (now.getTime() - d.getTime()) / (1000 * 60 * 60);
-    if (diffHours < 1) {
-      const diffMins = Math.max(1, Math.round(diffHours * 60));
-      return `${diffMins}m ago`;
-    }
-    if (diffHours < 24) {
-      return `${Math.round(diffHours)}h ago`;
-    }
+    const diffHours = (Date.now() - d.getTime()) / 3600000;
+    if (diffHours < 1) return `${Math.max(1, Math.round(diffHours * 60))}m ago`;
+    if (diffHours < 24) return `${Math.round(diffHours)}h ago`;
     return d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
   } catch {
     return "";
   }
 }
 
-function getIconForKind(kind: string): string {
+function iconForKind(kind: string): string {
   switch (kind) {
-    case "streak_at_risk":
-      return "local_fire_department";
-    case "daily_action_reminder":
-      return "flag";
-    default:
-      return "notifications";
+    case "streak_at_risk": return "local_fire_department";
+    case "daily_action_reminder": return "flag";
+    default: return "notifications";
   }
 }
 
-export function NotificationPopover() {
-  const [isOpen, setIsOpen] = useState(false);
-  const [notifications, setNotifications] = useState<AppNotification[]>([]);
+/**
+ * Bell + popover. Same backend calls as before (fetchNotifications,
+ * markNotificationRead, markAllNotificationsRead); only the look changed.
+ * `buttonClassName` lets the rail, sidebar and mobile header each place it.
+ */
+export function NotificationPopover({
+  buttonClassName = "relative flex h-10 w-10 items-center justify-center rounded-full text-on-surface-variant transition-colors hover:bg-surface-container-high hover:text-on-surface",
+  ringClassName = "ring-surface-low",
+  placement = "right-bottom",
+  iconSize = 22,
+  outline = false,
+}: {
+  buttonClassName?: string;
+  ringClassName?: string;
+  /** where the panel opens relative to the bell */
+  placement?: "right-bottom" | "below-right" | "above-left";
+  iconSize?: number;
+  outline?: boolean;
+}) {
+  const [open, setOpen] = useState(false);
+  const [items, setItems] = useState<AppNotification[]>([]);
   const [loading, setLoading] = useState(false);
-  const containerRef = useRef<HTMLDivElement>(null);
-
-  const unreadCount = notifications.filter((n) => !n.readAt).length;
+  const ref = useRef<HTMLDivElement>(null);
+  const unread = items.filter((n) => !n.readAt).length;
 
   useEffect(() => {
     let mounted = true;
@@ -52,7 +60,7 @@ export function NotificationPopover() {
       setLoading(true);
       try {
         const list = await fetchNotifications();
-        if (mounted) setNotifications(list);
+        if (mounted) setItems(list);
       } catch (err) {
         console.warn("Error loading notifications:", err);
       } finally {
@@ -60,116 +68,74 @@ export function NotificationPopover() {
       }
     }
     load();
-
-    const interval = setInterval(load, 60000); // refresh every minute
-    return () => {
-      mounted = false;
-      clearInterval(interval);
-    };
+    const t = setInterval(load, 60000);
+    return () => { mounted = false; clearInterval(t); };
   }, []);
 
-  // Close when clicking outside
   useEffect(() => {
-    if (!isOpen) return;
-    function handleClickOutside(e: MouseEvent) {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
-        setIsOpen(false);
-      }
-    }
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [isOpen]);
+    if (!open) return;
+    const onDown = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false); };
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setOpen(false); };
+    document.addEventListener("mousedown", onDown);
+    document.addEventListener("keydown", onKey);
+    return () => { document.removeEventListener("mousedown", onDown); document.removeEventListener("keydown", onKey); };
+  }, [open]);
 
-  async function handleMarkRead(id: string) {
-    setNotifications((prev) =>
-      prev.map((n) => (n.id === id ? { ...n, readAt: new Date().toISOString() } : n))
-    );
+  async function readOne(id: string) {
+    setItems((p) => p.map((n) => (n.id === id ? { ...n, readAt: new Date().toISOString() } : n)));
     await markNotificationRead(id);
   }
-
-  async function handleMarkAllRead() {
-    setNotifications((prev) =>
-      prev.map((n) => ({ ...n, readAt: n.readAt || new Date().toISOString() }))
-    );
+  async function readAll() {
+    setItems((p) => p.map((n) => ({ ...n, readAt: n.readAt || new Date().toISOString() })));
     await markAllNotificationsRead();
   }
 
-  return (
-    <div className="relative" ref={containerRef}>
-      <button
-        onClick={() => setIsOpen((prev) => !prev)}
-        aria-label={`Notifications (${unreadCount} unread)`}
-        className="tap-target relative flex h-9 w-9 items-center justify-center rounded-full text-on-surface-variant transition-colors hover:bg-surface-container-low active:scale-95"
-      >
-        <Icon name="notifications" size={20} filled={isOpen} />
-        {unreadCount > 0 && (
-          <span className="absolute right-1 top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-error px-1 text-[10px] font-bold text-on-error">
-            {unreadCount > 9 ? "9+" : unreadCount}
-          </span>
-        )}
-      </button>
+  const pos =
+    placement === "right-bottom" ? "left-full bottom-0 ml-3"
+    : placement === "above-left" ? "left-0 bottom-full mb-2"
+    : "right-0 top-full mt-2";
 
-      {isOpen && (
-        <div className="absolute right-0 top-full z-50 mt-2 w-80 max-w-[calc(100vw-2rem)] rounded-xl border border-outline-variant bg-surface p-sm shadow-xl animate-in fade-in zoom-in-95">
-          <div className="mb-xs flex items-center justify-between border-b border-outline-variant/50 pb-xs px-xs">
-            <h4 className="font-title-sm text-title-sm text-on-surface">Notifications</h4>
-            {unreadCount > 0 && (
-              <button
-                onClick={handleMarkAllRead}
-                className="text-[11px] font-medium text-primary hover:underline"
-              >
-                Mark all read
-              </button>
+  return (
+    <div className="relative" ref={ref}>
+      <button type="button" onClick={() => setOpen((v) => !v)} aria-label={`Notifications (${unread} unread)`} aria-expanded={open} title="Notifications" className={buttonClassName}>
+        <Icon name={unread || open ? "notifications" : "notifications"} filled={open} size={iconSize} />
+        {unread > 0 && <span className={`absolute right-2 top-2 h-2 w-2 rounded-full bg-tertiary-container ring-2 ${ringClassName}`} />}
+        {outline && null}
+      </button>
+      {open && (
+        <div role="dialog" aria-label="Notifications" className={`absolute ${pos} z-[70] w-80 max-w-[calc(100vw-2rem)] animate-rise rounded-xl border border-outline-subtle bg-paper p-sm shadow-[0_16px_40px_rgba(20,17,13,0.14)]`}>
+          <div className="mb-xs flex items-center justify-between border-b border-outline-subtle px-xs pb-xs">
+            <h4 className="font-title-md text-[18px] text-on-surface">Notifications</h4>
+            {unread > 0 && (
+              <button type="button" onClick={readAll} className="font-caption text-caption font-semibold text-primary hover:underline">Mark all read</button>
             )}
           </div>
-
-          <div className="max-h-72 overflow-y-auto space-y-1">
-            {loading && notifications.length === 0 ? (
-              <div className="py-6 text-center text-body-sm text-on-surface-variant">
-                Loading notifications...
-              </div>
-            ) : notifications.length === 0 ? (
-              <div className="py-8 text-center text-body-sm text-on-surface-variant">
+          <div className="max-h-80 space-y-1 overflow-y-auto">
+            {loading && items.length === 0 ? (
+              <div className="py-6 text-center font-caption text-caption text-on-surface-variant">Loading notifications…</div>
+            ) : items.length === 0 ? (
+              <div className="py-8 text-center text-on-surface-variant">
                 <Icon name="notifications_off" size={28} className="mx-auto mb-2 opacity-40" />
-                <p>No notifications yet</p>
-                <p className="text-[11px] text-on-surface-variant/70">You are all caught up!</p>
+                <p className="font-label-sm text-label-sm">No notifications yet</p>
+                <p className="font-caption text-caption opacity-70">You are all caught up.</p>
               </div>
             ) : (
-              notifications.map((n) => {
+              items.map((n) => {
                 const isUnread = !n.readAt;
                 return (
-                  <div
-                    key={n.id}
-                    onClick={() => isUnread && handleMarkRead(n.id)}
-                    className={`flex items-start gap-sm rounded-lg p-2 transition-colors cursor-pointer ${
-                      isUnread
-                        ? "bg-primary-container/25 hover:bg-primary-container/35"
-                        : "hover:bg-surface-container-low"
-                    }`}
-                  >
-                    <div
-                      className={`mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full ${
-                        isUnread
-                          ? "bg-primary text-on-primary"
-                          : "bg-surface-variant text-on-surface-variant"
-                      }`}
-                    >
-                      <Icon name={getIconForKind(n.kind)} size={16} />
+                  <button key={n.id} type="button" onClick={() => isUnread && readOne(n.id)}
+                    className={`flex w-full items-start gap-sm rounded-lg p-2 text-left transition-colors ${isUnread ? "bg-gold-mist/70 hover:bg-gold-mist" : "hover:bg-surface-low"}`}>
+                    <div className={`mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${isUnread ? "bg-primary-container text-on-primary" : "bg-surface-default text-on-surface-variant"}`}>
+                      <Icon name={iconForKind(n.kind)} size={16} />
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between gap-1">
-                        <p className={`text-xs font-semibold truncate ${isUnread ? "text-on-surface" : "text-on-surface-variant"}`}>
-                          {n.title}
-                        </p>
-                        <span className="shrink-0 text-[10px] text-on-surface-variant/70">
-                          {formatTimestamp(n.createdAt)}
-                        </span>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center justify-between gap-2">
+                        <p className={`truncate font-label-sm text-label-sm ${isUnread ? "text-on-surface" : "text-on-surface-variant"}`}>{n.title}</p>
+                        <span className="shrink-0 font-caption text-[11px] text-outline-strong">{formatTimestamp(n.createdAt)}</span>
                       </div>
-                      <p className="text-[11px] leading-snug text-on-surface-variant line-clamp-2 mt-0.5">
-                        {n.body}
-                      </p>
+                      <p className="mt-0.5 line-clamp-2 font-caption text-caption text-on-surface-variant">{n.body}</p>
                     </div>
-                  </div>
+                  </button>
                 );
               })
             )}

@@ -1,12 +1,11 @@
 import type { Metadata, Viewport } from "next";
 import { AppStateProvider } from "@/lib/store";
-import { OfflineBanner } from "@/components/OfflineBanner";
-import { InstallBanner } from "@/components/InstallBanner";
+import { Banners } from "@/components/Banners";
 import "./globals.css";
 
 export const metadata: Metadata = {
   title: "AfriMentor AI",
-  description: "A financial mentorship companion for African entrepreneurs.",
+  description: "An AI financial mentor for African entrepreneurs. Dignified growth, one conversation at a time.",
   icons: {
     icon: [
       { url: "/icons/icon-192.png", sizes: "192x192", type: "image/png" },
@@ -21,7 +20,7 @@ export const viewport: Viewport = {
   initialScale: 1,
   viewportFit: "cover",
   maximumScale: 1,
-  themeColor: "#fcf9f3",
+  themeColor: "#FFFCF5",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -45,7 +44,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link
           rel="stylesheet"
-          href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;600;700;800&family=Inter:wght@400;600&display=swap"
+          href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400..700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
         />
         <link
           rel="stylesheet"
@@ -80,11 +79,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           }}
         />
       </head>
-      <body className="font-body h-full overflow-x-hidden" suppressHydrationWarning>
+      <body className="min-h-screen overflow-x-hidden bg-surface font-body-md text-on-surface antialiased" suppressHydrationWarning>
         <AppStateProvider>
-          <InstallBanner />
-          <OfflineBanner />
-          <div className="h-full">{children}</div>
+          <Banners />
+          {children}
         </AppStateProvider>
       </body>
     </html>

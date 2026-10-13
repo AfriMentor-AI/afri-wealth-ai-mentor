@@ -3,22 +3,14 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Icon } from "@/components/Icon";
+import { AppFrame, KenteStrip } from "@/components/shell/AppSidebar";
 import { fetchGoals, fetchMilestonesByGoal, fetchProgressSummary, recordAction } from "@/lib/api";
 import type { BadgeWithStatus, Goal, Milestone, StreakStat } from "@/lib/types";
-import { Skeleton } from "@/components/ui/Skeleton";
 import { useAppDispatch, useAppState } from "@/lib/store";
-import { NotificationPopover } from "@/components/NotificationPopover";
+import { mentorFor } from "@/lib/mentors";
 
-const WEEKDAY_BARS = [40, 60, 55, 85, 100, 95, 98]; // % height, matches reference chart shape
-const HEATMAP_INTENSITIES = [
-  "bg-surface-container",
-  "bg-primary-container/30",
-  "bg-primary-container/60",
-  "bg-primary-container",
-  "bg-primary",
-];
+const HEAT = ["bg-surface-container-high", "bg-primary/25", "bg-primary/50", "bg-primary/75", "bg-primary"];
 
-const MONTH_NAMES = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
 interface HeatmapCell {
   date: string;
@@ -113,54 +105,26 @@ const EXPANDED_BADGE_CATALOG: BadgeWithStatus[] = [
   },
 ];
 
-function BadgeTile({ badge, onClick }: { badge: BadgeWithStatus; onClick?: () => void }) {
-  const earned = badge.earnedAt !== null;
+
+function BadgeRow({ b }: { b: BadgeWithStatus }) {
+  const earned = b.earnedAt !== null;
   return (
-    <div
-      onClick={onClick}
-      role={onClick ? "button" : undefined}
-      tabIndex={onClick ? 0 : undefined}
-      className={`group flex flex-col items-center gap-sm rounded-xl p-md text-center transition-all ${
-        onClick ? "cursor-pointer" : ""
-      } ${
-        earned
-          ? "border border-outline-variant/30 bg-surface hover:border-primary/50 hover:shadow-md"
-          : "border border-dashed border-outline-variant bg-surface/50 opacity-60 grayscale hover:opacity-80"
-      }`}
-    >
-      <div
-        className={`mb-xs flex h-16 w-16 shrink-0 items-center justify-center rounded-full transition-transform group-hover:scale-105 ${
-          earned
-            ? "bg-primary-container/20 text-primary"
-            : "bg-surface-container text-on-surface-variant"
-        }`}
-      >
-        <Icon
-          name={earned ? badge.iconName ?? "workspace_premium" : "lock"}
-          filled={earned}
-          size={32}
-        />
+    <div className={`flex items-center gap-3 rounded-2xl p-3 ${earned ? "bg-surface-container-low" : "opacity-60"}`}>
+      <span className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-full ${earned ? "border-2 border-dashed border-sunburst-gold bg-gold-mist text-sunburst-gold" : "border border-dashed border-outline-variant text-on-surface-variant"}`}>
+        <Icon name={earned ? b.iconName ?? "workspace_premium" : "lock"} filled={earned} size={24} />
+      </span>
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center justify-between gap-2"><p className="truncate font-label-sm text-[14px] font-bold text-on-surface">{b.label}</p><span className={`font-eyebrow text-[9px] uppercase ${earned ? "text-primary" : "text-on-surface-variant"}`}>{earned ? "Earned" : "Locked"}</span></div>
+        <p className="line-clamp-1 font-caption text-caption text-on-surface-variant">{b.description}</p>
       </div>
-      <div className="flex flex-col gap-0.5">
-        <span className="font-label-sm font-bold text-on-surface transition-colors group-hover:text-primary">
-          {badge.label}
-        </span>
-        <span className="text-[11px] text-on-surface-variant line-clamp-2">
-          {badge.description}
-        </span>
-      </div>
-      {earned && (
-        <span className="mt-auto text-[9px] font-semibold text-primary uppercase tracking-wider">
-          Earned
-        </span>
-      )}
     </div>
   );
 }
 
-export default function ProgressBoardPage() {
+export default function ProgressPage() {
   const dispatch = useAppDispatch();
-  const { profile, activeGoalId } = useAppState();
+  const { profile, activeGoalId, selectedPersona } = useAppState();
+  const mentor = mentorFor(selectedPersona);
   const [streak, setStreak] = useState<StreakStat | null>(null);
   const [badges, setBadges] = useState<BadgeWithStatus[] | null>(null);
   const [heatmap, setHeatmap] = useState<HeatmapCell[][] | null>(null);
@@ -168,11 +132,21 @@ export default function ProgressBoardPage() {
   const [milestones, setMilestones] = useState<Milestone[] | null>(null);
   const [recordingAction, setRecordingAction] = useState(false);
   const [awardNotice, setAwardNotice] = useState<string | null>(null);
-  const [showBadgesModal, setShowBadgesModal] = useState(false);
+  const [showBadges, setShowBadges] = useState(false);
   const [badgeFilter, setBadgeFilter] = useState<"all" | "earned" | "locked">("all");
+  const [loadError, setLoadError] = useState(false);
 
   async function loadData() {
-    const summary = await fetchProgressSummary();
+    let summary;
+    try {
+      summary = await fetchProgressSummary();
+      setLoadError(false);
+    } catch {
+      setLoadError(true);
+      setStreak((s) => s ?? { userId: "", currentStreakDays: 0, longestStreakDays: 0, actionsCompletedTotal: 0, updatedAt: new Date().toISOString() });
+      setBadges((b) => b ?? EXPANDED_BADGE_CATALOG);
+      return;
+    }
     setStreak(summary.streak);
 
     // Merge backend badges with rich catalog — strictly user's actual earnedAt dates
@@ -269,8 +243,8 @@ export default function ProgressBoardPage() {
     return () => {
       window.removeEventListener("goal-created", handleGoalCreated);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeGoalId]);
-
   async function handleRecordAction() {
     setRecordingAction(true);
     setAwardNotice(null);
@@ -290,403 +264,139 @@ export default function ProgressBoardPage() {
     }
   }
 
-  const earnedCount = badges?.filter((b) => b.earnedAt !== null).length ?? null;
-  const lockedCount = badges ? badges.length - (earnedCount ?? 0) : null;
+
+  const earnedCount = badges?.filter((b) => b.earnedAt !== null).length ?? 0;
+  const first = profile?.name?.split(" ")[0] ?? "Entrepreneur";
+  const doneMs = milestones?.filter((m) => m.status === "done").length ?? 0;
+  const shownBadges = (badges ?? []).filter((b) => (badgeFilter === "earned" ? b.earnedAt !== null : badgeFilter === "locked" ? b.earnedAt === null : true));
+  const preview = [...(badges ?? [])].sort((a, b) => Number(b.earnedAt !== null) - Number(a.earnedAt !== null)).slice(0, 5);
+
+  const logBtn = (
+    <button type="button" onClick={handleRecordAction} disabled={recordingAction} className="flex h-12 items-center justify-center gap-2 rounded-full bg-primary px-6 font-label-sm text-[15px] font-bold text-on-primary shadow-md transition-all hover:opacity-90 active:scale-[0.98] disabled:opacity-50">
+      <Icon name="check_circle" size={20} /> {recordingAction ? "Recording..." : "Log today’s action"}
+    </button>
+  );
+
+  const stats = [
+    { label: "Current streak", value: streak ? `${streak.currentStreakDays}` : "—", unit: "days", icon: "local_fire_department", note: "Daily check-ins" },
+    { label: "Longest streak", value: streak ? `${streak.longestStreakDays}` : "—", unit: "days", icon: "military_tech", note: "Your personal best" },
+    { label: "Actions completed", value: streak ? `${streak.actionsCompletedTotal}` : "—", unit: "total", icon: "task_alt", note: "Across all your sessions" },
+    { label: "Badges earned", value: badges ? `${earnedCount}` : "—", unit: `of ${badges?.length ?? 0}`, icon: "workspace_premium", note: "Guild medallions" },
+  ];
 
   return (
-    <main
-      className="min-h-full w-full max-w-full overflow-x-hidden bg-surface pb-24 pt-md md:pb-lg md:pt-0"
-      style={{ backgroundImage: "radial-gradient(circle, rgba(126,87,0,0.035) 2px, transparent 2px)", backgroundSize: "60px 60px" }}
-    >
-      <header className="hidden h-16 items-center justify-between border-b border-outline-variant bg-surface px-lg lg:flex">
-        <h1 className="font-title-md text-title-md text-primary">Progress Board</h1>
-        <div className="flex items-center gap-md">
-          <label className="relative w-48 xl:w-64">
-            <span className="sr-only">Search analytics</span>
-            <Icon name="search" size={18} className="absolute left-sm top-1/2 -translate-y-1/2 text-on-surface-variant" />
-            <input placeholder="Search analytics..." className="h-9 w-full rounded-full border-0 bg-surface-container-low pl-9 pr-md text-xs focus:ring-2 focus:ring-primary" />
-          </label>
-          <NotificationPopover />
-          <button type="button" onClick={handleRecordAction} disabled={recordingAction} className="flex items-center gap-xs rounded-full bg-secondary px-md py-sm text-xs font-semibold text-on-secondary shadow transition-opacity hover:opacity-90 disabled:opacity-50">
-            <Icon name="check_circle" size={16} /> {recordingAction ? "Recording..." : "Log Today's Action"}
-          </button>
-          <button type="button" onClick={() => dispatch({ type: "OPEN_FEEDBACK_MODAL" })} className="flex items-center gap-xs rounded-full bg-surface-container-high px-md py-sm text-xs text-primary">
-            <Icon name="share" size={16} /> Share
-          </button>
-          <button type="button" onClick={() => window.print()} className="flex items-center gap-xs rounded-full border border-outline-variant px-md py-sm text-xs text-on-surface-variant">
-            <Icon name="ios_share" size={16} /> Export
-          </button>
-        </div>
-      </header>
+    <AppFrame title="Progress">
+      <KenteStrip />
+      <div className="mx-auto max-w-6xl px-5 pb-16 pt-6 md:px-10 md:pt-10">
+        <header className="flex flex-wrap items-end justify-between gap-4">
+          <div className="min-w-0">
+            <p className="font-eyebrow text-eyebrow uppercase text-on-surface-variant"><span className="text-sunburst-gold">●</span> Sovereign trajectory</p>
+            <h1 className="mt-2 font-headline-xl-mobile text-headline-xl-mobile text-on-surface md:font-headline-xl md:text-[52px] md:leading-[58px]">Your growth</h1>
+            <p className="mt-2 max-w-xl font-body-lg text-body-lg text-on-surface-variant">Consistent action builds lasting wealth, {first}.</p>
+          </div>
+          {logBtn}
+        </header>
 
-      <div className="mx-auto flex w-full max-w-6xl min-w-0 flex-col gap-lg px-margin-mobile py-md md:gap-lg md:p-lg xl:p-xl">
-        <section className="flex flex-col gap-sm md:flex-row md:items-end md:justify-between lg:hidden">
-          <div>
-            <h2 className="font-headline-lg-mobile text-headline-lg-mobile text-on-surface">Your Growth</h2>
-            <p className="font-body-md text-on-surface-variant">Consistent action builds lasting wealth, {profile?.name ?? "Entrepreneur"}.</p>
-          </div>
-          <button type="button" onClick={handleRecordAction} disabled={recordingAction} className="tap-target inline-flex items-center justify-center gap-xs rounded-full bg-secondary px-lg py-sm font-label-sm text-label-sm font-semibold text-on-secondary shadow disabled:opacity-50">
-            <Icon name="check_circle" size={18} /> {recordingAction ? "Recording..." : "Log Today's Action"}
-          </button>
-        </section>
+        {awardNotice && <div role="status" className="mt-6 rounded-2xl border border-sunburst-gold/60 bg-gold-mist px-5 py-3 font-label-sm text-label-sm text-on-surface">{awardNotice}</div>}
+        {loadError && <p role="alert" className="mt-6 rounded-xl bg-error-container px-4 py-3 font-label-sm text-label-sm text-on-error-container">Couldn’t load your progress. <button className="underline" onClick={() => loadData()}>Try again</button></p>}
 
-        {awardNotice && <div className="rounded-xl border border-secondary bg-secondary-container p-md text-sm font-medium text-on-secondary-container shadow-sm">{awardNotice}</div>}
-
-        <section className="grid gap-md md:grid-cols-2 lg:grid-cols-4">
-          <div className="flex flex-col gap-sm rounded-xl border border-primary/10 bg-primary-container/20 p-lg">
-            <span className="font-label-sm text-[11px] uppercase tracking-widest text-on-surface-variant">Longest Streak</span>
-            <span className="font-headline-xl text-headline-xl text-primary">{streak?.longestStreakDays ?? "—"} <span className="font-title-md text-title-md">days</span></span>
-            <span className="flex items-center gap-xs text-xs font-bold text-secondary"><Icon name="trending_up" size={16} /> Personal best</span>
-          </div>
-          <div className="flex flex-col gap-sm rounded-xl bg-secondary-container p-lg">
-            <span className="font-label-sm text-[11px] uppercase tracking-widest text-on-secondary-container">Active Streak</span>
-            <div className="flex items-baseline gap-sm"><span className="font-headline-xl text-headline-xl text-on-secondary-container">{streak?.currentStreakDays ?? "—"}</span><span className="font-title-md text-title-md text-on-secondary-container/80">Days</span></div>
-            <div className="h-2 overflow-hidden rounded-full bg-surface/30"><div className="h-full bg-secondary" style={{ width: `${Math.min(100, ((streak?.currentStreakDays ?? 0) / 30) * 100)}%` }} /></div>
-          </div>
-          <div className="flex flex-col gap-sm rounded-xl border border-outline-variant/30 bg-surface-container-high p-lg">
-            <span className="font-label-sm text-[11px] uppercase tracking-widest text-on-surface-variant">Badges Earned</span>
-            <span className="font-headline-xl text-headline-xl text-on-surface">{earnedCount ?? "—"}</span>
-            <span className="font-label-sm text-[11px] text-on-surface-variant">{lockedCount ?? "—"} available to unlock</span>
-          </div>
-          <div className="flex flex-col gap-sm rounded-xl border border-outline-variant/30 bg-surface-container-high p-lg">
-            <span className="font-label-sm text-[11px] uppercase tracking-widest text-on-surface-variant">Actions Completed</span>
-            <span className="font-headline-xl text-headline-xl text-on-surface">{streak?.actionsCompletedTotal ?? "—"}</span>
-            <span className="font-label-sm text-[11px] text-on-surface-variant">Keep building your rhythm</span>
-          </div>
-        </section>
-
-      {streak === null ? (
-        <Skeleton className="h-40 w-full rounded md:hidden" />
-      ) : (
-        <div className="rounded border border-outline-variant bg-surface-container-low p-md shadow-sm md:hidden">
-          <div className="mb-md flex items-end justify-between">
-            <div>
-              <p className="font-label-sm text-label-sm uppercase text-secondary">Current Streak</p>
-              <p className="font-headline-xl text-headline-xl text-primary">{streak.currentStreakDays} Days</p>
+        <div className="mt-8 grid grid-cols-2 gap-3 lg:grid-cols-4 lg:gap-4">
+          {stats.map((s) => (
+            <div key={s.label} className="rounded-3xl border border-outline-variant bg-surface-container-lowest p-5 shadow-sm">
+              <div className="flex items-start justify-between gap-2"><p className="font-eyebrow text-[10px] uppercase text-on-surface-variant">{s.label}</p><span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gold-mist text-sunburst-gold"><Icon name={s.icon} size={20} /></span></div>
+              <p className="mt-4 font-title-md text-[40px] leading-[44px] text-on-surface">{s.value} <span className="font-label-sm text-label-sm font-normal text-on-surface-variant">{s.unit}</span></p>
+              <p className="mt-1 font-caption text-caption text-on-surface-variant">{s.note}</p>
             </div>
-            <p className="font-label-sm text-label-sm text-on-surface-variant">Top Streak: {streak.longestStreakDays}</p>
-          </div>
-          <div className="flex h-24 items-end justify-between gap-xs px-xs">
-            {WEEKDAY_BARS.map((h, i) => (
-              <div
-                key={i}
-                className={`w-full rounded-t-sm ${h >= 85 ? "bg-secondary" : "bg-secondary-container"}`}
-                style={{ height: `${h}%` }}
-              />
-            ))}
-          </div>
-          <div className="mt-sm flex justify-between font-label-sm text-[10px] text-on-surface-variant">
-            {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((d) => (
-              <span key={d}>{d}</span>
-            ))}
-          </div>
+          ))}
         </div>
-      )}
 
-      <div className="grid min-w-0 gap-lg lg:grid-cols-12">
-      <section className="min-w-0 space-y-md lg:col-span-8">
-        <div className="flex items-center justify-between rounded-t-xl bg-surface-container-lowest px-md pt-md md:px-lg md:pt-lg">
-          <h3 className="font-title-md text-title-md text-on-surface">Activity Heatmap</h3>
-          <div className="flex items-center gap-sm text-[10px] text-on-surface-variant">
-            <span>Less</span>
-            <div className="flex gap-[2px]">
-              {HEATMAP_INTENSITIES.map((c, i) => (
-                <span key={i} className={`h-3 w-3 rounded-sm ${c}`} />
-              ))}
-            </div>
-            <span>More</span>
-          </div>
-        </div>
-        <div className="overflow-hidden rounded-b-xl border border-t-0 border-outline-variant/20 bg-surface-container-lowest p-md md:p-lg">
-          {heatmap === null ? (
-            <Skeleton className="h-28 w-full" />
-          ) : (
-            <div className="flex min-w-0 flex-col gap-1">
-              <p className="sr-only">
-                A 52-week heatmap of your daily actions over the year, from less active to more active.
-              </p>
-              {/* Days labels and heatmap grid */}
-              <div className="flex min-w-0">
-                <div className="flex w-8 shrink-0 flex-col justify-between py-1 font-bold uppercase text-[10px] text-on-surface-variant">
-                  <span>Mon</span>
-                  <span>Wed</span>
-                  <span>Fri</span>
+        <div className="mt-6 grid gap-6 lg:grid-cols-[1fr_380px]">
+          <div className="flex min-w-0 flex-col gap-6">
+            <section className="rounded-3xl border border-outline-variant bg-surface-container-lowest p-6 shadow-sm">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0"><h2 className="font-title-md text-[24px] leading-8 text-on-surface">Milestone trajectory</h2>{pathGoal && <p className="truncate font-caption text-caption text-on-surface-variant" title={pathGoal.title}>{pathGoal.title}</p>}</div>
+                {pathGoal && <Link href={`/goals/milestones/${pathGoal.id}`} className="flex shrink-0 items-center gap-1 font-label-sm text-label-sm text-primary hover:underline">Open roadmap <Icon name="arrow_forward" size={16} /></Link>}
+              </div>
+              {pathGoal && <div className="mt-4"><div className="flex justify-between font-caption text-caption text-on-surface-variant"><span>{milestones ? `${doneMs} of ${milestones.length} milestones done` : "Loading…"}</span><span className="text-primary">{pathGoal.progressPct}% achieved</span></div><div className="mt-1.5 h-2.5 rounded-full bg-outline-variant/60"><div className="h-2.5 rounded-full bg-sunburst-gold" style={{ width: `${pathGoal.progressPct}%` }} /></div></div>}
+              {milestones === null ? (
+                <div className="mt-5 h-24 animate-pulse rounded-2xl bg-surface-container-low" />
+              ) : milestones.length === 0 ? (
+                <div className="mt-5 rounded-2xl border border-dashed border-outline-variant p-6 text-center">
+                  <p className="font-label-sm text-[15px] font-bold text-on-surface">{pathGoal ? "No milestones added yet" : "No active goal roadmap"}</p>
+                  <p className="mt-1 font-body-md text-[14px] text-on-surface-variant">{pathGoal ? "Define milestones for this goal to visualize your pathway." : "Set a goal to visualize your milestones path."}</p>
+                  <Link href={pathGoal ? `/goals/milestones/${pathGoal.id}` : "/goals"} className="mt-3 inline-flex items-center gap-1 rounded-full bg-primary px-4 py-2 font-label-sm text-label-sm text-on-primary"><Icon name="add" size={16} /> {pathGoal ? "Add milestones" : "Create a goal"}</Link>
                 </div>
-                <div className="min-w-0 flex-1 overflow-x-auto pb-xs">
-                  <div className="grid min-w-max grid-flow-col grid-rows-7 gap-1">
-                    {heatmap.map((week, wi) =>
-                      week.map((cell, di) => (
-                        <div
-                          key={`${wi}-${di}`}
-                          title={`${cell.count} action${cell.count === 1 ? "" : "s"} on ${cell.date}`}
-                          className={`h-3 w-3 cursor-pointer rounded-sm transition-transform hover:z-10 hover:scale-125 ${HEATMAP_INTENSITIES[cell.intensity]}`}
-                        />
-                      ))
-                    )}
-                  </div>
-                  {/* 12 Months row inside scrollable area so it scrolls synchronously with the 52 weeks */}
-                  <div className="flex min-w-max justify-between pt-2 font-bold uppercase text-[10px] text-on-surface-variant">
-                    {MONTH_NAMES.map((m) => (
-                      <span key={m} className="w-16 text-center">{m}</span>
+              ) : (
+                <ol className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                  {milestones.map((m, i) => (
+                    <li key={m.id} className={`rounded-2xl p-4 ${m.status === "in_progress" ? "bg-gold-mist ring-1 ring-sunburst-gold/50" : m.status === "blocked" ? "bg-error-container/40" : "bg-surface-container-low"}`}>
+                      <div className="flex items-center gap-2"><Icon name={m.status === "done" ? "check_circle" : m.status === "blocked" ? "report" : m.status === "in_progress" ? "flag" : "radio_button_unchecked"} filled={m.status === "done"} size={20} className={m.status === "done" ? "text-primary" : m.status === "blocked" ? "text-error" : m.status === "in_progress" ? "text-sunburst-gold" : "text-on-surface-variant"} /><span className="font-eyebrow text-[10px] uppercase text-on-surface-variant">M{i + 1} · {m.status.replace("_", " ")}</span></div>
+                      <p className="mt-2 font-label-sm text-[15px] text-on-surface">{m.title}</p>
+                    </li>
+                  ))}
+                </ol>
+              )}
+            </section>
+
+            <section className="rounded-3xl border border-outline-variant bg-surface-container-lowest p-6 shadow-sm">
+              <div className="flex items-start justify-between gap-3">
+                <div><h2 className="font-title-md text-[24px] leading-8 text-on-surface">Activity heatmap</h2><p className="font-caption text-caption text-on-surface-variant">52 weeks of your daily actions</p></div>
+                <div className="flex items-center gap-1 font-caption text-[11px] text-on-surface-variant">Less {HEAT.map((c) => <span key={c} className={`h-3 w-3 rounded-sm ${c}`} />)} More</div>
+              </div>
+              {heatmap === null ? (
+                <div className="mt-5 h-32 animate-pulse rounded-2xl bg-surface-container-low" />
+              ) : (
+                <div className="mt-5 overflow-x-auto rounded-2xl bg-surface-container-low p-4">
+                  <div className="flex w-max gap-1" role="img" aria-label="Activity heatmap for the past 52 weeks">
+                    {heatmap.map((week, wi) => (
+                      <div key={wi} className="flex flex-col gap-1">
+                        {week.map((c) => <span key={c.date} title={`${c.date}: ${c.count} action${c.count === 1 ? "" : "s"}`} className={`h-3.5 w-3.5 rounded-sm ${HEAT[c.intensity]}`} />)}
+                      </div>
                     ))}
                   </div>
                 </div>
-              </div>
-            </div>
-          )}
-        </div>
-      </section>
-
-      <section className="flex min-w-0 flex-col justify-between rounded-xl border border-outline-variant/20 bg-surface-container-lowest p-md md:p-lg lg:col-span-4">
-        <div>
-          <div className="mb-lg flex items-center justify-between">
-            <div>
-              <h3 className="font-title-md text-title-md text-on-surface">Your Path</h3>
-              {pathGoal && (
-                <p className="line-clamp-1 text-xs text-on-surface-variant" title={pathGoal.title}>
-                  {pathGoal.title}
-                </p>
               )}
-            </div>
-            {pathGoal && (
-              <Link
-                href={`/goals/milestones/${pathGoal.id}`}
-                className="flex shrink-0 items-center gap-0.5 text-xs font-semibold text-primary hover:underline"
-              >
-                <span>View Road</span>
-                <Icon name="chevron_right" size={14} />
-              </Link>
-            )}
+            </section>
+
+            <section className="rounded-3xl border-l-4 border-sunburst-gold bg-surface-container-low p-6">
+              <p className="font-label-sm text-label-sm text-primary">{mentor.name} <span className="font-normal text-on-surface-variant">· {mentor.role}</span></p>
+              <p className="mt-2 font-quote text-[20px] italic leading-8 text-on-surface">“{streak && streak.currentStreakDays > 0 ? `${streak.currentStreakDays} unbroken day${streak.currentStreakDays === 1 ? "" : "s"} hold more weight than a one-time wind of chance.` : "The river fills droplet by droplet. Log one small action today and begin your streak."}”</p>
+            </section>
           </div>
 
-          {milestones === null ? (
-            <div className="space-y-sm">
-              <Skeleton className="h-12 w-full rounded" />
-              <Skeleton className="h-16 w-full rounded" />
-              <Skeleton className="h-12 w-full rounded" />
-            </div>
-          ) : milestones.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-lg text-center">
-              <div className="mb-sm flex h-10 w-10 items-center justify-center rounded-full bg-surface-container text-on-surface-variant">
-                <Icon name="flag" size={20} />
+          <aside className="flex min-w-0 flex-col gap-6">
+            <section className="rounded-3xl border border-outline-variant bg-surface-container-lowest p-6 shadow-sm">
+              <div className="flex items-start justify-between gap-3"><div><h2 className="font-title-md text-[24px] leading-8 text-on-surface">Achievement badges</h2><p className="font-caption text-caption text-on-surface-variant">Medallions earned through disciplined trials</p></div><span className="rounded-full bg-primary/10 px-3 py-1 font-eyebrow text-[10px] uppercase text-primary">{earnedCount} / {badges?.length ?? 0}</span></div>
+              <div className="mt-4 flex flex-col gap-2">{badges === null ? <div className="h-40 animate-pulse rounded-2xl bg-surface-container-low" /> : preview.map((b) => <BadgeRow key={b.id} b={b} />)}</div>
+              <button type="button" onClick={() => setShowBadges(true)} className="mt-4 w-full rounded-full border border-outline-variant py-2.5 font-label-sm text-label-sm text-on-surface hover:bg-surface-container-low">View all badges</button>
+            </section>
+
+            <section className="relative overflow-hidden rounded-3xl border border-outline-variant bg-surface-container-lowest p-6 shadow-sm">
+              <span className="kente-band absolute inset-x-0 top-0 h-1.5" />
+              <p className="mt-1 font-eyebrow text-[10px] uppercase text-on-surface-variant">Accountability protocol</p>
+              <h2 className="font-title-md text-[24px] leading-8 text-on-surface">Share weekly summary</h2>
+              <p className="mt-2 font-body-md text-[14px] leading-5 text-on-surface-variant">Print or save your progress for partners, co-founders or your own records.</p>
+              <div className="mt-4 grid grid-cols-2 gap-2">
+                <button type="button" onClick={() => window.print()} className="flex items-center justify-center gap-1.5 rounded-full bg-primary py-2.5 font-label-sm text-label-sm text-on-primary"><Icon name="download" size={16} /> Export</button>
+                <button type="button" onClick={() => dispatch({ type: "OPEN_FEEDBACK_MODAL" })} className="flex items-center justify-center gap-1.5 rounded-full bg-surface-container-low py-2.5 font-label-sm text-label-sm text-on-surface"><Icon name="rate_review" size={16} /> Give feedback</button>
               </div>
-              <p className="font-label-sm text-xs font-semibold text-on-surface">
-                {pathGoal ? "No milestones added yet" : "No active goal roadmap"}
-              </p>
-              <p className="mt-1 text-[11px] text-on-surface-variant">
-                {pathGoal
-                  ? "Define milestones for this goal to visualize your pathway."
-                  : "Set a goal to visualize your milestones path."}
-              </p>
-              <Link
-                href={pathGoal ? `/goals/milestones/${pathGoal.id}` : "/goals"}
-                className="mt-md inline-flex items-center gap-xs rounded-full bg-primary-container px-md py-xs text-xs font-semibold text-on-primary-container hover:opacity-90"
-              >
-                <Icon name="add" size={14} /> {pathGoal ? "Add Milestones" : "Create a Goal"}
-              </Link>
-            </div>
-          ) : (
-            <div className="space-y-0 px-sm">
-              {milestones.map((m, idx) => {
-                const isLast = idx === milestones.length - 1;
-                const isDone = m.status === "done";
-                const isInProgress = m.status === "in_progress";
-                const isBlocked = m.status === "blocked";
-
-                return (
-                  <div
-                    key={m.id}
-                    className={`flex ${isInProgress ? "min-h-24" : "min-h-16"} gap-md`}
-                  >
-                    <div className="flex flex-col items-center">
-                      {isDone ? (
-                        <span className="z-10 flex h-6 w-6 items-center justify-center rounded-full border-4 border-primary-fixed bg-primary text-on-primary">
-                          <Icon name="check" size={12} />
-                        </span>
-                      ) : isInProgress ? (
-                        <span className="z-10 h-6 w-6 animate-pulse rounded-full bg-primary ring-4 ring-primary-container/20" />
-                      ) : isBlocked ? (
-                        <span className="z-10 flex h-6 w-6 items-center justify-center rounded-full border-2 border-error bg-error-container text-on-error-container">
-                          <Icon name="priority_high" size={12} />
-                        </span>
-                      ) : (
-                        <span className="z-10 h-6 w-6 rounded-full border-2 border-outline-variant bg-surface" />
-                      )}
-                      {!isLast && (
-                        <span
-                          className={`h-full w-0.5 ${
-                            isDone
-                              ? "bg-primary"
-                              : "border-l-2 border-dashed border-outline-variant"
-                          }`}
-                        />
-                      )}
-                    </div>
-
-                    {isInProgress ? (
-                      <div className="-mt-1 flex-1 rounded-lg border border-primary/10 bg-primary-container/10 p-sm">
-                        <span className="font-label-sm font-bold text-primary">In Progress</span>
-                        <span className="block text-xs font-bold text-on-surface">{m.title}</span>
-                        {streak?.currentStreakDays ? (
-                          <span className="mt-1 block text-[11px] text-on-surface-variant">
-                            {streak.currentStreakDays} day streak
-                          </span>
-                        ) : null}
-                      </div>
-                    ) : (
-                      <div className={`-mt-1 flex flex-col ${m.status === "upcoming" ? "opacity-60" : ""}`}>
-                        <span
-                          className={`font-label-sm font-bold ${
-                            isDone
-                              ? "text-primary"
-                              : isBlocked
-                              ? "text-error"
-                              : "text-on-surface-variant"
-                          }`}
-                        >
-                          {isDone ? "Completed" : isBlocked ? "Blocked" : "Upcoming"}
-                        </span>
-                        <span className="text-xs text-on-surface">{m.title}</span>
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          )}
+            </section>
+          </aside>
         </div>
-      </section>
       </div>
 
-      {/* Achievement Badges Grid */}
-      <section className="rounded-2xl bg-surface-container-low p-md md:p-lg">
-        <div className="mb-lg flex items-end justify-between gap-md">
-          <div>
-            <h3 className="font-headline-lg text-headline-lg text-on-surface">Achievement Gallery</h3>
-            <p className="text-sm text-on-surface-variant">Celebrating your consistent dedication to growth.</p>
-          </div>
-          <button
-            type="button"
-            onClick={() => setShowBadgesModal(true)}
-            className="flex shrink-0 items-center gap-xs text-xs font-semibold text-primary hover:underline transition-all"
-          >
-            <span>View All Badges ({badges?.length ?? 12})</span>
-            <Icon name="arrow_forward" size={16} />
-          </button>
-        </div>
-
-        <div className="grid grid-cols-2 gap-md md:grid-cols-3 xl:grid-cols-6">
-          {badges === null
-            ? Array.from({ length: 6 }).map((_, i) => (
-                <Skeleton key={i} className="h-44 w-full rounded-xl" />
-              ))
-            : badges.slice(0, 6).map((b) => (
-                <BadgeTile
-                  key={b.id}
-                  badge={b}
-                  onClick={() => setShowBadgesModal(true)}
-                />
-              ))}
-        </div>
-      </section>
-
-      {/* View All Badges Modal */}
-      {showBadgesModal && (
-        <div
-          role="dialog"
-          aria-modal="true"
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-md backdrop-blur-sm animate-fade-in"
-          onClick={() => setShowBadgesModal(false)}
-        >
-          <div
-            className="relative flex max-h-[85vh] w-full max-w-4xl flex-col rounded-2xl border border-outline-variant bg-surface p-lg shadow-2xl"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Modal Header */}
-            <div className="flex items-start justify-between border-b border-outline-variant pb-md">
-              <div>
-                <h2 className="font-headline-lg text-headline-lg text-on-surface">Achievement Badges</h2>
-                <p className="mt-1 text-xs text-on-surface-variant">
-                  {earnedCount} of {badges?.length ?? 0} unlocked • Consistent actions unlock new African wealth milestones.
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={() => setShowBadgesModal(false)}
-                className="rounded-full p-1 text-on-surface-variant hover:bg-surface-variant hover:text-on-surface transition-colors"
-                aria-label="Close modal"
-              >
-                <Icon name="close" size={20} />
-              </button>
+      {showBadges && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-ink/50 backdrop-blur-sm sm:items-center sm:p-4" role="dialog" aria-modal="true" aria-label="All badges" onMouseDown={(e) => e.target === e.currentTarget && setShowBadges(false)}>
+          <div className="flex max-h-[88vh] w-full max-w-2xl flex-col rounded-t-3xl border border-outline-variant bg-surface-container-lowest shadow-2xl sm:rounded-3xl">
+            <div className="flex items-start justify-between gap-3 border-b border-outline-variant/50 p-6">
+              <div><h2 className="font-title-md text-[24px] leading-8 text-on-surface">All badges</h2><p className="font-caption text-caption text-on-surface-variant">{earnedCount} of {badges?.length ?? 0} unlocked. Consistent actions unlock new milestones.</p></div>
+              <button type="button" aria-label="Close" onClick={() => setShowBadges(false)} className="flex h-9 w-9 items-center justify-center rounded-full text-on-surface-variant hover:bg-surface-container-low"><Icon name="close" /></button>
             </div>
-
-            {/* Filter Tabs */}
-            <div className="flex gap-xs border-b border-outline-variant/40 py-sm">
-              {(["all", "earned", "locked"] as const).map((tab) => {
-                const count =
-                  tab === "all"
-                    ? badges?.length ?? 0
-                    : tab === "earned"
-                    ? earnedCount ?? 0
-                    : lockedCount ?? 0;
-                return (
-                  <button
-                    key={tab}
-                    type="button"
-                    onClick={() => setBadgeFilter(tab)}
-                    className={`rounded-full px-md py-xs text-xs font-semibold capitalize transition-all ${
-                      badgeFilter === tab
-                        ? "bg-primary text-on-primary shadow-sm"
-                        : "bg-surface-container text-on-surface-variant hover:bg-surface-container-high"
-                    }`}
-                  >
-                    {tab} ({count})
-                  </button>
-                );
-              })}
-            </div>
-
-            {/* Badges List */}
-            <div className="flex-grow overflow-y-auto py-md custom-scrollbar">
-              <div className="grid grid-cols-2 gap-md sm:grid-cols-3 md:grid-cols-4">
-                {(badges ?? [])
-                  .filter((b) => {
-                    if (badgeFilter === "earned") return b.earnedAt !== null;
-                    if (badgeFilter === "locked") return b.earnedAt === null;
-                    return true;
-                  })
-                  .map((badge) => (
-                    <BadgeTile key={badge.id} badge={badge} />
-                  ))}
-              </div>
-            </div>
-
-            {/* Modal Footer */}
-            <div className="flex justify-end border-t border-outline-variant pt-md">
-              <button
-                type="button"
-                onClick={() => setShowBadgesModal(false)}
-                className="rounded-full bg-surface-container-high px-lg py-xs text-xs font-semibold text-on-surface hover:bg-surface-variant transition-colors"
-              >
-                Done
-              </button>
-            </div>
+            <div className="flex gap-2 px-6 pt-4">{(["all", "earned", "locked"] as const).map((t) => <button key={t} type="button" onClick={() => setBadgeFilter(t)} className={`rounded-full px-4 py-1.5 font-label-sm text-label-sm capitalize ${badgeFilter === t ? "bg-primary text-on-primary" : "bg-surface-container-low text-on-surface"}`}>{t}</button>)}</div>
+            <div className="grid flex-1 gap-2 overflow-y-auto p-6 sm:grid-cols-2">{shownBadges.map((b) => <BadgeRow key={b.id} b={b} />)}</div>
           </div>
         </div>
       )}
-
-      <button
-        onClick={() => dispatch({ type: "OPEN_FEEDBACK_MODAL" })}
-        className="flex w-full items-center justify-center gap-sm rounded-full bg-primary py-md text-on-primary shadow-md transition-transform active:scale-95 hover:opacity-90 md:w-auto md:px-xl"
-      >
-        <Icon name="share" />
-        <span className="font-title-md text-title-md">Share weekly summary</span>
-      </button>
-
-      <p className="pb-lg text-center font-body-md text-[13px] italic text-on-surface-variant">
-        Inspired by the Sankofa bird: Looking back to move forward.
-      </p>
-      </div>
-    </main>
+    </AppFrame>
   );
 }
