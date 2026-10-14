@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Icon } from "@/components/Icon";
+import { img } from "@/lib/stitchImages";
 import type { InsightItem } from "@/lib/types";
 import { playTextToSpeech, stopCurrentSpeech } from "@/lib/voice";
 import { recordAction } from "@/lib/api";
@@ -15,6 +16,8 @@ interface InsightReaderModalProps {
   onToggleFavorite: () => void;
   onCompleted?: () => void;
 }
+
+const FALLBACK = img("i_zJ52U2bpbGyajLc4");
 
 function formatAudioTime(seconds: number): string {
   const m = Math.floor(seconds / 60);
@@ -592,7 +595,7 @@ export function InsightReaderModal({
       role="dialog"
       aria-modal="true"
       aria-labelledby="insight-title"
-      className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/60 p-sm backdrop-blur-sm md:p-md animate-fadeIn"
+      className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/60 p-2 backdrop-blur-sm md:p-4"
       onClick={(e) => {
         if (e.target === e.currentTarget) {
           stopCurrentSpeech();
@@ -602,9 +605,9 @@ export function InsightReaderModal({
     >
       <div className="relative flex max-h-[92vh] w-full max-w-2xl flex-col rounded-2xl border border-outline-variant/30 bg-surface text-on-surface shadow-2xl">
         {/* Modal Header */}
-        <div className="sticky top-0 z-10 flex items-center justify-between border-b border-outline-variant/20 bg-surface/95 px-md py-sm backdrop-blur-md md:px-lg md:py-md">
-          <div className="flex items-center gap-sm">
-            <span className="inline-flex items-center gap-xs rounded-full bg-primary/10 px-sm py-1 font-label-sm text-xs font-bold uppercase tracking-wider text-primary">
+        <div className="sticky top-0 z-10 flex items-center justify-between border-b border-outline-variant/20 bg-surface/95 px-4 py-2 backdrop-blur-md md:px-6 md:py-4">
+          <div className="flex items-center gap-2">
+            <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-1 font-label-sm text-xs font-bold uppercase tracking-wider text-primary">
               <Icon name={item.isAudio ? "headphones" : "auto_stories"} size={16} />
               {item.category}
             </span>
@@ -614,11 +617,11 @@ export function InsightReaderModal({
             </span>
           </div>
 
-          <div className="flex items-center gap-xs">
+          <div className="flex items-center gap-1">
             <button
               onClick={onToggleFavorite}
               aria-label={isFavorite ? "Remove from bookmarks" : "Bookmark this lesson"}
-              className="tap-target flex h-9 w-9 items-center justify-center rounded-full text-primary transition-colors hover:bg-surface-container"
+              className="flex h-9 w-9 items-center justify-center rounded-full text-primary transition-colors hover:bg-surface-container"
             >
               <Icon name="favorite" filled={isFavorite} size={20} />
             </button>
@@ -628,7 +631,7 @@ export function InsightReaderModal({
                 onClose();
               }}
               aria-label="Close reader"
-              className="tap-target flex h-9 w-9 items-center justify-center rounded-full text-on-surface-variant transition-colors hover:bg-surface-container hover:text-on-surface"
+              className="flex h-9 w-9 items-center justify-center rounded-full text-on-surface-variant transition-colors hover:bg-surface-container hover:text-on-surface"
             >
               <Icon name="close" size={20} />
             </button>
@@ -636,16 +639,17 @@ export function InsightReaderModal({
         </div>
 
         {/* Scrollable Content Body */}
-        <div className="flex-1 space-y-md overflow-y-auto px-md py-md md:space-y-lg md:px-lg md:py-lg">
+        <div className="flex-1 space-y-4 overflow-y-auto px-4 py-4 md:space-y-6 md:px-6 md:py-6">
           {/* Lesson Hero Banner Image */}
           <div className="relative h-44 w-full overflow-hidden rounded-xl border border-outline-variant/20 bg-surface-container-high shadow-sm sm:h-52">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src={item.thumbnailUrl || "/images/market-woman.jpeg"}
+              src={item.thumbnailUrl || FALLBACK}
               alt={item.title}
               loading="eager"
               decoding="async"
               onError={(e) => {
-                (e.currentTarget as HTMLImageElement).src = "/images/market-woman.jpeg";
+                (e.currentTarget as HTMLImageElement).src = FALLBACK;
               }}
               className="h-full w-full object-cover"
             />
@@ -668,18 +672,18 @@ export function InsightReaderModal({
 
           {/* Title & Headline */}
           <div>
-            <h1 id="insight-title" className="font-headline-sm text-2xl font-bold leading-tight text-on-surface md:text-3xl">
+            <h1 id="insight-title" className="font-title-md text-2xl font-medium leading-tight text-on-surface md:text-3xl">
               {item.title}
             </h1>
-            <p className="mt-xs font-title-sm text-sm font-semibold text-primary">
+            <p className="mt-1 font-label-sm text-sm font-semibold text-primary">
               {lesson.headline}
             </p>
           </div>
 
           {/* Interactive Audio Player Bar */}
-          <div className="rounded-xl border border-primary/20 bg-primary-container/30 p-md transition-all duration-300">
-            <div className="flex flex-col gap-sm sm:flex-row sm:items-center sm:justify-between">
-              <div className="flex items-center gap-md">
+          <div className="rounded-xl border border-primary/20 bg-primary-container/30 p-4 transition-all duration-300">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex items-center gap-4">
                 <button
                   onClick={handleToggleAudio}
                   aria-label={isPlaying ? "Pause voice narration" : "Play voice narration"}
@@ -688,23 +692,23 @@ export function InsightReaderModal({
                   <Icon name={isPlaying ? "pause" : "play_arrow"} filled size={28} />
                 </button>
                 <div>
-                  <p className="font-label-md text-sm font-bold text-on-surface">
+                  <p className="font-label-sm text-sm font-bold text-on-surface">
                     {isPlaying ? "Narration Playing" : "Listen to Lesson"}
                   </p>
-                  <p className="font-body-sm text-xs text-on-surface-variant">
+                  <p className="font-label-sm text-xs text-on-surface-variant">
                     Voice of Mentor {personaDisplay} • {formatAudioTime(audioDurationSeconds)} audio
                   </p>
                 </div>
               </div>
 
-              <div className="flex items-center gap-xs text-xs font-medium text-primary">
+              <div className="flex items-center gap-1 text-xs font-medium text-primary">
                 <Icon name="volume_up" size={16} />
                 <span>{item.isAudio ? "Audio Masterclass" : "Audio Guide Available"}</span>
               </div>
             </div>
 
             {/* Audio Progress Scrubber */}
-            <div className="mt-sm">
+            <div className="mt-2">
               <div className="h-1.5 w-full overflow-hidden rounded-full bg-outline-variant/30">
                 <div
                   className="h-full bg-primary transition-all duration-300 ease-out"
@@ -728,15 +732,15 @@ export function InsightReaderModal({
 
           {/* Completion Celebration Banner */}
           {completionBanner && (
-            <div className="flex items-start gap-md rounded-xl border border-secondary/30 bg-secondary-container/50 p-md animate-fadeIn">
+            <div className="flex items-start gap-4 rounded-xl border border-secondary/30 bg-secondary-container/50 p-4">
               <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-secondary text-on-secondary">
                 <Icon name="emoji_events" filled size={22} />
               </div>
               <div>
-                <p className="font-title-sm text-sm font-bold text-on-secondary-container">
+                <p className="font-label-sm text-sm font-bold text-on-secondary-container">
                   Lesson Completed! Action Recorded!
                 </p>
-                <div className="font-body-sm text-xs text-on-secondary-container/90">
+                <div className="font-label-sm text-xs text-on-secondary-container/90">
                   Your daily streak is now at <strong>{completionBanner.streakDays} days</strong>.
                   {completionBanner.badgeUnlocked && (
                     <span className="block mt-1 font-bold text-primary">
@@ -749,8 +753,8 @@ export function InsightReaderModal({
           )}
 
           {/* Overview */}
-          <div className="space-y-xs">
-            <h2 className="font-title-sm text-sm font-bold uppercase tracking-wider text-on-surface-variant">
+          <div className="space-y-1">
+            <h2 className="font-label-sm text-sm font-bold uppercase tracking-wider text-on-surface-variant">
               Executive Overview
             </h2>
             <p className="font-body-md text-base leading-relaxed text-on-surface">
@@ -759,20 +763,20 @@ export function InsightReaderModal({
           </div>
 
           {/* Practical Framework Steps */}
-          <div className="space-y-sm">
-            <h2 className="font-title-sm text-sm font-bold uppercase tracking-wider text-on-surface-variant">
+          <div className="space-y-2">
+            <h2 className="font-label-sm text-sm font-bold uppercase tracking-wider text-on-surface-variant">
               Practical Action Steps
             </h2>
-            <div className="space-y-sm">
+            <div className="space-y-2">
               {lesson.practicalSteps.map((step, idx) => (
                 <div
                   key={idx}
-                  className="rounded-lg border border-outline-variant/20 bg-surface-container-low p-md"
+                  className="rounded-lg border border-outline-variant/20 bg-surface-container-low p-4"
                 >
-                  <p className="font-title-sm text-sm font-bold text-on-surface">
+                  <p className="font-label-sm text-sm font-bold text-on-surface">
                     {step.title}
                   </p>
-                  <p className="mt-xs font-body-sm text-sm leading-relaxed text-on-surface-variant">
+                  <p className="mt-1 font-label-sm text-sm leading-relaxed text-on-surface-variant">
                     {step.detail}
                   </p>
                 </div>
@@ -782,48 +786,48 @@ export function InsightReaderModal({
 
           {/* Formula or Example Box (if applicable) */}
           {lesson.formulaOrTool && (
-            <div className="rounded-xl border border-tertiary/30 bg-surface-container p-md">
-              <div className="flex items-center gap-xs font-label-md text-xs font-bold uppercase tracking-wider text-tertiary">
+            <div className="rounded-xl border border-tertiary/30 bg-surface-container p-4">
+              <div className="flex items-center gap-1 font-label-sm text-xs font-bold uppercase tracking-wider text-tertiary">
                 <Icon name="calculate" size={16} />
                 {lesson.formulaOrTool.label}
               </div>
-              <div className="mt-xs rounded bg-surface p-sm font-mono text-xs font-semibold text-on-surface">
+              <div className="mt-1 rounded bg-surface p-2 font-mono text-xs font-semibold text-on-surface">
                 {lesson.formulaOrTool.formula}
               </div>
-              <p className="mt-xs font-body-sm text-xs text-on-surface-variant">
+              <p className="mt-1 font-label-sm text-xs text-on-surface-variant">
                 {lesson.formulaOrTool.example}
               </p>
             </div>
           )}
 
           {/* Mentor Golden Rule Quote */}
-          <div className="relative rounded-xl border-l-4 border-primary bg-primary/5 p-md">
-            <div className="flex items-center gap-xs font-label-sm text-xs font-bold uppercase text-primary">
+          <div className="relative rounded-xl border-l-4 border-primary bg-primary/5 p-4">
+            <div className="flex items-center gap-1 font-label-sm text-xs font-bold uppercase text-primary">
               <Icon name="psychology" size={16} />
               Mentor {selectedPersona?.name ?? "Chioma"}&apos;s Golden Rule
             </div>
-            <p className="mt-xs font-body-md text-sm italic leading-relaxed text-on-surface">
+            <p className="mt-1 font-body-md text-sm italic leading-relaxed text-on-surface">
               &ldquo;{lesson.mentorTip}&rdquo;
             </p>
           </div>
 
           {/* Key Takeaway */}
-          <div className="rounded-xl bg-surface-container-high p-md">
-            <div className="flex items-center gap-xs font-label-sm text-xs font-bold uppercase text-on-surface">
+          <div className="rounded-xl bg-surface-container-high p-4">
+            <div className="flex items-center gap-1 font-label-sm text-xs font-bold uppercase text-on-surface">
               <Icon name="lightbulb" size={16} className="text-secondary" />
               Key Takeaway
             </div>
-            <p className="mt-xs font-body-md text-sm font-medium text-on-surface-variant">
+            <p className="mt-1 font-body-md text-sm font-medium text-on-surface-variant">
               {lesson.keyTakeaway}
             </p>
           </div>
         </div>
 
         {/* Modal Bottom Actions */}
-        <div className="sticky bottom-0 z-10 flex flex-wrap items-center justify-between gap-sm border-t border-outline-variant/20 bg-surface/95 px-md py-sm backdrop-blur-md md:px-lg md:py-md">
+        <div className="sticky bottom-0 z-10 flex flex-wrap items-center justify-between gap-2 border-t border-outline-variant/20 bg-surface/95 px-4 py-2 backdrop-blur-md md:px-6 md:py-4">
           <button
             onClick={handleAskMentor}
-            className="flex items-center gap-xs rounded-lg border border-outline-variant/40 px-md py-2 font-label-md text-xs font-semibold text-on-surface transition-colors hover:bg-surface-container"
+            className="flex items-center gap-1 rounded-lg border border-outline-variant/40 px-4 py-2 font-label-sm text-xs font-semibold text-on-surface transition-colors hover:bg-surface-container"
           >
             <Icon name="chat" size={16} />
             Ask in Chat
@@ -832,7 +836,7 @@ export function InsightReaderModal({
           <button
             onClick={handleMarkComplete}
             disabled={completed || isCompleting}
-            className={`flex items-center gap-xs rounded-lg px-lg py-2 font-label-md text-xs font-bold transition-all shadow-sm ${
+            className={`flex items-center gap-1 rounded-lg px-6 py-2 font-label-sm text-xs font-bold transition-all shadow-sm ${
               completed
                 ? "bg-secondary text-on-secondary"
                 : "bg-primary text-on-primary hover:bg-primary/90 active:scale-95"

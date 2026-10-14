@@ -102,19 +102,19 @@ function UploadModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-inverse-surface/40 p-md backdrop-blur-sm">
-      <div className="w-full max-w-lg rounded-2xl border border-outline-variant bg-surface p-lg shadow-2xl sm:p-xl max-h-[90vh] overflow-y-auto">
-        <h2 className="font-headline-lg text-headline-lg-mobile mb-md text-primary">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-inverse-surface/40 p-4 backdrop-blur-sm">
+      <div className="w-full max-w-lg rounded-2xl border border-outline-variant bg-surface p-6 shadow-2xl sm:p-12 max-h-[90vh] overflow-y-auto">
+        <h2 className="font-headline-lg text-headline-lg-mobile mb-4 text-primary">
           Upload Document to Corpus
         </h2>
 
         {errorMsg && (
-          <div className="mb-md rounded-lg bg-error/10 p-sm text-xs font-semibold text-error">
+          <div className="mb-4 rounded-lg bg-error/10 p-2 text-xs font-semibold text-error">
             {errorMsg}
           </div>
         )}
 
-        <label className="flex cursor-pointer flex-col items-center justify-center gap-md rounded-2xl border-2 border-dashed border-outline-variant p-lg transition-colors hover:border-primary sm:p-xl">
+        <label className="flex cursor-pointer flex-col items-center justify-center gap-4 rounded-2xl border-2 border-dashed border-outline-variant p-6 transition-colors hover:border-primary sm:p-12">
           <input
             type="file"
             accept=".pdf,.docx,.txt,.md"
@@ -136,7 +136,7 @@ function UploadModal({
           </p>
         </label>
 
-        <div className="mt-md space-y-sm">
+        <div className="mt-4 space-y-2">
           <div>
             <label className="block text-xs font-bold uppercase text-on-surface-variant mb-1">
               Document Title
@@ -146,11 +146,11 @@ function UploadModal({
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="e.g. Sustainable Cassava Farming Guide"
-              className="w-full rounded-lg border border-outline-variant bg-surface-container-low px-md py-sm text-sm outline-none focus:border-primary"
+              className="w-full rounded-lg border border-outline-variant bg-surface-container-low px-4 py-2 text-sm outline-none focus:border-primary"
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-sm">
+          <div className="grid grid-cols-2 gap-2">
             <div>
               <label className="block text-xs font-bold uppercase text-on-surface-variant mb-1">
                 Author
@@ -160,7 +160,7 @@ function UploadModal({
                 value={author}
                 onChange={(e) => setAuthor(e.target.value)}
                 placeholder="e.g. Dr. Amma Boateng"
-                className="w-full rounded-lg border border-outline-variant bg-surface-container-low px-md py-sm text-sm outline-none focus:border-primary"
+                className="w-full rounded-lg border border-outline-variant bg-surface-container-low px-4 py-2 text-sm outline-none focus:border-primary"
               />
             </div>
             <div>
@@ -172,7 +172,7 @@ function UploadModal({
                 value={market}
                 onChange={(e) => setMarket(e.target.value)}
                 placeholder="e.g. Ghana"
-                className="w-full rounded-lg border border-outline-variant bg-surface-container-low px-md py-sm text-sm outline-none focus:border-primary"
+                className="w-full rounded-lg border border-outline-variant bg-surface-container-low px-4 py-2 text-sm outline-none focus:border-primary"
               />
             </div>
           </div>
@@ -184,7 +184,7 @@ function UploadModal({
             <select
               value={sector}
               onChange={(e) => setSector(e.target.value)}
-              className="w-full rounded-lg border border-outline-variant bg-surface-container-low px-md py-sm text-sm outline-none focus:border-primary"
+              className="w-full rounded-lg border border-outline-variant bg-surface-container-low px-4 py-2 text-sm outline-none focus:border-primary"
             >
               <option value="Agriculture">Agriculture</option>
               <option value="Finance">Finance</option>
@@ -195,18 +195,18 @@ function UploadModal({
           </div>
         </div>
 
-        <div className="mt-lg flex flex-col-reverse gap-sm sm:mt-xl sm:flex-row sm:justify-end sm:gap-md">
+        <div className="mt-6 flex flex-col-reverse gap-2 sm:mt-12 sm:flex-row sm:justify-end sm:gap-4">
           <button
             onClick={onClose}
             disabled={isUploading}
-            className="rounded-full px-lg py-md text-center font-bold text-on-surface-variant transition-all hover:bg-surface-variant disabled:opacity-50"
+            className="rounded-full px-6 py-4 text-center font-bold text-on-surface-variant transition-all hover:bg-surface-variant disabled:opacity-50"
           >
             Cancel
           </button>
           <button
             onClick={handleConfirmUpload}
             disabled={isUploading}
-            className="flex items-center justify-center gap-sm rounded-full bg-primary px-lg py-md font-bold text-on-primary shadow-sm transition-all hover:opacity-90 disabled:opacity-50"
+            className="flex items-center justify-center gap-2 rounded-full bg-primary px-6 py-4 font-bold text-on-primary shadow-sm transition-all hover:opacity-90 disabled:opacity-50"
           >
             {isUploading ? (
               <>
@@ -390,9 +390,9 @@ export default function RagCorpusPage() {
         ];
 
   return (
-    <main className="flex h-full min-w-0 flex-1 flex-col overflow-hidden bg-background">
-      <header className="flex shrink-0 flex-col gap-md border-b bg-surface px-md py-md md:px-lg md:py-lg">
-        <div className="flex flex-col pl-10 md:pl-0">
+    <main className="flex min-w-0 flex-col bg-surface">
+      <header className="flex shrink-0 flex-col gap-4 border-b bg-surface px-4 py-4 md:px-6 md:py-6">
+        <div className="flex flex-col">
           <h2 className="font-headline-lg text-headline-lg-mobile text-primary">
             RAG Corpus Admin
           </h2>
@@ -400,24 +400,24 @@ export default function RagCorpusPage() {
             Environment: production-af-west-1 &bull; {documents.length} Indexed Sources
           </p>
         </div>
-        <div className="flex flex-col gap-sm sm:flex-row sm:items-center sm:justify-between sm:gap-md">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
           <div className="group relative flex-1 sm:max-w-xs md:max-w-sm lg:max-w-md">
             <input
               type="text"
               placeholder="Search corpus..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full rounded-full border border-outline-variant bg-surface-container-low px-xl py-sm text-sm outline-none transition-all focus:border-transparent focus:ring-2 focus:ring-primary"
+              className="w-full rounded-full border border-outline-variant bg-surface-container-low px-12 py-2 text-sm outline-none transition-all focus:border-transparent focus:ring-2 focus:ring-primary"
             />
             <Icon
               name="search"
               size={20}
-              className="absolute left-md top-1/2 -translate-y-1/2 text-on-surface-variant"
+              className="absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant"
             />
           </div>
           <button
             onClick={() => setShowModal(true)}
-            className="flex shrink-0 items-center justify-center gap-sm rounded-full bg-primary px-md py-sm font-semibold text-on-primary shadow-sm transition-all hover:opacity-90 active:scale-95 sm:px-lg sm:py-md"
+            className="flex shrink-0 items-center justify-center gap-2 rounded-full bg-primary px-4 py-2 font-semibold text-on-primary shadow-sm transition-all hover:opacity-90 active:scale-95 sm:px-6 sm:py-4"
           >
             <Icon name="upload_file" size={20} />
             <span className="hidden sm:inline">Upload New Document</span>
@@ -427,26 +427,26 @@ export default function RagCorpusPage() {
       </header>
 
       {notice && (
-        <div className="mx-md mt-md flex items-center gap-sm rounded-xl border border-secondary/30 bg-secondary/10 p-md text-sm font-medium text-secondary sm:mx-lg lg:mx-xl">
+        <div className="mx-4 mt-4 flex items-center gap-2 rounded-xl border border-secondary/30 bg-secondary/10 p-4 text-sm font-medium text-secondary sm:mx-6 lg:mx-12">
           <Icon name="check_circle" size={20} />
           <span>{notice}</span>
         </div>
       )}
 
-      <div className="flex-1 overflow-y-auto p-md sm:p-lg lg:p-xl [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-outline-variant [&::-webkit-scrollbar-track]:bg-transparent">
-        <div className="grid grid-cols-1 gap-lg lg:grid-cols-12">
+      <div className="flex-1 p-4 sm:p-6 lg:p-12 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-outline-variant [&::-webkit-scrollbar-track]:bg-transparent">
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
 
-          <section className="space-y-lg lg:col-span-8">
-            <div className="flex flex-col gap-sm sm:flex-row sm:items-center sm:justify-between">
-              <h3 className="flex items-center gap-sm font-title-md text-title-md text-on-surface">
+          <section className="space-y-6 lg:col-span-8">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <h3 className="flex items-center gap-2 font-title-md text-title-md text-on-surface">
                 <Icon name="description" size={20} className="text-primary" />
                 Document Index ({filteredDocs.length})
               </h3>
-              <div className="flex flex-wrap items-center gap-xs">
+              <div className="flex flex-wrap items-center gap-1">
                 {selectedSector && (
                   <button
                     onClick={() => setSelectedSector(null)}
-                    className="flex items-center gap-1 rounded-lg bg-surface-variant px-sm py-xs text-xs font-bold text-on-surface-variant"
+                    className="flex items-center gap-1 rounded-lg bg-surface-variant px-2 py-1 text-xs font-bold text-on-surface-variant"
                   >
                     <span>Sector: {selectedSector}</span>
                     <Icon name="close" size={14} />
@@ -456,7 +456,7 @@ export default function RagCorpusPage() {
                   <select
                     value={selectedSector || ""}
                     onChange={(e) => setSelectedSector(e.target.value || null)}
-                    className="rounded-lg border border-outline-variant bg-surface px-md py-xs text-xs font-medium text-on-surface outline-none transition-colors hover:bg-surface-variant"
+                    className="rounded-lg border border-outline-variant bg-surface px-4 py-1 text-xs font-medium text-on-surface outline-none transition-colors hover:bg-surface-variant"
                   >
                     <option value="">All Sectors</option>
                     <option value="Agriculture">Agriculture</option>
@@ -468,7 +468,7 @@ export default function RagCorpusPage() {
                 <button
                   onClick={handleExportCsv}
                   disabled={isExporting}
-                  className="rounded-lg border border-outline-variant px-md py-xs text-xs font-medium transition-colors hover:bg-surface-variant disabled:opacity-50"
+                  className="rounded-lg border border-outline-variant px-4 py-1 text-xs font-medium transition-colors hover:bg-surface-variant disabled:opacity-50"
                 >
                   {isExporting ? "Exporting..." : "Export CSV"}
                 </button>
@@ -476,18 +476,18 @@ export default function RagCorpusPage() {
             </div>
 
             {/* Document table — desktop/tablet */}
-            <div className="hidden overflow-hidden rounded-2xl border border-outline-variant bg-surface-container-lowest shadow-sm md:block">
+            <div className="hidden overflow-x-auto rounded-2xl border border-outline-variant bg-surface-container-lowest shadow-sm md:block">
               <div className="overflow-x-auto [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-outline-variant [&::-webkit-scrollbar-track]:bg-transparent">
                 <table className="w-full min-w-[720px] border-collapse text-left">
                   <thead className="border-b border-outline-variant bg-surface-container-low">
                     <tr>
-                      <th className="whitespace-nowrap px-lg py-md font-label-sm text-label-sm uppercase tracking-wider text-on-surface-variant">Title</th>
-                      <th className="whitespace-nowrap px-lg py-md font-label-sm text-label-sm uppercase tracking-wider text-on-surface-variant">Sector</th>
-                      <th className="whitespace-nowrap px-lg py-md font-label-sm text-label-sm uppercase tracking-wider text-on-surface-variant">Country</th>
-                      <th className="whitespace-nowrap px-lg py-md font-label-sm text-label-sm uppercase tracking-wider text-on-surface-variant">Author</th>
-                      <th className="whitespace-nowrap px-lg py-md font-label-sm text-label-sm uppercase tracking-wider text-on-surface-variant">Date</th>
-                      <th className="whitespace-nowrap px-lg py-md font-label-sm text-label-sm uppercase tracking-wider text-on-surface-variant">Status</th>
-                      <th className="whitespace-nowrap px-lg py-md" />
+                      <th className="whitespace-nowrap px-6 py-4 font-label-sm text-label-sm uppercase tracking-wider text-on-surface-variant">Title</th>
+                      <th className="whitespace-nowrap px-6 py-4 font-label-sm text-label-sm uppercase tracking-wider text-on-surface-variant">Sector</th>
+                      <th className="whitespace-nowrap px-6 py-4 font-label-sm text-label-sm uppercase tracking-wider text-on-surface-variant">Country</th>
+                      <th className="whitespace-nowrap px-6 py-4 font-label-sm text-label-sm uppercase tracking-wider text-on-surface-variant">Author</th>
+                      <th className="whitespace-nowrap px-6 py-4 font-label-sm text-label-sm uppercase tracking-wider text-on-surface-variant">Date</th>
+                      <th className="whitespace-nowrap px-6 py-4 font-label-sm text-label-sm uppercase tracking-wider text-on-surface-variant">Status</th>
+                      <th className="whitespace-nowrap px-6 py-4" />
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-outline-variant">
@@ -496,32 +496,32 @@ export default function RagCorpusPage() {
                       const dateStr = doc.created_at ? doc.created_at.split("T")[0] : "2024-01-01";
                       return (
                         <tr key={doc.id} className="group cursor-pointer transition-colors hover:bg-surface-container-low">
-                          <td className="whitespace-nowrap px-lg py-md">
+                          <td className="whitespace-nowrap px-6 py-4">
                             <div className="flex flex-col">
                               <span className="font-body-md font-semibold text-on-surface">{doc.title || doc.filename}</span>
                               <span className="font-mono text-xs text-on-surface-variant">ID: {doc.id} &bull; {doc.chunk_count} chunks</span>
                             </div>
                           </td>
-                          <td className="whitespace-nowrap px-lg py-md">
-                            <span className={`rounded-full px-md py-xs text-xs font-bold ${getSectorColor(doc.sector)}`}>
+                          <td className="whitespace-nowrap px-6 py-4">
+                            <span className={`rounded-full px-4 py-1 text-xs font-bold ${getSectorColor(doc.sector)}`}>
                               {doc.sector || "General"}
                             </span>
                           </td>
-                          <td className="whitespace-nowrap px-lg py-md font-medium text-on-surface">{doc.market || "Pan-African"}</td>
-                          <td className="whitespace-nowrap px-lg py-md text-on-surface-variant">{doc.author || "AfriMentor RAG"}</td>
-                          <td className="whitespace-nowrap px-lg py-md font-mono text-on-surface-variant">{dateStr}</td>
-                          <td className="whitespace-nowrap px-lg py-md">
+                          <td className="whitespace-nowrap px-6 py-4 font-medium text-on-surface">{doc.market || "Pan-African"}</td>
+                          <td className="whitespace-nowrap px-6 py-4 text-on-surface-variant">{doc.author || "AfriMentor RAG"}</td>
+                          <td className="whitespace-nowrap px-6 py-4 font-mono text-on-surface-variant">{dateStr}</td>
+                          <td className="whitespace-nowrap px-6 py-4">
                             {isLive ? (
-                              <span className="flex items-center gap-xs text-xs font-bold uppercase text-secondary">
+                              <span className="flex items-center gap-1 text-xs font-bold uppercase text-secondary">
                                 <span className="h-2 w-2 rounded-full bg-secondary" />Live
                               </span>
                             ) : (
-                              <span className="flex items-center gap-xs text-xs font-bold uppercase text-tertiary">
+                              <span className="flex items-center gap-1 text-xs font-bold uppercase text-tertiary">
                                 <span className="h-2 w-2 rounded-full bg-tertiary" />{doc.status || "Draft"}
                               </span>
                             )}
                           </td>
-                          <td className="whitespace-nowrap px-lg py-md text-right">
+                          <td className="whitespace-nowrap px-6 py-4 text-right">
                             <button type="button" aria-label="More options" className="rounded-full p-1 text-on-surface-variant opacity-0 transition-opacity hover:bg-surface-variant group-hover:opacity-100">
                               <Icon name="more_vert" size={20} />
                             </button>
@@ -531,7 +531,7 @@ export default function RagCorpusPage() {
                     })}
                     {filteredDocs.length === 0 && (
                       <tr>
-                        <td colSpan={7} className="px-lg py-xl text-center font-body-md text-on-surface-variant">
+                        <td colSpan={7} className="px-6 py-12 text-center font-body-md text-on-surface-variant">
                           {isLoading ? "Loading documents..." : `No documents match "${searchQuery}"`}
                         </td>
                       </tr>
@@ -542,33 +542,33 @@ export default function RagCorpusPage() {
             </div>
 
             {/* Document cards — mobile only */}
-            <div className="space-y-sm md:hidden">
+            <div className="space-y-2 md:hidden">
               {filteredDocs.length === 0 && (
-                <div className="rounded-2xl border border-outline-variant bg-surface-container-lowest p-lg text-center font-body-md text-on-surface-variant">
+                <div className="rounded-2xl border border-outline-variant bg-surface-container-lowest p-6 text-center font-body-md text-on-surface-variant">
                   {isLoading ? "Loading documents..." : `No documents match "${searchQuery}"`}
                 </div>
               )}
               {filteredDocs.map((doc) => {
                 const isLive = doc.status === "live" || doc.status === "indexed";
                 return (
-                  <div key={doc.id} className="cursor-pointer rounded-xl border border-outline-variant bg-surface-container-lowest p-md shadow-sm transition-colors active:bg-surface-container-low">
-                    <div className="mb-xs flex items-start justify-between gap-sm">
+                  <div key={doc.id} className="cursor-pointer rounded-xl border border-outline-variant bg-surface-container-lowest p-4 shadow-sm transition-colors active:bg-surface-container-low">
+                    <div className="mb-1 flex items-start justify-between gap-2">
                       <div className="min-w-0">
                         <p className="font-semibold text-on-surface">{doc.title || doc.filename}</p>
                         <p className="font-mono text-xs text-on-surface-variant">ID: {doc.id} &bull; {doc.chunk_count} chunks</p>
                       </div>
                       {isLive ? (
-                        <span className="flex shrink-0 items-center gap-xs text-xs font-bold uppercase text-secondary">
+                        <span className="flex shrink-0 items-center gap-1 text-xs font-bold uppercase text-secondary">
                           <span className="h-2 w-2 rounded-full bg-secondary" />Live
                         </span>
                       ) : (
-                        <span className="flex shrink-0 items-center gap-xs text-xs font-bold uppercase text-tertiary">
+                        <span className="flex shrink-0 items-center gap-1 text-xs font-bold uppercase text-tertiary">
                           <span className="h-2 w-2 rounded-full bg-tertiary" />{doc.status || "Draft"}
                         </span>
                       )}
                     </div>
-                    <div className="flex flex-wrap items-center gap-sm">
-                      <span className={`rounded-full px-sm py-0.5 text-xs font-bold ${getSectorColor(doc.sector)}`}>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className={`rounded-full px-2 py-0.5 text-xs font-bold ${getSectorColor(doc.sector)}`}>
                         {doc.sector || "General"}
                       </span>
                       <span className="text-xs font-medium text-on-surface">{doc.market || "Pan-African"}</span>
@@ -579,23 +579,23 @@ export default function RagCorpusPage() {
             </div>
 
             {/* Stats bento row */}
-            <div className="grid grid-cols-1 gap-md sm:grid-cols-3 sm:gap-lg">
-              <div className="rounded-2xl border border-outline-variant bg-surface-container-low p-lg">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 sm:gap-6">
+              <div className="rounded-2xl border border-outline-variant bg-surface-container-low p-6">
                 <p className="font-label-sm text-label-sm font-bold uppercase tracking-widest text-on-surface-variant">Total Index Size</p>
-                <h4 className="mt-sm font-headline-xl text-headline-lg-mobile text-primary sm:text-headline-xl">{formattedIndexSize}</h4>
-                <div className="mt-md flex items-center gap-xs text-xs font-bold text-secondary">
+                <h4 className="mt-2 font-headline-xl text-headline-lg-mobile text-primary sm:text-headline-xl">{formattedIndexSize}</h4>
+                <div className="mt-4 flex items-center gap-1 text-xs font-bold text-secondary">
                   <Icon name="trending_up" size={16} />Active Storage Tier
                 </div>
               </div>
-              <div className="rounded-2xl border border-outline-variant bg-surface-container-low p-lg">
+              <div className="rounded-2xl border border-outline-variant bg-surface-container-low p-6">
                 <p className="font-label-sm text-label-sm font-bold uppercase tracking-widest text-on-surface-variant">Active Vectors</p>
-                <h4 className="mt-sm font-headline-xl text-headline-lg-mobile text-primary sm:text-headline-xl">{activeVectorsDisplay}</h4>
-                <div className="mt-md text-xs font-medium text-on-surface-variant">Chroma HNSW Index Active</div>
+                <h4 className="mt-2 font-headline-xl text-headline-lg-mobile text-primary sm:text-headline-xl">{activeVectorsDisplay}</h4>
+                <div className="mt-4 text-xs font-medium text-on-surface-variant">Chroma HNSW Index Active</div>
               </div>
-              <div className="rounded-2xl border border-outline-variant bg-surface-container-low p-lg">
+              <div className="rounded-2xl border border-outline-variant bg-surface-container-low p-6">
                 <p className="font-label-sm text-label-sm font-bold uppercase tracking-widest text-on-surface-variant">Inference Latency</p>
-                <h4 className="mt-sm font-headline-xl text-headline-lg-mobile text-primary sm:text-headline-xl">{latencyDisplay}</h4>
-                <div className="mt-md flex items-center gap-xs text-xs font-bold text-secondary">
+                <h4 className="mt-2 font-headline-xl text-headline-lg-mobile text-primary sm:text-headline-xl">{latencyDisplay}</h4>
+                <div className="mt-4 flex items-center gap-1 text-xs font-bold text-secondary">
                   <Icon name="check_circle" size={16} />Optimized
                 </div>
               </div>
@@ -603,25 +603,25 @@ export default function RagCorpusPage() {
           </section>
 
           <aside className="lg:col-span-4">
-            <div className="flex flex-col rounded-2xl border border-outline-variant bg-surface-container p-md sm:p-lg lg:sticky lg:top-0">
-              <div className="mb-lg flex items-center gap-sm">
+            <div className="flex flex-col rounded-2xl border border-outline-variant bg-surface-container p-4 sm:p-6 lg:sticky lg:top-0">
+              <div className="mb-6 flex items-center gap-2">
                 <Icon name="terminal" filled size={22} className="text-primary" />
                 <h3 className="font-title-md text-title-md text-on-surface">Test Query Bench</h3>
               </div>
 
-              <div className="flex-1 space-y-lg overflow-y-auto">
-                <div className="space-y-sm">
+              <div className="flex-1 space-y-6 overflow-y-auto">
+                <div className="space-y-2">
                   <label className="font-label-sm text-label-sm font-bold text-on-surface-variant">RESEARCHER PROMPT</label>
                   <textarea
                     value={testQuery}
                     onChange={(e) => setTestQuery(e.target.value)}
                     placeholder="e.g., What are the best practices for irrigation in Northern Ghana?"
-                    className="h-24 w-full rounded-xl border border-outline-variant bg-surface-bright p-md font-body-md text-sm outline-none focus:ring-1 focus:ring-primary"
+                    className="h-24 w-full rounded-xl border border-outline-variant bg-surface-bright p-4 font-body-md text-sm outline-none focus:ring-1 focus:ring-primary"
                   />
                   <button
                     onClick={handleRunSimulation}
                     disabled={isQuerying}
-                    className="flex w-full items-center justify-center gap-sm rounded-lg bg-primary py-sm text-sm font-bold text-on-primary transition-all hover:opacity-90 active:scale-95 disabled:opacity-50"
+                    className="flex w-full items-center justify-center gap-2 rounded-lg bg-primary py-2 text-sm font-bold text-on-primary transition-all hover:opacity-90 active:scale-95 disabled:opacity-50"
                   >
                     {isQuerying ? (
                       <>
@@ -635,12 +635,12 @@ export default function RagCorpusPage() {
                 </div>
 
                 {hasRunQuery && (
-                  <div className="space-y-md border-t border-outline-variant pt-lg">
-                    <div className="flex flex-col gap-xs sm:flex-row sm:items-center sm:justify-between">
+                  <div className="space-y-4 border-t border-outline-variant pt-6">
+                    <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
                       <label className="font-label-sm text-label-sm font-bold uppercase text-on-surface-variant">
                         Top Retrieved Passages ({displayPassages.length})
                       </label>
-                      <span className="rounded-full bg-surface-container-highest px-md py-xs font-mono text-xs">
+                      <span className="rounded-full bg-surface-container-highest px-4 py-1 font-mono text-xs">
                         Score: {displayPassages[0]?.score.toFixed(3) || "0.942"}
                       </span>
                     </div>
@@ -650,9 +650,9 @@ export default function RagCorpusPage() {
                       return (
                         <div
                           key={passage.chunk_id || idx}
-                          className={`space-y-xs rounded-r-lg border-l-4 p-md shadow-sm ${isTop ? "border-primary bg-surface-bright" : "border-outline-variant bg-surface-bright"}`}
+                          className={`space-y-1 rounded-r-lg border-l-4 p-4 shadow-sm ${isTop ? "border-primary bg-surface-bright" : "border-outline-variant bg-surface-bright"}`}
                         >
-                          <div className="flex flex-col gap-xs text-xs font-bold text-on-surface-variant sm:flex-row sm:items-center sm:justify-between">
+                          <div className="flex flex-col gap-1 text-xs font-bold text-on-surface-variant sm:flex-row sm:items-center sm:justify-between">
                             <span className="truncate max-w-[200px]">{refLabel}</span>
                             <span className="font-mono text-secondary">{(passage.score * 100).toFixed(1)}% Match</span>
                           </div>
@@ -666,10 +666,10 @@ export default function RagCorpusPage() {
                 )}
               </div>
 
-              <div className="mt-md flex items-center justify-between border-t border-outline-variant pt-lg font-mono text-xs text-on-surface-variant">
+              <div className="mt-4 flex items-center justify-between border-t border-outline-variant pt-6 font-mono text-xs text-on-surface-variant">
                 <span>Model: GPT-4-Afri-V2</span>
                 <span>Vector: all-MiniLM-L6-v2</span>
-                <span className="flex items-center gap-xs">
+                <span className="flex items-center gap-1">
                   <span className="h-2 w-2 animate-pulse rounded-full bg-secondary" />
                   System Ready
                 </span>

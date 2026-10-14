@@ -1,75 +1,35 @@
 "use client";
 
 import { useEffect } from "react";
-import { usePathname, useRouter } from "next/navigation";
-import Image from "next/image";
-import { BottomTabNav } from "@/components/BottomTabNav";
-import { ThemeToggle } from "@/components/ThemeToggle";
-import { NotificationPopover } from "@/components/NotificationPopover";
-import { FeedbackSurveyModal } from "@/components/FeedbackSurveyModal";
-import { CreateGoalModal } from "@/components/CreateGoalModal";
+import { useRouter } from "next/navigation";
 import { useAppDispatch, useAppState } from "@/lib/store";
-import { fetchChatMessages, fetchProfile } from "@/lib/api";
+import { fetchProfile } from "@/lib/api";
 import { isIntakeCompleted } from "@/lib/session";
+import { CreateGoalModal } from "@/components/goals/GoalModals";
 
-export default function AppShellLayout({ children }: { children: React.ReactNode }) {
-  const { chatMessages, profile, chatSessionId } = useAppState();
+/**
+ * Route guard + profile bootstrap for the signed-in app (chat, goals, library,
+ * progress, research). Each screen draws its own shell (sidebar, rail or tabs).
+ */
+export default function AppGroupLayout({ children }: { children: React.ReactNode }) {
+  const { profile } = useAppState();
   const dispatch = useAppDispatch();
-  const pathname = usePathname();
   const router = useRouter();
-  const hasOwnHeader = pathname?.startsWith("/chat") || pathname === "/goals/action" || pathname?.startsWith("/research/personas");
 
-
-  // Route guard: the app shell (chat/goals/library/progress) is only reachable
-  // after intake + persona selection. If this device hasn't completed intake,
-  // send it back to the intake flow rather than dropping a user straight into
-  // the app (deep link / stale bookmark / cleared flag). Reads localStorage in
-  // an effect so the initial render stays hydration-safe.
+  // Reaching the app before intake sends the device back to intake.
   useEffect(() => {
-    if (!isIntakeCompleted()) {
-      router.replace("/intake");
-    }
+    if (!isIntakeCompleted()) router.replace("/intake");
   }, [router]);
 
   useEffect(() => {
-    if (chatSessionId && chatMessages.length === 0) {
-      fetchChatMessages(chatSessionId).then((messages) => dispatch({ type: "SET_CHAT_MESSAGES", messages }));
-    }
-    if (!profile) {
-      fetchProfile().then((p) => dispatch({ type: "SET_PROFILE", profile: p }));
-    }
+    if (!profile) fetchProfile().then((p) => dispatch({ type: "SET_PROFILE", profile: p })).catch(() => {});
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [chatSessionId]);
+  }, []);
 
-  // Fixed-viewport flex shell — no `fixed`/`calc(100vh-Nrem)` positioning
-  // anywhere. Nav is a normal flex sibling (bottom row on mobile, left
-  // sidebar on desktop) sized by its own content, and the content area is
-  // the ONE scrollable region (flex-1 min-h-0 overflow-y-auto). This is
-  // what actually fixes "content overflows/gets cut off" as a category —
-  // the previous approach (fixed nav + guessing how much padding clears
-  // it) breaks any time the nav's real height doesn't match the guess.
   return (
-    <div className="flex h-[var(--app-height)] w-full max-w-full flex-col overflow-hidden bg-surface md:flex-row-reverse">
-      <div className="flex min-h-0 min-w-0 flex-1 flex-col pb-[max(env(safe-area-inset-bottom),1rem)] md:pb-0">
-        {!hasOwnHeader && (
-          <header className="flex shrink-0 items-center justify-between px-margin-mobile pb-md pt-[max(env(safe-area-inset-top),0.5rem)] md:hidden">
-            <div className="flex items-center gap-sm">
-              <div className="relative h-9 w-9 shrink-0 overflow-hidden rounded-full border-2 border-primary">
-                <Image src="/images/chioma-avatar.png" alt="Chioma" fill className="object-cover" />
-              </div>
-              <p className="font-title-md text-title-md text-on-surface">AfriMentor AI</p>
-            </div>
-            <div className="flex items-center gap-xs">
-              <NotificationPopover />
-              <ThemeToggle />
-            </div>
-          </header>
-        )}
-        <div className="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden overscroll-contain">{children}</div>
-      </div>
-      <BottomTabNav />
-      <FeedbackSurveyModal />
+    <>
+      {children}
       <CreateGoalModal />
-    </div>
+    </>
   );
 }

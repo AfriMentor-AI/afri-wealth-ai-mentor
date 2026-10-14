@@ -1,80 +1,22 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { Icon } from "@/components/Icon";
-import { ThemeToggle } from "@/components/ThemeToggle";
-import { Button } from "@/components/ui/Button";
-import { DesktopLanding } from "@/components/DesktopLanding";
+import Link from "next/link";
+import { useEffect, useState } from "react";
+import { useAppDispatch, useAppState } from "@/lib/store";
+import { img } from "@/lib/stitchImages";
 import { isIntakeCompleted } from "@/lib/session";
 
-const slides = [
-  {
-    icon: "menu_book",
-    headline: "Guidance sourced from Africa",
-    body: "Every answer draws on content written by African founders, traders, and builders — not generic advice.",
-  },
-  {
-    icon: "task_alt",
-    headline: "One action a day",
-    body: "No overwhelming plans. Just the next concrete step, chosen with you, every day.",
-  },
-];
 
 export default function WelcomePage() {
-  const router = useRouter();
-  const [slide, setSlide] = useState(0);
-  const isLast = slide === slides.length - 1;
-  const current = slides[slide];
-
+  const dispatch = useAppDispatch();
+  const dark = useAppState().theme === "nocturnal";
+  const [returning, setReturning] = useState(false);
+  useEffect(() => { setReturning(isIntakeCompleted()); }, []);
+  const start = returning ? "/chat" : "/intake";
   return (
-    <main className="relative min-h-screen bg-surface">
-      {/* Desktop: full landing page (splash_welcome_screen_desktop) */}
-      <div className="hidden md:block">
-        <DesktopLanding />
-      </div>
-
-      {/* Mobile: swipeable carousel */}
-      <div className="relative mx-auto flex min-h-screen max-w-md flex-col justify-between px-margin-mobile py-xl md:hidden">
-        <ThemeToggle className="absolute right-margin-mobile top-md z-20" />
-
-        <div className="flex flex-1 flex-col items-center justify-center text-center" aria-live="polite">
-          <div className="mb-md inline-flex items-center justify-center rounded-full bg-primary-container p-lg">
-            <Icon name={current.icon} filled size={48} className="text-on-primary-container" />
-          </div>
-          <h1 className="font-headline-lg-mobile text-headline-lg-mobile px-sm text-on-background">
-            {current.headline}
-          </h1>
-          <p className="mt-sm max-w-xs font-body-md text-body-md text-on-surface-variant">{current.body}</p>
-        </div>
-
-        <div>
-          <div className="mb-lg flex justify-center gap-xs">
-            {slides.map((_, i) => (
-              <span
-                key={i}
-                className={`h-1.5 rounded-full transition-all duration-300 ${
-                  i === slide ? "w-6 bg-primary" : "w-1.5 bg-primary/30"
-                }`}
-              />
-            ))}
-          </div>
-          <Button
-            variant="cta"
-            className="h-14 w-full text-[20px]"
-            onClick={() =>
-              isIntakeCompleted()
-                ? router.push("/chat")
-                : isLast
-                ? router.push("/intake")
-                : setSlide((s) => s + 1)
-            }
-          >
-            {isIntakeCompleted() ? "Continue to Chat" : isLast ? "Tell us about your business" : "Continue"}
-            <Icon name="arrow_forward" />
-          </Button>
-        </div>
-      </div>
-    </main>
+    <div className="min-h-screen bg-warm-white">
+      <div className="hidden md:block"><header className="fixed top-0 w-full z-50 bg-warm-white/90 backdrop-blur-xl shadow-[0_1px_8px_rgba(20,17,13,0.04)]"><div className="h-20 max-w-7xl mx-auto px-margin-desktop flex items-center justify-between"><div className="flex items-center gap-space-md"><div className="w-11 h-11 rounded-full bg-gold-mist flex items-center justify-center shadow-[0_0_0_2px_#FFB400]"><span className="material-symbols-outlined text-sunburst-gold text-[24px]">all_inclusive</span></div><div className="flex flex-col"><span className="font-eyebrow text-eyebrow text-primary uppercase tracking-[0.12em]">Dignified Growth</span><span className="font-title-md text-title-md text-on-surface leading-tight">AfriMentor AI</span></div></div><nav className="hidden md:flex items-center gap-space-lg" data-active-classes="bg-primary-container text-on-primary font-label-sm text-label-sm rounded-full px-space-md py-space-xs"><Link aria-current="page" className="transition-colors bg-primary-container text-on-primary font-label-sm text-label-sm rounded-full px-space-md py-space-xs" data-path="welcome-overview" href="/">Overview</Link><Link className="text-on-surface-variant hover:text-on-surface font-label-sm text-label-sm transition-colors" data-path="founder-persona-selection" href="/">Mentor Match</Link><Link className="text-on-surface-variant hover:text-on-surface font-label-sm text-label-sm transition-colors" data-path="cultural-wisdom-baseline" href="/">Susu Traditions</Link><Link className="text-on-surface-variant hover:text-on-surface font-label-sm text-label-sm transition-colors" data-path="enterprise-readiness-survey" href="/">Readiness Assessment</Link></nav><div className="flex items-center gap-space-md"><button type="button" aria-label="Toggle theme" title={dark ? "Switch to light mode" : "Switch to dark mode"} onClick={() => dispatch({ type: "TOGGLE_THEME" })} className="w-10 h-10 rounded-full bg-surface-container flex items-center justify-center text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors"><span className="material-symbols-outlined text-[20px]">{dark ? "light_mode" : "dark_mode"}</span></button><div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center"><span className="material-symbols-outlined text-on-primary text-[18px]">person</span></div></div></div></header><main className="w-full pt-20 bg-warm-white flex-1"><div className="flex flex-col w-full relative items-center justify-center py-space-xl px-margin"><div className="absolute inset-0 pointer-events-none overflow-hidden flex items-center justify-center"><div className="w-[900px] h-[900px] rounded-full bg-gold-mist/40 blur-3xl -z-10"></div><svg className="absolute w-[680px] h-[680px] text-surface-high/30 -z-10" fill="currentColor" viewBox="0 0 200 200"><path d="M100,15 C53,15 15,53 15,100 C15,147 53,185 100,185 C147,185 185,147 185,100 C185,53 147,15 100,15 Z M100,28 C139.7,28 172,60.3 172,100 C172,139.7 139.7,172 100,172 C60.3,172 28,139.7 28,100 C28,60.3 60.3,28 100,28 Z" opacity="0.45" /><path d="M100,45 C108,45 116,52 116,62 C116,74 100,82 100,95 C100,82 84,74 84,62 C84,52 92,45 100,45 Z M100,155 C92,155 84,148 84,138 C84,126 100,118 100,105 C100,118 116,126 116,138 C116,148 108,155 100,155 Z" opacity="0.35" /><circle cx="100" cy="100" opacity="0.5" r="14" /><path d="M72,92 C62,92 54,84 54,74 C54,64 68,58 78,70 C74,78 72,86 72,92 Z M128,92 C138,92 146,84 146,74 C146,64 132,58 122,70 C126,78 128,86 128,92 Z" opacity="0.3" /></svg></div><div className="w-full max-w-[740px] bg-paper rounded-[28px] shadow-[0_16px_48px_rgba(20,17,13,0.08)] overflow-hidden flex flex-col relative z-10"><div className="h-2 w-full flex"><div className="flex-1 bg-sunburst-gold"></div><div className="flex-1 bg-primary"></div><div className="flex-1 bg-tertiary"></div><div className="flex-1 bg-midnight-bg"></div><div className="flex-1 bg-secondary"></div><div className="flex-1 bg-sunburst-gold"></div><div className="flex-1 bg-primary"></div></div><div className="p-space-lg md:p-space-xl flex flex-col items-center text-center"><div className="inline-flex items-center gap-space-xs px-space-md py-1 rounded-full bg-gold-mist/60 text-on-surface-variant font-eyebrow text-eyebrow uppercase tracking-[0.12em] mb-space-lg shadow-sm"><span className="material-symbols-outlined text-[14px] text-sunburst-gold">auto_awesome</span><span>Dignified Growth • AfriMentor Onboarding</span></div><div className="relative mb-space-lg flex flex-col items-center"><div className="relative w-44 h-56 rounded-t-full rounded-b-2xl p-1 bg-sunburst-gold shadow-md overflow-hidden"><div className="w-full h-full rounded-t-full rounded-b-xl overflow-hidden bg-midnight-surface relative"><img className="w-full h-full object-cover object-top" alt="Editorial studio portrait of Chioma Okonjo, an authoritative yet warm senior West African businesswoman adorned in dignified deep ochre woven attire and brass jewelry, illuminated with cinematic golden light against an elegant dark heritage backdrop." src={img("i_0Li96undLOE7hIjQ")} /><div className="absolute inset-0 bg-gradient-to-t from-midnight-bg/70 via-transparent to-transparent"></div></div></div><div className="absolute -bottom-3.5 flex items-center gap-1 bg-indigo-mist text-secondary px-3 py-1 rounded-full shadow-sm font-label-sm text-label-sm"><span className="material-symbols-outlined text-[15px]">psychology</span><span>AI MENTOR</span></div></div><div className="flex flex-col items-center mb-space-md mt-space-xs"><h3 className="font-headline-lg-mobile text-headline-lg-mobile md:font-title-md md:text-title-md text-on-surface tracking-tight"> Chioma Okonjo </h3><p className="font-caption text-caption text-on-surface-variant flex items-center gap-1.5 mt-0.5"><span className="w-1.5 h-1.5 rounded-full bg-persona-trader"></span><span>The Market Queen • Balogun & Onitsha Guild Lore</span></p></div><h1 className="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg text-on-surface leading-tight max-w-xl mb-space-md"> Your journey to financial sovereignty, guided by those who have walked the path. </h1><p className="font-body-md text-body-md text-on-surface-variant max-w-lg mb-space-lg"> AfriMentor pairs your enterprise with communal African trade wisdom and modern financial clarity. In just a few questions, Chioma will tailor counsel to your market reality. </p><div className="w-full grid grid-cols-1 sm:grid-cols-3 gap-space-sm mb-space-xl"><div className="bg-surface-container-low rounded-xl p-space-sm flex flex-col items-center text-center"><div className="w-8 h-8 rounded-full bg-surface-container flex items-center justify-center text-primary mb-1.5"><span className="material-symbols-outlined text-[18px]">account_balance</span></div><span className="font-label-sm text-label-sm text-on-surface">Susu Resilience</span><span className="font-caption text-caption text-on-surface-variant mt-0.5">Communal capital pooling & discipline</span></div><div className="bg-surface-container-low rounded-xl p-space-sm flex flex-col items-center text-center"><div className="w-8 h-8 rounded-full bg-surface-container flex items-center justify-center text-sunburst-gold mb-1.5"><span className="material-symbols-outlined text-[18px]">storefront</span></div><span className="font-label-sm text-label-sm text-on-surface">Guild Negotiation</span><span className="font-caption text-caption text-on-surface-variant mt-0.5">Field-tested pricing & inventory lore</span></div><div className="bg-surface-container-low rounded-xl p-space-sm flex flex-col items-center text-center"><div className="w-8 h-8 rounded-full bg-surface-container flex items-center justify-center text-primary-container mb-1.5"><span className="material-symbols-outlined text-[18px]">verified_user</span></div><span className="font-label-sm text-label-sm text-on-surface">Data Sovereignty</span><span className="font-caption text-caption text-on-surface-variant mt-0.5">100% private, sovereign enterprise room</span></div></div><div className="w-full max-w-md flex flex-col items-center gap-space-md"><Link href={start} className="w-full h-[52px] rounded-full bg-sunburst-gold text-on-surface font-label-sm text-label-sm tracking-wide shadow-[0_4px_0_0_#9A6B00] active:translate-y-1 active:shadow-none transition-all flex items-center justify-center gap-space-sm group"><span>Tell us about your business</span><span className="material-symbols-outlined text-[18px] group-hover:translate-x-1 transition-transform">arrow_forward</span></Link><div className="flex items-center gap-space-xs font-body-md text-body-md"><span className="text-on-surface-variant">Already have counsel with the elders?</span><Link className="text-primary hover:text-on-primary-fixed-variant font-label-sm text-label-sm flex items-center gap-0.5 group" href="/"><span>Continue to Chat</span><span className="material-symbols-outlined text-[16px] group-hover:translate-x-0.5 transition-transform">chevron_right</span></Link></div></div></div></div><div className="mt-space-md flex items-center gap-space-sm text-on-surface-variant font-caption text-caption"><span className="material-symbols-outlined text-[16px] text-primary">lock</span><span>Rooted in tradition, powered by the future • Privacy & Data Dignity Guaranteed</span></div></div></main><footer className="w-full bg-surface-container-low shadow-[0_-1px_8px_rgba(20,17,13,0.03)] py-space-xl"><div className="max-w-7xl mx-auto px-margin-desktop flex flex-col md:flex-row items-center justify-between gap-space-md"><div className="flex items-center gap-space-sm"><div className="w-6 h-6 rounded-full bg-gold-mist flex items-center justify-center shadow-[0_0_0_1.5px_#FFB400]"><span className="material-symbols-outlined text-sunburst-gold text-[14px]">all_inclusive</span></div><span className="font-title-md text-[18px] text-on-surface">AfriMentor AI</span><span className="text-on-surface-variant font-caption text-caption ml-space-sm">— Rooted ancestral counsel for sovereign enterprise.</span></div><div className="flex items-center gap-space-lg font-caption text-caption text-on-surface-variant"><Link className="hover:text-on-surface transition-colors" href="/">Ancestral Custodianship</Link><Link className="hover:text-on-surface transition-colors" href="/">Data Dignity</Link><Link className="hover:text-on-surface transition-colors" href="/">Susu Code of Honor</Link></div></div></footer></div>
+      <div className="md:hidden"><main className="flex-1 flex flex-col relative w-full pt-safe pb-safe bg-surface"><div className="flex flex-col w-full px-4 pb-8 max-w-[390px] mx-auto select-none"><header className="flex items-center justify-between py-3 px-1 mb-2"><Link href="/" aria-label="Back" className="flex items-center justify-center w-10 h-10 rounded-full bg-surface-low text-on-surface hover:bg-surface-default transition-colors"><span className="material-symbols-outlined text-[20px]">arrow_back</span></Link><div className="flex items-center gap-1.5 px-3 py-1 bg-surface-low rounded-full"><svg className="text-sunburst-gold" fill="none" height="18" viewBox="0 0 24 24" width="18"><path d="M12 2C8.5 2 6 4.5 6 8C6 11 8 13.5 11 14.5C9.5 16 7.5 17 4 17.5C7.5 19 12 19 15 17C18.5 14.5 19.5 10 19 6C18.5 2.5 15.5 2 12 2ZM8.5 7.5C8.5 6.67 9.17 6 10 6C10.83 6 11.5 6.67 11.5 7.5C11.5 8.33 10.83 9 10 9C9.17 9 8.5 8.33 8.5 7.5Z" fill="currentColor" /><circle cx="16.5" cy="5.5" fill="#007A4D" r="1.5" /></svg><span className="font-eyebrow text-eyebrow uppercase tracking-widest text-on-surface">SANKOFA</span></div><button type="button" aria-label="Toggle theme" title={dark ? "Switch to light mode" : "Switch to dark mode"} onClick={() => dispatch({ type: "TOGGLE_THEME" })} className="flex items-center justify-center w-10 h-10 rounded-full bg-surface-low text-on-surface hover:bg-surface-default transition-colors"><span className="material-symbols-outlined text-[20px]">{dark ? "light_mode" : "dark_mode"}</span></button></header><div className="w-full bg-surface-container-lowest rounded-[24px] shadow-sm p-6 flex flex-col items-center text-center relative overflow-hidden"><div className="relative mt-2 mb-4"><div className="relative w-28 h-36 rounded-t-[56px] rounded-b-2xl p-1 bg-gradient-to-b from-sunburst-gold via-gold-mist to-transparent"><div className="w-full h-full rounded-t-[52px] rounded-b-xl overflow-hidden bg-surface-container relative"><img className="w-full h-full object-cover object-top" alt="Editorial portrait of Chioma Okonjo, an authoritative West African female merchant leader in her late fifties, wearing an immaculate indigo and ochre headwrap with regal golden bead ornaments. Soft ambient rim lighting, studio depth of field, warm earthen palette reflecting African commerce heritage, dignified and confident gaze directly at the camera." src={img("i_GscmJPv49cgwJuLM")} /></div></div><div className="absolute -bottom-2.5 left-1/2 -translate-x-1/2 flex items-center gap-1 bg-secondary-fixed text-persona-tech-founder px-2.5 py-0.5 rounded-full shadow-sm"><span className="text-[10px] leading-none">✦</span><span className="font-eyebrow text-[10px] font-bold tracking-wider uppercase">AI ELDER</span></div></div><div className="flex flex-col items-center mb-4"><span className="font-title-md text-title-md text-on-surface leading-tight">Chioma Okonjo</span><span className="font-eyebrow text-eyebrow text-outline tracking-wider uppercase mt-0.5">The Market Queen • Balogun Master Trader</span></div><h1 className="font-headline-lg-mobile text-headline-lg-mobile text-on-surface font-medium mb-3 leading-snug"> Your journey to financial independence, guided by those who have walked the path. </h1><p className="font-body-md text-body-md text-on-surface-variant mb-5"> Ancestral commerce wisdom meets autonomous financial intelligence. Tested across Balogun, Dawanau, and Kariakoo markets. </p><div className="w-full bg-surface-low rounded-xl p-3.5 mb-6 text-left relative flex items-start gap-3"><div className="w-1 self-stretch rounded-full bg-persona-market-queen shrink-0"></div><p className="font-quote text-[15px] leading-relaxed text-on-surface italic m-0"> “Welcome, child. Let us build your legacy together.” </p></div><Link href={start} className="w-full group relative rounded-full bg-sunburst-gold text-[#2B1D00] py-3.5 px-6 font-label-sm text-label-sm font-bold flex items-center justify-center gap-2 transition-transform duration-75 active:translate-y-1 shadow-[0_4px_0_0_#9A6B00] active:shadow-none"><span>Tell us about your business</span><span className="material-symbols-outlined text-[18px] transition-transform group-hover:translate-x-1">arrow_forward</span></Link><Link className="mt-4 inline-flex items-center font-label-sm text-label-sm text-primary hover:text-primary-container font-semibold transition-colors py-1" href="/chat"> Already have an enterprise ledger? Continue to Chat </Link></div><footer className="mt-4 px-3 flex items-center justify-center gap-2 text-center"><span className="material-symbols-outlined text-[15px] text-outline shrink-0">lock</span><p className="font-caption text-caption text-outline leading-tight"> Secured by Pan-African Sovereign Data Dignity Enclave • Zero commercial telemetry </p></footer></div></main></div>
+    </div>
   );
 }

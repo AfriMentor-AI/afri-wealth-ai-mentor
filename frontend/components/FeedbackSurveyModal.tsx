@@ -1,11 +1,11 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import Image from "next/image";
-import { Icon } from "./Icon";
 import { useAppDispatch, useAppState } from "@/lib/store";
 import { submitFeedback } from "@/lib/api";
+import { KenteStrip } from "./shell/AppSidebar";
 
+/** "Enterprise Reflections" feedback dialog (W13/M10). Opened via OPEN_FEEDBACK_MODAL. */
 export function FeedbackSurveyModal() {
   const { feedbackModalOpen } = useAppState();
   const dispatch = useAppDispatch();
@@ -13,29 +13,23 @@ export function FeedbackSurveyModal() {
   const [comment, setComment] = useState("");
   const [submitted, setSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const closeButtonRef = useRef<HTMLButtonElement>(null);
+  const closeRef = useRef<HTMLButtonElement>(null);
 
-  // Move focus into the dialog on open so keyboard/SR users don't land back
-  // on the page behind it, and close on Escape per the dialog pattern.
+  function close() {
+    dispatch({ type: "CLOSE_FEEDBACK_MODAL" });
+    setSubmitted(false); setRating(null); setComment("");
+  }
+
   useEffect(() => {
     if (!feedbackModalOpen) return;
-    closeButtonRef.current?.focus();
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") close();
-    };
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
+    closeRef.current?.focus();
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") close(); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [feedbackModalOpen]);
 
   if (!feedbackModalOpen) return null;
-
-  function close() {
-    dispatch({ type: "CLOSE_FEEDBACK_MODAL" });
-    setSubmitted(false);
-    setRating(null);
-    setComment("");
-  }
 
   async function submit() {
     if (!rating) return;
@@ -46,108 +40,61 @@ export function FeedbackSurveyModal() {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-inverse-surface/40 md:items-center" role="dialog" aria-modal="true" aria-labelledby="feedback-title">
-      <div className="mx-auto w-full max-w-[400px] rounded-t bg-surface shadow-2xl md:rounded">
-        <div className="flex justify-center pb-xs pt-sm">
-          <div className="h-1 w-10 rounded-full bg-outline-variant opacity-50" />
-        </div>
-
-        <div className="relative overflow-hidden px-margin-mobile pb-xl pt-sm">
-          <header className="mb-lg">
-            <div className="mb-xs flex items-start justify-between">
-              <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-full border-2 border-primary">
-                <Image src="/images/chioma-avatar.png" alt="Chioma" fill className="object-cover" />
+    <div className="fixed inset-0 z-[80] flex items-end justify-center p-0 backdrop-blur-[6px] sm:items-center sm:p-4 bg-brand-ink/40" role="dialog" aria-modal="true" aria-labelledby="feedback-title" onMouseDown={(e) => { if (e.target === e.currentTarget) close(); }}>
+      <div className="relative flex max-h-[92vh] w-full max-w-[560px] animate-rise flex-col overflow-hidden rounded-t-[28px] bg-paper shadow-[0_24px_64px_rgba(20,17,13,0.22)] sm:rounded-[28px]">
+        <div className="[&>div]:h-1.5"><KenteStrip /></div>
+        <div className="flex flex-col gap-6 overflow-y-auto p-7 sm:p-8">
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex items-center gap-2.5">
+              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gold-mist text-sunburst-gold">
+                <span className="material-symbols-outlined text-[18px]">temp_preferences_custom</span>
               </div>
-              <button
-                ref={closeButtonRef}
-                onClick={close}
-                aria-label="Close feedback survey"
-                className="tap-target rounded-full p-xs text-on-surface-variant hover:bg-surface-variant"
-              >
-                <Icon name="close" />
-              </button>
+              <span className="font-eyebrow text-eyebrow uppercase tracking-widest text-outline-strong">Enterprise reflections</span>
             </div>
-            <h2 id="feedback-title" className="font-headline-lg-mobile text-headline-lg-mobile text-primary">
-              How was your journey?
-            </h2>
-            <p className="mt-sm font-body-md text-on-surface-variant">
-              Your feedback helps CHIOMA tailor your mentorship experience.
-            </p>
-          </header>
+            <button ref={closeRef} type="button" onClick={close} aria-label="Close feedback survey" className="flex h-8 w-8 items-center justify-center rounded-full text-outline-strong transition-colors hover:bg-surface-default hover:text-on-surface">
+              <span className="material-symbols-outlined text-[20px]">close</span>
+            </button>
+          </div>
 
           {submitted ? (
-            <div className="py-lg text-center">
-              <Icon name="check_circle" filled size={40} className="mx-auto text-secondary" />
-              <p className="mt-sm font-title-md text-title-md text-on-surface">Thanks for the feedback.</p>
-              <p className="mt-xs font-body-md text-on-surface-variant">It helps CHIOMA tailor what comes next.</p>
-              <button
-                onClick={close}
-                className="tap-target mt-lg h-12 w-full rounded-full bg-primary font-title-md text-title-md text-on-primary transition-transform active:scale-[0.98]"
-              >
-                Done
-              </button>
+            <div className="py-6 text-center">
+              <span className="material-symbols-outlined icon-fill text-[44px] text-primary">check_circle</span>
+              <h2 id="feedback-title" className="mt-3 font-title-md text-headline-lg-mobile font-medium text-on-surface">Thank you.</h2>
+              <p className="mt-2 font-body-md text-label-sm text-on-surface-variant">Your reflections help your mentors give you sharper advice.</p>
+              <button type="button" onClick={close} className="mt-6 h-11 rounded-full bg-primary px-8 font-label-sm text-label-sm font-semibold text-on-primary transition-all active:scale-95">Done</button>
             </div>
           ) : (
             <>
-              <div className="mb-xl">
-                <p className="mb-md font-label-sm text-label-sm text-on-surface">Likelihood to recommend AfriMentor AI</p>
-                <div className="flex flex-wrap justify-between gap-2">
+              <div className="flex flex-col gap-2">
+                <h2 id="feedback-title" className="font-title-md text-headline-lg-mobile font-medium leading-tight text-on-surface">How grounding has AfriMentor been for your enterprise?</h2>
+                <p className="font-body-md text-label-sm text-on-surface-variant">Your feedback sharpens the counsel your mentors give you next.</p>
+              </div>
+              <div className="flex flex-col gap-2 pt-1">
+                <div className="grid w-full grid-cols-10 gap-1.5 sm:gap-2" role="group" aria-label="Likelihood to recommend, 1 to 10">
                   {Array.from({ length: 10 }, (_, i) => i + 1).map((n) => (
-                    <button
-                      key={n}
-                      onClick={() => setRating(n)}
-                      aria-pressed={rating === n}
-                      className={`flex h-12 w-9 items-center justify-center rounded-lg border font-title-md text-on-surface-variant transition-all ${
-                        rating === n
-                          ? "border-2 border-primary bg-primary-container/10 text-primary"
-                          : "border-outline-variant hover:border-primary hover:bg-primary-container/20"
-                      }`}
-                    >
+                    <button key={n} type="button" aria-pressed={rating === n} onClick={() => setRating(n)}
+                      className={`flex h-10 items-center justify-center rounded-xl font-label-sm text-caption transition-all ${rating === n ? "bg-primary font-bold text-on-primary shadow-sm ring-2 ring-primary-fixed" : "bg-surface-default text-on-surface hover:bg-surface-high"}`}>
                       {n}
                     </button>
                   ))}
                 </div>
-                <div className="mt-xs flex justify-between px-xs">
-                  <span className="font-label-sm text-label-sm text-on-surface-variant">Not likely</span>
-                  <span className="font-label-sm text-label-sm text-on-surface-variant">Very likely</span>
+                <div className="mt-1 flex items-center justify-between px-0.5 font-caption text-caption text-outline-strong">
+                  <span>Not likely</span>
+                  <span className="font-semibold text-primary">{rating && rating >= 9 ? "Highly grounding" : ""}</span>
+                  <span>Very likely</span>
                 </div>
               </div>
-
-              <div className="mb-xl">
-                <label htmlFor="feedback-comment" className="mb-sm block font-label-sm text-label-sm text-on-surface">
-                  Tell CHIOMA more...
-                </label>
-                <div className="relative">
-                  <textarea
-                    id="feedback-comment"
-                    value={comment}
-                    onChange={(e) => setComment(e.target.value)}
-                    rows={3}
-                    className="w-full resize-none rounded border border-outline-variant bg-surface-container-low p-md font-body-md text-on-surface outline-none placeholder:text-on-surface-variant focus:border-transparent focus:ring-2 focus:ring-primary"
-                    placeholder="What did you value most about this goal?"
-                  />
-                  <button
-                    aria-label="Answer with voice instead"
-                    className="tap-target absolute bottom-3 right-3 flex items-center justify-center rounded-full border border-outline-variant bg-surface-container-high text-primary transition-transform active:scale-90 hover:bg-surface-variant"
-                  >
-                    <Icon name="mic" />
-                  </button>
+              <div className="flex flex-col gap-2">
+                <label htmlFor="feedback-comment" className="font-label-sm text-label-sm font-semibold text-on-surface">What advice or feature helped you most?</label>
+                <div className="rounded-2xl bg-surface-low p-3.5 transition-all focus-within:bg-paper focus-within:shadow-md">
+                  <textarea id="feedback-comment" rows={3} value={comment} onChange={(e) => setComment(e.target.value)} placeholder="Tell us what worked, and what to improve." className="w-full resize-none border-none bg-transparent font-body-md text-label-sm text-on-surface outline-none placeholder:text-outline-strong" />
                 </div>
               </div>
-
-              <div className="flex flex-col gap-sm">
-                <button
-                  onClick={submit}
-                  disabled={!rating || submitting}
-                  className="tap-target h-12 w-full rounded-full bg-primary font-title-md text-title-md text-on-primary transition-all active:scale-[0.98] disabled:opacity-40"
-                >
-                  {submitting ? "Sending..." : "Submit Feedback"}
-                </button>
-                <button
-                  onClick={close}
-                  className="tap-target h-11 w-full rounded-full bg-transparent font-title-md text-title-md text-primary transition-all hover:bg-surface-variant active:scale-[0.98]"
-                >
-                  Dismiss
+              <div className="flex items-center justify-between pt-2">
+                <button type="button" onClick={close} className="rounded-full px-4 py-2 font-label-sm text-label-sm text-outline-strong transition-colors hover:text-on-surface">Dismiss</button>
+                <button type="button" onClick={submit} disabled={!rating || submitting} className="flex h-11 items-center gap-2 rounded-full bg-primary px-8 font-label-sm text-label-sm font-semibold text-on-primary shadow-sm transition-all hover:bg-primary-container active:scale-95 disabled:opacity-40">
+                  <span className="material-symbols-outlined text-[18px]">send</span>
+                  <span>{submitting ? "Sending…" : "Submit reflections"}</span>
                 </button>
               </div>
             </>

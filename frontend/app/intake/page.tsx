@@ -2,15 +2,15 @@
 
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import Image from "next/image";
 import { Icon } from "@/components/Icon";
-import { ThemeToggle } from "@/components/ThemeToggle";
-import { Chip } from "@/components/ui/Chip";
-import { Button } from "@/components/ui/Button";
+import { ThemeToggleButton } from "@/components/ThemeSwitch";
+import { KenteStrip } from "@/components/shell/AppSidebar";
 import { useAppDispatch } from "@/lib/store";
 import { submitIntake } from "@/lib/api";
 import { markIntakeCompleted } from "@/lib/session";
 import { startAudioRecording, type ActiveRecording } from "@/lib/voice";
+import { MENTORS } from "@/lib/mentors";
+import { img } from "@/lib/stitchImages";
 
 const SECTORS_LIST = [
   { name: "Trader", icon: "storefront", desc: "Retail shops, market trading, imports/exports" },
@@ -19,18 +19,9 @@ const SECTORS_LIST = [
   { name: "Agriculture", icon: "agriculture", desc: "Farming, agro-processing, livestock" },
   { name: "Creative", icon: "palette", desc: "Design, crafts, media, content creation" },
 ];
-
-const SECTORS = ["Trader", "Tech", "Fashion/Retail", "Agriculture", "Creative"];
+const SECTORS = SECTORS_LIST.map((s) => s.name);
 const EDUCATION_LEVELS = ["No formal schooling", "Primary school", "Secondary school", "Vocational training", "University"];
 const TIME_OPTIONS = ["Under 5 hours", "6-10 hours", "11-20 hours", "20+ hours"];
-const CONSTRAINT_OPTIONS = [
-  "Limited startup capital",
-  "No reliable internet",
-  "No smartphone data plan at home",
-  "Limited business network",
-  "Family/caregiving responsibilities",
-];
-
 const CONSTRAINT_ITEMS = [
   { label: "Limited startup capital", icon: "savings" },
   { label: "No reliable internet", icon: "wifi_off" },
@@ -38,19 +29,13 @@ const CONSTRAINT_ITEMS = [
   { label: "Limited business network", icon: "group_off" },
   { label: "Family/caregiving responsibilities", icon: "family_restroom" },
 ];
+const CONSTRAINT_OPTIONS = CONSTRAINT_ITEMS.map((c) => c.label);
 
 const STEPS = [
-  { tag: "Intake", headline: "To start, what sector do you work in?", sub: "This helps me tailor my financial advice to your specific business reality." },
-  { tag: "Intake", headline: "How much time and schooling do you bring to this?", sub: "There's no wrong answer — this just shapes how I explain things." },
-  { tag: "Intake", headline: "Anything working against you right now?", sub: "Tap any that apply. This stays between us." },
-  { tag: "Intake", headline: "Last thing — what should I call you?", sub: "So I can make this feel like it's actually yours." },
-];
-
-const DESKTOP_STEPS = [
-  { tag: "Sector", headline: "To start, what sector do you work in?", sub: "This helps me tailor my financial advice to your specific business reality." },
-  { tag: "Background", headline: "How much time and schooling do you bring to this?", sub: "There's no wrong answer — this just shapes how I explain things." },
-  { tag: "Constraints", headline: "Anything working against you right now?", sub: "Tap any that apply. This stays between us." },
-  { tag: "Profile", headline: "Last thing — what should I call you?", sub: "So I can make this feel like it's actually yours." },
+  { tag: "Sector", headline: "To start, what sector do you work in?", sub: "This helps me tailor my financial advice to your specific business reality.", next: "Background" },
+  { tag: "Background", headline: "How much time and schooling do you bring to this?", sub: "There's no wrong answer — this just shapes how I explain things.", next: "Constraints" },
+  { tag: "Constraints", headline: "Anything working against you right now?", sub: "Tap any that apply. This stays between us.", next: "Identity" },
+  { tag: "Identity", headline: "Last thing — what should I call you?", sub: "So I can make this feel like it's actually yours.", next: "" },
 ];
 
 interface IntakeAnswers {
@@ -63,6 +48,26 @@ interface IntakeAnswers {
   location: string;
 }
 
+const inputCls =
+  "w-full rounded-xl border border-outline-variant bg-surface-container-lowest px-4 py-3 font-body-md text-body-md text-on-surface outline-none transition-colors placeholder:text-on-surface-variant/60 focus:border-primary focus:ring-2 focus:ring-primary/20";
+
+function Choice({ active, onClick, children, className = "" }: { active: boolean; onClick: () => void; children: React.ReactNode; className?: string }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={active}
+      className={`rounded-xl border text-left transition-all active:scale-[0.98] ${
+        active
+          ? "border-primary bg-primary-container/25 ring-2 ring-primary"
+          : "border-outline-variant bg-surface-container-lowest hover:bg-surface-container-low"
+      } ${className}`}
+    >
+      {children}
+    </button>
+  );
+}
+
 export default function IntakePage() {
   const router = useRouter();
   const dispatch = useAppDispatch();
@@ -73,14 +78,10 @@ export default function IntakePage() {
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [answers, setAnswers] = useState<IntakeAnswers>({
-    sector: "",
-    educationLevel: "",
-    timeAvailablePerWeek: "",
-    constraints: [],
-    name: "",
-    businessName: "",
-    location: "",
+    sector: "", educationLevel: "", timeAvailablePerWeek: "", constraints: [], name: "", businessName: "", location: "",
   });
+  const mentor = MENTORS["market-queen"];
+  const cur = STEPS[step];
 
   async function toggleIntakeVoice() {
     if (isRecording) {
@@ -90,9 +91,7 @@ export default function IntakePage() {
         if (activeRecordingRef.current) {
           const text = await activeRecordingRef.current.stop();
           activeRecordingRef.current = null;
-          if (text) {
-            handleVoiceResult(text);
-          }
+          if (text) handleVoiceResult(text);
         }
       } catch (err) {
         console.error("Voice intake transcription error:", err);
@@ -123,16 +122,11 @@ export default function IntakePage() {
       if (timeMatch) setAnswers((a) => ({ ...a, timeAvailablePerWeek: timeMatch }));
     } else if (step === 2) {
       CONSTRAINT_OPTIONS.forEach((c) => {
-        if (lower.includes(c.toLowerCase()) || (lower.includes("capital") && c.includes("capital"))) {
-          toggleConstraint(c);
-        }
+        if (lower.includes(c.toLowerCase()) || (lower.includes("capital") && c.includes("capital"))) toggleConstraint(c);
       });
     } else if (step === 3) {
-      if (!answers.name) {
-        setAnswers((a) => ({ ...a, name: text }));
-      } else {
-        setAnswers((a) => ({ ...a, businessName: text }));
-      }
+      if (!answers.name) setAnswers((a) => ({ ...a, name: text }));
+      else setAnswers((a) => ({ ...a, businessName: text }));
     }
   }
 
@@ -159,8 +153,6 @@ export default function IntakePage() {
     try {
       const profile = await submitIntake(answers);
       dispatch({ type: "SET_PROFILE", profile });
-      // Persist the completion flag so a returning user is routed straight to
-      // the app and never re-runs intake.
       markIntakeCompleted();
       router.push("/persona");
     } catch {
@@ -170,431 +162,209 @@ export default function IntakePage() {
   }
 
   function handleBack() {
-    if (step > 0) {
-      setStep((s) => s - 1);
-    } else {
-      router.push("/");
-    }
+    if (step > 0) setStep((s) => s - 1);
+    else router.push("/");
   }
 
-  return (
-    <div className="min-h-screen bg-surface">
-      {/* ========================================================================= */}
-      {/* MOBILE VIEW (md:hidden) — 100% original mobile design & layout */}
-      {/* ========================================================================= */}
-      <div className="mx-auto flex min-h-screen max-w-md flex-col bg-surface md:hidden">
-        <header className="flex items-center justify-between px-margin-mobile py-md">
-          <div>
-            <p className="font-headline-lg-mobile text-[18px] leading-none text-primary">CHIOMA</p>
-            <p className="font-label-sm text-label-sm text-on-surface-variant">AfriMentor AI</p>
-          </div>
-          <ThemeToggle />
-        </header>
+  const voiceLabel = isTranscribing ? "Transcribing voice input..." : isRecording ? "Stop voice input" : "Answer with your voice";
+  const summary = [answers.sector, answers.educationLevel, answers.timeAvailablePerWeek].filter(Boolean);
 
-        <div className="px-margin-mobile">
-          <div className="flex items-center gap-sm">
-            <span className="rounded-full bg-primary-container px-sm py-xs font-label-sm text-label-sm text-on-primary-container">
-              Step {step + 1} of 4
-            </span>
-            <span className="font-label-sm text-label-sm text-on-surface-variant">{STEPS[step].tag}</span>
-          </div>
-          <div className="mt-sm flex gap-1">
-            {[0, 1, 2, 3].map((i) => (
-              <span key={i} className={`h-1 flex-1 rounded-full ${i <= step ? "bg-primary" : "bg-outline-variant"}`} />
-            ))}
+  return (
+    <div className="min-h-screen bg-surface text-on-surface lg:grid lg:grid-cols-[minmax(340px,5fr)_7fr]">
+      {/* Left: mentor card (desktop) */}
+      <aside className="relative hidden overflow-hidden bg-surface-container-low lg:flex lg:flex-col lg:justify-between lg:p-12">
+        <div>
+          <p className="font-title-md text-title-md text-primary">AfriMentor AI</p>
+          <p className="mt-1 font-eyebrow text-eyebrow uppercase text-on-surface-variant">Foundation Intake</p>
+        </div>
+        <div className="mx-auto w-full max-w-sm">
+          <div className="overflow-hidden rounded-t-[999px] rounded-b-3xl border border-outline-variant bg-surface-container-lowest shadow-xl">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={img(mentor.portrait)} alt={mentor.name} className="aspect-[4/5] w-full object-cover" />
+            <div className="p-6">
+              <p className="font-title-md text-title-md text-on-surface">{mentor.name}</p>
+              <p className="font-label-sm text-label-sm text-sunburst-gold">{mentor.role}</p>
+              <p className="mt-3 font-quote text-body-md italic text-on-surface-variant">“{mentor.quote}”</p>
+            </div>
           </div>
         </div>
+        <p className="font-caption text-caption text-on-surface-variant">Your answers shape how your mentor speaks to you.</p>
+      </aside>
 
-        <main className="flex-1 px-margin-mobile pt-lg">
-          <h1 className="font-headline-lg-mobile text-headline-lg-mobile text-on-background">{STEPS[step].headline}</h1>
-          <p className="mt-xs font-body-md text-body-md text-on-surface-variant">{STEPS[step].sub}</p>
-
-          <div className="mt-lg">
-            {step === 0 && (
-              <div className="flex flex-wrap gap-sm">
-                {SECTORS.map((s) => (
-                  <Chip key={s} label={s} active={answers.sector === s} onClick={() => setAnswers((a) => ({ ...a, sector: s }))} />
-                ))}
-              </div>
-            )}
-
-            {step === 1 && (
-              <div className="flex flex-col gap-lg">
-                <div>
-                  <p className="mb-sm font-label-sm text-label-sm text-on-surface-variant">Highest level of education</p>
-                  <div className="flex flex-wrap gap-sm">
-                    {EDUCATION_LEVELS.map((e) => (
-                      <Chip key={e} label={e} active={answers.educationLevel === e} onClick={() => setAnswers((a) => ({ ...a, educationLevel: e }))} />
-                    ))}
-                  </div>
-                </div>
-                <div>
-                  <p className="mb-sm font-label-sm text-label-sm text-on-surface-variant">Time available per week</p>
-                  <div className="flex flex-wrap gap-sm">
-                    {TIME_OPTIONS.map((t) => (
-                      <Chip key={t} label={t} active={answers.timeAvailablePerWeek === t} onClick={() => setAnswers((a) => ({ ...a, timeAvailablePerWeek: t }))} />
-                    ))}
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {step === 2 && (
-              <div className="flex flex-wrap gap-sm">
-                {CONSTRAINT_OPTIONS.map((c) => (
-                  <Chip key={c} label={c} active={answers.constraints.includes(c)} onClick={() => toggleConstraint(c)} />
-                ))}
-              </div>
-            )}
-
-            {step === 3 && (
-              <div className="flex flex-col gap-md">
-                <label className="flex flex-col gap-xs">
-                  <span className="font-label-sm text-label-sm text-on-surface-variant">Your name</span>
-                  <input
-                    value={answers.name}
-                    onChange={(e) => setAnswers((a) => ({ ...a, name: e.target.value }))}
-                    className="w-full rounded border border-outline-variant bg-surface-container-lowest p-md font-body-md text-body-md text-on-surface outline-none focus-visible:outline-primary"
-                    placeholder="e.g. Kofi Mensah"
-                  />
-                </label>
-                <label className="flex flex-col gap-xs">
-                  <span className="font-label-sm text-label-sm text-on-surface-variant">Business name</span>
-                  <input
-                    value={answers.businessName}
-                    onChange={(e) => setAnswers((a) => ({ ...a, businessName: e.target.value }))}
-                    className="w-full rounded border border-outline-variant bg-surface-container-lowest p-md font-body-md text-body-md text-on-surface outline-none focus-visible:outline-primary"
-                    placeholder="e.g. Poultry Business - Kumasi"
-                  />
-                </label>
-                <label className="flex flex-col gap-xs">
-                  <span className="font-label-sm text-label-sm text-on-surface-variant">Location</span>
-                  <input
-                    value={answers.location}
-                    onChange={(e) => setAnswers((a) => ({ ...a, location: e.target.value }))}
-                    className="w-full rounded border border-outline-variant bg-surface-container-lowest p-md font-body-md text-body-md text-on-surface outline-none focus-visible:outline-primary"
-                    placeholder="e.g. Kumasi, Ghana"
-                  />
-                </label>
-              </div>
-            )}
-          </div>
-        </main>
-
-        <footer className="px-margin-mobile pb-lg pt-md">
-          {submitError && (
-            <p role="alert" className="mb-sm text-center font-label-sm text-label-sm text-error">
-              {submitError}
-            </p>
-          )}
-          {step === 3 ? (
-            <Button
-              variant="cta"
-              className="h-14 w-full text-[20px]"
-              disabled={!canAdvance || submitting}
-              onClick={handleNext}
-            >
-              {submitting ? "Saving..." : "Confirm"}
-              {!submitting && <Icon name="check_circle" filled />}
-            </Button>
-          ) : (
-            <>
-              <div className="flex items-center gap-sm rounded-full border border-outline-variant bg-surface-container-lowest px-sm py-xs">
-                <button
-                  aria-label={
-                    isTranscribing
-                      ? "Transcribing voice input..."
-                      : isRecording
-                      ? "Stop voice input"
-                      : "Answer with your voice"
-                  }
-                  onClick={toggleIntakeVoice}
-                  disabled={isTranscribing}
-                  className={`tap-target flex items-center justify-center rounded-full transition-all ${
-                    isRecording
-                      ? "animate-pulse bg-error text-on-error shadow-md ring-2 ring-error/40"
-                      : isTranscribing
-                      ? "bg-surface-container-high text-primary"
-                      : "bg-primary text-on-primary"
-                  }`}
-                >
-                  <Icon name={isTranscribing ? "hourglass_empty" : isRecording ? "graphic_eq" : "mic"} />
-                </button>
-                <span className="flex-1 font-body-md text-body-md text-on-surface-variant">
-                  {isTranscribing
-                    ? "Transcribing..."
-                    : isRecording
-                    ? "Listening... tap button when done"
-                    : answers.sector || answers.educationLevel || "Tap a chip or use your voice to respond."}
-                </span>
-                <button
-                  aria-label="Continue"
-                  disabled={!canAdvance}
-                  onClick={handleNext}
-                  className="tap-target flex items-center justify-center rounded-full bg-primary text-on-primary disabled:opacity-40"
-                >
-                  <Icon name="send" />
-                </button>
-              </div>
-              <p className="mt-sm text-center font-label-sm text-label-sm text-on-surface-variant">
-                Tap a chip or use your voice to respond.
-              </p>
-            </>
-          )}
-        </footer>
-      </div>
-
-      {/* ========================================================================= */}
-      {/* DESKTOP VIEW (hidden md:flex) — Enhanced responsive desktop experience */}
-      {/* ========================================================================= */}
-      <div className="mx-auto hidden min-h-screen max-w-4xl flex-col justify-between px-xl py-lg md:flex">
-        {/* Header */}
-        <header className="flex items-center justify-between border-b border-outline-variant/40 pb-md">
-          <div className="flex items-center gap-md">
-            <button
-              onClick={handleBack}
-              aria-label="Go back"
-              className="tap-target -ml-2 flex items-center justify-center rounded-full p-2 text-on-surface-variant hover:bg-surface-container-low transition-colors"
-            >
+      {/* Right: intake panel */}
+      <section className="mx-auto flex min-h-screen w-full max-w-2xl flex-col lg:max-w-none">
+        <KenteStrip />
+        <header className="flex items-center justify-between gap-3 px-5 pb-3 pt-4 md:px-10 lg:px-14 lg:pt-8">
+          <div className="flex items-center gap-3">
+            <button type="button" onClick={handleBack} aria-label="Go back" className="flex h-10 w-10 items-center justify-center rounded-full text-on-surface-variant transition-colors hover:bg-surface-container-low">
               <Icon name="arrow_back" />
             </button>
-            <div className="relative h-10 w-10 overflow-hidden rounded-full border-2 border-primary">
-              <Image src="/images/chioma-avatar.png" alt="Chioma" fill className="object-cover" />
+            <div className="lg:hidden">
+              <p className="font-title-md text-[18px] leading-none text-primary">CHIOMA</p>
+              <p className="font-label-sm text-label-sm text-on-surface-variant">AfriMentor AI</p>
             </div>
-            <div>
-              <p className="font-headline-lg-mobile text-[18px] font-bold leading-none text-primary">CHIOMA</p>
-              <p className="font-label-sm text-label-sm text-on-surface-variant">AfriMentor AI • Intake</p>
-            </div>
+            <p className="hidden font-eyebrow text-eyebrow uppercase text-on-surface-variant lg:block">Foundation Intake</p>
           </div>
-          <div className="flex items-center gap-md">
-            <span className="rounded-full bg-primary-container px-md py-xs font-label-sm text-label-sm text-on-primary-container">
-              Step {step + 1} of 4: {DESKTOP_STEPS[step].tag}
-            </span>
-            <ThemeToggle />
+          <div className="flex items-center gap-3">
+            <span className="rounded-full bg-primary-container px-3 py-1 font-label-sm text-label-sm text-on-primary-container">Step {step + 1} of 4</span>
+            <ThemeToggleButton />
           </div>
         </header>
 
-        {/* Progress Tracker */}
-        <div className="mt-md">
-          <div className="flex gap-3">
-            {DESKTOP_STEPS.map((s, i) => (
-              <div key={i} className="flex flex-1 flex-col gap-1.5">
-                <div className={`h-1.5 w-full rounded-full transition-all duration-300 ${i <= step ? "bg-primary" : "bg-outline-variant/60"}`} />
-                <span className={`font-label-sm text-[12px] uppercase tracking-wider ${i === step ? "font-bold text-primary" : "text-on-surface-variant/60"}`}>
-                  {s.tag}
-                </span>
-              </div>
+        {/* progress */}
+        <div className="px-5 md:px-10 lg:px-14">
+          <div className="flex gap-2" role="progressbar" aria-valuemin={1} aria-valuemax={4} aria-valuenow={step + 1}>
+            {STEPS.map((_, i) => (
+              <span key={i} className={`h-1.5 flex-1 rounded-full transition-colors ${i <= step ? "bg-primary" : "bg-outline-variant"}`} />
             ))}
           </div>
+          <nav className="mt-3 hidden grid-cols-4 gap-2 md:grid" aria-label="Intake steps">
+            {STEPS.map((s, i) => (
+              <button
+                key={s.tag}
+                type="button"
+                disabled={i > step}
+                onClick={() => setStep(i)}
+                className={`flex items-center gap-2 rounded-lg px-2 py-1.5 text-left font-eyebrow text-eyebrow uppercase transition-colors ${
+                  i === step ? "text-primary" : i < step ? "text-on-surface hover:bg-surface-container-low" : "text-on-surface-variant/50"
+                }`}
+              >
+                <span className={`flex h-5 w-5 items-center justify-center rounded-full text-[11px] ${i < step ? "bg-primary text-on-primary" : i === step ? "border-2 border-primary" : "border border-outline-variant"}`}>
+                  {i < step ? <Icon name="check" size={13} /> : i + 1}
+                </span>
+                {s.tag}
+              </button>
+            ))}
+          </nav>
         </div>
 
-        {/* Question & Interactive Body */}
-        <main className="my-auto flex-1 py-xl">
-          <div className="rounded-2xl border-l-4 border-primary bg-surface-container-low p-lg shadow-sm">
-            <h1 className="font-headline-lg text-headline-lg text-on-surface">
-              {DESKTOP_STEPS[step].headline}
-            </h1>
-            <p className="mt-xs font-body-lg text-body-lg text-on-surface-variant">
-              {DESKTOP_STEPS[step].sub}
-            </p>
+        <main className="flex-1 px-5 pb-6 pt-6 md:px-10 lg:px-14">
+          {/* mentor speech */}
+          <div className="flex items-start gap-3">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={img(mentor.avatar)} alt="" className="h-11 w-11 shrink-0 rounded-full border-2 border-sunburst-gold object-cover" />
+            <div className="rounded-2xl rounded-tl-sm bg-surface-container-low px-5 py-4">
+              <h1 className="font-headline-lg-mobile text-headline-lg-mobile text-on-surface md:font-headline-lg md:text-[34px] md:leading-[42px]">{cur.headline}</h1>
+              <p className="mt-2 font-body-md text-body-md text-on-surface-variant">{cur.sub}</p>
+            </div>
           </div>
 
-          <div className="mt-xl">
-            {/* Step 0: Sector Selection */}
+          <div className="mt-6">
             {step === 0 && (
-              <div className="grid grid-cols-2 gap-md lg:grid-cols-3">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
                 {SECTORS_LIST.map((s) => {
                   const active = answers.sector === s.name;
                   return (
-                    <button
-                      key={s.name}
-                      onClick={() => setAnswers((a) => ({ ...a, sector: s.name }))}
-                      className={`flex flex-col items-start gap-xs rounded-xl border p-lg text-left transition-all hover:shadow-sm active:scale-98 ${
-                        active
-                          ? "border-primary bg-primary-container/20 ring-2 ring-primary text-on-surface"
-                          : "border-outline-variant bg-surface hover:bg-surface-container-low text-on-surface"
-                      }`}
-                    >
-                      <div className={`flex h-10 w-10 items-center justify-center rounded-lg ${active ? "bg-primary text-on-primary" : "bg-secondary-container/40 text-on-secondary-container"}`}>
+                    <Choice key={s.name} active={active} onClick={() => setAnswers((a) => ({ ...a, sector: s.name }))} className="flex items-start gap-3 p-4 sm:flex-col sm:p-5">
+                      <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${active ? "bg-primary text-on-primary" : "bg-secondary-container/50 text-on-secondary-container"}`}>
                         <Icon name={s.icon} />
-                      </div>
-                      <h3 className="font-title-md text-title-md font-bold text-on-surface mt-sm">{s.name}</h3>
-                      <p className="font-body-md text-sm text-on-surface-variant">{s.desc}</p>
-                    </button>
+                      </span>
+                      <span>
+                        <span className="block font-label-sm text-[15px] font-bold text-on-surface">{s.name}</span>
+                        <span className="mt-0.5 block font-caption text-caption text-on-surface-variant">{s.desc}</span>
+                      </span>
+                    </Choice>
                   );
                 })}
               </div>
             )}
 
-            {/* Step 1: Education & Time */}
             {step === 1 && (
-              <div className="grid grid-cols-2 gap-xl">
-                <div className="rounded-xl border border-outline-variant/60 bg-surface-container-lowest p-lg shadow-sm">
-                  <div className="mb-md flex items-center gap-sm">
-                    <Icon name="school" className="text-primary" />
-                    <h3 className="font-title-md text-title-md font-bold text-on-surface">Highest Level of Education</h3>
-                  </div>
-                  <div className="flex flex-wrap gap-sm">
+              <div className="grid gap-6 md:grid-cols-2">
+                <div>
+                  <p className="mb-3 flex items-center gap-2 font-label-sm text-label-sm text-on-surface-variant"><Icon name="school" className="text-primary" /> Highest level of education</p>
+                  <div className="flex flex-wrap gap-2">
                     {EDUCATION_LEVELS.map((e) => (
-                      <Chip key={e} label={e} active={answers.educationLevel === e} onClick={() => setAnswers((a) => ({ ...a, educationLevel: e }))} />
+                      <Choice key={e} active={answers.educationLevel === e} onClick={() => setAnswers((a) => ({ ...a, educationLevel: e }))} className="rounded-full px-4 py-2 font-label-sm text-label-sm text-on-surface">{e}</Choice>
                     ))}
                   </div>
                 </div>
-
-                <div className="rounded-xl border border-outline-variant/60 bg-surface-container-lowest p-lg shadow-sm">
-                  <div className="mb-md flex items-center gap-sm">
-                    <Icon name="schedule" className="text-primary" />
-                    <h3 className="font-title-md text-title-md font-bold text-on-surface">Time Available Per Week</h3>
-                  </div>
-                  <div className="flex flex-wrap gap-sm">
+                <div>
+                  <p className="mb-3 flex items-center gap-2 font-label-sm text-label-sm text-on-surface-variant"><Icon name="schedule" className="text-primary" /> Time available per week</p>
+                  <div className="grid grid-cols-2 gap-2">
                     {TIME_OPTIONS.map((t) => (
-                      <Chip key={t} label={t} active={answers.timeAvailablePerWeek === t} onClick={() => setAnswers((a) => ({ ...a, timeAvailablePerWeek: t }))} />
+                      <Choice key={t} active={answers.timeAvailablePerWeek === t} onClick={() => setAnswers((a) => ({ ...a, timeAvailablePerWeek: t }))} className="px-4 py-3 text-center font-label-sm text-label-sm text-on-surface">{t}</Choice>
                     ))}
                   </div>
                 </div>
               </div>
             )}
 
-            {/* Step 2: Constraints Selection */}
             {step === 2 && (
-              <div className="grid grid-cols-2 gap-md">
+              <div className="grid gap-3 sm:grid-cols-2">
                 {CONSTRAINT_ITEMS.map((c) => {
                   const active = answers.constraints.includes(c.label);
                   return (
-                    <button
-                      key={c.label}
-                      onClick={() => toggleConstraint(c.label)}
-                      className={`flex items-center gap-md rounded-xl border p-lg text-left transition-all hover:shadow-sm active:scale-98 ${
-                        active
-                          ? "border-primary bg-primary-container/20 ring-2 ring-primary text-on-surface"
-                          : "border-outline-variant bg-surface hover:bg-surface-container-low text-on-surface"
-                      }`}
-                    >
-                      <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${active ? "bg-primary text-on-primary" : "bg-surface-container-high text-on-surface-variant"}`}>
+                    <Choice key={c.label} active={active} onClick={() => toggleConstraint(c.label)} className="flex items-center gap-3 p-4">
+                      <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${active ? "bg-primary text-on-primary" : "bg-surface-container-high text-on-surface-variant"}`}>
                         <Icon name={active ? "check_circle" : c.icon} filled={active} />
-                      </div>
-                      <span className="font-title-md text-title-md font-medium text-on-surface">{c.label}</span>
-                    </button>
+                      </span>
+                      <span className="font-label-sm text-[15px] text-on-surface">{c.label}</span>
+                    </Choice>
                   );
                 })}
               </div>
             )}
 
-            {/* Step 3: Business Information Form */}
             {step === 3 && (
-              <div className="rounded-xl border border-outline-variant/60 bg-surface-container-lowest p-lg shadow-sm">
-                <div className="grid grid-cols-2 gap-lg">
-                  <label className="flex flex-col gap-xs">
-                    <span className="font-label-sm text-label-sm font-semibold text-on-surface-variant">Your Name *</span>
-                    <input
-                      value={answers.name}
-                      onChange={(e) => setAnswers((a) => ({ ...a, name: e.target.value }))}
-                      className="w-full rounded-lg border border-outline-variant bg-surface p-md font-body-md text-body-md text-on-surface outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/20"
-                      placeholder="e.g. Kofi Mensah"
-                    />
-                  </label>
-
-                  <label className="flex flex-col gap-xs">
-                    <span className="font-label-sm text-label-sm font-semibold text-on-surface-variant">Business Name *</span>
-                    <input
-                      value={answers.businessName}
-                      onChange={(e) => setAnswers((a) => ({ ...a, businessName: e.target.value }))}
-                      className="w-full rounded-lg border border-outline-variant bg-surface p-md font-body-md text-body-md text-on-surface outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/20"
-                      placeholder="e.g. Kumasi Poultry & Agro"
-                    />
-                  </label>
-
-                  <label className="flex flex-col gap-xs col-span-2">
-                    <span className="font-label-sm text-label-sm font-semibold text-on-surface-variant">Location</span>
-                    <input
-                      value={answers.location}
-                      onChange={(e) => setAnswers((a) => ({ ...a, location: e.target.value }))}
-                      className="w-full rounded-lg border border-outline-variant bg-surface p-md font-body-md text-body-md text-on-surface outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/20"
-                      placeholder="e.g. Kumasi, Ashanti Region, Ghana"
-                    />
-                  </label>
-                </div>
+              <div className="grid gap-4 md:grid-cols-2">
+                <label className="flex flex-col gap-1.5">
+                  <span className="font-label-sm text-label-sm text-on-surface-variant">Your name *</span>
+                  <input value={answers.name} onChange={(e) => setAnswers((a) => ({ ...a, name: e.target.value }))} className={inputCls} placeholder="e.g. Kofi Mensah" />
+                </label>
+                <label className="flex flex-col gap-1.5">
+                  <span className="font-label-sm text-label-sm text-on-surface-variant">Business name *</span>
+                  <input value={answers.businessName} onChange={(e) => setAnswers((a) => ({ ...a, businessName: e.target.value }))} className={inputCls} placeholder="e.g. Kumasi Poultry & Agro" />
+                </label>
+                <label className="flex flex-col gap-1.5 md:col-span-2">
+                  <span className="font-label-sm text-label-sm text-on-surface-variant">Location</span>
+                  <input value={answers.location} onChange={(e) => setAnswers((a) => ({ ...a, location: e.target.value }))} className={inputCls} placeholder="e.g. Kumasi, Ghana" />
+                </label>
               </div>
             )}
           </div>
+
+          {summary.length > 0 && step > 0 && (
+            <div className="mt-6 flex justify-end">
+              <div className="max-w-md rounded-2xl rounded-tr-sm bg-primary px-5 py-3 font-body-md text-body-md text-on-primary">
+                {summary.join(" · ")}
+              </div>
+            </div>
+          )}
         </main>
 
-        {/* Footer & Navigation Controls */}
-        <footer className="border-t border-outline-variant/40 pt-md">
-          {submitError && (
-            <p role="alert" className="mb-sm text-center font-label-sm text-label-sm text-error">
-              {submitError}
-            </p>
-          )}
-
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-sm">
+        <footer className="sticky bottom-0 border-t border-outline-variant/50 bg-surface/95 px-5 py-4 backdrop-blur md:px-10 lg:px-14">
+          {submitError && <p role="alert" className="mb-3 text-center font-label-sm text-label-sm text-error">{submitError}</p>}
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              aria-label={voiceLabel}
+              onClick={toggleIntakeVoice}
+              disabled={isTranscribing}
+              className={`flex h-12 items-center gap-2 rounded-full px-4 font-label-sm text-label-sm transition-all ${
+                isRecording ? "animate-pulse bg-error text-on-error ring-2 ring-error/40" : isTranscribing ? "bg-surface-container-high text-primary" : "bg-secondary-container text-on-secondary-container hover:opacity-90"
+              }`}
+            >
+              <Icon name={isTranscribing ? "hourglass_empty" : isRecording ? "graphic_eq" : "mic"} />
+              <span className="hidden sm:inline">{isTranscribing ? "Transcribing..." : isRecording ? "Listening — tap to stop" : "Voice input"}</span>
+            </button>
+            <div className="ml-auto flex items-center gap-3">
+              {step > 0 && (
+                <button type="button" onClick={handleBack} className="h-12 rounded-full border border-outline-variant px-6 font-label-sm text-[15px] text-on-surface transition-colors hover:bg-surface-container-low">Back</button>
+              )}
               <button
                 type="button"
-                aria-label={
-                  isTranscribing
-                    ? "Transcribing voice input..."
-                    : isRecording
-                    ? "Stop voice input"
-                    : "Answer with your voice"
-                }
-                onClick={toggleIntakeVoice}
-                disabled={isTranscribing}
-                className={`tap-target flex items-center gap-xs rounded-full px-md py-sm font-label-sm text-label-sm transition-all ${
-                  isRecording
-                    ? "animate-pulse bg-error text-on-error shadow-md ring-2 ring-error/40"
-                    : isTranscribing
-                    ? "bg-surface-container-high text-primary"
-                    : "bg-secondary-container text-on-secondary-container hover:bg-secondary-container/80"
-                }`}
+                disabled={!canAdvance || submitting}
+                onClick={handleNext}
+                className="flex h-12 items-center gap-2 rounded-full bg-sunburst-gold px-6 font-label-sm text-[15px] font-bold text-ink shadow-md transition-all hover:brightness-105 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40"
               >
-                <Icon name={isTranscribing ? "hourglass_empty" : isRecording ? "graphic_eq" : "mic"} />
-                <span>
-                  {isTranscribing
-                    ? "Transcribing..."
-                    : isRecording
-                    ? "Listening (tap to stop)"
-                    : "Voice Input"}
-                </span>
+                {submitting ? "Saving..." : step === 3 ? "Confirm & choose mentor" : `Continue to ${cur.next}`}
+                {!submitting && <Icon name={step === 3 ? "check_circle" : "arrow_forward"} filled={step === 3} />}
               </button>
-
-              <span className="text-sm text-on-surface-variant ml-sm">
-                {step === 0 && answers.sector ? `Selected: ${answers.sector}` : "Select an option to proceed"}
-              </span>
-            </div>
-
-            <div className="flex items-center gap-md">
-              {step > 0 && (
-                <Button variant="secondary" className="h-12 px-lg text-[16px]" onClick={handleBack}>
-                  Back
-                </Button>
-              )}
-
-              {step === 3 ? (
-                <Button
-                  variant="cta"
-                  className="h-12 px-xl text-[18px]"
-                  disabled={!canAdvance || submitting}
-                  onClick={handleNext}
-                >
-                  {submitting ? "Saving..." : "Confirm & Choose Mentor"}
-                  {!submitting && <Icon name="check_circle" filled />}
-                </Button>
-              ) : (
-                <Button
-                  variant="cta"
-                  className="h-12 px-xl text-[18px]"
-                  disabled={!canAdvance}
-                  onClick={handleNext}
-                >
-                  Continue
-                  <Icon name="arrow_forward" />
-                </Button>
-              )}
             </div>
           </div>
         </footer>
-      </div>
+      </section>
     </div>
   );
 }

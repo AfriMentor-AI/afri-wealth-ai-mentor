@@ -1,644 +1,230 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { Icon } from "@/components/Icon";
-import { createGoal, fetchGoals, fetchMilestonesByGoal } from "@/lib/api";
+import { AppFrame, KenteStrip } from "@/components/shell/AppSidebar";
+import { ProgressRing } from "@/components/goals/ProgressRing";
+import { EditGoalModal } from "@/components/goals/GoalModals";
+import { fetchGoals, fetchMilestonesByGoal } from "@/lib/api";
 import type { Goal, Milestone } from "@/lib/types";
-import { ProgressRing } from "@/components/ui/ProgressRing";
-import { Skeleton } from "@/components/ui/Skeleton";
-import { Button } from "@/components/ui/Button";
-import { useAppDispatch } from "@/lib/store";
-import { EditGoalModal } from "@/components/EditGoalModal";
+import { useAppDispatch, useAppState } from "@/lib/store";
+import { mentorFor } from "@/lib/mentors";
 
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
+const fmt = (d?: string) => (d ? new Date(d).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" }) : null);
+const daysLeft = (d?: string) => (d ? Math.ceil((new Date(d).getTime() - Date.now()) / 86400000) : null);
 
-function activeGoalCount(goals: Goal[]): number {
-  return goals.filter((g) => g.progressPct < 100).length;
+function chips(goal: Goal, ms?: Milestone[]) {
+  const out: { label: string; cls: string }[] = [];
+  if (ms?.some((m) => m.status === "blocked")) out.push({ label: "Blocked", cls: "bg-error-container text-on-error-container" });
+  const dl = daysLeft(goal.deadline);
+  if (dl !== null && dl >= 0 && dl <= 14) out.push({ label: "Deadline near", cls: "bg-gold-mist text-sunburst-gold" });
+  if (goal.progressPct >= 100) out.push({ label: "Complete", cls: "bg-primary/15 text-primary" });
+  return out;
 }
 
-function formatDeadline(deadline: string | undefined) {
-  if (!deadline) return null;
-  return new Date(deadline).toLocaleDateString(undefined, {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-  });
-}
+const nextStep = (ms?: Milestone[]) => ms?.find((m) => m.status === "in_progress" || m.status === "blocked") ?? ms?.find((m) => m.status === "upcoming");
 
-/** Derive tag chips from available data — priority/category not in model yet,
- *  so we surface "Deadline Near" and "Blocked" from milestone state. */
-function goalChips(
-  goal: Goal,
-  milestones: Milestone[] | undefined
-): { label: string; variant: "priority" | "neutral" | "blocked" }[] {
-  const chips: { label: string; variant: "priority" | "neutral" | "blocked" }[] = [];
-
-  const hasBlocked = milestones?.some((m) => m.status === "blocked");
-  if (hasBlocked) chips.push({ label: "Blocked", variant: "blocked" });
-
-  if (goal.deadline) {
-    const daysLeft =
-      (new Date(goal.deadline).getTime() - Date.now()) / (1000 * 60 * 60 * 24);
-    if (daysLeft >= 0 && daysLeft <= 14) {
-      chips.push({ label: "Deadline Near", variant: "priority" });
-    }
-  }
-
-  return chips;
-}
-
-// ---------------------------------------------------------------------------
-// Sub-components
-// ---------------------------------------------------------------------------
-
-function ChipBadge({
-  label,
-  variant,
-}: {
-  label: string;
-  variant: "priority" | "neutral" | "blocked";
-}) {
-  const cls =
-    variant === "priority"
-      ? "bg-secondary-container text-on-secondary-container"
-      : variant === "blocked"
-      ? "bg-error-container text-on-error-container"
-      : "bg-surface-variant text-on-surface-variant";
+function Pathway({ ms }: { ms: Milestone[] }) {
   return (
-    <span
-      className={`px-sm py-xs text-label-sm font-label-sm rounded-full ${cls}`}
-    >
-      {label}
-    </span>
-  );
-}
-
-/** Milestone card used in the right-side roadmap panel. */
-function MilestoneNode({
-  milestone,
-  isLast,
-}: {
-  milestone: Milestone;
-  isLast: boolean;
-}) {
-  const statusStyles = {
-    done: {
-      node: "bg-secondary text-on-secondary",
-      card: "bg-surface border border-outline-variant shadow-sm",
-      label: "text-secondary",
-      labelText: "Done",
-    },
-    in_progress: {
-      node: "bg-primary text-on-primary animate-pulse-subtle",
-      card: "bg-surface border-2 border-primary shadow-md",
-      label: "text-primary",
-      labelText: "Active",
-    },
-    blocked: {
-      node: "bg-error text-on-error",
-      card: "bg-error-container border border-error",
-      label: "text-error",
-      labelText: "Blocked",
-    },
-    upcoming: {
-      node: "bg-surface-container border-2 border-outline-variant text-on-surface-variant",
-      card: "bg-surface border border-outline-variant opacity-60",
-      label: "text-on-surface-variant",
-      labelText: "Upcoming",
-    },
-  };
-
-  const s = statusStyles[milestone.status];
-
-  return (
-    <div className="relative">
-      {/* Dashed connector line */}
-      {!isLast && (
-        <div
-          aria-hidden
-          className="absolute left-[-17px] top-6 h-[calc(100%+48px)] w-0.5"
-          style={{
-            backgroundImage:
-              "linear-gradient(to bottom, var(--primary) 50%, rgba(255,255,255,0) 0%)",
-            backgroundPosition: "right",
-            backgroundSize: "2px 10px",
-            backgroundRepeat: "repeat-y",
-          }}
-        />
-      )}
-
-      {/* Node dot */}
-      <div
-        className={`absolute left-[-26px] top-0 z-10 flex h-6 w-6 items-center justify-center rounded-full ${s.node}`}
-      >
-        {milestone.status === "done" ? (
-          <Icon name="check" size={14} />
-        ) : milestone.status === "in_progress" ? (
-          <div className="h-2 w-2 rounded-full bg-white" />
-        ) : milestone.status === "blocked" ? (
-          <Icon name="priority_high" size={14} />
-        ) : null}
-      </div>
-
-      {/* Card */}
-      <div className={`rounded-lg p-md ${s.card}`}>
-        <div className="flex items-start justify-between mb-xs">
-          <h5 className="font-title-md text-title-md text-on-surface pr-sm">
-            {milestone.title}
-          </h5>
-          <span className={`font-label-sm text-label-sm shrink-0 ${s.label}`}>
-            {s.labelText}
+    <ol className="relative">
+      {ms.map((m, i) => (
+        <li key={m.id} className="relative flex gap-3 pb-5 last:pb-0">
+          {i < ms.length - 1 && <span aria-hidden className={`absolute left-[13px] top-7 h-[calc(100%-1.25rem)] w-0.5 ${m.status === "done" ? "bg-primary" : "border-l-2 border-dashed border-outline-variant"}`} />}
+          <span className={`z-10 flex h-7 w-7 shrink-0 items-center justify-center rounded-full ${m.status === "done" ? "bg-primary text-on-primary" : m.status === "in_progress" ? "bg-sunburst-gold text-ink ring-4 ring-sunburst-gold/30" : m.status === "blocked" ? "bg-error text-on-error" : "border-2 border-outline-variant bg-surface-container-low"}`}>
+            {m.status === "done" ? <Icon name="check" size={16} /> : m.status === "in_progress" ? <Icon name="hourglass_top" size={14} /> : m.status === "blocked" ? <Icon name="priority_high" size={16} /> : null}
           </span>
-        </div>
-        {milestone.status === "blocked" && (
-          <button className="mt-sm flex items-center gap-xs font-label-sm text-label-sm text-on-error-container underline">
-            <Icon name="auto_fix" size={14} />
-            Ask AI for solution
-          </button>
-        )}
-      </div>
-    </div>
-  );
-}
-
-/** Inline right-side roadmap panel (desktop only). */
-function GoalRoadmapPanel({
-  goal,
-  milestones,
-  onClose,
-  onEdit,
-}: {
-  goal: Goal;
-  milestones: Milestone[] | undefined;
-  onClose: () => void;
-  onEdit: () => void;
-}) {
-  const nextSuggestedStep = milestones?.find(
-    (m) => m.status === "in_progress" || m.status === "blocked"
-  );
-
-  return (
-    <aside className="hidden lg:flex w-[420px] shrink-0 flex-col border-l border-outline-variant bg-surface-container-low overflow-hidden">
-      {/* Panel header */}
-      <header className="border-b border-outline-variant bg-surface p-lg">
-        <div className="flex items-center justify-between mb-sm">
-          <span className="font-label-sm text-label-sm uppercase tracking-widest text-primary">
-            Active Roadmap
-          </span>
-          <div className="flex items-center gap-xs">
-            <button
-              type="button"
-              onClick={onEdit}
-              aria-label="Edit goal"
-              className="flex items-center gap-1 rounded-full border border-outline-variant px-sm py-0.5 text-xs font-semibold text-on-surface hover:bg-surface-variant transition-colors"
-            >
-              <Icon name="edit" size={14} />
-              Edit
-            </button>
-            <button
-              type="button"
-              onClick={onClose}
-              aria-label="Close roadmap panel"
-              title="Close roadmap panel"
-              className="text-on-surface-variant hover:text-on-surface transition-colors p-1"
-            >
-              <Icon name="close" size={20} />
-            </button>
-          </div>
-        </div>
-        <h3 className="font-headline-lg text-headline-lg text-on-surface">
-          {goal.title}
-        </h3>
-        {goal.description && (
-          <p className="mt-xs text-xs text-on-surface-variant line-clamp-2">{goal.description}</p>
-        )}
-      </header>
-
-      {/* Milestone path */}
-      <div className="flex-grow overflow-y-auto p-lg">
-        {milestones === undefined ? (
-          <div className="flex flex-col gap-md">
-            {Array.from({ length: 3 }).map((_, i) => (
-              <Skeleton key={i} className="h-20 w-full rounded-lg" />
-            ))}
-          </div>
-        ) : milestones.length === 0 ? (
-          <p className="font-body-md text-on-surface-variant">
-            No milestones yet for this goal.
-          </p>
-        ) : (
-          <div className="relative pl-8 flex flex-col gap-xl">
-            {milestones.map((m, i) => (
-              <MilestoneNode
-                key={m.id}
-                milestone={m}
-                isLast={i === milestones.length - 1}
-              />
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* Panel footer */}
-      <footer className="border-t border-outline-variant bg-surface-container p-lg flex flex-col gap-md">
-        <div className="flex items-center justify-between">
-          <span className="font-label-sm text-label-sm text-on-surface-variant">
-            Next suggested step
-          </span>
-          <Icon name="lightbulb" className="text-primary" size={20} />
-        </div>
-        <div className="rounded-lg border border-primary-fixed-dim bg-primary-fixed p-md">
-          {nextSuggestedStep ? (
-            <p className="font-label-sm text-label-sm text-on-primary-fixed-variant">
-              &ldquo;Focus on completing &lsquo;{nextSuggestedStep.title}&rsquo; to keep
-              your goal on track.&rdquo;
+          <div className="min-w-0">
+            <p className={`font-label-sm text-[15px] ${m.status === "done" ? "text-on-surface-variant line-through" : m.status === "upcoming" ? "text-on-surface-variant" : "font-bold text-on-surface"}`}>
+              {m.title}
+              {m.status === "in_progress" && <span className="ml-2 rounded bg-gold-mist px-1.5 py-0.5 font-eyebrow text-[9px] uppercase text-sunburst-gold">Current</span>}
+              {m.status === "blocked" && <span className="ml-2 rounded bg-error-container px-1.5 py-0.5 font-eyebrow text-[9px] uppercase text-on-error-container">Blocked</span>}
             </p>
-          ) : (
-            <p className="font-label-sm text-label-sm text-on-primary-fixed-variant">
-              &ldquo;Great progress! Keep the momentum going.&rdquo;
-            </p>
-          )}
-        </div>
-        <Link
-          href={`/goals/milestones/${goal.id}`}
-          className="block w-full rounded-full bg-secondary py-md text-center font-title-md text-title-md text-on-secondary transition-all hover:opacity-90 active:scale-95"
-        >
-          Update Goal Progress
-        </Link>
-      </footer>
-    </aside>
+          </div>
+        </li>
+      ))}
+    </ol>
   );
 }
 
-// ---------------------------------------------------------------------------
-// Page
-// ---------------------------------------------------------------------------
-
-export default function GoalsOverviewPage() {
-  const router = useRouter();
+export default function GoalsPage() {
   const dispatch = useAppDispatch();
+  const { selectedPersona: persona } = useAppState();
+  const mentor = mentorFor(persona);
   const [goals, setGoals] = useState<Goal[] | null>(null);
-  const [milestonesByGoal, setMilestonesByGoal] = useState<
-    Record<string, Milestone[]>
-  >({});
-  const [activeGoalId, setActiveGoalId] = useState<string | null>(null);
-  const [isRoadmapCollapsed, setIsRoadmapCollapsed] = useState(false);
-  const [editingGoal, setEditingGoal] = useState<Goal | null>(null);
-  const [showCreateForm, setShowCreateForm] = useState(false);
-  const [newGoalTitle, setNewGoalTitle] = useState("");
-  const [creating, setCreating] = useState(false);
-  const [createError, setCreateError] = useState<string | null>(null);
+  const [byGoal, setByGoal] = useState<Record<string, Milestone[]>>({});
+  const [activeId, setActiveId] = useState<string | null>(null);
+  const [editing, setEditing] = useState<Goal | null>(null);
+  const [loadError, setLoadError] = useState(false);
 
-  const loadGoals = useCallback(async () => {
-    const fetchedGoals = await fetchGoals();
-    setGoals(fetchedGoals);
-    const entries = await Promise.all(
-      fetchedGoals.map(
-        async (g) => [g.id, await fetchMilestonesByGoal(g.id)] as const
-      )
-    );
-    setMilestonesByGoal(Object.fromEntries(entries));
-    // Auto-open first goal's panel if none selected
-    if (!activeGoalId && fetchedGoals.length > 0) {
-      setActiveGoalId(fetchedGoals[0].id);
+  const load = useCallback(async () => {
+    try {
+      const gs = await fetchGoals();
+      setGoals(gs);
+      setLoadError(false);
+      const entries = await Promise.all(gs.map(async (g) => [g.id, await fetchMilestonesByGoal(g.id).catch(() => [] as Milestone[])] as const));
+      setByGoal(Object.fromEntries(entries));
+      setActiveId((cur) => (cur && gs.some((g) => g.id === cur) ? cur : gs[0]?.id ?? null));
+    } catch {
+      setGoals((g) => g ?? []);
+      setLoadError(true);
     }
-  }, [activeGoalId]);
+  }, []);
 
   useEffect(() => {
-    loadGoals();
-    const handleGoalCreated = () => {
-      loadGoals();
-    };
-    window.addEventListener("goal-created", handleGoalCreated);
-    return () => {
-      window.removeEventListener("goal-created", handleGoalCreated);
-    };
-  }, [loadGoals]);
+    load();
+    const h = () => load();
+    window.addEventListener("goal-created", h);
+    return () => window.removeEventListener("goal-created", h);
+  }, [load]);
 
-  async function handleCreateGoal() {
-    const title = newGoalTitle.trim();
-    if (!title) return;
-    setCreating(true);
-    setCreateError(null);
-    try {
-      await createGoal({ title });
-      setNewGoalTitle("");
-      setShowCreateForm(false);
-      await loadGoals();
-    } catch {
-      setCreateError(
-        "Couldn't create that goal — check your connection and try again."
-      );
-    } finally {
-      setCreating(false);
-    }
-  }
+  const openNew = () => dispatch({ type: "OPEN_NEW_GOAL_MODAL" });
+  const active = goals?.find((g) => g.id === activeId) ?? null;
+  const activeMs = activeId ? byGoal[activeId] : undefined;
+  const open = goals?.filter((g) => g.progressPct < 100) ?? [];
+  const avg = goals && goals.length ? Math.round(goals.reduce((s, g) => s + g.progressPct, 0) / goals.length) : 0;
+  const soonest = open.filter((g) => g.deadline).sort((a, b) => +new Date(a.deadline!) - +new Date(b.deadline!))[0];
+  const sd = soonest ? daysLeft(soonest.deadline) : null;
 
-  const activeGoal =
-    activeGoalId && goals ? goals.find((g) => g.id === activeGoalId) : null;
-  const activeMilestones = activeGoalId
-    ? milestonesByGoal[activeGoalId]
-    : undefined;
+  const newBtn = (
+    <button type="button" onClick={openNew} className="flex h-11 shrink-0 items-center gap-2 whitespace-nowrap rounded-full bg-primary px-5 font-label-sm text-[15px] font-bold text-on-primary shadow-md transition-all hover:opacity-90 active:scale-[0.98]">
+      <Icon name="add" size={20} /> New goal
+    </button>
+  );
 
   return (
-    <div className="flex h-full min-h-screen">
-      {/* ------------------------------------------------------------------ */}
-      {/* Main content area                                                   */}
-      {/* ------------------------------------------------------------------ */}
-      <main className="flex-grow overflow-y-auto px-margin-mobile pb-xl pt-lg lg:px-xl lg:pt-xl">
-        <div className="mx-auto max-w-4xl">
-          {/* Header */}
-          <header className="mb-xl flex items-end justify-between">
-            <div>
-              <h2 className="font-headline-xl text-headline-xl text-on-background mb-sm">
-                Your Aspirations
-              </h2>
-              <p className="font-body-lg text-body-lg text-on-surface-variant">
-                Guided steps towards communal and personal prosperity.
-              </p>
+    <AppFrame title="Goals" mobileRight={undefined}>
+      <KenteStrip />
+      <div className="mx-auto flex max-w-[1280px] flex-col gap-8 px-5 pb-16 pt-6 md:px-10 md:pt-10 xl:flex-row">
+        <main className="min-w-0 flex-1">
+          <header className="flex items-end justify-between gap-4">
+            <div className="min-w-0">
+              <p className="font-eyebrow text-eyebrow uppercase text-on-surface-variant"><span className="text-sunburst-gold">●</span> Financial fortitude · Milestone tracker</p>
+              <h1 className="mt-2 font-headline-xl-mobile text-headline-xl-mobile text-on-surface md:font-headline-xl md:text-[52px] md:leading-[58px]">Goals</h1>
+              <p className="mt-2 max-w-xl font-quote text-[18px] italic leading-7 text-on-surface-variant">Anchor your enterprise ambitions in ancestral milestones and steady, verified progress.</p>
             </div>
-            {goals !== null && goals.length > 0 && (
-              <div className="flex shrink-0 items-center gap-sm">
-                <div className="flex shrink-0 items-center gap-sm rounded-lg border border-outline-variant bg-surface-container px-md py-sm">
-                  <Icon name="emoji_events" className="text-primary" size={20} />
-                  <span className="font-label-sm text-label-sm text-on-surface">
-                    {activeGoalCount(goals)} Active Goal
-                    {activeGoalCount(goals) !== 1 ? "s" : ""}
-                  </span>
-                </div>
-                {activeGoal && (
-                  <button
-                    type="button"
-                    onClick={() => setIsRoadmapCollapsed((prev) => !prev)}
-                    className="hidden lg:flex items-center gap-xs rounded-lg border border-outline-variant bg-surface-container px-md py-sm text-xs font-semibold text-on-surface hover:bg-surface-variant transition-colors"
-                    title={isRoadmapCollapsed ? "Show active roadmap" : "Hide active roadmap"}
-                  >
-                    <Icon
-                      name={isRoadmapCollapsed ? "view_sidebar" : "dock_to_right"}
-                      size={18}
-                      className="text-primary"
-                    />
-                    <span>{isRoadmapCollapsed ? "Show Roadmap" : "Hide Roadmap"}</span>
-                  </button>
-                )}
-              </div>
-            )}
+            <div className="hidden sm:block">{newBtn}</div>
           </header>
 
-          {/* Goal grid */}
-          <div className="grid grid-cols-1 gap-lg md:grid-cols-2">
-            {goals === null ? (
-              Array.from({ length: 3 }).map((_, i) => (
-                <Skeleton key={i} className="h-52 w-full rounded-xl" />
-              ))
-            ) : goals.length === 0 ? (
-              <>
-                {/* Empty state */}
-                <div className="col-span-full rounded-xl border border-dashed border-outline-variant p-lg text-center">
-                  <Icon
-                    name="flag"
-                    size={32}
-                    className="mx-auto mb-sm text-on-surface-variant"
-                  />
-                  <p className="font-title-md text-title-md text-on-surface">
-                    No goals yet
-                  </p>
-                  <p className="mt-xs font-body-md text-on-surface-variant">
-                    Start your first goal and CHIOMA will help you break it into
-                    milestones.
-                  </p>
-                  <button
-                    type="button"
-                    onClick={() => dispatch({ type: "OPEN_NEW_GOAL_MODAL" })}
-                    className="mt-md inline-flex items-center gap-xs rounded-full bg-primary px-lg py-sm font-title-md text-title-md text-on-primary transition-opacity hover:opacity-90 active:scale-95"
-                  >
-                    <Icon name="add" size={18} />
-                    Create Your First Goal
-                  </button>
+          {goals !== null && goals.length > 0 && (
+            <div className="mt-6 flex gap-3 overflow-x-auto pb-1 md:grid md:grid-cols-3 md:overflow-visible">
+              {[
+                { icon: "track_changes", label: "Active portfolio", value: `${open.length} strategic goal${open.length === 1 ? "" : "s"}` },
+                { icon: "trending_up", label: "Average progress", value: `${avg}% complete` },
+                { icon: "alarm", label: "Imminent deadline", value: soonest && sd !== null ? (sd < 0 ? `${soonest.title} · overdue` : sd === 0 ? "Due today" : `Due in ${sd} day${sd === 1 ? "" : "s"}`) : "None set", warn: sd !== null && sd <= 7 },
+              ].map((s) => (
+                <div key={s.label} className="flex min-w-[220px] shrink-0 items-center gap-3 rounded-2xl border border-outline-variant bg-surface-container-lowest px-4 py-3 md:min-w-0">
+                  <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${s.warn ? "bg-error-container text-error" : "bg-gold-mist text-sunburst-gold"}`}><Icon name={s.icon} size={22} /></span>
+                  <div className="min-w-0"><p className="font-eyebrow text-[10px] uppercase text-on-surface-variant">{s.label}</p><p className={`truncate font-label-sm text-[14px] ${s.warn ? "text-error" : "text-on-surface"}`}>{s.value}</p></div>
                 </div>
-              </>
+              ))}
+            </div>
+          )}
+
+          {loadError && <p role="alert" className="mt-6 rounded-xl bg-error-container px-4 py-3 font-label-sm text-label-sm text-on-error-container">Couldn’t load your goals. <button className="underline" onClick={load}>Try again</button></p>}
+
+          <div className="mt-8 flex flex-col gap-6">
+            {goals === null ? (
+              Array.from({ length: 2 }).map((_, i) => <div key={i} className="h-64 animate-pulse rounded-3xl bg-surface-container-low" />)
+            ) : goals.length === 0 && !loadError ? (
+              <div className="rounded-3xl border-2 border-dashed border-outline-variant p-10 text-center">
+                <Icon name="flag" size={36} className="text-on-surface-variant" />
+                <p className="mt-2 font-title-md text-title-md text-on-surface">No goals yet</p>
+                <p className="mx-auto mt-1 max-w-sm font-body-md text-body-md text-on-surface-variant">Start your first goal and {mentor.name.split(" ")[0]} will help you break it into milestones.</p>
+                <div className="mt-5 inline-block">{newBtn}</div>
+              </div>
             ) : (
               <>
-                {goals.map((goal) => {
-                  const milestones = milestonesByGoal[goal.id];
-                  const deadlineLabel = formatDeadline(goal.deadline);
-                  const chips = goalChips(goal, milestones);
-                  const isActive = goal.id === activeGoalId;
-
+                {goals.map((g) => {
+                  const ms = byGoal[g.id];
+                  const isActive = g.id === activeId;
+                  const step = nextStep(ms);
+                  const dl = fmt(g.deadline);
                   return (
-                    <div
-                      key={goal.id}
-                      role="button"
-                      tabIndex={0}
-                      onClick={() => {
-                        router.push(`/goals/milestones/${goal.id}`);
-                      }}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter" || e.key === " ") {
-                          e.preventDefault();
-                          router.push(`/goals/milestones/${goal.id}`);
-                        }
-                      }}
-                      className="flex cursor-pointer flex-col gap-md rounded-xl border border-outline-variant bg-surface-container-low p-lg transition-all hover:bg-surface-container-high hover:shadow-md focus-visible:outline-2 focus-visible:outline-primary"
-                    >
-                      {/* Top row: icon + edit button + progress ring */}
-                      <div className="flex items-start justify-between">
-                        <div className="flex items-center gap-sm">
-                          <div
-                            className={`rounded-lg p-sm ${
-                              isActive ? "bg-primary-fixed" : "bg-surface-variant"
-                            }`}
-                          >
-                            <Icon
-                              name="ads_click"
-                              size={24}
-                              className={
-                                isActive
-                                  ? "text-primary"
-                                  : "text-on-surface-variant"
-                              }
-                            />
-                          </div>
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setEditingGoal(goal);
-                            }}
-                            title="Edit goal"
-                            className="flex h-8 w-8 items-center justify-center rounded-full text-on-surface-variant hover:bg-surface-variant hover:text-on-surface transition-colors"
-                          >
-                            <Icon name="edit" size={16} />
-                          </button>
+                    <article key={g.id} className={`relative overflow-hidden rounded-3xl border bg-surface-container-lowest p-5 shadow-sm transition-shadow hover:shadow-md md:p-6 ${isActive ? "border-sunburst-gold ring-2 ring-sunburst-gold/40" : "border-outline-variant"}`}>
+                      <span className="kente-band absolute inset-x-0 top-0 h-1.5" />
+                      <div className="mt-1 flex items-start justify-between gap-3">
+                        <div className="flex flex-wrap items-center gap-2">
+                          {isActive && <span className="rounded-full bg-gold-mist px-2.5 py-1 font-eyebrow text-[10px] uppercase text-sunburst-gold">★ Active focus</span>}
+                          {chips(g, ms).map((c) => <span key={c.label} className={`rounded-full px-2.5 py-1 font-eyebrow text-[10px] uppercase ${c.cls}`}>{c.label}</span>)}
                         </div>
-                        <ProgressRing progressPct={goal.progressPct} size={64} />
+                        <button type="button" onClick={() => setEditing(g)} aria-label={`Edit ${g.title}`} className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-surface-container-low text-on-surface-variant hover:text-on-surface"><Icon name="edit" size={18} /></button>
+                      </div>
+                      <h2 className="mt-3 font-title-md text-[24px] leading-8 text-on-surface">{g.title}</h2>
+                      {g.description && <p className="mt-1 line-clamp-2 font-body-md text-[15px] text-on-surface-variant">{g.description}</p>}
+
+                      <div className="mt-4 flex items-center gap-5 rounded-2xl bg-surface-container-low p-4">
+                        <ProgressRing progressPct={g.progressPct} size={84} caption="complete" />
+                        <div className="min-w-0 flex-1">
+                          <p className="font-eyebrow text-[10px] uppercase text-on-surface-variant">Progress</p>
+                          <p className="font-title-md text-[18px] text-on-surface">{ms ? `${ms.filter((m) => m.status === "done").length} of ${ms.length} milestones done` : "Loading milestones…"}</p>
+                          {dl && <p className="mt-0.5 font-caption text-caption text-on-surface-variant">Target date: {dl}</p>}
+                        </div>
                       </div>
 
-                      {/* Title + description */}
-                      <div>
-                        <h3 className="font-headline-lg text-headline-lg text-on-surface">
-                          {goal.title}
-                        </h3>
-                        {goal.description && (
-                          <p className="mt-sm font-body-md text-body-md text-on-surface-variant">
-                            {goal.description}
-                          </p>
-                        )}
-                        {!goal.description && deadlineLabel && (
-                          <p className="mt-sm font-body-md text-body-md text-on-surface-variant">
-                            Target: {deadlineLabel}
-                          </p>
-                        )}
-                      </div>
-
-                      {/* Tag chips */}
-                      {chips.length > 0 && (
-                        <div className="mt-auto flex flex-wrap gap-xs">
-                          {chips.map((chip) => (
-                            <ChipBadge
-                              key={chip.label}
-                              label={chip.label}
-                              variant={chip.variant}
-                            />
-                          ))}
+                      {step && (
+                        <div className="mt-3 flex items-center gap-3 rounded-2xl bg-surface-container-low p-4">
+                          <Icon name={step.status === "blocked" ? "report" : "event_available"} className={step.status === "blocked" ? "text-error" : "text-primary"} />
+                          <div className="min-w-0"><p className="font-eyebrow text-[10px] uppercase text-on-surface-variant">{step.status === "blocked" ? "Blocked step" : step.status === "upcoming" ? "Next up" : "Immediate milestone step"}</p><p className="truncate font-label-sm text-[15px] text-on-surface">{step.title}</p></div>
                         </div>
                       )}
-                    </div>
+
+                      <div className="mt-4 flex items-center justify-between border-t border-outline-variant/50 pt-3">
+                        <button type="button" onClick={() => setActiveId(g.id)} className={`font-caption text-caption ${isActive ? "text-sunburst-gold" : "text-on-surface-variant hover:text-primary"}`}>{isActive ? "● Viewed in roadmap" : "Preview in roadmap"}</button>
+                        <Link href={`/goals/milestones/${g.id}`} className="flex items-center gap-1 font-label-sm text-label-sm text-primary hover:underline">View roadmap <Icon name="arrow_forward" size={16} /></Link>
+                      </div>
+                    </article>
                   );
                 })}
-
-                {/* "Define New Purpose" dashed card */}
-                <button
-                  type="button"
-                  onClick={() => dispatch({ type: "OPEN_NEW_GOAL_MODAL" })}
-                  className="group flex flex-col items-center justify-center gap-md rounded-xl border-2 border-dashed border-outline-variant p-xl transition-all hover:border-primary"
-                >
-                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-surface-container transition-colors group-hover:bg-primary-fixed">
-                    <Icon
-                      name="add_circle"
-                      size={24}
-                      className="text-on-surface-variant group-hover:text-primary"
-                    />
-                  </div>
-                  <span className="font-title-md text-title-md text-on-surface-variant">
-                    Define New Purpose
-                  </span>
+                <button type="button" onClick={openNew} className="group flex flex-col items-center justify-center gap-2 rounded-3xl border-2 border-dashed border-outline-variant p-8 transition-colors hover:border-primary">
+                  <span className="flex h-12 w-12 items-center justify-center rounded-full bg-surface-container-low text-on-surface-variant group-hover:text-primary"><Icon name="add_circle" /></span>
+                  <span className="font-title-md text-title-md text-on-surface-variant">Define new purpose</span>
                 </button>
               </>
             )}
           </div>
 
-          {/* Create form (shown inline, spans full grid width) */}
-          {showCreateForm && (
-            <div className="mt-lg flex flex-col gap-sm rounded-xl border border-outline-variant bg-surface-container-low p-lg">
-              {createError && (
-                <p role="alert" className="font-label-sm text-label-sm text-error">
-                  {createError}
-                </p>
+          <div className="relative mt-8 overflow-hidden rounded-3xl border border-outline-variant bg-surface-container-low p-6">
+            <p className="flex items-center gap-2 font-title-md text-title-md text-primary"><Icon name="menu_book" size={20} /> Mentor insight · Sankofa</p>
+            <p className="mt-2 max-w-2xl font-quote text-[18px] italic leading-7 text-on-surface-variant">“To move forward, look to the wisdom of the past. Your goals today draw from a heritage of resilience and trade excellence.”</p>
+          </div>
+        </main>
+
+        {active && (
+          <aside className="hidden w-[380px] shrink-0 xl:block">
+            <div className="sticky top-6 overflow-hidden rounded-3xl border border-outline-variant bg-surface-container-lowest p-6 shadow-sm">
+              <div className="flex items-center justify-between"><p className="font-eyebrow text-eyebrow uppercase text-primary">Active roadmap</p>{active.deadline && <span className="rounded-full bg-gold-mist px-2.5 py-1 font-eyebrow text-[10px] uppercase text-sunburst-gold">Target: {fmt(active.deadline)}</span>}</div>
+              <h2 className="mt-3 font-title-md text-[26px] leading-8 text-on-surface">{active.title}</h2>
+              <div className="mt-4"><div className="flex justify-between font-caption text-caption text-on-surface-variant"><span>Trajectory completion</span><span className="text-primary">{active.progressPct}% completed</span></div><div className="mt-1.5 h-2 rounded-full bg-outline-variant/60"><div className="h-2 rounded-full bg-sunburst-gold" style={{ width: `${active.progressPct}%` }} /></div></div>
+              <p className="mb-4 mt-6 font-eyebrow text-eyebrow uppercase text-on-surface-variant">Milestone pathway{activeMs ? ` (${activeMs.length} stages)` : ""}</p>
+              {activeMs === undefined ? <div className="h-32 animate-pulse rounded-xl bg-surface-container-low" /> : activeMs.length === 0 ? <p className="font-body-md text-[14px] text-on-surface-variant">No milestones yet for this goal.</p> : <Pathway ms={activeMs} />}
+              {nextStep(activeMs) && (
+                <div className="mt-6 rounded-2xl border border-sunburst-gold/50 bg-gold-mist p-4">
+                  <p className="font-eyebrow text-[10px] uppercase text-sunburst-gold"><Icon name="bolt" size={12} className="mr-1 align-[-2px]" />Mentor action trigger</p>
+                  <p className="mt-1 font-label-sm text-[15px] text-on-surface">{nextStep(activeMs)!.title}</p>
+                  <Link href="/goals/action" className="mt-3 flex h-11 items-center justify-center gap-2 rounded-full bg-sunburst-gold font-label-sm text-[15px] font-bold text-ink shadow-md">Execute next action <Icon name="arrow_forward" size={18} /></Link>
+                </div>
               )}
-              <label className="flex flex-col gap-sm">
-                <span className="font-label-sm text-label-sm text-on-surface-variant">
-                  Goal title
-                </span>
-                <input
-                  autoFocus
-                  value={newGoalTitle}
-                  onChange={(e) => setNewGoalTitle(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") handleCreateGoal();
-                  }}
-                  placeholder="e.g. Start a Poultry Business"
-                  className="w-full rounded border border-outline-variant bg-surface-container-lowest p-md font-body-md text-body-md text-on-surface outline-none focus-visible:outline-primary"
-                />
-              </label>
-              <div className="flex gap-sm">
-                <Button
-                  variant="primary"
-                  className="flex-1"
-                  disabled={!newGoalTitle.trim() || creating}
-                  onClick={handleCreateGoal}
-                >
-                  {creating ? "Creating..." : "Create Goal"}
-                </Button>
-                <Button
-                  variant="secondary"
-                  onClick={() => {
-                    setShowCreateForm(false);
-                    setCreateError(null);
-                  }}
-                >
-                  Cancel
-                </Button>
+              <div className="mt-4 grid grid-cols-2 gap-2">
+                <Link href={`/goals/milestones/${active.id}`} className="flex items-center justify-center gap-1.5 rounded-xl bg-surface-container-low py-2.5 font-label-sm text-label-sm text-on-surface hover:bg-surface-container"><Icon name="add_circle" size={16} /> Add milestone</Link>
+                <button type="button" onClick={() => setEditing(active)} className="flex items-center justify-center gap-1.5 rounded-xl bg-surface-container-low py-2.5 font-label-sm text-label-sm text-on-surface hover:bg-surface-container"><Icon name="tune" size={16} /> Edit parameters</button>
               </div>
             </div>
-          )}
+          </aside>
+        )}
+      </div>
 
-          {/* ---------------------------------------------------------------- */}
-          {/* Mentor Insight — Sankofa Banner                                  */}
-          {/* ---------------------------------------------------------------- */}
-          <div className="relative mt-xl overflow-hidden rounded-xl border border-outline-variant bg-surface-container p-lg">
-            <div className="relative z-10">
-              <h4 className="flex items-center gap-sm font-title-md text-title-md text-primary">
-                <Icon name="menu_book" size={20} />
-                Mentor Insight: Sankofa
-              </h4>
-              <p className="mt-sm max-w-2xl font-body-md text-body-md text-on-surface-variant">
-                &ldquo;Remember that to move forward, we must look to the wisdom of
-                our past. Your goals today draw from a heritage of resilience and
-                trade excellence.&rdquo;
-              </p>
-            </div>
-            {/* Decorative background icon */}
-            <div className="pointer-events-none absolute bottom-[-20px] right-[-20px] opacity-10">
-              <Icon name="psychology" size={120} className="text-primary" />
-            </div>
-          </div>
-        </div>
-      </main>
-
-      {/* ------------------------------------------------------------------ */}
-      {/* Right-side roadmap panel (desktop only)                             */}
-      {/* ------------------------------------------------------------------ */}
-      {activeGoal && !isRoadmapCollapsed && (
-        <GoalRoadmapPanel
-          goal={activeGoal}
-          milestones={activeMilestones}
-          onClose={() => setIsRoadmapCollapsed(true)}
-          onEdit={() => setEditingGoal(activeGoal)}
-        />
+      {goals !== null && goals.length > 0 && (
+        <button type="button" onClick={openNew} aria-label="New goal" className="fixed bottom-24 right-5 z-30 flex h-14 w-14 items-center justify-center rounded-full bg-primary text-on-primary shadow-lg active:scale-95 sm:hidden"><Icon name="add" size={26} /></button>
       )}
 
-
-      {/* ------------------------------------------------------------------ */}
-      {/* FAB — new goal (mobile)                                             */}
-      {/* ------------------------------------------------------------------ */}
-      {goals !== null && (
-        <button
-          onClick={() => dispatch({ type: "OPEN_NEW_GOAL_MODAL" })}
-          aria-label="New goal"
-          className="fixed bottom-lg right-lg z-30 flex h-14 w-14 items-center justify-center rounded-full bg-primary text-on-primary shadow-lg transition-all hover:scale-105 active:scale-95 lg:hidden"
-        >
-          <Icon name="add" filled size={24} />
-        </button>
-      )}
-
-      {/* Edit Goal Modal */}
       <EditGoalModal
-        goal={editingGoal}
-        isOpen={!!editingGoal}
-        onClose={() => setEditingGoal(null)}
-        onGoalUpdated={() => {
-          loadGoals();
-        }}
-        onGoalDeleted={() => {
-          setActiveGoalId(null);
-          loadGoals();
-        }}
+        goal={editing}
+        isOpen={!!editing}
+        onClose={() => setEditing(null)}
+        onGoalUpdated={() => load()}
+        onGoalDeleted={() => { setActiveId(null); load(); }}
       />
-    </div>
+    </AppFrame>
   );
 }
