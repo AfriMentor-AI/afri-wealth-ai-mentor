@@ -158,7 +158,10 @@ def run(config_path: str | Path = DEFAULT_CONFIG) -> None:
             print(f"post-training evaluate() failed (non-fatal): {exc!r}")
 
         if mlflow_cfg.get("log_model"):
-            mlflow.peft.log_model(model, "sft_adapter")
+            try:  # non-fatal: mlflow.peft only exists in some MLflow versions; the adapter is already pushed
+                mlflow.peft.log_model(model, "sft_adapter")
+            except Exception as exc:  # noqa: BLE001
+                print(f"mlflow model logging skipped (non-fatal): {exc!r}")
 
         print(f"C2 SFT complete. Adapter saved to {model_cfg['output_dir']}/final")
         print(f"Publish to HuggingFace: huggingface-cli upload {model_cfg['hub_repo']}")
