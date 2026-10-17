@@ -147,3 +147,18 @@ ROUGE-L/BERTScore favour the trained models (closer to teacher text) — expecte
 Interpretation: with 210 synthetic examples, fine-tuning did not beat a format-matched prompt; DPO/RLHF added nothing over
 SFT. One judge, n=60, synthetic data, judge length bias -> report as a null result, not as "fine-tuning fails".
 Human panel excludes C1 (`--exclude C1`): its 243-word markdown answers are trivially identifiable and break blinding.
+
+## v3: best-of-4 judge-selected data (2026-10)
+
+After the v2b null result (trained adapters learned the answer *shape* but did not beat a prompted base model), v3 changes the
+signal rather than the hyper-parameters:
+
+- `generate_dataset_v3.py`: 4 teacher samples per prompt, scored by a *selection* judge (DeepSeek-V3.1). SFT target = best sample
+  (rejection sampling). DPO pair = best vs worst only when the composite gap >= 0.10 and the length ratio <= 1.35, so chosen and
+  rejected share the template and length (v2 pairs were separable by template alone).
+- 1,700 prompts requested -> 1,305 kept (dedupe + quality floor 0.55): train 1,085 / val 100 / test 120 prompts; 920 / 86 / 100 DPO pairs.
+  Mean within-prompt spread 0.197. Chosen 91.9 words vs rejected 91.0; both end in a question (96.6% vs 93.6%), so no shortcut.
+- Training and deployment use a ~30-token minimal system prompt (no 1.7k-token persona prompt).
+- Evaluation conditions: C1P (base + minimal prompt), C1S (base + full prompt + format), C2, C3. C4 skipped pending C3 signal.
+- **Limitations to state in the paper:** all data is LLM-generated; the selection judge (DeepSeek) must not be used as an evaluator
+  (use gpt-oss-120b + a third family via `rescore.py`); winner's curse applies to judge-selected targets.
