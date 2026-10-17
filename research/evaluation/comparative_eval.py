@@ -99,6 +99,14 @@ C4_ESTIMATED = {
 # duplicating that logic, so the fix applies uniformly to C1-C4.
 
 
+
+def _abort_if_judge_down(rows: list[dict], label: str) -> None:
+    """A missing/invalid judge key makes every sample score 0.000 and would be saved as if it were data."""
+    head = rows[:3]
+    if len(head) == 3 and all(r.get("judge_failed") for r in head):
+        raise RuntimeError(f"[{label}] the judge failed on the first 3 samples (missing LLM_API_KEY / EVAL_JUDGE_MODEL / "
+                           "no credits?). Stopping before wasting GPU time or saving zero scores.")
+
 def _run_c1_live(samples: list[dict], api_key: str) -> list[dict]:
     from openai import OpenAI
     client = OpenAI(api_key=api_key, base_url=C1_BASE_URL)
@@ -123,6 +131,9 @@ def _run_c1_live(samples: list[dict], api_key: str) -> list[dict]:
         rows.append({**result.to_dict(), "persona": sample["persona"],
                      "composite_score": result.composite_score,
                      "user_message": sample["user"], "response": response_text})
+        if result.metadata.get("judge_failed"):
+            rows[-1]["judge_failed"] = True
+        _abort_if_judge_down(rows, "C1")
         logger.info("  [C1] sample %d/%d persona=%-14s composite=%.3f",
                     i + 1, len(samples), sample["persona"], result.composite_score)
     return rows
@@ -174,6 +185,9 @@ def _generate_rows(rows, condition_id, generator, samples, user_suffix="", syste
                      "composite_score": result.composite_score,
                      "user_message": sample["user"], "response": response, "generation_truncated": 0,
                      "response_words": len(response.split())})
+        if result.metadata.get("judge_failed"):
+            rows[-1]["judge_failed"] = True
+        _abort_if_judge_down(rows, condition_id)
         logger.info("  [%s] sample %d/%d persona=%-14s composite=%.3f",
                     condition_id, i + 1, len(samples), sample["persona"],
                     result.composite_score)
