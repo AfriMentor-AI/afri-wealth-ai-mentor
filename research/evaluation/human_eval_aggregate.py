@@ -21,6 +21,8 @@ from __future__ import annotations
 import argparse
 import csv
 import json
+import random
+import statistics
 import sys
 from datetime import UTC, datetime
 from pathlib import Path
@@ -78,6 +80,71 @@ def _mean(values: list[float]) -> float | None:
     return sum(values) / len(values) if values else None
 
 
+def krippendorff_alpha_interval(units: list[list[float]]) -> float | None:
+    """Krippendorff's alpha, interval metric; tolerates missing ratings.
+
+    ``units`` is one list of ratings per rated item (a sample x its raters).
+    Items with fewer than 2 ratings carry no agreement information and are dropped.
+    Returns None when alpha is undefined (no pairable data, or zero expected
+    disagreement because every rating is identical).
+    """
+    units = [u for u in units if len(u) >= 2]
+    n = sum(len(u) for u in units)
+    if n <= 1:
+        return None
+    d_obs = sum(
+        sum((a - b) ** 2 for i, a in enumerate(u) for j, b in enumerate(u) if i != j) / (len(u) - 1)
+        for u in units
+    ) / n
+    allv = [v for u in units for v in u]
+    d_exp = sum((a - b) ** 2 for i, a in enumerate(allv) for j, b in enumerate(allv) if i != j) / (n * (n - 1))
+    if d_exp == 0:
+        return None
+    return 1 - d_obs / d_exp
+
+
+def _bootstrap_ci(values: list[float], n_boot: int = 2000, seed: int = 42) -> list[float] | None:
+    if len(values) < 2:
+        return None
+    rng = random.Random(seed)
+    means = sorted(sum(rng.choices(values, k=len(values))) / len(values) for _ in range(n_boot))
+    return [round(means[int(0.025 * n_boot)], 4), round(means[int(0.975 * n_boot) - 1], 4)]
+
+
+def reliability(all_rater_rows: list[dict]) -> dict:
+    """Inter-rater agreement per rubric column, over all samples."""
+    out = {}
+    for col in [*SCORE_COLUMNS, "overall_quality"]:
+        by_sample: dict[str, list[float]] = {}
+        for r in all_rater_rows:
+            if r.get(col) is not None:
+                by_sample.setdefault(r["sample_id"], []).append(r[col])
+        alpha = krippendorff_alpha_interval(list(by_sample.values()))
+        out[col] = {"krippendorff_alpha": None if alpha is None else round(alpha, 4)}
+    return out
+
+
+def adjudicate(all_rater_rows: list[dict]) -> dict:
+    """Per-sample consensus on overall_quality: the median across raters.
+
+    With >=3 raters the median is a genuine majority-style resolution of a
+    disagreement; with 2 it is just the mean, so those samples are marked
+    ``needs_third_rater`` instead of being silently resolved.
+    """
+    by_sample: dict[str, list[float]] = {}
+    for r in all_rater_rows:
+        if r["overall_quality"] is not None:
+            by_sample.setdefault(r["sample_id"], []).append(r["overall_quality"])
+    res = {}
+    for sid, scores in by_sample.items():
+        spread = max(scores) - min(scores)
+        res[sid] = {
+            "scores": scores, "median": statistics.median(scores), "spread": spread,
+            "needs_third_rater": len(scores) < 3 and spread >= DISAGREEMENT_THRESHOLD,
+        }
+    return res
+
+
 def aggregate(all_rater_rows: list[dict]) -> dict:
     conditions: dict[str, list[dict]] = {}
     for row in all_rater_rows:
@@ -105,7 +172,21 @@ def aggregate(all_rater_rows: list[dict]) -> dict:
         if len(scores) >= 2 and (max(scores) - min(scores)) >= DISAGREEMENT_THRESHOLD
     ]
 
+    consensus = adjudicate(all_rater_rows)
+    cond_of = {r["sample_id"]: r["condition"] for r in all_rater_rows}
+    for cond_id, cond in result_conditions.items():
+        medians = [c["median"] for sid, c in consensus.items() if cond_of[sid] == cond_id]
+        cond["aggregate"]["overall_quality_consensus_median"] = _mean(medians)
+        cond["overall_quality_ci95_bootstrap"] = _bootstrap_ci(medians)
+        cond["n_samples"] = len(medians)
+    ratings_per_sample = [len(c["scores"]) for c in consensus.values()]
+
     return {
+        "reliability": reliability(all_rater_rows),
+        "adjudication": {"n_needs_third_rater": sum(c["needs_third_rater"] for c in consensus.values()),
+                         "per_sample": consensus},
+        "coverage": {"min_raters_on_any_sample": min(ratings_per_sample, default=0),
+                     "n_samples": len(consensus)},
         "meta": {
             "generated_at": datetime.now(tz=UTC).isoformat(),
             "n_rater_files": len({r["rater_file"] for r in all_rater_rows}),
@@ -121,6 +202,8 @@ def main() -> None:
     parser.add_argument("rater_csvs", nargs="+", help="Completed rating_packet.csv files")
     parser.add_argument("--key", default=str(DEFAULT_KEY))
     parser.add_argument("--output", default=str(DEFAULT_OUTPUT))
+    parser.add_argument("--min-raters", type=int, default=3,
+                        help="fail (exit 2) unless every sample has at least this many ratings")
     args = parser.parse_args()
 
     key_path = Path(args.key)
@@ -142,6 +225,14 @@ def main() -> None:
     output_path = Path(args.output)
     output_path.parent.mkdir(parents=True, exist_ok=True)
     output_path.write_text(json.dumps(results, indent=2), encoding="utf-8")
+
+    min_seen = results["coverage"]["min_raters_on_any_sample"]
+    alpha = results["reliability"]["overall_quality"]["krippendorff_alpha"]
+    print(f"\nInter-rater reliability (overall_quality) Krippendorff alpha = {alpha}")
+    if min_seen < args.min_raters:
+        print(f"\nERROR: some samples have only {min_seen} rating(s); need >= {args.min_raters}. "
+              f"Results written to {output_path} but NOT publication-grade.")
+        raise SystemExit(2)
 
     print(f"\n=== Human-eval aggregate: {len(args.rater_csvs)} rater file(s) ===")
     for cond_id, cond in results["conditions"].items():

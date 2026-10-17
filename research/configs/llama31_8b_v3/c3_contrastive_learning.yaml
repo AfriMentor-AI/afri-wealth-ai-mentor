@@ -1,0 +1,79 @@
+# v3: best-of-4 judge-selected synthetic data (datasets/splits_v3), trained with the ~30-token minimal system prompt so the
+# fine-tuned model must carry the persona itself (prompt-free deployment: no 1.7k-token prompt per request).
+# Sequences are ~300-500 tokens, so batch 4 fits a T4. C3 = DPO on judge-ranked best-vs-worst pairs (same format and
+# length band, so the contrast is quality, not template). Run with CUDA_VISIBLE_DEVICES=0.
+experiment:
+  name: C3_dpo_llama31-8b_v3
+  condition_id: C3
+  sprint: 4
+model:
+  base_model_id: meta-llama/Llama-3.1-8B-Instruct
+  sft_checkpoint: AfriMentor/chioma-llama31-8b-sft-v3
+  adapter_type: dpo
+  output_dir: research/experiments/03_contrastive_learning/checkpoints_llama31-8b_v3
+  hub_repo: AfriMentor/chioma-llama31-8b-dpo-v3
+lora:
+  r: 16
+  lora_alpha: 32
+  lora_dropout: 0.05
+  target_modules:
+  - q_proj
+  - v_proj
+  - k_proj
+  - o_proj
+  bias: none
+  task_type: CAUSAL_LM
+quantization:
+  load_in_4bit: true
+  bnb_4bit_compute_dtype: float16
+  bnb_4bit_quant_type: nf4
+  bnb_4bit_use_double_quant: true
+dpo:
+  beta: 0.1
+  loss_type: sigmoid
+  dataset: research/datasets/splits_v3/dpo_train.jsonl
+  eval_dataset: research/datasets/splits_v3/dpo_val.jsonl
+  max_length: 1024
+  max_prompt_length: 512
+  rpo_alpha: 1.0
+training:
+  num_train_epochs: 1
+  per_device_train_batch_size: 2
+  gradient_accumulation_steps: 8
+  learning_rate: 5.0e-06
+  lr_scheduler_type: cosine
+  warmup_ratio: 0.05
+  fp16: true
+  bf16: false
+  logging_steps: 10
+  eval_steps: 50
+  save_steps: 100
+  save_total_limit: 3
+  seed: 42
+evaluation:
+  sample_size: 120
+  eval_split: sft_test.jsonl
+  max_new_tokens: 512
+  temperature: 0.0
+  metrics:
+  - persona_adherence
+  - cultural_fluency
+  - anti_dependency
+  - financial_accuracy
+  - urgency
+  - rouge_l
+  - bert_score_f1
+  compare_against: C2_supervised_persona_finetuning
+  splits_dir: research/datasets/splits_v3
+mlflow:
+  experiment_name: C3_dpo_llama31-8b_v3
+  run_name_prefix: c3
+  log_artifacts: true
+  log_model: true
+probing:
+  profile_path: services/persona-prompt-service/data/chioma_profile.v1.json
+  pooling: mean
+  heldout_fraction: 0.3
+  max_markers: null
+  max_length: 256
+  output_path: research/experiments/03_contrastive_learning/checkpoints/persona_vectors.npz

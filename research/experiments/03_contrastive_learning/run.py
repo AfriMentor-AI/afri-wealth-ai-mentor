@@ -29,6 +29,7 @@ Usage (on a GPU node):
 from __future__ import annotations
 
 import argparse
+import json
 import logging
 import os
 import sys
@@ -58,6 +59,19 @@ DEFAULT_CONFIG = _RESEARCH_ROOT / "configs" / "c3_contrastive_learning.yaml"
 def load_config(path: str | Path) -> dict:
     with open(path) as f:
         return yaml.safe_load(f)
+
+
+def _val_prompts(path: str | Path, k: int = 6) -> list:
+    """First k validation prompts: (persona, user text) for plain-string data, or the message list itself
+    for conversational data (so the health check uses the exact system prompt the model was trained with)."""
+    out = []
+    with open(path, encoding="utf-8") as f:
+        for line in f:
+            if line.strip() and len(out) < k:
+                r = json.loads(line)
+                out.append(r["prompt"] if isinstance(r["prompt"], list)
+                           else (r.get("persona_slug") or "chioma-base", r["prompt"]))
+    return out
 
 
 def _count_jsonl_lines(path: str | Path) -> int:
@@ -108,6 +122,10 @@ def train(cfg: dict) -> tuple[str | None, dict]:
     dpo_cfg = cfg["dpo"]
     train_cfg = cfg["training"]
     bnb_cfg = cfg["quantization"]
+    # Explicit seed (config: training.seed, default 42) — previously never set or logged.
+    from transformers import set_seed as _set_seed
+    _seed = train_cfg.get("seed", 42)
+    _set_seed(_seed)
 
     bnb_config = BitsAndBytesConfig(
         load_in_4bit=bnb_cfg["load_in_4bit"],
@@ -157,6 +175,9 @@ def train(cfg: dict) -> tuple[str | None, dict]:
         output_dir=model_cfg["output_dir"],
         num_train_epochs=train_cfg["num_train_epochs"],
         per_device_train_batch_size=train_cfg["per_device_train_batch_size"],
+        per_device_eval_batch_size=1,
+        seed=_seed,
+        data_seed=_seed,
         gradient_accumulation_steps=train_cfg["gradient_accumulation_steps"],
         learning_rate=train_cfg["learning_rate"],
         lr_scheduler_type=train_cfg["lr_scheduler_type"],
@@ -172,6 +193,7 @@ def train(cfg: dict) -> tuple[str | None, dict]:
         save_total_limit=train_cfg["save_total_limit"],
         beta=dpo_cfg["beta"],
         loss_type=dpo_cfg["loss_type"],
+        rpo_alpha=dpo_cfg.get("rpo_alpha"),  # NLL anchor on the chosen answer; counters likelihood collapse
         max_length=dpo_cfg["max_length"],
         max_prompt_length=dpo_cfg["max_prompt_length"],
         report_to="none",
@@ -196,11 +218,37 @@ def train(cfg: dict) -> tuple[str | None, dict]:
     adapter_path = f"{model_cfg['output_dir']}/final"
     trainer.save_model(adapter_path)
 
+    # Collapse guard: never publish an adapter that degenerates (v2a C4 became "friend friend friend ...").
+    # Uses validation prompts only — the test set must not influence what gets released.
+    try:
+        from evaluation.generation_health import health_report, sample_validation_responses
+        _val = _val_prompts(dpo_cfg["eval_dataset"])
+        if not _val:
+            raise RuntimeError("no validation prompts available")
+        _texts = sample_validation_responses(trainer.model, tokenizer, _val)
+        _rep = health_report(_texts)
+        print(f"GENERATION HEALTH: {_rep}", flush=True)
+        if not _rep["healthy"]:
+            print("!!! ADAPTER FAILED THE HEALTH CHECK - NOT pushing to the Hub. Sample: "
+                  + repr(_texts[0][:300]), flush=True)
+            _healthy = False
+        else:
+            _healthy = True
+    except Exception as exc:  # noqa: BLE001 - a broken check must not block a good run
+        print(f"health check could not run ({exc!r}); pushing anyway", flush=True)
+        _healthy = True
+    from evaluation.hub_push import push_adapter
+    if _healthy:
+        push_adapter(adapter_path, model_cfg.get("hub_repo"), cfg["experiment"]["name"])
+
     # DPO-loss metrics (reward margins, accuracies) — kept for the run, but they
     # are NOT the persona metric suite; the AC is satisfied by evaluate() below.
     dpo_eval: dict = {}
     if has_val:
-        dpo_eval = {k.replace("eval_", "dpo_"): v for k, v in trainer.evaluate().items()}
+        try:
+            dpo_eval = {k.replace("eval_", "dpo_"): v for k, v in trainer.evaluate().items()}
+        except Exception as exc:  # noqa: BLE001 - adapter already saved + pushed
+            logger.warning("post-training DPO evaluate() failed (non-fatal): %r", exc)
 
     logger.info("C3 DPO training complete. Adapter saved to %s", adapter_path)
     return adapter_path, dpo_eval
@@ -223,7 +271,7 @@ def evaluate(
     """
     eval_cfg = cfg.get("evaluation", {})
     sample_size = eval_cfg.get("sample_size", 6)
-    samples = load_eval_samples(sample_size)
+    samples = load_eval_samples(sample_size, splits_dir=eval_cfg.get("splits_dir", "research/datasets/splits"))
     logger.info("Loaded %d eval samples for the metric suite", len(samples))
 
     if generate_fn is None:
@@ -309,6 +357,9 @@ def run(
                 )
                 do_eval = False
 
+        if do_eval and os.getenv("SKIP_STAGE3_EVAL"):
+            logger.info("SKIP_STAGE3_EVAL set: not scoring in-script (comparative_eval scores all conditions together)")
+            do_eval = False
         if do_eval:
             results["eval_metrics"] = evaluate(
                 cfg, adapter_path=adapter_path, generate_fn=generate_fn

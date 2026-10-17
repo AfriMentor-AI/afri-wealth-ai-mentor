@@ -1,0 +1,62 @@
+# v3: best-of-4 judge-selected synthetic data (datasets/splits_v3), trained with the ~30-token minimal system prompt so the
+# fine-tuned model must carry the persona itself (prompt-free deployment: no 1.7k-token prompt per request).
+# Sequences are ~300-500 tokens, so batch 4 fits a T4. C3 = DPO on judge-ranked best-vs-worst pairs (same format and
+# length band, so the contrast is quality, not template). Run with CUDA_VISIBLE_DEVICES=0.
+experiment:
+  name: C2_sft_llama31-8b_v3
+  condition_id: C2
+  sprint: 4
+model:
+  base_model_id: meta-llama/Llama-3.1-8B-Instruct
+  adapter_type: qlora
+  output_dir: research/experiments/02_supervised_finetuning/checkpoints_llama31-8b_v3
+  hub_repo: AfriMentor/chioma-llama31-8b-sft-v3
+lora:
+  r: 32
+  lora_alpha: 64
+  lora_dropout: 0.05
+  target_modules:
+  - q_proj
+  - v_proj
+  - k_proj
+  - o_proj
+  bias: none
+  task_type: CAUSAL_LM
+quantization:
+  load_in_4bit: true
+  bnb_4bit_compute_dtype: float16
+  bnb_4bit_quant_type: nf4
+  bnb_4bit_use_double_quant: true
+training:
+  dataset: research/datasets/splits_v3/sft_train.jsonl
+  eval_dataset: research/datasets/splits_v3/sft_val.jsonl
+  num_train_epochs: 3
+  per_device_train_batch_size: 4
+  gradient_accumulation_steps: 4
+  learning_rate: 0.0002
+  lr_scheduler_type: cosine
+  warmup_ratio: 0.05
+  max_seq_length: 1024
+  fp16: true
+  bf16: false
+  logging_steps: 10
+  eval_steps: 50
+  save_steps: 100
+  save_total_limit: 3
+  seed: 42
+evaluation:
+  metrics:
+  - persona_adherence
+  - cultural_fluency
+  - anti_dependency
+  - financial_accuracy
+  - urgency
+  - rouge_l
+  - bert_score_f1
+  compare_against: C1_baseline_prompting
+  max_new_tokens: 512
+mlflow:
+  experiment_name: C2_sft_llama31-8b_v3
+  run_name_prefix: c2
+  log_artifacts: true
+  log_model: true

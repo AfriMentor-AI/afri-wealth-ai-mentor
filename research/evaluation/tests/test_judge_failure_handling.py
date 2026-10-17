@@ -160,3 +160,36 @@ class TestEvaluateCheckpointExcludesFailures:
         # 0.6 weighted across all 5 dims (0.25+0.20+0.20+0.20+0.15=1.0) == 0.6,
         # not diluted toward 0 by the failed sample.
         assert abs(agg["composite_score"] - 0.6) < 1e-9
+
+
+def test_reasoning_format_is_only_sent_to_groq(monkeypatch):
+    from evaluation.metrics import _judge_extra_kwargs
+    monkeypatch.setenv("LLM_BASE_URL", "https://api.groq.com/openai/v1")
+    assert _judge_extra_kwargs() == {"extra_body": {"reasoning_format": "hidden"}}
+    monkeypatch.setenv("LLM_BASE_URL", "https://openrouter.ai/api/v1")
+    assert _judge_extra_kwargs() == {}
+
+
+def test_judge_cache_skips_repeat_calls_and_never_caches_failures(tmp_path, monkeypatch):
+    import evaluation.metrics as m
+    monkeypatch.setenv("JUDGE_CACHE", str(tmp_path / "j.jsonl"))
+    monkeypatch.setattr(m, "_judge_cache", None)
+    calls = []
+
+    def fake(u, r):
+        calls.append(r)
+        return {"persona_adherence": 0.5, "cultural_fluency": 0.5, "anti_dependency": 0.5,
+                "financial_accuracy": 0.5, "urgency": 0.5}
+
+    monkeypatch.setattr(m, "_score_all_dimensions_uncached", fake)
+    a = m.score_all_dimensions("q", "r1")
+    b = m.score_all_dimensions("q", "r1")          # served from cache
+    assert a == b and calls == ["r1"]
+    monkeypatch.setattr(m, "_judge_cache", None)    # simulate a fresh process: reload from disk
+    m.score_all_dimensions("q", "r1")
+    assert calls == ["r1"]
+
+    monkeypatch.setattr(m, "_score_all_dimensions_uncached", lambda u, r: {**fake(u, r), "_judge_failed": True})
+    m.score_all_dimensions("q", "bad")
+    m.score_all_dimensions("q", "bad")              # failure was not cached -> called again
+    assert calls.count("bad") == 2

@@ -447,6 +447,7 @@ def score_dataset(
 
 def fit_reward_probe(
     scored_pairs: list[PairScores],
+    require_two_classes: bool = False,
 ) -> tuple:
     """Fit a logistic probe on dimension-delta features.
 
@@ -477,6 +478,12 @@ def fit_reward_probe(
     y = np.array([p.label for p in scored_pairs])
 
     unique_classes = np.unique(y)
+    if len(unique_classes) < 2 and require_two_classes:
+        raise ValueError(
+            "Reward-probe training labels contain a single class — the probe would be a constant "
+            "classifier (C4 would silently degrade to plain DPO). Randomise A/B positions in the "
+            "preference data (see datasets/scripts/generate_dataset.py) or unset require_two_classes."
+        )
     if len(unique_classes) < 2:
         # All pairs prefer the same response (e.g., all "a" in a well-curated
         # preference dataset). Use a DummyClassifier that always predicts the
