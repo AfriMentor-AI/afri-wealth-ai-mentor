@@ -162,3 +162,14 @@ signal rather than the hyper-parameters:
 - Evaluation conditions: C1P (base + minimal prompt), C1S (base + full prompt + format), C2, C3. C4 skipped pending C3 signal.
 - **Limitations to state in the paper:** all data is LLM-generated; the selection judge (DeepSeek) must not be used as an evaluator
   (use gpt-oss-120b + a third family via `rescore.py`); winner's curse applies to judge-selected targets.
+
+### v3 first attempt: SFT pad-token bug (2026-10-18)
+
+The first v3 C2 adapter (Hub commit 539685084a52) never ended its turn: 118/120 test answers exceeded 200 words and looped
+("What do you think the first step should be… Let's make this concrete…"). Cause: `tokenizer.pad_token = tokenizer.eos_token` in
+the SFT script. TRL masks pad tokens out of the loss, so the end-of-turn token was never trained. The first-attempt C3
+(44eaa2a447143f595c7c189fc892c4af239da6df) was warm-started from that adapter. It stopped normally (95 words, composite 0.566 vs
+C1S 0.543) but cannot be treated as a clean result. The v2/v2b C2 adapters had the same pad setting (v2b C2 max 397 words),
+so earlier C2 numbers may also understate SFT. Fix: dedicated `<|finetune_right_pad_id|>` pad token, plus the C3-style
+generation-health guard before the push. C2 and C3 were retrained and re-evaluated; first-attempt results are kept as
+`comparative_llama31_8b_v3_padbug.json` for the appendix. C1P/C1/C1S were reused unchanged.

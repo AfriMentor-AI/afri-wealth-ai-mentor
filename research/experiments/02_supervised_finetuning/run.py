@@ -87,7 +87,13 @@ def run(config_path: str | Path = DEFAULT_CONFIG) -> None:
             device_map="auto",
         )
         tokenizer = AutoTokenizer.from_pretrained(model_cfg["base_model_id"])
-        tokenizer.pad_token = tokenizer.eos_token
+        # A pad token that is NOT the end-of-turn token. TRL masks pad tokens out of the loss, so pad == eos means the
+        # model never learns to end its turn and runs on until max_new_tokens (the v3 C2 adapter looped on 118/120 answers).
+        _pad = tokenizer.convert_tokens_to_ids("<|finetune_right_pad_id|>")
+        if _pad is not None and _pad != tokenizer.unk_token_id and _pad != tokenizer.eos_token_id:
+            tokenizer.pad_token = "<|finetune_right_pad_id|>"
+        elif tokenizer.pad_token is None or tokenizer.pad_token_id == tokenizer.eos_token_id:
+            raise RuntimeError("no dedicated pad token available; padding with EOS would stop the model learning to stop")
 
         model = prepare_model_for_kbit_training(model)
         lora_cfg = cfg["lora"]
@@ -147,8 +153,23 @@ def run(config_path: str | Path = DEFAULT_CONFIG) -> None:
 
         trainer.train()
         trainer.save_model(f"{model_cfg['output_dir']}/final")
+        # Same collapse guard as C3: validation prompts only, never the test set.
+        _healthy = True
+        try:
+            from evaluation.generation_health import health_report, sample_validation_responses
+            _val = [r["messages"][:2] for r in dataset["validation"]][:15]
+            _texts = sample_validation_responses(model, tokenizer, _val)
+            _rep = health_report(_texts)
+            print(f"GENERATION HEALTH: {_rep}", flush=True)
+            if not _rep["healthy"]:
+                print("!!! ADAPTER FAILED THE HEALTH CHECK - NOT pushing to the Hub. Sample: "
+                      + repr(_texts[0][:300]), flush=True)
+                _healthy = False
+        except Exception as exc:  # noqa: BLE001 - a broken check must not block a good run
+            print(f"health check could not run ({exc!r}); pushing anyway", flush=True)
         from evaluation.hub_push import push_adapter
-        push_adapter(f"{model_cfg['output_dir']}/final", model_cfg.get("hub_repo"), exp_cfg["name"])
+        if _healthy:
+            push_adapter(f"{model_cfg['output_dir']}/final", model_cfg.get("hub_repo"), exp_cfg["name"])
 
         # Log final eval metrics (non-fatal: the adapter is already saved and pushed)
         try:
