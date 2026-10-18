@@ -144,7 +144,7 @@ def run_reward_model(
 
     # Fit logistic probe
     logger.info("Fitting logistic preference probe on %d scored pairs…", len(scored_train))
-    probe, train_report = fit_reward_probe(scored_train)
+    probe, train_report = fit_reward_probe(scored_train, require_two_classes=rm_cfg.get("require_two_classes", False))
 
     mlflow.log_metric("probe_train_accuracy", train_report["train_accuracy"])
     mlflow.log_metric("probe_train_samples", train_report["n_samples"])
@@ -226,6 +226,10 @@ def run_dpo(cfg: dict, probe=None) -> tuple[str | None, dict]:
     train_cfg = cfg["training"]
     lora_cfg = cfg["lora"]
     bnb_cfg = cfg["quantization"]
+    # Explicit seed (config: training.seed, default 42) — previously never set or logged.
+    from transformers import set_seed as _set_seed
+    _seed = train_cfg.get("seed", 42)
+    _set_seed(_seed)
 
     logger.info("=== Stage 2: DPO (personality-focused) ===")
 
@@ -328,6 +332,9 @@ def run_dpo(cfg: dict, probe=None) -> tuple[str | None, dict]:
         output_dir=str(output_dir),
         num_train_epochs=train_cfg["num_train_epochs"],
         per_device_train_batch_size=train_cfg["per_device_train_batch_size"],
+        per_device_eval_batch_size=1,
+        seed=_seed,
+        data_seed=_seed,
         gradient_accumulation_steps=train_cfg["gradient_accumulation_steps"],
         learning_rate=train_cfg["learning_rate"],
         lr_scheduler_type=train_cfg["lr_scheduler_type"],
@@ -343,6 +350,7 @@ def run_dpo(cfg: dict, probe=None) -> tuple[str | None, dict]:
         save_total_limit=train_cfg["save_total_limit"],
         beta=dpo_cfg["beta"],
         loss_type=dpo_cfg["loss_type"],
+        rpo_alpha=dpo_cfg.get("rpo_alpha"),
         max_length=dpo_cfg["max_length"],
         max_prompt_length=dpo_cfg["max_prompt_length"],
         report_to="none",
@@ -370,12 +378,38 @@ def run_dpo(cfg: dict, probe=None) -> tuple[str | None, dict]:
     trainer.save_model(adapter_path)
     logger.info("C4 DPO adapter saved to %s", adapter_path)
 
+    # Collapse guard: never publish an adapter that degenerates (v2a C4 became "friend friend friend ...").
+    # Uses validation prompts only — the test set must not influence what gets released.
+    try:
+        from evaluation.generation_health import health_report, sample_validation_responses
+        _val = [(r.get("persona_slug") or "chioma-base", r["prompt"]) for r in dpo_val[:6]]
+        if not _val:
+            raise RuntimeError("no validation prompts available")
+        _texts = sample_validation_responses(trainer.model, tokenizer, _val)
+        _rep = health_report(_texts)
+        print(f"GENERATION HEALTH: {_rep}", flush=True)
+        if not _rep["healthy"]:
+            print("!!! ADAPTER FAILED THE HEALTH CHECK - NOT pushing to the Hub. Sample: "
+                  + repr(_texts[0][:300]), flush=True)
+            _healthy = False
+        else:
+            _healthy = True
+    except Exception as exc:  # noqa: BLE001 - a broken check must not block a good run
+        print(f"health check could not run ({exc!r}); pushing anyway", flush=True)
+        _healthy = True
+    from evaluation.hub_push import push_adapter
+    if _healthy:
+        push_adapter(adapter_path, model_cfg.get("hub_repo"), cfg["experiment"]["name"])
+
     dpo_metrics: dict = {}
     if has_val:
-        raw = trainer.evaluate()
-        dpo_metrics = {k.replace("eval_", "dpo_"): v for k, v in raw.items()}
-        for k, v in dpo_metrics.items():
-            mlflow.log_metric(k, v)
+        try:
+            raw = trainer.evaluate()
+            dpo_metrics = {k.replace("eval_", "dpo_"): v for k, v in raw.items()}
+            for k, v in dpo_metrics.items():
+                mlflow.log_metric(k, v)
+        except Exception as exc:  # noqa: BLE001 - adapter already saved + pushed
+            logger.warning("post-training DPO evaluate() failed (non-fatal): %r", exc)
 
     return adapter_path, dpo_metrics
 
@@ -405,7 +439,7 @@ def run_evaluate(cfg: dict, adapter_path: str | None = None, generate_fn=None) -
 
     logger.info("=== Stage 3: Evaluate (shared metric suite) ===")
     logger.info("Loading %d eval samples from sft_test.jsonl…", sample_size)
-    samples = load_eval_samples(sample_size)
+    samples = load_eval_samples(sample_size, splits_dir=eval_cfg.get("splits_dir", "research/datasets/splits"))
     logger.info("Loaded %d samples", len(samples))
 
     if generate_fn is None:
@@ -647,7 +681,7 @@ def run(
             results["dpo_metrics"] = dpo_metrics
 
         # ── Stage 3: Evaluate ──
-        if stage in ("evaluate", "all"):
+        if stage in ("evaluate", "all") and not os.getenv("SKIP_STAGE3_EVAL"):
             if generate_fn is not None or _gpu_available() or adapter_path:
                 results["eval_metrics"] = run_evaluate(
                     cfg,

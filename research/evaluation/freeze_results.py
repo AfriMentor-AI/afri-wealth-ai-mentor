@@ -228,11 +228,18 @@ def freeze(version: str, inputs: dict[str, Path] = DEFAULT_INPUTS, *, tag: bool 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Freeze evaluation results (card C5.1)")
     parser.add_argument("--version", required=True, help="Freeze version label, e.g. v1")
+    parser.add_argument("--comparative", default=None, help="comparative_eval.py output to freeze (default: results/comparative_results.json)")
+    parser.add_argument("--human-eval", default=None, help="human_eval_aggregate.py output to freeze (default: results/human_eval_results.json)")
+    parser.add_argument("--safety", default=None, help="safety_eval.py output to freeze")
     parser.add_argument("--tag", action="store_true",
                          help="Also create a local git tag eval-freeze-<version> (not pushed)")
     args = parser.parse_args()
 
-    manifest = freeze(args.version, tag=args.tag)
+    inputs = dict(DEFAULT_INPUTS)
+    for name, val in (("comparative", args.comparative), ("human_eval", args.human_eval), ("safety", args.safety)):
+        if val:
+            inputs[name] = Path(val)
+    manifest = freeze(args.version, inputs, tag=args.tag)
 
     print(f"\n=== Freeze {args.version}: {manifest['status']} ===")
     print(manifest["status_note"])

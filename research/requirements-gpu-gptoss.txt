@@ -1,0 +1,10 @@
+# gpt-oss-20b needs a much newer stack than requirements-gpu.txt (torch 2.5.1 / trl 0.13).
+# Use INSTEAD of requirements-gpu.txt, on top of requirements.txt, and leave Kaggle's
+# preinstalled torch alone. Minimums only - the smoke test (experiments/gptoss_smoke_test.py)
+# is what actually verifies a working combination on the node.
+transformers>=4.55.0
+peft>=0.17.0
+accelerate>=1.9.0
+bitsandbytes>=0.46.1
+trl>=0.20.0
+kernels

@@ -90,3 +90,44 @@ def test_aggregate_does_not_flag_small_disagreement():
     ]
     results = aggregate(rows)
     assert results["flagged_disagreements"] == []
+
+
+# ── papers-revision additions: reliability, adjudication, min-raters ────────────
+
+def _row(sid, cond, rater, oq):
+    return {"sample_id": sid, "condition": cond, "rater_file": rater, "overall_quality": oq,
+            "persona_adherence": None, "cultural_fluency": None, "anti_dependency": None,
+            "financial_accuracy": None, "urgency": None}
+
+
+def test_alpha_is_one_for_perfect_agreement_and_low_for_noise():
+    from evaluation.human_eval_aggregate import krippendorff_alpha_interval as alpha
+    assert alpha([[1, 1, 1], [3, 3, 3], [5, 5, 5]]) == 1.0
+    assert alpha([[1, 5, 3], [5, 1, 3], [3, 5, 1]]) < 0.1
+
+
+def test_alpha_undefined_when_nothing_varies_or_nothing_pairable():
+    from evaluation.human_eval_aggregate import krippendorff_alpha_interval as alpha
+    assert alpha([[3, 3], [3, 3]]) is None
+    assert alpha([[3], [4]]) is None
+
+
+def test_adjudication_three_raters_resolves_by_median_two_raters_flags():
+    from evaluation.human_eval_aggregate import adjudicate
+    rows = [_row("S1", "C1", f"r{i}", v) for i, v in enumerate([1, 4, 4])]
+    rows += [_row("S2", "C1", f"r{i}", v) for i, v in enumerate([1, 4])]
+    res = adjudicate(rows)
+    assert res["S1"]["median"] == 4 and res["S1"]["needs_third_rater"] is False
+    assert res["S2"]["needs_third_rater"] is True  # two raters cannot adjudicate a 3-point gap
+
+
+def test_aggregate_reports_coverage_ci_and_reliability():
+    rows = []
+    for k in range(6):
+        for r in range(3):
+            rows.append(_row(f"S{k}", "C1", f"r{r}", 2 + (k % 3)))
+    out = aggregate(rows)
+    assert out["coverage"]["min_raters_on_any_sample"] == 3
+    assert out["reliability"]["overall_quality"]["krippendorff_alpha"] == 1.0
+    assert out["conditions"]["C1"]["n_samples"] == 6
+    assert len(out["conditions"]["C1"]["overall_quality_ci95_bootstrap"]) == 2

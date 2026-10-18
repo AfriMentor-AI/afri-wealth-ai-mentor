@@ -19,6 +19,12 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
+def _judge_all(value):
+    """Stand-in for metrics.score_all_dimensions: every rubric dimension scores ``value``."""
+    dims = ("persona_adherence", "cultural_fluency", "anti_dependency", "financial_accuracy", "urgency")
+    return lambda *a, **k: dict.fromkeys(dims, value)
+
+
 # ── Module loaders (digit-prefixed dir can't be a normal package import) ──────
 
 _EXP_DIR = Path(__file__).resolve().parents[1]
@@ -67,7 +73,7 @@ def _patch_mlflow():
 def _patch_judge(score: float = 0.75):
     """Patch the LLM judge so eval metrics return a fixed score offline."""
     import evaluation.metrics as _metrics
-    return patch.object(_metrics, "_llm_score", return_value=score)
+    return patch.object(_metrics, "score_all_dimensions", side_effect=_judge_all(score))
 
 
 # ── Few-shot bank ─────────────────────────────────────────────────────────────

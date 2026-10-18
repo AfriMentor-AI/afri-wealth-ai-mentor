@@ -69,6 +69,10 @@ def run(config_path: str | Path = DEFAULT_CONFIG) -> None:
 
         # 4-bit quantization config
         bnb_cfg = cfg["quantization"]
+        # Explicit seed (config: training.seed, default 42) — previously never set or logged.
+        from transformers import set_seed as _set_seed
+        _seed = train_cfg.get("seed", 42)
+        _set_seed(_seed)
         import torch as _torch
         bnb_config = BitsAndBytesConfig(
             load_in_4bit=bnb_cfg["load_in_4bit"],
@@ -83,7 +87,13 @@ def run(config_path: str | Path = DEFAULT_CONFIG) -> None:
             device_map="auto",
         )
         tokenizer = AutoTokenizer.from_pretrained(model_cfg["base_model_id"])
-        tokenizer.pad_token = tokenizer.eos_token
+        # A pad token that is NOT the end-of-turn token. TRL masks pad tokens out of the loss, so pad == eos means the
+        # model never learns to end its turn and runs on until max_new_tokens (the v3 C2 adapter looped on 118/120 answers).
+        _pad = tokenizer.convert_tokens_to_ids("<|finetune_right_pad_id|>")
+        if _pad is not None and _pad != tokenizer.unk_token_id and _pad != tokenizer.eos_token_id:
+            tokenizer.pad_token = "<|finetune_right_pad_id|>"
+        elif tokenizer.pad_token is None or tokenizer.pad_token_id == tokenizer.eos_token_id:
+            raise RuntimeError("no dedicated pad token available; padding with EOS would stop the model learning to stop")
 
         model = prepare_model_for_kbit_training(model)
         lora_cfg = cfg["lora"]
@@ -109,6 +119,9 @@ def run(config_path: str | Path = DEFAULT_CONFIG) -> None:
             output_dir=model_cfg["output_dir"],
             num_train_epochs=train_cfg["num_train_epochs"],
             per_device_train_batch_size=train_cfg["per_device_train_batch_size"],
+            per_device_eval_batch_size=1,  # default 8 x ~2.5k tokens OOMs a T4 (crashed the first Llama run)
+            seed=_seed,
+            data_seed=_seed,
             gradient_accumulation_steps=train_cfg["gradient_accumulation_steps"],
             learning_rate=train_cfg["learning_rate"],
             lr_scheduler_type=train_cfg["lr_scheduler_type"],
@@ -140,13 +153,36 @@ def run(config_path: str | Path = DEFAULT_CONFIG) -> None:
 
         trainer.train()
         trainer.save_model(f"{model_cfg['output_dir']}/final")
+        # Same collapse guard as C3: validation prompts only, never the test set.
+        _healthy = True
+        try:
+            from evaluation.generation_health import health_report, sample_validation_responses
+            _val = [r["messages"][:2] for r in dataset["validation"]][:15]
+            _texts = sample_validation_responses(model, tokenizer, _val)
+            _rep = health_report(_texts)
+            print(f"GENERATION HEALTH: {_rep}", flush=True)
+            if not _rep["healthy"]:
+                print("!!! ADAPTER FAILED THE HEALTH CHECK - NOT pushing to the Hub. Sample: "
+                      + repr(_texts[0][:300]), flush=True)
+                _healthy = False
+        except Exception as exc:  # noqa: BLE001 - a broken check must not block a good run
+            print(f"health check could not run ({exc!r}); pushing anyway", flush=True)
+        from evaluation.hub_push import push_adapter
+        if _healthy:
+            push_adapter(f"{model_cfg['output_dir']}/final", model_cfg.get("hub_repo"), exp_cfg["name"])
 
-        # Log final eval metrics
-        eval_results = trainer.evaluate()
-        mlflow.log_metrics({k.replace("eval_", ""): v for k, v in eval_results.items()})
+        # Log final eval metrics (non-fatal: the adapter is already saved and pushed)
+        try:
+            eval_results = trainer.evaluate()
+            mlflow.log_metrics({k.replace("eval_", ""): v for k, v in eval_results.items()})
+        except Exception as exc:  # noqa: BLE001
+            print(f"post-training evaluate() failed (non-fatal): {exc!r}")
 
         if mlflow_cfg.get("log_model"):
-            mlflow.peft.log_model(model, "sft_adapter")
+            try:  # non-fatal: mlflow.peft only exists in some MLflow versions; the adapter is already pushed
+                mlflow.peft.log_model(model, "sft_adapter")
+            except Exception as exc:  # noqa: BLE001
+                print(f"mlflow model logging skipped (non-fatal): {exc!r}")
 
         print(f"C2 SFT complete. Adapter saved to {model_cfg['output_dir']}/final")
         print(f"Publish to HuggingFace: huggingface-cli upload {model_cfg['hub_repo']}")

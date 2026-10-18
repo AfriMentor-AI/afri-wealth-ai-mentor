@@ -1,0 +1,32 @@
+{
+  "dataset_version": "3.0",
+  "synthetic": true,
+  "teacher_model": "qwen/qwen-2.5-72b-instruct",
+  "selection_judge": "deepseek/deepseek-chat-v3.1",
+  "n_prompts": 1700,
+  "n_samples_per_prompt": 4,
+  "n_kept_for_sft": 1305,
+  "mean_within_prompt_spread": 0.197,
+  "word_band": [
+    60,
+    150
+  ],
+  "min_best_score": 0.55,
+  "min_gap": 0.1,
+  "max_len_ratio": 1.35,
+  "seed": 7,
+  "splits": {
+    "test": {
+      "n_prompts": 120,
+      "n_dpo_pairs": 100
+    },
+    "val": {
+      "n_prompts": 100,
+      "n_dpo_pairs": 86
+    },
+    "train": {
+      "n_prompts": 1085,
+      "n_dpo_pairs": 920
+    }
+  }
+}

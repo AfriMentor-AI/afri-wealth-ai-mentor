@@ -1,0 +1,35 @@
+{
+  "dataset_version": "2.0",
+  "synthetic": true,
+  "teacher_model": "qwen/qwen-2.5-72b-instruct",
+  "teacher_base_url": "https://openrouter.ai/api/v1",
+  "seed": 42,
+  "n_prompts_requested": 300,
+  "n_records": 300,
+  "n_candidates_before_length_filter": 390,
+  "word_band": [
+    70,
+    140
+  ],
+  "length_ratio_bounds": [
+    0.6,
+    1.6
+  ],
+  "splits": {
+    "test": {
+      "n": 60,
+      "preferred_a": 33,
+      "preferred_b": 27
+    },
+    "val": {
+      "n": 30,
+      "preferred_a": 18,
+      "preferred_b": 12
+    },
+    "train": {
+      "n": 210,
+      "preferred_a": 97,
+      "preferred_b": 113
+    }
+  }
+}
