@@ -173,3 +173,29 @@ C1S 0.543) but cannot be treated as a clean result. The v2/v2b C2 adapters had t
 so earlier C2 numbers may also understate SFT. Fix: dedicated `<|finetune_right_pad_id|>` pad token, plus the C3-style
 generation-health guard before the push. C2 and C3 were retrained and re-evaluated; first-attempt results are kept as
 `comparative_llama31_8b_v3_padbug.json` for the appendix. C1P/C1/C1S were reused unchanged.
+
+### v3b result (fixed C2, C3 retrained on it; n=120 test prompts, Llama-3.1-8B-Instruct)
+
+Hub: sft-v3 52951fed4f34, dpo-v3 acd6ce68d485. Results file `comparative_llama31_8b_v3b.json` (C1P/C1/C1S reused from the first v3 run).
+
+| Condition | gpt-oss-120b | Mistral-large-2512 | median words |
+|---|---|---|---|
+| C1P base + ~30-token prompt | 0.392 | 0.647 | 319 |
+| C1S base + full prompt + format | 0.543 | 0.748 | 107 |
+| C2 SFT (minimal prompt) | 0.546 | 0.692 | 88 |
+| C3 SFT + DPO (minimal prompt) | 0.586 | 0.720 | 93 |
+| C1 base + full prompt (long) | 0.769 | 0.891 | 252 |
+
+Paired differences, 95% bootstrap CI over prompts (gpt-oss / Mistral):
+- C3 - C1P: +0.194 [+0.165,+0.223] / +0.073 [+0.051,+0.095]; C2 - C1P: +0.153 / +0.048. Robust: fine-tuning beats the base model that is given the same short prompt.
+- C3 - C2: +0.041 [+0.019,+0.062] / +0.024 [+0.010,+0.038]. DPO adds a small gain under both judges.
+- C3 - C1S: +0.043 [+0.013,+0.074] / **-0.028** [-0.046,-0.011]. The judges disagree in sign: no robust win over the prompted+formatted base.
+- C2 - C1S: +0.002 [-0.029,+0.035] / -0.054 [-0.073,-0.036].
+- C1 (full prompt, 252 words) beats everything under both judges, but its score correlates with length (r=0.63).
+
+Behaviour (read the answers): 100% of C2/C3 answers end with a question; 67% open with "I get it, friend" (template); 78-82% contain a concrete number
+(C1S 79%). Answers are coherent and in persona; advice quality is comparable to C1S, with some invented figures in both.
+Not evaluated with the selection judge (DeepSeek) by design. Mistral coverage 116-120 of 120 per condition (upstream 429s dropped a few rows).
+
+Claim supported: a prompt-free fine-tuned 8B matches the prompted base on format and persona at ~1/50 of the prompt tokens, and beats the
+equally short-prompted base. Claim NOT supported: that fine-tuning beats prompting.

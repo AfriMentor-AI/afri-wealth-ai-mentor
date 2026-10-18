@@ -33,6 +33,8 @@ def composite(scores: dict) -> float:
 def paired_ci(a: dict[str, float], b: dict[str, float], n: int = 5000, seed: int = 1) -> tuple[int, float, float, float]:
     ks = [k for k in a if k in b]
     diff = [a[k] - b[k] for k in ks]
+    if not diff:
+        return 0, float("nan"), float("nan"), float("nan")
     rng = random.Random(seed)
     means = sorted(st.mean(rng.choices(diff, k=len(diff))) for _ in range(n))
     return len(ks), st.mean(diff), means[int(0.025 * n)], means[int(0.975 * n) - 1]
@@ -59,7 +61,11 @@ def main() -> None:
     path = sys.argv[1]
     res = json.load(open(path, encoding="utf-8"))
     model = os.getenv("EVAL_JUDGE_MODEL", "openai/gpt-oss-120b")
-    scored = rescore(res)
+    scored = rescore(res, workers=int(os.getenv("RESCORE_WORKERS", "8")))
+    total = {cid: sum(1 for r in c.get("rows", []) if r.get("response")) for cid, c in res["conditions"].items()}
+    short = {cid: f"{len(rows)}/{total[cid]}" for cid, rows in scored.items() if len(rows) < 0.95 * total[cid]}
+    if short:
+        print(f"\nWARNING: judge failures dropped rows ({short}). Re-run (failures are not cached) before reading anything into this.")
     print(f"\n=== re-judged with {model} ===")
     print(f"{'cond':5}{'n':>4}  " + "  ".join(f"{d[:8]:>8}" for d in DIMS) + "  composite  (original judge)")
     for cid, rows in scored.items():
@@ -77,6 +83,9 @@ def main() -> None:
             if a < b or a == b:
                 continue
             n, m, lo, hi = paired_ci(comps[a], comps[b])
+            if n == 0:
+                print(f"{a:4} - {b:4}: no prompts scored in both conditions")
+                continue
             flag = "  <-- excludes 0" if lo > 0 or hi < 0 else ""
             print(f"{a:4} - {b:4}: {m:+.3f}  [{lo:+.3f}, {hi:+.3f}]  n={n}{flag}")
     outp = Path(path).with_name(Path(path).stem + f"_rescored_{model.replace('/', '_')}.json")
